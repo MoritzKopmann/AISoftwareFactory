@@ -176,7 +176,19 @@ Note: `gh api` **exits non-zero on 304** (`gh: HTTP 304`). The app should treat 
 
 ## Appendix: close experiment
 
-Closing #3 at the end of this research served as a live test. See the addendum below.
+Closing #3 at the end of this research served as a live test. #3 blocks #7 and #9. #9 is also blocked by #2, which closed around the same time. Results (verified 2026-09-25 16:47Z):
+
+| Check | Before close | After close |
+|---|---|---|
+| #7 `issue_dependencies_summary` | `blocked_by:1, total_blocked_by:1` | `blocked_by:0, total_blocked_by:1`: **`blocked_by` counts open blockers only** |
+| #9 `issue_dependencies_summary` | — | `blocked_by:0, total_blocked_by:2` |
+| #3 (the closed blocker) | `blocking:2` | `blocking:2, total_blocking:2`: counts the open dependents |
+| #7 `updated_at` | 16:38:10Z | 16:38:10Z: **dependents aren't touched when a blocker closes** |
+| #3 `updated_at` | 16:39:05Z | 16:46:52Z (bumped by the close) |
+| `issues/events` with the old ETag | 304 | **200**, and the newest event is `closed` on #3 |
+| `is:blocked` search | 6–11 | 6, 11: #7 dropped out right away |
+
+Consequence: "blocked" must come from `issueDependenciesSummary.blockedBy` (or the blockers' states) in a fresh snapshot, never from a cached dependent. A blocker closing is visible only on the blocker itself and in the events feed.
 
 ## Sources
 
