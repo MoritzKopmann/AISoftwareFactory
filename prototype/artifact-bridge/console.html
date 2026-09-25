@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>AISF session console</title>
+<style>
+  :root { --bg:#f6f6f3; --fg:#1b1b19; --muted:#6b6b66; --line:#dcdcd6; --user:#1c5fb0; --tool:#8a5a00; --ok:#1c7a4f; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141413; --fg:#e8e8e3; --muted:#9a9a93; --line:#2c2c29; --user:#7fb0f0; --tool:#e0b060; --ok:#6fd0a0; } }
+  body { background:var(--bg); color:var(--fg); font:14px/1.45 ui-monospace, monospace; margin:0; padding:16px; }
+  h1 { font:600 15px system-ui; margin:0 0 12px; }
+  #inbox a { display:block; padding:8px 10px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px; color:var(--fg); text-decoration:none; }
+  #log div { padding:4px 0; border-bottom:1px solid var(--line); white-space:pre-wrap; word-break:break-word; }
+  .user { color:var(--user) } .tool { color:var(--tool) } .result { color:var(--ok) } .system { color:var(--muted) }
+  form { display:flex; gap:8px; margin:12px 0; } input { flex:1; font:inherit; padding:6px; }
+</style>
+<h1>Artifacts waiting for you</h1>
+<div id="inbox"><span class="system">none yet</span></div>
+<form id="say"><input name="t" placeholder="Say something to the session…"><button>Send</button></form>
+<h1>Session</h1>
+<div id="log"></div>
+<script>
+  const es = new EventSource('/api/console');
+  const inbox = document.getElementById('inbox'), log = document.getElementById('log'), seen = {};
+  es.addEventListener('log', e => {
+    const d = JSON.parse(e.data), div = document.createElement('div');
+    div.className = d.kind;
+    div.textContent = `${d.at.slice(11, 19)} ${d.kind}${d.from ? ' (' + d.from + ')' : ''}: ${d.text}`;
+    log.prepend(div);
+  });
+  es.addEventListener('artifact', e => {
+    const d = JSON.parse(e.data);
+    if (!Object.keys(seen).length) inbox.textContent = '';
+    const a = seen[d.id] ??= inbox.appendChild(Object.assign(document.createElement('a'), { target: '_blank' }));
+    a.href = d.url; a.textContent = `${d.title}  ·  v${d.version}`;
+  });
+  document.getElementById('say').onsubmit = async e => {
+    e.preventDefault();
+    await fetch('/api/say', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: e.target.t.value }) });
+    e.target.t.value = '';
+  };
+</script>
