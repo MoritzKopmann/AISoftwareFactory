@@ -1,17 +1,16 @@
 <title>aisf Console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <style>
-/* ---- Drafting tokens (kit direction B, decided in #18) ---- */
+/* Drafting tokens (kit direction B, decided in #18) */
 :root {
   --bg: #e9eef2; --surface: #f8fafb; --surface-2: #dfe6ec; --border: #a9b8c5; --border-strong: #6f8499;
   --text: #13243a; --muted: #4c6075; --accent: #d05f1a; --accent-ink: #ffffff; --accent-soft: #f8e2d2;
   --ok: #2b7a44; --warn: #a2640b; --danger: #b8322f; --info: #2d5f93; --hitl: #6b47c2;
-  --grid: color-mix(in srgb, var(--info) 10%, transparent);
+  --grid: color-mix(in srgb, var(--info) 9%, transparent);
   --font-ui: "Atkinson Hyperlegible", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --pad: 14px; --gap: 10px;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -27,825 +26,271 @@
   --ok: #5cc07a; --warn: #e5ab4e; --danger: #f07268; --info: #6fa6db; --hitl: #a98cf0;
   color-scheme: dark;
 }
-
 * { box-sizing: border-box; }
-body {
-  margin: 0; background: var(--bg); color: var(--text);
-  font: 15px/1.45 var(--font-ui);
-  padding-inline: 16px; padding-block: 14px 40px;
-}
-button { font: inherit; color: inherit; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 var(--font-ui); padding-inline: 16px; padding-block: 14px 40px; }
+button, input, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-code, .mono { font-family: var(--font-mono); font-size: .88em; }
-.label {
-  font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em;
-  font-size: 11px; font-weight: 500; color: var(--muted);
-}
-h1, h2, h3 {
-  font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .04em;
-  font-weight: 700; margin: 0; text-wrap: balance;
-}
-h1 { font-size: 17px; } h2 { font-size: 13.5px; } h3 { font-size: 12px; }
-.muted { color: var(--muted); }
+code { font-family: var(--font-mono); font-size: .88em; }
 p { margin: 0; }
+.label { font: 500 11px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+h1, h2 { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .04em; font-weight: 700; margin: 0; text-wrap: balance; }
+h1 { font-size: 17px; } h2 { font-size: 13px; }
+.muted { color: var(--muted); }
 
-/* ---- mockup controls (outside the app) ---- */
-.mock {
-  max-width: 1320px; margin: 0 auto 12px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;
-  border: 1px dashed var(--border-strong); padding: 8px 12px; background: transparent;
-}
-.mock .grow { flex: 1; }
-.mock .group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.btn {
-  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
-  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
-  padding: 5px 11px; font-size: 13px; line-height: 1.3;
-}
+.btn { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface); padding: 6px 12px; font-size: 14px; line-height: 1.3; }
 .btn:hover { background: var(--surface-2); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-.btn.primary:hover { filter: brightness(1.06); }
-.btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
-.btn.ghost:hover { color: var(--text); background: var(--surface-2); }
-.btn.danger { color: var(--danger); border-color: var(--danger); }
-.btn.sm { padding: 3px 8px; font-size: 12px; }
-.btn.mono { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+.btn.link { border: 0; background: none; padding: 0; color: var(--muted); font: 500 11px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; }
+.btn.link:hover { color: var(--text); background: none; }
 
-/* ---- fake browser window ---- */
-.window { max-width: 1320px; margin: 0 auto; border: 1px solid var(--border-strong); background: var(--surface); }
-.chrome {
-  display: flex; align-items: stretch; gap: 0; border-bottom: 1px solid var(--border-strong);
-  background: var(--surface-2); font-size: 12.5px; min-width: 0;
-}
-.tab {
-  display: flex; align-items: center; gap: 8px; padding: 7px 14px; background: var(--surface);
-  border-right: 1px solid var(--border-strong); max-width: 320px; min-width: 0;
-  margin-bottom: -1px; border-bottom: 1px solid var(--surface);
-}
-.tab.other { background: transparent; border-bottom-color: var(--border-strong); color: var(--muted); }
-.tab .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fav {
-  position: relative; width: 16px; height: 16px; flex: none; background: var(--accent); color: var(--accent-ink);
-  font: 700 10px/16px var(--font-mono); text-align: center;
-}
-.fav b {
-  position: absolute; right: -5px; top: -5px; min-width: 12px; height: 12px; padding: 0 2px;
-  background: var(--danger); color: #fff; font: 700 8.5px/12px var(--font-mono); text-align: center;
-  border: 1px solid var(--surface);
-}
-.url {
-  flex: 1; display: flex; align-items: center; padding: 0 12px; font-family: var(--font-mono); font-size: 12px;
-  color: var(--muted); min-width: 0; white-space: nowrap; overflow: hidden;
-}
-.url span { color: var(--text); }
+/* mockup strip */
+.mock { max-width: 1180px; margin: 0 auto 12px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; border: 1px dashed var(--border-strong); padding: 7px 12px; }
+.mock .btn { font-size: 13px; padding: 4px 10px; }
 
-/* ---- app shell ---- */
-.app { display: grid; grid-template-columns: 212px minmax(0, 1fr); min-height: 720px; background: var(--bg); }
-.side { border-right: 1px solid var(--border-strong); background: var(--surface); padding: 14px 0; display: flex; flex-direction: column; gap: 18px; }
-.brand { display: flex; align-items: center; gap: 8px; padding: 0 14px; }
-.brand .fav { width: 22px; height: 22px; font-size: 13px; line-height: 22px; }
-.brand h1 { font-size: 14px; }
-.nav { display: grid; }
-.nav .label { padding: 0 14px 6px; }
-.nav button {
-  display: flex; align-items: center; gap: 8px; text-align: left; border: 0; background: transparent;
-  padding: 7px 14px; cursor: pointer; border-left: 3px solid transparent; font-size: 14px;
-}
-.nav button:hover { background: var(--surface-2); }
-.nav button[aria-current="page"] { border-left-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
-.nav button .n { margin-left: auto; font: 500 11px var(--font-mono); color: var(--muted); }
-.nav button .n.hot { color: var(--accent-ink); background: var(--hitl); padding: 0 6px; }
-.nav .dot { width: 7px; height: 7px; flex: none; background: var(--muted); }
-.nav .dot.run { background: var(--accent); animation: pulse 1.6s infinite; }
-.nav .dot.pause { background: var(--warn); }
-@keyframes pulse { 50% { opacity: .35; } }
-.side .foot { margin-top: auto; padding: 0 14px; display: grid; gap: 6px; }
+/* fake browser */
+.window { max-width: 1180px; margin: 0 auto; border: 1px solid var(--border-strong); background: var(--bg); }
+.chrome { display: flex; border-bottom: 1px solid var(--border-strong); background: var(--surface-2); font-size: 12.5px; }
+.chrome .tab { display: flex; align-items: center; gap: 8px; padding: 7px 14px; background: var(--surface); border-right: 1px solid var(--border-strong); margin-bottom: -1px; min-width: 0; }
+.chrome .tab span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chrome .url { flex: 1; padding: 7px 12px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.fav { position: relative; width: 16px; height: 16px; flex: none; background: var(--accent); color: var(--accent-ink); font: 700 10px/16px var(--font-mono); text-align: center; }
+.fav b { position: absolute; right: -4px; top: -4px; width: 8px; height: 8px; background: var(--hitl); border: 1px solid var(--surface); }
 
-.main { display: flex; flex-direction: column; min-width: 0; }
-.topbar {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 18px;
-  border-bottom: 1px solid var(--border-strong); background: var(--surface);
-}
-.topbar .crumb { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-.topbar .grow { flex: 1; }
-.meter { display: grid; gap: 3px; min-width: 150px; }
-.meter .row { display: flex; justify-content: space-between; gap: 10px; }
-.meter .bar { height: 5px; background: var(--surface-2); border: 1px solid var(--border); position: relative; }
-.meter .bar i { position: absolute; inset: 0 auto 0 0; background: var(--info); }
-.meter .bar i.hi { background: var(--warn); }
-.meter .bar i.full { background: var(--danger); }
-.banner {
-  display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 8px 18px;
-  border-bottom: 1px solid var(--warn); background: color-mix(in srgb, var(--warn) 12%, var(--surface)); font-size: 14px;
-}
-.view { padding: 18px; display: grid; gap: 16px; align-content: start; background-image:
-  linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 24px 24px; flex: 1; }
-.view-head { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; }
-.view-head p { color: var(--muted); max-width: 70ch; }
+/* project bar: the only global element */
+.projects { display: flex; align-items: stretch; background: var(--surface); border-bottom: 1px solid var(--border-strong); overflow-x: auto; }
+.projects .brand { display: flex; align-items: center; padding: 0 14px; border-right: 1px solid var(--border-strong); }
+.projects .brand .fav { width: 22px; height: 22px; font-size: 13px; line-height: 22px; }
+.ptab { display: flex; align-items: center; gap: 8px; padding: 12px 18px; border: 0; border-right: 1px solid var(--border); background: none; cursor: pointer;
+  font: 700 12.5px var(--font-mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap; }
+.ptab:hover { color: var(--text); }
+.ptab[aria-current="true"] { color: var(--text); border-bottom-color: var(--accent); }
+.ptab .dot { width: 8px; height: 8px; background: var(--hitl); }
+.ptab.add { font-weight: 500; }
 
-/* ---- chips ---- */
-.chip {
-  --c: var(--muted); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
-  font: 500 10.5px/1.5 var(--font-mono); text-transform: uppercase; letter-spacing: .05em;
-  padding: 1px 7px; color: var(--c); border: 1px solid var(--c);
-}
-.s-idea, .s-backlog { --c: var(--muted); }
-.s-plan, .s-planned { --c: var(--info); }
-.s-ready, .s-in-progress { --c: var(--accent); }
-.s-in-review { --c: var(--warn); }
-.s-stuck { --c: var(--danger); }
-.s-closed { --c: var(--ok); }
-.f-hitl { --c: var(--hitl); }
-.s-in-progress::before { content: ""; width: 6px; height: 6px; background: currentColor; animation: pulse 1.6s infinite; }
+.view { padding: 22px 20px 28px; display: grid; gap: 22px; align-content: start; min-height: 620px;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 24px 24px; }
+.head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.head .grow { flex: 1; }
 
-.card { background: var(--surface); border: 1px solid var(--border-strong); padding: var(--pad); display: grid; gap: var(--gap); }
+/* needs you */
+.needs { display: grid; gap: 8px; }
+.need { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; background: var(--surface); border: 1px solid var(--border-strong); border-left: 4px solid var(--hitl); padding: 10px 14px; cursor: pointer; text-align: left; width: 100%; }
+.need:hover { background: var(--accent-soft); }
+.need .num { font: 500 12px var(--font-mono); color: var(--muted); }
+.need .what { color: var(--hitl); font-weight: 700; }
+.need .grow { flex: 1; }
+.calm { color: var(--muted); padding: 10px 14px; border: 1px dashed var(--border-strong); background: var(--surface); }
 
-/* ---- inbox ---- */
-.inbox { display: grid; gap: 10px; }
-.group-h { display: flex; gap: 10px; align-items: baseline; margin-top: 4px; }
-.item {
-  display: grid; grid-template-columns: 4px minmax(0, 1fr) auto; gap: 0 14px; align-items: stretch;
-  background: var(--surface); border: 1px solid var(--border-strong);
-}
-.item .stripe { background: var(--k); }
-.item .body { padding: 12px 0; display: grid; gap: 5px; min-width: 0; }
-.item .meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
-.item .title { font-weight: 700; }
-.item .why { color: var(--muted); font-size: 14px; }
-.item .acts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: flex-end; padding: 12px 12px 12px 0; align-content: center; }
-.k-round { --k: var(--hitl); } .k-question { --k: var(--hitl); } .k-escalation { --k: var(--danger); }
-.k-review { --k: var(--warn); } .k-onboard { --k: var(--info); }
-.kind { font: 500 10.5px var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--k); }
-.reply { display: flex; gap: 6px; margin-top: 4px; }
-.reply input { flex: 1; min-width: 0; font: inherit; font-size: 14px; padding: 5px 8px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); }
-.empty { border: 1px dashed var(--border-strong); padding: 22px; text-align: center; color: var(--muted); background: var(--surface); }
-.fyi { display: grid; gap: 6px; }
-.fyi .line { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 14px; padding: 8px 12px; border: 1px solid var(--border); background: var(--surface); }
-
-/* ---- board ---- */
-.board-wrap { overflow-x: auto; padding-bottom: 6px; }
-.board { display: grid; grid-auto-flow: column; grid-auto-columns: 232px; gap: 10px; align-items: start; }
+/* board */
+.board-wrap { overflow-x: auto; }
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(170px, 1fr); gap: 10px; align-items: start; }
 .col { display: grid; gap: 8px; align-content: start; }
-.col-h { display: flex; align-items: center; gap: 8px; padding: 6px 2px; border-bottom: 1px solid var(--border-strong); }
-.col-h .n { margin-left: auto; font: 500 11px var(--font-mono); color: var(--muted); }
-.col.closed .tk { opacity: .7; }
-.tk {
-  text-align: left; cursor: pointer; background: var(--surface); border: 1px solid var(--border-strong);
-  padding: 10px 11px; display: grid; gap: 7px; width: 100%;
-}
+.col-h { display: flex; justify-content: space-between; padding: 4px 2px 6px; border-bottom: 1px solid var(--border-strong); }
+.tk { text-align: left; cursor: pointer; background: var(--surface); border: 1px solid var(--border); padding: 10px 11px; display: grid; gap: 4px; width: 100%; }
 .tk:hover { border-color: var(--accent); }
 .tk .num { font: 500 11px var(--font-mono); color: var(--muted); }
-.tk .tt { font-size: 14px; font-weight: 700; line-height: 1.3; }
-.tk .chips { display: flex; flex-wrap: wrap; gap: 4px; }
-.run {
-  --c: var(--muted); display: flex; align-items: center; gap: 6px; font: 500 10.5px var(--font-mono);
-  text-transform: uppercase; letter-spacing: .05em; color: var(--c); border-top: 1px solid var(--border); padding-top: 6px;
-}
-.run::before { content: ""; width: 7px; height: 7px; background: currentColor; flex: none; }
-.run.running { --c: var(--accent); } .run.running::before { animation: pulse 1.6s infinite; }
-.run.needs { --c: var(--hitl); }
-.run.queued::before { background: transparent; border: 1px solid currentColor; }
-.run.paused { --c: var(--warn); }
-.run.blocked::before { background: transparent; border: 1px dashed currentColor; }
-.run.stuck { --c: var(--danger); }
-.tk .act { justify-self: start; }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
-.legend .run { border: 0; padding: 0; }
+.tk .tt { font-size: 14px; line-height: 1.3; }
+.tk.needs-you { border-color: var(--hitl); box-shadow: inset 4px 0 0 var(--hitl); }
+.mark { font: 500 10.5px var(--font-mono); text-transform: uppercase; letter-spacing: .05em; display: flex; align-items: center; gap: 6px; }
+.mark::before { content: ""; width: 7px; height: 7px; background: currentColor; }
+.mark.you { color: var(--hitl); }
+.mark.run { color: var(--accent); } .mark.run::before { animation: pulse 1.6s infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+.col.closed .tk { opacity: .65; }
+.more { font: 500 11px var(--font-mono); color: var(--muted); padding: 2px; }
 
-/* ---- session ---- */
-.session { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 14px; align-items: start; }
-.session.solo { grid-template-columns: minmax(0, 1fr); }
-.shead { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
-.shead .grow { flex: 1; }
-.kv { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; }
-.kv span b { font: 500 10.5px var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-right: 6px; }
-.transcript { display: grid; gap: 0; max-height: 560px; overflow-y: auto; border: 1px solid var(--border-strong); background: var(--surface); }
-.msg { padding: 9px 12px; border-bottom: 1px solid var(--border); display: grid; gap: 3px; font-size: 14px; }
-.msg:last-child { border-bottom: 0; }
-.msg .who { font: 500 10px var(--font-mono); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
-.msg.tool { font-family: var(--font-mono); font-size: 12px; color: var(--muted); background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
-.msg.tool .who { color: var(--info); }
-.msg.event { border-left: 3px solid var(--hitl); }
-.msg.event .who { color: var(--hitl); }
-.msg.you { border-left: 3px solid var(--accent); }
-.msg.you .who { color: var(--accent); }
-.msg.sys { font: 12px var(--font-mono); color: var(--muted); text-align: center; }
-.msg.wait { border-left: 3px solid var(--hitl); background: color-mix(in srgb, var(--hitl) 8%, var(--surface)); }
-.msg.escal { border-left: 3px solid var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); }
-.composer { display: grid; gap: 6px; }
-.composer textarea {
-  font: inherit; font-size: 14px; min-height: 58px; resize: vertical; padding: 8px 10px;
-  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); width: 100%;
-}
-.composer .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.composer .row .grow { flex: 1; font-size: 12.5px; color: var(--muted); }
-
-/* ---- docked artifact ---- */
-.dock { border: 1px solid var(--border-strong); background: var(--surface); display: grid; }
-.dock-h { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 7px 10px; border-bottom: 1px solid var(--border-strong); background: var(--surface-2); }
-.dock-h .grow { flex: 1; min-width: 0; font: 12px var(--font-mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.page { padding: 16px; display: grid; gap: 14px; }
-.progress { display: flex; gap: 4px; }
-.progress i { height: 4px; flex: 1; background: var(--surface-2); border: 1px solid var(--border); }
-.progress i.on { background: var(--accent); border-color: var(--accent); }
-.q { display: grid; gap: 8px; }
-.q + .q { border-top: 1px solid var(--border); padding-top: 14px; }
+/* ticket page */
+.ticket { max-width: 760px; width: 100%; display: grid; gap: 18px; }
+.chip { display: inline-block; font: 500 10.5px/1.6 var(--font-mono); text-transform: uppercase; letter-spacing: .05em; padding: 0 7px; border: 1px solid currentColor; color: var(--muted); }
+.panel { background: var(--surface); border: 1px solid var(--border-strong); padding: 18px; display: grid; gap: 14px; }
+.panel.you { border-top: 4px solid var(--hitl); }
+.panel.stuck { border-top: 4px solid var(--danger); }
+.panel.running { border-top: 4px solid var(--accent); }
+.progress { display: flex; gap: 4px; } .progress i { height: 4px; flex: 1; background: var(--surface-2); } .progress i.on { background: var(--accent); }
+.q { display: grid; gap: 8px; } .q + .q { border-top: 1px solid var(--border); padding-top: 14px; }
 .q .qt { font-weight: 700; }
-.ctx { border: 1px solid var(--border); background: var(--bg); font: 11.5px/1.5 var(--font-mono); overflow-x: auto; }
-.ctx .p { padding: 4px 8px; border-bottom: 1px solid var(--border); color: var(--muted); }
-.ctx pre { margin: 0; padding: 6px 8px; }
-.answer {
-  display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; cursor: pointer; padding: 9px 11px;
-  border: 1px solid var(--border); background: var(--surface);
-}
+.answer { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; cursor: pointer; padding: 9px 11px; border: 1px solid var(--border); }
 .answer input { margin: 3px 0 0; accent-color: var(--accent); }
-.answer .a-t { font-weight: 700; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.answer .a-b { grid-column: 2; color: var(--muted); font-size: 13.5px; }
+.answer .b { grid-column: 2; color: var(--muted); font-size: 13.5px; }
 .answer:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
-.answer:has(input:checked) .a-b { color: var(--text); }
-.sugg { font: 600 9.5px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--accent); border: 1px solid currentColor; padding: 0 5px; }
-.whyl { font-size: 13px; color: var(--muted); }
-.whyl b { font: 500 10px var(--font-mono); text-transform: uppercase; letter-spacing: .07em; color: var(--accent); margin-right: 6px; }
-.page-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-top: 1px solid var(--border); padding-top: 12px; }
-.page-foot .grow { flex: 1; }
+.sugg { font: 600 9.5px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--accent); border: 1px solid currentColor; padding: 0 5px; margin-left: 8px; }
+.why { font-size: 13.5px; color: var(--muted); }
+textarea { width: 100%; min-height: 70px; resize: vertical; padding: 8px 10px; border: 1px solid var(--border-strong); background: var(--surface); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.row .grow { flex: 1; }
+.activity { display: grid; gap: 4px; font: 12.5px/1.5 var(--font-mono); color: var(--muted); }
+details summary { cursor: pointer; font: 500 11px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+details[open] summary { margin-bottom: 8px; }
 
-/* ---- runs ---- */
-.tablewrap { overflow-x: auto; border: 1px solid var(--border-strong); background: var(--surface); }
-table { border-collapse: collapse; width: 100%; font-size: 14px; }
-th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-th { font: 500 10.5px var(--font-mono); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); background: var(--surface-2); }
-tr:last-child td { border-bottom: 0; }
-td.num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: 12.5px; }
-tr.click { cursor: pointer; } tr.click:hover td { background: var(--accent-soft); }
-.split2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
-.big { font: 700 26px var(--font-mono); font-variant-numeric: tabular-nums; }
-
-/* ---- notifications matrix ---- */
-.matrix td:not(:first-child), .matrix th:not(:first-child) { text-align: center; }
-.matrix input { width: 16px; height: 16px; accent-color: var(--accent); }
-.matrix td:first-child { white-space: normal; min-width: 220px; }
-.matrix .sub { display: block; font-size: 12.5px; color: var(--muted); }
-.switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
-.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.switch .track { width: 34px; height: 20px; background: var(--surface-2); border: 1px solid var(--border-strong); position: relative; flex: none; }
-.switch .track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; background: var(--muted); transition: transform .15s; }
-.switch input:checked + .track { background: var(--accent); border-color: var(--accent); }
-.switch input:checked + .track::after { transform: translateX(14px); background: var(--accent-ink); }
-.switch input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-/* ---- fake OS notification + toast ---- */
-.os {
-  position: fixed; right: 16px; top: 16px; width: min(360px, calc(100vw - 32px)); z-index: 50;
-  display: grid; gap: 8px;
-}
-.osn {
-  background: #2b2f36; color: #f1f3f6; border: 1px solid #3c424c; padding: 10px 12px; display: grid;
-  grid-template-columns: 28px 1fr; gap: 2px 10px; box-shadow: 0 8px 26px rgb(0 0 0 / .3);
-  font: 13px/1.4 system-ui, sans-serif; animation: slidein .25s ease-out;
-}
+/* simulated OS notification + toast */
+.os { position: fixed; right: 16px; top: 16px; width: min(340px, calc(100vw - 32px)); z-index: 50; display: grid; gap: 8px; }
+.osn { background: #2b2f36; color: #f1f3f6; border: 1px solid #3c424c; padding: 10px 12px; display: grid; grid-template-columns: 28px 1fr; gap: 2px 10px; font: 13px/1.4 system-ui, sans-serif; cursor: pointer; box-shadow: 0 8px 26px rgb(0 0 0 / .3); }
 .osn .ic { grid-row: span 3; width: 28px; height: 28px; background: #d05f1a; color: #fff; font: 700 15px/28px var(--font-mono); text-align: center; }
-.osn .src { font-size: 11px; color: #aeb5c0; }
-.osn .hd { font-weight: 600; }
-.osn .cap { font-size: 10px; color: #8d95a1; font-style: italic; }
-@keyframes slidein { from { transform: translateY(-8px); opacity: 0; } }
-.toast {
-  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 50; max-width: calc(100vw - 32px);
-  background: var(--text); color: var(--bg); padding: 8px 14px; font-size: 14px;
-}
-
-/* ---- decisions drawer ---- */
-.drawer {
-  position: fixed; inset: 0 0 0 auto; width: min(460px, 100vw); z-index: 40; background: var(--surface);
-  border-left: 1px solid var(--border-strong); overflow-y: auto; padding: 18px 18px 40px; display: grid; gap: 14px; align-content: start;
-  box-shadow: -10px 0 30px rgb(0 0 0 / .15);
-}
-.drawer .dhead { display: flex; align-items: center; gap: 10px; }
-.drawer .dhead .grow { flex: 1; }
-.dec { border: 1px solid var(--border-strong); padding: 12px; display: grid; gap: 6px; }
-.dec .id { font: 700 11px var(--font-mono); color: var(--accent); letter-spacing: .06em; }
-.dec .rec { font-size: 14px; }
-.dec .alt { font-size: 13px; color: var(--muted); }
-.dec .rec b, .dec .alt b { font: 500 10px var(--font-mono); text-transform: uppercase; letter-spacing: .07em; margin-right: 6px; }
-.dec .rec b { color: var(--accent); }
-
-@media (max-width: 860px) {
-  .app { grid-template-columns: 1fr; }
-  .side { border-right: 0; border-bottom: 1px solid var(--border-strong); padding: 10px 0; gap: 10px; }
-  .nav { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; }
-  .nav .label, .side .foot { display: none; }
-  .nav button { border-left: 0; border-bottom: 3px solid transparent; }
-  .nav button[aria-current="page"] { border-bottom-color: var(--accent); }
-  .session { grid-template-columns: minmax(0, 1fr); }
-  .item { grid-template-columns: 4px minmax(0, 1fr); }
-  .item .acts { grid-column: 2; justify-content: flex-start; padding: 0 12px 12px 0; }
-  .tab.other { display: none; }
-}
-@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+.osn .src { font-size: 11px; color: #aeb5c0; } .osn .hd { font-weight: 600; }
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 50; max-width: calc(100vw - 32px); background: var(--text); color: var(--bg); padding: 8px 14px; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
 </style>
 
-<div class="mock" aria-label="Mockup controls">
+<div class="mock">
   <span class="label">Mockup · example data</span>
-  <div class="group">
-    <span class="label">Simulate</span>
-    <button class="btn sm" data-sim="round">Round waiting</button>
-    <button class="btn sm" data-sim="question">Question in chat</button>
-    <button class="btn sm" data-sim="escalation">Escalation</button>
-    <button class="btn sm" data-sim="review">PR ready</button>
-    <button class="btn sm" data-sim="limit">Limit hit</button>
-    <button class="btn sm" data-sim="finished">Run finished</button>
-  </div>
-  <label class="switch"><input type="checkbox" id="bgTab"><span class="track"></span><span class="label">aisf tab in background</span></label>
-  <span class="grow"></span>
-  <button class="btn primary sm" id="openDecisions">Decisions to react to (7)</button>
+  <button class="btn" id="simOther">Simulate: AISoftwareFactory needs you</button>
 </div>
 
 <div class="window">
   <div class="chrome">
-    <div class="tab"><span class="fav" id="tabFav">a</span><span class="t" id="tabTitle">aisf</span></div>
-    <div class="tab other"><span class="t">github.com/MoritzKopmann/postkarte</span></div>
-    <div class="url">localhost:4317<span id="urlPath">/inbox</span></div>
+    <div class="tab"><span class="fav" id="fav">a</span><span id="tabTitle">aisf</span></div>
+    <div class="url" id="url">localhost:4317</div>
   </div>
-  <div class="app">
-    <aside class="side">
-      <div class="brand"><span class="fav">a</span><h1>aisf</h1></div>
-      <nav class="nav" id="nav"></nav>
-      <div class="foot">
-        <button class="btn sm" id="addProject">+ Add project</button>
-        <span class="label">v0.1.0 · plugin aisf 0.1.0</span>
-      </div>
-    </aside>
-    <div class="main">
-      <div class="topbar">
-        <div class="crumb" id="crumb"></div>
-        <span class="grow"></span>
-        <div class="meter" title="Claude subscription usage, from rate_limit_event">
-          <div class="row"><span class="label">5-hour</span><span class="label" id="m5t"></span></div>
-          <div class="bar"><i id="m5"></i></div>
-        </div>
-        <div class="meter">
-          <div class="row"><span class="label">Weekly</span><span class="label" id="mwt"></span></div>
-          <div class="bar"><i id="mw"></i></div>
-        </div>
-        <button class="btn primary" id="newIdea">+ New idea</button>
-      </div>
-      <div id="banner"></div>
-      <main class="view" id="view"></main>
-    </div>
-  </div>
+  <nav class="projects" id="projects" aria-label="Projects"></nav>
+  <main class="view" id="view"></main>
 </div>
-
-<div class="os" id="os" aria-live="polite"></div>
+<div class="os" id="os"></div>
 <div class="toast" id="toast" hidden></div>
-<aside class="drawer" id="drawer" hidden aria-label="Decisions to react to"></aside>
 
 <script>
 (() => {
-  // ------------------------------------------------------------------ data
-  const PROJECTS = {
-    postkarte: { name: "postkarte", repo: "MoritzKopmann/postkarte", cap: 1 },
-    aisf: { name: "AISoftwareFactory", repo: "MoritzKopmann/AISoftwareFactory", cap: 1 },
-  };
-  const STATUSES = ["idea", "backlog", "plan", "planned", "ready", "in-progress", "in-review", "stuck", "closed"];
-  const STATUS_LABEL = { "idea": "Idea", "backlog": "Backlog", "plan": "Plan", "planned": "Planned", "ready": "Ready",
-    "in-progress": "In progress", "in-review": "In review", "stuck": "Stuck", "closed": "Closed" };
+  const PROJECTS = [
+    { id: "postkarte", name: "postkarte" },
+    { id: "aisf", name: "AISoftwareFactory" },
+  ];
+  const COLS = [["idea", "Idea"], ["backlog", "Backlog"], ["plan", "Plan"], ["planned", "Planned"], ["ready", "Ready"],
+    ["in-progress", "In progress"], ["in-review", "In review"], ["stuck", "Stuck"], ["closed", "Closed"]];
 
-  // run: {state: running|needs|queued|paused|blocked|stuck, text}
+  // need: what you have to do (only set when the ticket waits on you); running: Claude is on it
   const T = [
     { p: "postkarte", n: 41, s: "idea", t: "Share a postcard as a link" },
-    { p: "postkarte", n: 50, s: "idea", t: "Handwriting font for the greeting" },
-    { p: "postkarte", n: 38, s: "backlog", t: "Import recipients from the address book", act: "Plan" },
-    { p: "postkarte", n: 42, s: "backlog", t: "Remember the last used stamp", act: "Plan" },
-    { p: "postkarte", n: 44, s: "plan", t: "Offline drafts survive an app restart", run: { state: "needs", text: "Needs you · round 2 of 3" }, stage: "plan-ticket" },
-    { p: "postkarte", n: 40, s: "planned", t: "Card editor v2", sub: "3 subtasks · 1 closed" },
-    { p: "postkarte", n: 45, s: "ready", t: "Stamp picker: recent stamps row", run: { state: "queued", text: "Queued · behind #47" } },
-    { p: "postkarte", n: 48, s: "ready", t: "Font size slider in the editor", run: { state: "blocked", text: "Blocked by #45" } },
-    { p: "postkarte", n: 49, s: "in-progress", t: "Font picker with preview", hitl: true, run: { state: "needs", text: "Needs you · question" }, stage: "implement-ticket" },
-    { p: "postkarte", n: 47, s: "in-progress", t: "Print-ready PDF export", run: { state: "running", text: "Running · implement · 14m" }, stage: "implement-ticket" },
-    { p: "postkarte", n: 46, s: "in-review", t: "Fix clipped greeting on small screens", pr: 52, run: { state: "queued", text: "PR #52 · waiting for your review" } },
-    { p: "postkarte", n: 43, s: "stuck", t: "Move the image cache to drift", run: { state: "stuck", text: "Escalated · red after 3 fixes" }, stage: "implement-ticket" },
+    { p: "postkarte", n: 38, s: "backlog", t: "Import recipients from the address book" },
+    { p: "postkarte", n: 42, s: "backlog", t: "Remember the last used stamp" },
+    { p: "postkarte", n: 44, s: "plan", t: "Offline drafts survive an app restart", need: { kind: "round", text: "Answer round 2 of 3" } },
+    { p: "postkarte", n: 40, s: "planned", t: "Card editor v2" },
+    { p: "postkarte", n: 45, s: "ready", t: "Stamp picker: recent stamps row" },
+    { p: "postkarte", n: 48, s: "ready", t: "Font size slider in the editor" },
+    { p: "postkarte", n: 49, s: "in-progress", t: "Font picker with preview", need: { kind: "question", text: "Answer a question" } },
+    { p: "postkarte", n: 47, s: "in-progress", t: "Print-ready PDF export", running: true },
+    { p: "postkarte", n: 46, s: "in-review", t: "Fix clipped greeting on small screens", need: { kind: "review", text: "Review PR #52" } },
+    { p: "postkarte", n: 43, s: "stuck", t: "Move the image cache to drift", need: { kind: "stuck", text: "Decide how to continue" } },
     { p: "postkarte", n: 37, s: "closed", t: "Stamp picker grid" },
     { p: "postkarte", n: 36, s: "closed", t: "Envelope flip animation" },
     { p: "postkarte", n: 35, s: "closed", t: "Greeting text field" },
-    { p: "aisf", n: 24, s: "idea", t: "Keyboard shortcuts for the inbox" },
-    { p: "aisf", n: 22, s: "backlog", t: "Runner: worktree cleanup after merge", act: "Plan" },
-    { p: "aisf", n: 23, s: "ready", t: "Watcher: ETag polling loop", run: { state: "queued", text: "Queued · behind #21" } },
-    { p: "aisf", n: 21, s: "in-progress", t: "Scaffold the Hono server and SPA shell", run: { state: "paused", text: "Paused · limit resets 14:10" }, stage: "implement-ticket" },
+    { p: "aisf", n: 24, s: "idea", t: "Keyboard shortcuts" },
+    { p: "aisf", n: 22, s: "backlog", t: "Runner: clean up worktrees after merge" },
+    { p: "aisf", n: 23, s: "ready", t: "Watcher: ETag polling loop" },
+    { p: "aisf", n: 21, s: "in-progress", t: "Scaffold the Hono server and SPA shell", running: true },
     { p: "aisf", n: 20, s: "closed", t: "Repo setup and CI" },
   ];
-
-  const INBOX = [
-    { id: "i1", kind: "round", p: "postkarte", n: 44, stage: "plan-ticket", title: "Questionnaire round 2 of 3 is waiting",
-      why: "2 questions on how drafts are stored. The run is paused until you submit.", age: "12 min" },
-    { id: "i2", kind: "question", p: "postkarte", n: 49, stage: "implement-ticket", title: "“Should the picker list system fonts, or only the bundled ones?”",
-      why: "HITL ticket, so the run asks in chat instead of escalating.", age: "4 min" },
-    { id: "i3", kind: "escalation", p: "postkarte", n: 43, stage: "implement-ticket", title: "Red: image_cache_test still fails after 3 fix attempts",
-      why: "aisf_escalate(red). The ticket is now status: stuck. The branch aisf/43-image-cache-drift is kept.", age: "38 min" },
-    { id: "i4", kind: "review", p: "postkarte", n: 46, stage: "", title: "PR #52 is ready for your review",
-      why: "Checks are green. Approving on GitHub lets aisf squash-merge it. Requesting changes starts an AFK rework run.", age: "1 h" },
-  ];
-  const KIND = { round: "Questionnaire round", question: "Question in chat", escalation: "Escalation", review: "Review", onboard: "Onboarding PR" };
-
-  const state = {
-    view: "inbox", project: "postkarte", ticket: 44,
-    usage5: 62, usageW: 38, limitHit: false, seenCount: 0,
-    rounds: { 44: false }, answered: {}, bg: false,
-    notif: {
-      round:      { inbox: true, badge: true, os: true,  sound: false },
-      question:   { inbox: true, badge: true, os: true,  sound: false },
-      escalation: { inbox: true, badge: true, os: true,  sound: false },
-      review:     { inbox: true, badge: true, os: false, sound: false },
-      limit:      { inbox: false, badge: false, os: false, sound: false },
-      finished:   { inbox: false, badge: false, os: false, sound: false },
-    },
-    osOnlyBg: true,
-  };
-  let simSeq = 0;
-
-  const $ = (s, r = document) => r.querySelector(s);
+  const state = { project: "postkarte", ticket: null };
+  const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const tk = (p, n) => T.find((x) => x.p === p && x.n === n);
+  const inProject = (p) => T.filter((t) => t.p === p);
+  const needing = (p) => inProject(p).filter((t) => t.need);
 
-  // --------------------------------------------------------------- chrome
-  function badgeCount() { return INBOX.filter((i) => state.notif[i.kind]?.badge ?? true).length; }
   function renderChrome() {
-    const c = badgeCount();
-    const titles = { inbox: "Needs you", board: PROJECTS[state.project].name, session: `#${state.ticket}`, runs: "Runs", notifications: "Notifications" };
-    $("#tabTitle").textContent = (c ? `(${c}) ` : "") + titles[state.view] + " · aisf";
-    $("#tabFav").innerHTML = "a" + (c ? `<b>${c}</b>` : "");
-    const paths = { inbox: "/inbox", board: `/p/${state.project}`, session: `/p/${state.ticket === 21 || state.ticket === 23 ? "aisf" : "postkarte"}/t/${state.ticket}`, runs: "/runs", notifications: "/settings/notifications" };
-    $("#urlPath").textContent = paths[state.view];
-    const u5 = $("#m5"); u5.style.width = state.usage5 + "%"; u5.className = state.usage5 >= 100 ? "full" : state.usage5 >= 80 ? "hi" : "";
-    $("#m5t").textContent = state.usage5 >= 100 ? "resets 14:10" : `${state.usage5}% · resets 14:10`;
-    $("#mw").style.width = state.usageW + "%"; $("#mwt").textContent = `${state.usageW}% · resets Mon`;
-    $("#banner").innerHTML = state.limitHit ? `<div class="banner" role="status"><span class="chip s-in-review">Paused</span>
-      <span>5-hour limit reached. All runs are paused and resume automatically at <b>14:10</b> (in 47 min). HITL pages stay open.</span>
-      <span class="grow"></span><button class="btn sm" id="resumeNow">Simulate reset</button></div>` : "";
-    const rn = $("#resumeNow"); if (rn) rn.onclick = () => { state.limitHit = false; state.usage5 = 4; fire("resumed"); render(); };
+    const total = T.filter((t) => t.need).length;
+    const here = needing(state.project).length;
+    const pname = PROJECTS.find((p) => p.id === state.project).name;
+    $("#tabTitle").textContent = (here ? `(${here}) ` : "") + (state.ticket ? `#${state.ticket} · ` : "") + pname + " · aisf";
+    $("#fav").innerHTML = "a" + (total ? "<b></b>" : "");
+    $("#url").textContent = `localhost:4317/${state.project}` + (state.ticket ? `/${state.ticket}` : "");
+    $("#projects").innerHTML = `<span class="brand"><span class="fav">a</span></span>` +
+      PROJECTS.map((p) => `<button class="ptab" data-project="${p.id}" aria-current="${p.id === state.project}">
+        ${needing(p.id).length && p.id !== state.project ? '<span class="dot" title="Something needs you here"></span>' : ""}${esc(p.name)}</button>`).join("") +
+      `<button class="ptab add" data-toast="Opens the Add project flow (decided in #12)">+ Add</button>`;
   }
 
-  function renderNav() {
-    const count = INBOX.length;
-    const pr = (key) => {
-      const ts = T.filter((t) => t.p === key);
-      const running = ts.some((t) => t.run?.state === "running") && !state.limitHit;
-      const paused = state.limitHit || ts.some((t) => t.run?.state === "paused");
-      const needs = INBOX.filter((i) => i.p === key).length;
-      return `<button data-go="board" data-project="${key}" ${state.view === "board" && state.project === key ? 'aria-current="page"' : ""}>
-        <span class="dot ${running ? "run" : paused ? "pause" : ""}"></span>${esc(PROJECTS[key].name)}
-        <span class="n ${needs ? "hot" : ""}">${needs || ts.filter((t) => t.s !== "closed").length}</span></button>`;
-    };
-    $("#nav").innerHTML = `
-      <button data-go="inbox" ${state.view === "inbox" ? 'aria-current="page"' : ""}>Needs you<span class="n ${count ? "hot" : ""}">${count}</span></button>
-      <button data-go="runs" ${state.view === "runs" ? 'aria-current="page"' : ""}>Runs<span class="n">${T.filter((t) => t.run && ["running", "paused", "queued"].includes(t.run.state) && t.s !== "in-review").length}</span></button>
-      <span class="label" style="margin-top:14px">Projects</span>
-      ${pr("postkarte")}${pr("aisf")}
-      <span class="label" style="margin-top:14px">Settings</span>
-      <button data-go="notifications" ${state.view === "notifications" ? 'aria-current="page"' : ""}>Notifications</button>`;
+  function card(t) {
+    const mark = t.need ? `<span class="mark you">Needs you</span>` : t.running ? `<span class="mark run">Running</span>` : "";
+    return `<button class="tk ${t.need ? "needs-you" : ""}" data-ticket="${t.n}"><span class="num">#${t.n}</span><span class="tt">${esc(t.t)}</span>${mark}</button>`;
   }
 
-  function renderCrumb() {
-    const c = $("#crumb");
-    if (state.view === "inbox") c.innerHTML = `<h2>Needs you</h2><span class="label">all projects</span>`;
-    if (state.view === "board") c.innerHTML = `<h2>${esc(PROJECTS[state.project].name)}</h2><span class="label">${esc(PROJECTS[state.project].repo)} · serial · cap ${PROJECTS[state.project].cap}</span>`;
-    if (state.view === "runs") c.innerHTML = `<h2>Runs</h2><span class="label">all projects</span>`;
-    if (state.view === "notifications") c.innerHTML = `<h2>Notifications</h2>`;
-    if (state.view === "session") { const t = ticketById(state.ticket); c.innerHTML = `<h2>${esc(PROJECTS[t.p].name)} / #${t.n}</h2><span class="label">${esc(t.stage || "")}</span>`; }
-  }
-  const ticketById = (n) => T.find((t) => t.n === n && (n > 30 ? t.p === "postkarte" : t.p === "aisf"));
-
-  // ---------------------------------------------------------------- inbox
-  function itemHTML(i) {
-    const t = tk(i.p, i.n);
-    let acts = "";
-    if (i.kind === "round") acts = `<button class="btn primary" data-open="${i.n}">Open round</button>`;
-    if (i.kind === "question") acts = `<button class="btn" data-open="${i.n}">Open session</button>`;
-    if (i.kind === "escalation") acts = `<button class="btn" data-open="${i.n}">Open session</button><button class="btn" data-retry="${i.id}">Retry run</button>`;
-    if (i.kind === "review") acts = `<button class="btn primary" data-toast="Opens github.com/MoritzKopmann/postkarte/pull/52 in a new tab">Review on GitHub ↗</button><button class="btn ghost" data-dismiss="${i.id}">Dismiss</button>`;
-    if (i.kind === "onboard") acts = `<button class="btn primary" data-toast="Opens the aisf/onboard PR on GitHub">Review on GitHub ↗</button>`;
-    const reply = i.kind === "question" ? `<form class="reply" data-reply="${i.id}"><input id="reply-${i.id}" placeholder="Reply into the session…" aria-label="Reply"><button class="btn sm">Send</button></form>` : "";
-    return `<div class="item k-${i.kind}"><span class="stripe"></span>
-      <div class="body">
-        <div class="meta"><span class="kind">${KIND[i.kind]}</span><span class="label">${esc(PROJECTS[i.p].name)} #${i.n}${i.stage ? " · " + i.stage : ""} · ${i.age} ago</span>
-          ${t?.hitl ? '<span class="chip f-hitl">hitl</span>' : ""}</div>
-        <div class="title">${esc(i.title)}</div>
-        <div class="why">${esc(i.why)}</div>${reply}
-      </div>
-      <div class="acts">${acts}</div></div>`;
-  }
-  function viewInbox() {
-    const blocking = INBOX.filter((i) => ["round", "question", "escalation"].includes(i.kind));
-    const other = INBOX.filter((i) => !["round", "question", "escalation"].includes(i.kind));
-    const fyi = [];
-    if (state.limitHit) fyi.push(`<div class="line"><span class="chip s-in-review">Paused</span>All runs wait for the usage reset at 14:10.</div>`);
-    fyi.push(`<div class="line"><span class="chip s-in-progress">Running</span>postkarte #47 Print-ready PDF export · implement-ticket · 14m<button class="btn ghost sm" data-open="47">Watch</button></div>`);
-    fyi.push(`<div class="line"><span class="chip s-in-review">Paused</span>AISoftwareFactory #21 · limit resets 14:10</div>`);
-    return `<div class="view-head"><h1>Needs you</h1><p>Everything that is waiting on you, across projects. Items leave this list as soon as you answer them.</p></div>
-      <div class="group-h"><h3>Blocking a run</h3><span class="label">${blocking.length}</span></div>
-      <div class="inbox">${blocking.map(itemHTML).join("") || `<div class="empty">Nothing is blocked on you.</div>`}</div>
-      <div class="group-h"><h3>Waiting on your review</h3><span class="label">${other.length}</span></div>
-      <div class="inbox">${other.map(itemHTML).join("") || `<div class="empty">No PRs waiting.</div>`}</div>
-      <div class="group-h"><h3>For your information</h3><span class="label">not in the count</span></div>
-      <div class="fyi">${fyi.join("")}</div>`;
-  }
-
-  // ---------------------------------------------------------------- board
-  function tkHTML(t) {
-    const run = t.run ? `<div class="run ${state.limitHit && t.run.state === "running" ? "paused" : t.run.state}">${esc(state.limitHit && t.run.state === "running" ? "Paused · limit resets 14:10" : t.run.text)}</div>` : "";
-    const act = t.act ? `<span class="btn sm act" data-act="${t.n}">${t.act} →</span>` : "";
-    return `<button class="tk" data-open="${t.n}" data-p="${t.p}"><span class="num">#${t.n}</span><span class="tt">${esc(t.t)}</span>
-      ${t.hitl || t.sub ? `<span class="chips">${t.hitl ? '<span class="chip f-hitl">hitl</span>' : ""}${t.sub ? `<span class="label">${esc(t.sub)}</span>` : ""}</span>` : ""}
-      ${act}${run}</button>`;
-  }
-  function viewBoard() {
-    const ts = T.filter((t) => t.p === state.project);
-    const cols = STATUSES.map((s) => {
-      const items = ts.filter((t) => t.s === s);
-      const shown = s === "closed" ? items.slice(0, 2) : items;
-      return `<div class="col ${s}"><div class="col-h"><span class="chip s-${s}">${STATUS_LABEL[s]}</span><span class="n">${items.length}</span></div>
-        ${shown.map(tkHTML).join("")}${s === "closed" && items.length > 2 ? `<span class="label" style="padding:4px 2px">+ ${items.length - 2} more</span>` : ""}
-        ${!items.length ? `<span class="label" style="padding:4px 2px;opacity:.6">—</span>` : ""}</div>`;
+  function projectView() {
+    const ts = inProject(state.project);
+    const need = needing(state.project);
+    const pname = PROJECTS.find((p) => p.id === state.project).name;
+    const cols = COLS.map(([s, label]) => {
+      let items = ts.filter((t) => t.s === s);
+      const extra = s === "closed" && items.length > 2 ? items.length - 2 : 0;
+      if (extra) items = items.slice(0, 2);
+      return `<div class="col ${s}"><div class="col-h"><span class="label">${label}</span><span class="label">${ts.filter((t) => t.s === s).length || ""}</span></div>
+        ${items.map(card).join("")}${extra ? `<span class="more">+ ${extra} more</span>` : ""}</div>`;
     }).join("");
-    return `<div class="view-head"><h1>Board</h1><p>One column per <code>status:</code> label on GitHub. The strip at the bottom of a card shows what aisf is doing with it right now.</p></div>
-      <div class="legend">
-        <span class="run running">Running</span><span class="run needs">Needs you</span><span class="run queued">Queued (serial cap)</span>
-        <span class="run blocked">Blocked by</span><span class="run paused">Paused on limit</span><span class="run stuck">Escalated</span></div>
-      <div class="board-wrap"><div class="board">${cols}</div></div>`;
+    return `<div class="head"><h1>${esc(pname)}</h1><span class="grow"></span><button class="btn primary" data-toast="Asks for one line, then opens a create-ticket session (decided in #14)">+ New idea</button></div>
+      <section class="needs"><h2>Needs you${need.length ? ` · ${need.length}` : ""}</h2>
+        ${need.length ? need.map((t) => `<button class="need" data-ticket="${t.n}"><span class="num">#${t.n}</span><span>${esc(t.t)}</span><span class="grow"></span><span class="what">${esc(t.need.text)} →</span></button>`).join("")
+          : `<div class="calm">Nothing needs you in ${esc(pname)}. Claude keeps working on the rest.</div>`}
+      </section>
+      <section style="display:grid;gap:10px"><h2>Board</h2><div class="board-wrap"><div class="board">${cols}</div></div></section>`;
   }
 
-  // -------------------------------------------------------------- session
-  const TRANSCRIPTS = {
-    44: [
-      ["sys", "Run started · plan-ticket · session 3f2a9c1e · ~/.aisf/worktrees/postkarte/44 · 10:18"],
-      ["claude", "Reading #44 and the project slots before planning."],
-      ["tool", "Read .claude/skills/project-architecture/SKILL.md"],
-      ["tool", "Grep \"DraftRepository\" lib/ → 6 matches in 3 files"],
-      ["claude", "Drafts live only in memory today (<code>DraftModel</code> in the editor's MVU state). Round 1 settles the storage layer."],
-      ["tool", "aisf_show_artifact round-1 → .aisf/artifacts/r1/index.html"],
-      ["event", "[aisf:event 7c1e04] round-1 submitted · storage = drift · save = debounced 800ms"],
-      ["claude", "Drift it is. Round 2 covers restore on launch and conflicts with sent cards."],
-      ["tool", "aisf_show_artifact round-2 → .aisf/artifacts/r2/index.html"],
-    ],
-    49: [
-      ["sys", "Run started · implement-ticket · HITL · session 81b0de22 · 10:31"],
-      ["tool", "Read lib/editor/font_picker.dart"],
-      ["claude", "The ticket says “fonts from the design set”. The design set has 6 bundled fonts, but the platform also exposes system fonts."],
-      ["ask", "Should the picker list system fonts, or only the 6 bundled ones? Bundled-only keeps print output identical across devices."],
-    ],
-    47: [
-      ["sys", "Run started · implement-ticket · AFK · session c47a1133 · 10:09"],
-      ["tool", "Read .claude/skills/project-toolchain/SKILL.md"],
-      ["claude", "Writing a failing test for A6 page size first."],
-      ["tool", "Write test/export/pdf_page_test.dart"],
-      ["tool", "Bash flutter test test/export → 1 failed"],
-      ["claude", "Adding <code>PdfCardExporter</code> with bleed and crop marks."],
-      ["tool", "Write lib/export/pdf_card_exporter.dart"],
-    ],
-    43: [
-      ["sys", "Run started · implement-ticket · AFK · session 9d02e7a0 · 09:21"],
-      ["tool", "Bash flutter test → 2 failed: image_cache_test"],
-      ["claude", "Fix attempt 3: the cache key includes the file mtime, which drift doesn't store."],
-      ["tool", "Bash flutter test → 1 failed: image_cache_test › evicts oldest"],
-      ["escal", "<b>aisf_escalate(red)</b> · image_cache_test › evicts oldest still fails after 3 fix attempts. Eviction order depends on insertion time, which the drift table doesn't keep. The ticket may need a schema decision. Branch kept: <code>aisf/43-image-cache-drift</code>."],
-      ["sys", "Run ended · status: stuck · 09:58"],
-    ],
-    21: [
-      ["sys", "Run started · implement-ticket · AFK · session 11e5a0b7 · 12:40"],
-      ["tool", "Bash npm create hono@latest"],
-      ["claude", "Wiring the Vite dev server behind Hono."],
-      ["sys", "rate_limit_event · five_hour · rejected · resetsAt 14:10. The run is paused, not failed. aisf sends “continue” after the reset."],
-    ],
-  };
-  const LIVE_LINES = [
-    ["tool", "Bash flutter test test/export → 3 passed"],
-    ["claude", "Tests are green. Checking the output against the print shop's 3 mm bleed spec."],
-    ["tool", "Read docs/features/export.md"],
-    ["tool", "Edit docs/features/export.md"],
-    ["tool", "Skill aisf:review-simplicity"],
-    ["claude", "Review found one duplicated unit conversion. Moving it to <code>units.dart</code>."],
-  ];
-  let liveIdx = 0, liveTimer = null;
+  function ticketView() {
+    const t = T.find((x) => x.p === state.project && x.n === state.ticket);
+    const col = COLS.find(([s]) => s === t.s)[1];
+    let panel;
+    const k = t.need?.kind;
+    if (k === "round") panel = `<form class="panel you" data-done="Round submitted. Claude continues planning.">
+        <div class="row"><span class="label">Round 2 of 3</span><span class="grow"></span></div>
+        <div class="progress"><i class="on"></i><i class="on"></i><i></i></div>
+        <div class="q"><div class="qt">When the app starts, what happens to an unfinished draft?</div>
+          <label class="answer"><input type="radio" name="q1" id="q1a" checked><span>Reopen it in the editor<span class="sugg">Suggested</span></span><span class="b">Launch goes straight back to the card you were writing.</span></label>
+          <label class="answer"><input type="radio" name="q1" id="q1b"><span>Show “Continue draft?” on home</span><span class="b">Home stays the entry point, with one extra tap.</span></label>
+          <p class="why">Most drafts are abandoned mid-greeting, and the editor is the fastest way back.</p></div>
+        <div class="q"><div class="qt">The card was already sent from another device. What happens to the draft?</div>
+          <label class="answer"><input type="radio" name="q2" id="q2a" checked><span>Drop it quietly<span class="sugg">Suggested</span></span><span class="b">Sent wins.</span></label>
+          <label class="answer"><input type="radio" name="q2" id="q2b"><span>Keep it as a copy</span><span class="b">The draft becomes a new, unsent card.</span></label></div>
+        <div class="row"><span class="grow"></span><button class="btn primary">Submit</button></div></form>`;
+    else if (k === "question") panel = `<form class="panel you" data-done="Reply sent. Claude continues.">
+        <span class="label">Claude asks</span>
+        <p style="font-size:17px">Should the font picker list system fonts, or only the 6 bundled ones?</p>
+        <p class="why">Bundled-only keeps the printed card identical on every device.</p>
+        <textarea id="reply" aria-label="Your reply" placeholder="Your answer…"></textarea>
+        <div class="row"><span class="grow"></span><button class="btn primary">Send</button></div></form>`;
+    else if (k === "review") panel = `<div class="panel you"><span class="label">Ready for review</span>
+        <p>PR #52 is open and its checks are green. Approve it on GitHub and aisf merges it. Request changes and Claude reworks it.</p>
+        <div class="row"><button class="btn primary" data-toast="Opens github.com/MoritzKopmann/postkarte/pull/52">Open PR #52 ↗</button></div></div>`;
+    else if (k === "stuck") panel = `<form class="panel stuck" data-done="Retrying. Claude continues on the same branch.">
+        <span class="label">Claude stopped</span>
+        <p>A test still fails after 3 fix attempts: the cache evicts by insertion time, and the new table doesn't store it. This probably needs a decision about the table.</p>
+        <textarea id="hint" aria-label="Guidance for the retry" placeholder="Optional: tell Claude how to proceed…"></textarea>
+        <div class="row"><button class="btn" type="button" data-toast="Moves the ticket back to Plan">Back to plan</button><span class="grow"></span><button class="btn primary">Retry</button></div></form>`;
+    else if (t.running) panel = `<div class="panel running"><span class="mark run">Claude is working on this</span>
+        <div class="activity"><span>Wrote a test for A6 page size</span><span>Added the PDF exporter with bleed and crop marks</span><span>Running tests…</span></div>
+        <div class="row"><button class="btn" data-toast="Claude stops at the next step">Stop</button></div></div>`;
+    else panel = `<div class="panel"><span class="label">Nothing running</span><p class="muted">Claude picks this ticket up when it reaches the front of the queue.</p></div>`;
 
-  function msgHTML([k, text]) {
-    const who = { sys: "", claude: "Claude", tool: "Tool", event: "Page event → session", you: "You", ask: "Claude · waiting for your reply", wait: "", escal: "Escalation" }[k];
-    const cls = k === "ask" ? "wait" : k === "claude" ? "" : k;
-    return `<div class="msg ${cls}">${who ? `<span class="who">${who}</span>` : ""}<div>${text}</div></div>`;
+    return `<div class="ticket">
+      <button class="btn link" data-back style="justify-self:start">← ${esc(PROJECTS.find((p) => p.id === state.project).name)}</button>
+      <div style="display:grid;gap:6px"><span class="row"><span class="chip">${col}</span><span class="label">#${t.n}</span></span><h1 style="text-transform:none;letter-spacing:0;font-family:var(--font-ui);font-size:22px">${esc(t.t)}</h1></div>
+      ${panel}
+      <details><summary>Session log</summary><div class="activity"><span>10:18 Session started</span><span>10:19 Read the ticket and the project skills</span><span>10:24 Asked round 1 · answered 10:31</span><span>10:42 Asked round 2</span></div></details>
+    </div>`;
   }
 
-  function roundHTML() {
-    return `<div class="dock">
-      <div class="dock-h"><span class="label">Page</span><span class="grow">.aisf/artifacts/r2/index.html</span>
-        <button class="btn ghost sm" data-toast="Opens localhost:4317/a/r2 in its own browser tab. Answers still flow into the session.">Pop out ↗</button></div>
-      <form class="page" id="roundForm">
-        <div style="display:grid;gap:6px"><span class="label">plan-ticket · #44 · round 2 of 3</span>
-          <div class="progress"><i class="on"></i><i class="on"></i><i></i></div>
-          <h2>Restoring drafts</h2></div>
-        <div class="q">
-          <div class="qt">1. When the app starts, what happens to an unfinished draft?</div>
-          <div class="ctx"><div class="p">lib/editor/editor_init.dart</div><pre>Model init() =&gt; Model(draft: Draft.empty());</pre></div>
-          <label class="answer"><input type="radio" name="q1" id="q1a" checked><span class="a-t">Reopen it in the editor <span class="sugg">Suggested</span></span>
-            <span class="a-b">Launch goes straight back to the card you were writing.</span></label>
-          <label class="answer"><input type="radio" name="q1" id="q1b"><span class="a-t">Show a “Continue draft?” card on home</span>
-            <span class="a-b">Home stays the entry point, with one extra tap.</span></label>
-          <div class="whyl"><b>Why</b>Most drafts are abandoned mid-greeting, and the fastest path back is the editor itself.</div>
-        </div>
-        <div class="q">
-          <div class="qt">2. A draft's card was already sent from another device. What then?</div>
-          <label class="answer"><input type="radio" name="q2" id="q2a" checked><span class="a-t">Drop the draft quietly <span class="sugg">Suggested</span></span>
-            <span class="a-b">Sent wins. The draft is deleted on the next sync.</span></label>
-          <label class="answer"><input type="radio" name="q2" id="q2b"><span class="a-t">Keep it as a copy</span>
-            <span class="a-b">The draft becomes a new, unsent card.</span></label>
-          <div class="whyl"><b>Why</b>Sync is single-user, so a conflict almost always means you finished it elsewhere.</div>
-        </div>
-        <div class="page-foot"><button type="button" class="btn ghost sm" data-toast="Accepts every remaining suggestion">Accept all remaining</button><span class="grow"></span>
-          <button class="btn primary">Submit round</button></div>
-      </form></div>`;
-  }
-
-  function viewSession() {
-    const t = ticketById(state.ticket);
-    const lines = (TRANSCRIPTS[t.n] || [["sys", "No run yet for this ticket."]]).slice();
-    const answered = state.answered[t.n];
-    if (t.n === 44 && answered) lines.push(["event", "[aisf:event 2b9f51] round-2 submitted · restore = reopen editor · conflict = drop draft"], ["claude", "Both suggestions taken. Writing the Confirm page next."]);
-    if (t.n === 44 && !answered) lines.push(["ask", "Waiting for your answers in round 2 · since 10:42"]);
-    if (t.n === 47) lines.push(...LIVE_LINES.slice(0, liveIdx));
-    (state.sent[t.n] || []).forEach((m) => lines.push(["you", esc(m)]));
-    const runChip = t.run ? `<span class="run ${t.run.state}" style="border:0;padding:0">${esc(state.limitHit && t.run.state === "running" ? "Paused · limit" : t.run.text)}</span>` : "";
-    const docked = t.n === 44 && !answered;
-    const ended = t.s === "stuck";
-    const controls = ended
-      ? `<button class="btn" data-retry="i3">Retry run</button><button class="btn" data-toast="Sets status: plan so the plan gets revisited">Back to plan</button>`
-      : `<button class="btn danger" data-toast="Interrupt sent. Claude stops at the next tool-call boundary.">Interrupt</button>`;
-    return `<div class="card" style="gap:8px">
-        <div class="shead"><span class="chip s-${t.s}">${STATUS_LABEL[t.s]}</span>${t.hitl ? '<span class="chip f-hitl">hitl</span>' : ""}
-          <h1 style="font-size:15px">#${t.n} ${esc(t.t)}</h1><span class="grow"></span>${controls}
-          <button class="btn ghost" data-toast="Opens the issue on GitHub">Issue ↗</button></div>
-        <div class="kv"><span><b>Stage</b>${esc(t.stage || "—")}</span><span><b>Mode</b>${t.hitl || t.n === 44 ? "HITL" : "AFK"}</span>
-          <span><b>Branch</b><code>aisf/${t.n}-${t.t.toLowerCase().replace(/[^a-z]+/g, "-").slice(0, 22).replace(/-$/, "")}</code></span>${runChip}</div>
-      </div>
-      <div class="session ${docked ? "" : "solo"}">
-        <div style="display:grid;gap:10px">
-          <div class="transcript" id="transcript">${lines.map(msgHTML).join("")}</div>
-          ${ended ? "" : `<form class="composer" id="composer"><textarea id="composerText" placeholder="Message the running session. It reads it at the next tool-call boundary."></textarea>
-            <div class="row"><span class="grow">Sent as a user message into session ${t.n === 44 ? "3f2a9c1e" : "…"}</span><button class="btn primary">Send</button></div></form>`}
-        </div>
-        ${docked ? roundHTML() : ""}
-      </div>`;
-  }
-  state.sent = {};
-
-  // ----------------------------------------------------------------- runs
-  function viewRuns() {
-    const rows = [
-      ["postkarte", 47, "implement-ticket", "AFK", state.limitHit ? "Paused" : "Running", "14m", "s-in-progress"],
-      ["postkarte", 44, "plan-ticket", "HITL", "Needs you", "26m", "f-hitl"],
-      ["postkarte", 49, "implement-ticket", "HITL", "Needs you", "13m", "f-hitl"],
-      ["aisf", 21, "implement-ticket", "AFK", "Paused", "22m", "s-in-review"],
-      ["postkarte", 45, "implement-ticket", "AFK", "Queued", "—", "s-backlog"],
-      ["aisf", 23, "implement-ticket", "AFK", "Queued", "—", "s-backlog"],
-      ["postkarte", 43, "implement-ticket", "AFK", "Escalated", "37m", "s-stuck"],
-    ];
-    return `<div class="view-head"><h1>Runs</h1><p>Every Claude Code session aisf has started. Runs are serial per project, and HITL sessions don't count toward the cap while they wait on you.</p></div>
-      <div class="split2">
-        <div class="card"><span class="label">5-hour window</span><div class="big">${state.usage5}%</div><span class="muted">Resets at 14:10. At 100%, aisf pauses every run and resumes them after the reset.</span></div>
-        <div class="card"><span class="label">Weekly</span><div class="big">${state.usageW}%</div><span class="muted">Resets Monday 09:00.</span></div>
-      </div>
-      <div class="tablewrap"><table>
-        <thead><tr><th>Project</th><th>Ticket</th><th>Stage</th><th>Mode</th><th>State</th><th>Time</th></tr></thead>
-        <tbody>${rows.map(([p, n, st, m, s, d, c]) => `<tr class="click" data-open="${n}"><td>${PROJECTS[p].name}</td><td class="num">#${n}</td><td class="mono">${st}</td><td>${m}</td><td><span class="chip ${c}">${s}</span></td><td class="num">${d}</td></tr>`).join("")}</tbody>
-      </table></div>`;
-  }
-
-  // -------------------------------------------------------- notifications
-  const NOTIF_ROWS = [
-    ["round", "Questionnaire round waiting", "A plan or create session published a page"],
-    ["question", "Question in chat", "A HITL run asked something and stopped"],
-    ["escalation", "Escalation", "A run called aisf_escalate and the ticket is stuck"],
-    ["review", "PR ready for review", "Checks are green and the ticket is in review"],
-    ["limit", "Usage limit hit", "All runs pause until the reset"],
-    ["finished", "Run finished", "An AFK run ended without needing you"],
-  ];
-  function viewNotifications() {
-    const cb = (k, ch) => `<input type="checkbox" id="n-${k}-${ch}" data-n="${k}" data-ch="${ch}" ${state.notif[k][ch] ? "checked" : ""} aria-label="${k} ${ch}">`;
-    return `<div class="view-head"><h1>Notifications</h1><p>Defaults as proposed: anything that blocks a run gets an OS notification, and everything else stays quiet. Use the Simulate buttons above to try a change.</p></div>
-      <div class="tablewrap"><table class="matrix">
-        <thead><tr><th>Event</th><th>Needs-you inbox</th><th>Tab title + icon badge</th><th>OS notification</th><th>Sound</th></tr></thead>
-        <tbody>${NOTIF_ROWS.map(([k, t, s]) => `<tr><td>${t}<span class="sub">${s}</span></td><td>${cb(k, "inbox")}</td><td>${cb(k, "badge")}</td><td>${cb(k, "os")}</td><td>${cb(k, "sound")}</td></tr>`).join("")}</tbody>
-      </table></div>
-      <label class="switch"><input type="checkbox" id="osOnlyBg" ${state.osOnlyBg ? "checked" : ""}><span class="track"></span>
-        <span>Send OS notifications only when the aisf tab isn't focused</span></label>
-      <p class="muted" style="font-size:13.5px;max-width:70ch">The browser asks for notification permission the first time you turn a channel on. Sound needs one click on the page after it loads, which browsers require before audio can play.</p>`;
-  }
-
-  // --------------------------------------------------------------- render
   function render() {
-    renderNav(); renderCrumb(); renderChrome();
-    const v = { inbox: viewInbox, board: viewBoard, session: viewSession, runs: viewRuns, notifications: viewNotifications }[state.view]();
-    $("#view").innerHTML = v;
-    const tr = $("#transcript"); if (tr) tr.scrollTop = tr.scrollHeight;
-    clearInterval(liveTimer);
-    if (state.view === "session" && state.ticket === 47 && !state.limitHit && liveIdx < LIVE_LINES.length) {
-      liveTimer = setInterval(() => { liveIdx++; render(); if (liveIdx >= LIVE_LINES.length) clearInterval(liveTimer); }, 2600);
-    }
+    renderChrome();
+    $("#view").innerHTML = state.ticket ? ticketView() : projectView();
   }
-  function go(view, extra = {}) { Object.assign(state, { view }, extra); render(); window.scrollTo({ top: 0 }); }
+  function toast(m) { const t = $("#toast"); t.textContent = m; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => (t.hidden = true), 2600); }
 
-  // --------------------------------------------------------- notifications
-  function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => (t.hidden = true), 2600); }
-  function osNotify(head, body) {
-    const n = document.createElement("div"); n.className = "osn";
-    n.innerHTML = `<span class="ic">a</span><span class="src">aisf · localhost:4317</span><span class="hd">${esc(head)}</span><span>${esc(body)}</span><span class="cap" style="grid-column:2">simulated OS notification</span>`;
-    n.onclick = () => { n.remove(); go("inbox"); };
-    $("#os").prepend(n); setTimeout(() => n.remove(), 6000);
-  }
-  let actx;
-  function beep() {
-    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-      const o = actx.createOscillator(), g = actx.createGain(); o.type = "triangle"; o.frequency.value = 880;
-      g.gain.setValueAtTime(.0001, actx.currentTime); g.gain.exponentialRampToValueAtTime(.2, actx.currentTime + .02);
-      g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + .35); o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + .4);
-    } catch (e) { /* audio unavailable */ }
-  }
-  const SIM = {
-    round: () => ({ kind: "round", p: "aisf", n: 24, stage: "create-ticket", title: "Questionnaire round 1 of 2 is waiting", why: "3 questions about the inbox shortcuts idea.", age: "now" }),
-    question: () => ({ kind: "question", p: "postkarte", n: 49, stage: "implement-ticket", title: "“Keep the preview text editable, or fixed to ‘Liebe Grüße’?”", why: "HITL ticket, so the run asks in chat.", age: "now" }),
-    escalation: () => ({ kind: "escalation", p: "aisf", n: 23, stage: "implement-ticket", title: "Denied: the run tried to push to main", why: "aisf_escalate(denied). The ticket is now status: stuck.", age: "now" }),
-    review: () => ({ kind: "review", p: "aisf", n: 21, stage: "", title: "PR #31 is ready for your review", why: "Checks are green. Approving lets aisf squash-merge it.", age: "now" }),
-  };
-  const OS_TEXT = {
-    round: ["Round waiting · AISoftwareFactory #24", "3 questions about the inbox shortcuts idea"],
-    question: ["Question · postkarte #49", "Keep the preview text editable?"],
-    escalation: ["Escalated · AISoftwareFactory #23", "Denied: the run tried to push to main"],
-    review: ["PR ready · AISoftwareFactory #21", "PR #31 is ready for your review"],
-    limit: ["Usage limit reached", "All runs paused until 14:10"],
-    finished: ["Run finished · postkarte #47", "PR #53 opened, checks running"],
-    resumed: ["Runs resumed", "The usage window has reset"],
-  };
-  function fire(kind) {
-    const cfg = state.notif[kind] || { inbox: false, badge: false, os: false, sound: false };
-    if (SIM[kind] && cfg.inbox) { const it = SIM[kind](); it.id = "s" + ++simSeq; INBOX.unshift(it); }
-    if (kind === "limit") { state.limitHit = true; state.usage5 = 100; }
-    const tabVisible = !state.bg;
-    if (cfg.os && (!state.osOnlyBg || !tabVisible)) osNotify(...OS_TEXT[kind]);
-    if (cfg.sound) beep();
-    const parts = [cfg.inbox && "inbox", cfg.badge && "badge", cfg.os && ((!state.osOnlyBg || !tabVisible) ? "OS notification" : "OS skipped (tab focused)"), cfg.sound && "sound"].filter(Boolean);
-    if (kind !== "resumed") toast(`${OS_TEXT[kind][0].split(" · ")[0]} → ${parts.join(", ") || "banner only"}`);
-    render();
-  }
-
-  // ------------------------------------------------------------- decisions
-  const DECISIONS = [
-    ["D1", "Landing view", "Open on <b>Needs you</b>, an inbox across all projects. The board is one click away per project.", "Land on a board and show the inbox as a tray or badge.", "inbox"],
-    ["D2", "What counts as “needs you”", "Two groups. <b>Blocking a run</b>: questionnaire rounds, chat questions and escalations. <b>Waiting on your review</b>: PRs and onboarding PRs. No tool-approval cards, because the guardrail hook denies instead of asking. Running and paused work goes under “For your information” and doesn't count.", "Also list parked tickets, or make every running run an item.", "inbox"],
-    ["D3", "Board shape", "<b>One board per project</b>, with one column per <code>status:</code> label and <code>closed</code> collapsed. aisf's own state (running, needs you, queued behind the cap, blocked by, paused, escalated) is a strip on the card, not a column. Backlog cards carry the one manual move, <b>Plan →</b>.", "A single cross-project board with swimlanes, or columns by run state instead of label.", "board"],
-    ["D4", "Session view", "Transcript (tool calls one line each), a composer that sends into the live session, and <b>Interrupt</b>. A session's open page is <b>docked beside its transcript</b>, with Pop out to open it in its own tab. There's no separate artifact library, because rounds show up in the inbox.", "Artifacts always in their own tab, or an artifact gallery view.", "session"],
-    ["D5", "Replying without opening", "A chat question can be answered <b>inline from the inbox</b>. Rounds and escalations need the session.", "Every item opens the session first.", "inbox"],
-    ["D6", "Usage limits", "Both meters always sit in the top bar. A limit hit shows a <b>banner</b> and pauses every card, with no OS notification by default, because nothing is waiting on you.", "OS-notify on the limit and on resume.", "runs"],
-    ["D7", "Notification channels", "<b>Tab title count and favicon badge</b> for everything in the inbox. <b>OS notifications</b> only for items that block a run, and only while the aisf tab isn't focused. <b>Sound off</b> by default and opt-in per event. Configured as an event × channel matrix.", "Always OS-notify, or sound on for escalations.", "notifications"],
-  ];
-  function renderDrawer() {
-    $("#drawer").innerHTML = `<div class="dhead"><h2>Decisions to react to</h2><span class="grow"></span><button class="btn ghost" id="closeDrawer" aria-label="Close">✕</button></div>
-      <p class="muted" style="font-size:14px">Each one is my recommendation. Answer in the session by number, e.g. “D3: swimlanes instead”.</p>
-      ${DECISIONS.map(([id, t, rec, alt, v]) => `<div class="dec"><span class="id">${id} · ${t.toUpperCase()}</span>
-        <div class="rec"><b>Proposed</b>${rec}</div><div class="alt"><b>Instead</b>${alt}</div>
-        <button class="btn sm" style="justify-self:start" data-show="${v}">Show me</button></div>`).join("")}`;
-  }
-
-  // --------------------------------------------------------------- events
   document.addEventListener("click", (e) => {
-    const el = e.target.closest("[data-go],[data-open],[data-toast],[data-dismiss],[data-retry],[data-act],[data-sim],[data-show],#closeDrawer,#openDecisions,#newIdea,#addProject");
+    const el = e.target.closest("[data-project],[data-ticket],[data-toast],[data-back],#simOther,.osn");
     if (!el) return;
-    if (el.dataset.act) { e.stopPropagation(); const t = T.find((x) => x.n === +el.dataset.act); t.s = "plan"; t.act = null; t.stage = "plan-ticket";
-      t.run = { state: "queued", text: "Queued · plan-ticket" }; toast(`#${t.n} labelled status: plan. aisf starts plan-ticket when the project is free.`); render(); return; }
-    if (el.dataset.go) return go(el.dataset.go, el.dataset.project ? { project: el.dataset.project } : {});
-    if (el.dataset.open) { const n = +el.dataset.open; const t = ticketById(n); if (t && TRANSCRIPTS[n]) return go("session", { ticket: n, project: t.p });
-      return toast(`#${n} has no run yet. Its detail view would show the issue body and history.`); }
+    if (el.dataset.project) { state.project = el.dataset.project; state.ticket = null; return render(); }
+    if (el.dataset.ticket) { state.ticket = +el.dataset.ticket; render(); return window.scrollTo({ top: 0 }); }
     if (el.dataset.toast) return toast(el.dataset.toast);
-    if (el.dataset.dismiss) { const i = INBOX.findIndex((x) => x.id === el.dataset.dismiss); if (i > -1) INBOX.splice(i, 1); return render(); }
-    if (el.dataset.retry) { const i = INBOX.findIndex((x) => x.id === el.dataset.retry); if (i > -1) INBOX.splice(i, 1);
-      const t = tk("postkarte", 43); t.s = "ready"; t.run = { state: "queued", text: "Queued · retry" }; toast("#43 labelled status: ready. A fresh run continues on the kept branch."); return go("board", { project: "postkarte" }); }
-    if (el.dataset.sim) return fire(el.dataset.sim);
-    if (el.dataset.show) { $("#drawer").hidden = true; return el.dataset.show === "session" ? go("session", { ticket: 44 }) : go(el.dataset.show); }
-    if (el.id === "closeDrawer") { $("#drawer").hidden = true; return; }
-    if (el.id === "openDecisions") { renderDrawer(); $("#drawer").hidden = false; return; }
-    if (el.id === "newIdea") return toast("Asks for one line, creates an unlabelled issue, then opens a create-ticket session (decided in #14).");
-    if (el.id === "addProject") return toast("Opens the Add project flow: plugin install, label sync, triage (decided in #12).");
+    if (el.hasAttribute("data-back")) { state.ticket = null; return render(); }
+    if (el.id === "simOther") {
+      const t = T.find((x) => x.n === 21); t.running = false; t.need = { kind: "question", text: "Answer a question" };
+      const n = document.createElement("div"); n.className = "osn";
+      n.innerHTML = `<span class="ic">a</span><span class="src">aisf · simulated OS notification</span><span class="hd">AISoftwareFactory needs you</span><span>#21 Scaffold the Hono server: Claude asks a question</span>`;
+      $("#os").prepend(n); setTimeout(() => n.remove(), 6000); return render();
+    }
+    if (el.classList.contains("osn")) { el.remove(); state.project = "aisf"; state.ticket = 21; return render(); }
   });
   document.addEventListener("submit", (e) => {
     e.preventDefault();
-    if (e.target.id === "roundForm") { state.answered[44] = true; const i = INBOX.findIndex((x) => x.kind === "round" && x.n === 44); if (i > -1) INBOX.splice(i, 1);
-      T.find((x) => x.n === 44).run = { state: "running", text: "Running · plan · writing Confirm" }; toast("Round submitted. Sent into the session as one tagged message."); return render(); }
-    if (e.target.id === "composer") { const v = $("#composerText").value.trim(); if (!v) return; (state.sent[state.ticket] ||= []).push(v); return render(); }
-    if (e.target.dataset.reply) { const id = e.target.dataset.reply; const inp = e.target.querySelector("input"); const v = inp.value.trim(); if (!v) return;
-      const it = INBOX.find((x) => x.id === id); (state.sent[it.n] ||= []).push(v); INBOX.splice(INBOX.indexOf(it), 1);
-      const t = tk(it.p, it.n); if (t && t.run) t.run = { state: "running", text: "Running · implement" }; toast(`Reply sent into the #${it.n} session.`); return render(); }
+    const t = T.find((x) => x.p === state.project && x.n === state.ticket);
+    t.need = null; t.running = true; if (t.s === "stuck") t.s = "in-progress";
+    toast(e.target.dataset.done); state.ticket = null; render();
   });
-  document.addEventListener("change", (e) => {
-    if (e.target.dataset.n) { state.notif[e.target.dataset.n][e.target.dataset.ch] = e.target.checked; renderChrome(); renderNav(); }
-    if (e.target.id === "osOnlyBg") state.osOnlyBg = e.target.checked;
-    if (e.target.id === "bgTab") state.bg = e.target.checked;
-  });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("#drawer").hidden = true; });
-
   render();
 })();
 </script>
