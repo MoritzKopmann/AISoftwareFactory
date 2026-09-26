@@ -77,6 +77,10 @@
   --tripPalette-brown300: #A1887F;
   --tripPalette-blueGrey300: #90A4AE;
 
+  /* NEW — icon ink on a trip-colour disc, same in both themes (the discs are light 300 tones).
+     70% black clears 3:1 on every palette colour (worst: purple300, 4.1:1); 45% black fails on all. */
+  --tripSwatch-ink: #000000B3;
+
   /* textTheme — size/weight from AppTheme; line heights are Flutter's M3 defaults */
   --textTheme-headlineSmall: 400 24px/32px Roboto, sans-serif;
   --textTheme-titleLarge: 700 19px/24px Roboto, sans-serif;
