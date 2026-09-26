@@ -4,6 +4,7 @@ import { relative } from 'node:path';
 
 export type AppOptions = {
   readonly staticDirectory: string;
+  readonly kitRoutes: Hono;
 };
 
 export function createApp(options: AppOptions): Hono {
@@ -12,5 +13,6 @@ export function createApp(options: AppOptions): Hono {
 
   return new Hono()
     .get('/health', (context) => context.json({ status: 'ok' }))
+    .route('/aisf', options.kitRoutes)
     .use('*', serveStatic({ root: staticRoot }));
 }
