@@ -30,25 +30,27 @@
 body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 var(--font-ui); padding-inline: 16px; padding-block: 14px 40px; }
 button, input, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-code { font-family: var(--font-mono); font-size: .88em; }
+code, pre { font-family: var(--font-mono); font-size: .86em; }
 p { margin: 0; }
 .label { font: 500 11px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 h1, h2 { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .04em; font-weight: 700; margin: 0; text-wrap: balance; }
 h1 { font-size: 17px; } h2 { font-size: 13px; }
 .muted { color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.grow { flex: 1; }
 
 .btn { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface); padding: 6px 12px; font-size: 14px; line-height: 1.3; }
 .btn:hover { background: var(--surface-2); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
+.btn.ghost:hover { color: var(--text); background: var(--surface-2); }
 .btn.link { border: 0; background: none; padding: 0; color: var(--muted); font: 500 11px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; }
 .btn.link:hover { color: var(--text); background: none; }
 
-/* mockup strip */
-.mock { max-width: 1180px; margin: 0 auto 12px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; border: 1px dashed var(--border-strong); padding: 7px 12px; }
+.mock { max-width: 1240px; margin: 0 auto 12px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; border: 1px dashed var(--border-strong); padding: 7px 12px; }
 .mock .btn { font-size: 13px; padding: 4px 10px; }
 
-/* fake browser */
-.window { max-width: 1180px; margin: 0 auto; border: 1px solid var(--border-strong); background: var(--bg); }
+.window { max-width: 1240px; margin: 0 auto; border: 1px solid var(--border-strong); background: var(--bg); }
 .chrome { display: flex; border-bottom: 1px solid var(--border-strong); background: var(--surface-2); font-size: 12.5px; }
 .chrome .tab { display: flex; align-items: center; gap: 8px; padding: 7px 14px; background: var(--surface); border-right: 1px solid var(--border-strong); margin-bottom: -1px; min-width: 0; }
 .chrome .tab span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -56,10 +58,11 @@ h1 { font-size: 17px; } h2 { font-size: 13px; }
 .fav { position: relative; width: 16px; height: 16px; flex: none; background: var(--accent); color: var(--accent-ink); font: 700 10px/16px var(--font-mono); text-align: center; }
 .fav b { position: absolute; right: -4px; top: -4px; width: 8px; height: 8px; background: var(--hitl); border: 1px solid var(--surface); }
 
-/* project bar: the only global element */
-.projects { display: flex; align-items: stretch; background: var(--surface); border-bottom: 1px solid var(--border-strong); overflow-x: auto; }
-.projects .brand { display: flex; align-items: center; padding: 0 14px; border-right: 1px solid var(--border-strong); }
-.projects .brand .fav { width: 22px; height: 22px; font-size: 13px; line-height: 22px; }
+/* top bar: projects + usage (both global) */
+.top { display: flex; align-items: stretch; background: var(--surface); border-bottom: 1px solid var(--border-strong); flex-wrap: wrap; }
+.top .brand { display: flex; align-items: center; padding: 0 14px; border-right: 1px solid var(--border-strong); }
+.top .brand .fav { width: 22px; height: 22px; font-size: 13px; line-height: 22px; }
+.projects { display: flex; overflow-x: auto; min-width: 0; flex: 1; }
 .ptab { display: flex; align-items: center; gap: 8px; padding: 12px 18px; border: 0; border-right: 1px solid var(--border); background: none; cursor: pointer;
   font: 700 12.5px var(--font-mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap; }
 .ptab:hover { color: var(--text); }
@@ -67,73 +70,141 @@ h1 { font-size: 17px; } h2 { font-size: 13px; }
 .ptab .dot { width: 8px; height: 8px; background: var(--hitl); }
 .ptab.add { font-weight: 500; }
 
+.usage { display: flex; align-items: center; gap: 16px; padding: 8px 16px; border: 0; border-left: 1px solid var(--border-strong); background: none; cursor: pointer; border-bottom: 3px solid transparent; }
+.usage:hover { background: var(--surface-2); }
+.usage[aria-current="true"] { border-bottom-color: var(--accent); }
+.um { display: grid; gap: 4px; width: 92px; text-align: left; }
+.um .l { display: flex; justify-content: space-between; font: 500 10px var(--font-mono); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.um .l b { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; }
+.bar { height: 4px; background: var(--surface-2); position: relative; overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--info); }
+.bar i.hi { background: var(--warn); } .bar i.full { background: var(--danger); }
+.bar .tick { position: absolute; top: -2px; bottom: -2px; width: 1px; background: var(--border-strong); }
+
+.banner { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 8px 20px; border-bottom: 1px solid var(--warn); background: color-mix(in srgb, var(--warn) 12%, var(--surface)); font-size: 14px; }
+
 .view { padding: 22px 20px 28px; display: grid; gap: 22px; align-content: start; min-height: 620px;
   background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 24px 24px; }
 .head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
-.head .grow { flex: 1; }
+
+.parent { font: 500 11px var(--font-mono); color: var(--muted); letter-spacing: .02em; }
+.parent::after { content: " ›"; }
 
 /* needs you */
 .needs { display: grid; gap: 8px; }
-.need { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; background: var(--surface); border: 1px solid var(--border-strong); border-left: 4px solid var(--hitl); padding: 10px 14px; cursor: pointer; text-align: left; width: 100%; }
+.need { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 14px; background: var(--surface); border: 1px solid var(--border-strong); border-left: 4px solid var(--hitl); padding: 10px 14px; cursor: pointer; text-align: left; width: 100%; }
 .need:hover { background: var(--accent-soft); }
-.need .num { font: 500 12px var(--font-mono); color: var(--muted); }
-.need .what { color: var(--hitl); font-weight: 700; }
-.need .grow { flex: 1; }
+.need .who { display: grid; gap: 2px; min-width: 0; }
+.need .num { font: 500 12px var(--font-mono); color: var(--muted); margin-right: 6px; }
+.need .what { color: var(--hitl); font-weight: 700; white-space: nowrap; }
+.need.stuck { border-left-color: var(--danger); } .need.stuck .what { color: var(--danger); }
 .calm { color: var(--muted); padding: 10px 14px; border: 1px dashed var(--border-strong); background: var(--surface); }
 
-/* board */
-.board-wrap { overflow-x: auto; }
-.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(170px, 1fr); gap: 10px; align-items: start; }
-.col { display: grid; gap: 8px; align-content: start; }
-.col-h { display: flex; justify-content: space-between; padding: 4px 2px 6px; border-bottom: 1px solid var(--border-strong); }
-.tk { text-align: left; cursor: pointer; background: var(--surface); border: 1px solid var(--border); padding: 10px 11px; display: grid; gap: 4px; width: 100%; }
+/* board: one full-width row per status, cards wrap */
+.board { display: grid; border: 1px solid var(--border-strong); background: var(--surface); }
+.lane { display: grid; grid-template-columns: 128px minmax(0, 1fr); border-top: 1px solid var(--border); }
+.lane:first-child { border-top: 0; }
+.lane-h { padding: 12px 12px; border-right: 1px solid var(--border); display: grid; align-content: start; gap: 2px; background: color-mix(in srgb, var(--surface-2) 50%, var(--surface)); }
+.lane-h .n { font: 700 18px var(--font-mono); font-variant-numeric: tabular-nums; }
+.lane-h .n.zero { color: var(--border-strong); }
+.cards { padding: 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; align-content: start; }
+.lane.empty .cards { padding: 12px; color: var(--border-strong); font: 12px var(--font-mono); display: block; }
+.lane.empty .lane-h .label, .lane.empty .lane-h { color: var(--border-strong); }
+.tk { text-align: left; cursor: pointer; background: var(--surface); border: 1px solid var(--border); padding: 9px 11px; display: grid; gap: 3px; width: 100%; align-content: start; }
 .tk:hover { border-color: var(--accent); }
 .tk .num { font: 500 11px var(--font-mono); color: var(--muted); }
 .tk .tt { font-size: 14px; line-height: 1.3; }
 .tk.needs-you { border-color: var(--hitl); box-shadow: inset 4px 0 0 var(--hitl); }
-.mark { font: 500 10.5px var(--font-mono); text-transform: uppercase; letter-spacing: .05em; display: flex; align-items: center; gap: 6px; }
+.tk.stuck { border-color: var(--danger); box-shadow: inset 4px 0 0 var(--danger); }
+.mark { font: 500 10.5px var(--font-mono); text-transform: uppercase; letter-spacing: .05em; display: flex; align-items: center; gap: 6px; margin-top: 3px; }
 .mark::before { content: ""; width: 7px; height: 7px; background: currentColor; }
-.mark.you { color: var(--hitl); }
+.mark.you { color: var(--hitl); } .mark.stuck { color: var(--danger); }
 .mark.run { color: var(--accent); } .mark.run::before { animation: pulse 1.6s infinite; }
 @keyframes pulse { 50% { opacity: .3; } }
-.col.closed .tk { opacity: .65; }
-.more { font: 500 11px var(--font-mono); color: var(--muted); padding: 2px; }
+.lane.closed .tk { opacity: .7; }
+.lane.closed .lane-h { cursor: pointer; }
+.toggle { justify-self: start; margin-top: 6px; }
 
 /* ticket page */
-.ticket { max-width: 760px; width: 100%; display: grid; gap: 18px; }
+.ticket { max-width: 900px; width: 100%; display: grid; gap: 18px; }
 .chip { display: inline-block; font: 500 10.5px/1.6 var(--font-mono); text-transform: uppercase; letter-spacing: .05em; padding: 0 7px; border: 1px solid currentColor; color: var(--muted); }
-.panel { background: var(--surface); border: 1px solid var(--border-strong); padding: 18px; display: grid; gap: 14px; }
+.panel { background: var(--surface); border: 1px solid var(--border-strong); padding: 18px; display: grid; gap: 16px; }
 .panel.you { border-top: 4px solid var(--hitl); }
 .panel.stuck { border-top: 4px solid var(--danger); }
 .panel.running { border-top: 4px solid var(--accent); }
 .progress { display: flex; gap: 4px; } .progress i { height: 4px; flex: 1; background: var(--surface-2); } .progress i.on { background: var(--accent); }
-.q { display: grid; gap: 8px; } .q + .q { border-top: 1px solid var(--border); padding-top: 14px; }
-.q .qt { font-weight: 700; }
-.answer { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; cursor: pointer; padding: 9px 11px; border: 1px solid var(--border); }
+.q { display: grid; gap: 10px; } .q + .q { border-top: 1px solid var(--border-strong); padding-top: 18px; }
+.q .qt { font-weight: 700; font-size: 16px; }
+.q .ctx-note { color: var(--muted); font-size: 14px; }
+.ctx { border: 1px solid var(--border); background: var(--bg); overflow-x: auto; }
+.ctx .p { padding: 4px 10px; border-bottom: 1px solid var(--border); font: 500 10.5px var(--font-mono); color: var(--muted); display: flex; justify-content: space-between; gap: 10px; }
+.ctx pre { margin: 0; padding: 8px 10px; line-height: 1.55; }
+.ctx pre .hl { background: var(--accent-soft); display: inline-block; width: 100%; }
+.answers { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.answer { display: grid; grid-template-rows: auto auto 1fr; gap: 8px; cursor: pointer; padding: 10px; border: 1px solid var(--border); background: var(--surface); }
+.answer .t { display: flex; gap: 8px; align-items: flex-start; font-weight: 700; }
 .answer input { margin: 3px 0 0; accent-color: var(--accent); }
-.answer .b { grid-column: 2; color: var(--muted); font-size: 13.5px; }
+.answer .b { color: var(--muted); font-size: 13.5px; }
 .answer:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
-.sugg { font: 600 9.5px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--accent); border: 1px solid currentColor; padding: 0 5px; margin-left: 8px; }
-.why { font-size: 13.5px; color: var(--muted); }
-textarea { width: 100%; min-height: 70px; resize: vertical; padding: 8px 10px; border: 1px solid var(--border-strong); background: var(--surface); }
-.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.row .grow { flex: 1; }
-.activity { display: grid; gap: 4px; font: 12.5px/1.5 var(--font-mono); color: var(--muted); }
-details summary { cursor: pointer; font: 500 11px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-details[open] summary { margin-bottom: 8px; }
+.answer:has(input:checked) .b { color: var(--text); }
+.sugg { font: 600 9.5px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--accent); border: 1px solid currentColor; padding: 0 5px; margin-left: auto; white-space: nowrap; }
+.why { font-size: 13.5px; color: var(--text); padding: 8px 10px; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent-soft) 55%, transparent); }
+.why b { font: 500 10px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin-right: 8px; }
+details.discuss summary { cursor: pointer; font: 500 11px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+details.discuss[open] summary { margin-bottom: 6px; }
+textarea { width: 100%; min-height: 64px; resize: vertical; padding: 8px 10px; border: 1px solid var(--border-strong); background: var(--surface); }
 
-/* simulated OS notification + toast */
+/* phone mockups inside answers */
+.phone { justify-self: center; width: 132px; height: 212px; border: 1.5px solid var(--border-strong); background: var(--surface); padding: 12px 8px; display: grid; grid-template-rows: auto 1fr; gap: 6px; font: 8.5px/1.3 var(--font-ui); }
+.phone .bar-t { display: flex; justify-content: space-between; font: 700 7.5px var(--font-mono); text-transform: uppercase; color: var(--muted); }
+.phone .blk { background: var(--surface-2); }
+.phone .card { border: 1px solid var(--border-strong); background: var(--bg); padding: 5px; display: grid; gap: 3px; }
+.phone .hl { border-color: var(--accent); background: var(--accent-soft); }
+.phone .ln { height: 4px; background: var(--border); }
+.phone .ln.s { width: 60%; }
+.phone .cursor { width: 1px; height: 8px; background: var(--accent); display: inline-block; vertical-align: middle; animation: pulse 1s infinite; }
+.phone .cta { background: var(--accent); color: var(--accent-ink); text-align: center; padding: 2px; font-weight: 700; }
+.figure { background: var(--surface); border: 1px solid var(--border); padding: 10px; overflow-x: auto; }
+.figure figcaption { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+.figure svg { display: block; width: 100%; min-width: 460px; height: auto; }
+
+.activity { display: grid; gap: 4px; font: 12.5px/1.5 var(--font-mono); color: var(--muted); }
+details.log summary { cursor: pointer; font: 500 11px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+details.log[open] summary { margin-bottom: 8px; }
+
+/* usage page */
+.meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.meter-card { background: var(--surface); border: 1px solid var(--border-strong); padding: 16px; display: grid; gap: 10px; }
+.big { font: 700 34px var(--font-mono); font-variant-numeric: tabular-nums; line-height: 1; }
+.meter-card .bar { height: 8px; }
+.scale { display: flex; justify-content: space-between; font: 10px var(--font-mono); color: var(--muted); }
+.tablewrap { overflow-x: auto; border: 1px solid var(--border-strong); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { font: 500 10.5px var(--font-mono); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); background: var(--surface-2); }
+tr:last-child td { border-bottom: 0; }
+td.num { font: 12.5px var(--font-mono); font-variant-numeric: tabular-nums; }
+
 .os { position: fixed; right: 16px; top: 16px; width: min(340px, calc(100vw - 32px)); z-index: 50; display: grid; gap: 8px; }
 .osn { background: #2b2f36; color: #f1f3f6; border: 1px solid #3c424c; padding: 10px 12px; display: grid; grid-template-columns: 28px 1fr; gap: 2px 10px; font: 13px/1.4 system-ui, sans-serif; cursor: pointer; box-shadow: 0 8px 26px rgb(0 0 0 / .3); }
 .osn .ic { grid-row: span 3; width: 28px; height: 28px; background: #d05f1a; color: #fff; font: 700 15px/28px var(--font-mono); text-align: center; }
 .osn .src { font-size: 11px; color: #aeb5c0; } .osn .hd { font-weight: 600; }
 .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 50; max-width: calc(100vw - 32px); background: var(--text); color: var(--bg); padding: 8px 14px; font-size: 14px; }
+
+@media (max-width: 720px) {
+  .lane { grid-template-columns: 1fr; }
+  .lane-h { border-right: 0; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: baseline; padding: 8px 12px; }
+  .lane-h .n { font-size: 14px; }
+  .usage { border-left: 0; border-top: 1px solid var(--border); width: 100%; }
+  .need { grid-template-columns: 1fr; }
+}
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
 </style>
 
 <div class="mock">
   <span class="label">Mockup · example data</span>
   <button class="btn" id="simOther">Simulate: AISoftwareFactory needs you</button>
+  <button class="btn" id="simLimit">Simulate: limit hit</button>
 </div>
 
 <div class="window">
@@ -141,7 +212,12 @@ details[open] summary { margin-bottom: 8px; }
     <div class="tab"><span class="fav" id="fav">a</span><span id="tabTitle">aisf</span></div>
     <div class="url" id="url">localhost:4317</div>
   </div>
-  <nav class="projects" id="projects" aria-label="Projects"></nav>
+  <div class="top">
+    <span class="brand"><span class="fav">a</span></span>
+    <nav class="projects" id="projects" aria-label="Projects"></nav>
+    <button class="usage" id="usageBtn" title="Claude usage, shared by all projects"></button>
+  </div>
+  <div id="banner"></div>
   <main class="view" id="view"></main>
 </div>
 <div class="os" id="os"></div>
@@ -149,98 +225,163 @@ details[open] summary { margin-bottom: 8px; }
 
 <script>
 (() => {
-  const PROJECTS = [
-    { id: "postkarte", name: "postkarte" },
-    { id: "aisf", name: "AISoftwareFactory" },
-  ];
-  const COLS = [["idea", "Idea"], ["backlog", "Backlog"], ["plan", "Plan"], ["planned", "Planned"], ["ready", "Ready"],
+  const PROJECTS = [{ id: "postkarte", name: "postkarte" }, { id: "aisf", name: "AISoftwareFactory" }];
+  const LANES = [["idea", "Idea"], ["backlog", "Backlog"], ["plan", "Plan"], ["planned", "Planned"], ["ready", "Ready"],
     ["in-progress", "In progress"], ["in-review", "In review"], ["stuck", "Stuck"], ["closed", "Closed"]];
 
-  // need: what you have to do (only set when the ticket waits on you); running: Claude is on it
+  // parent = the umbrella ticket a subtask belongs to
   const T = [
     { p: "postkarte", n: 41, s: "idea", t: "Share a postcard as a link" },
+    { p: "postkarte", n: 50, s: "idea", t: "Handwriting font for the greeting" },
     { p: "postkarte", n: 38, s: "backlog", t: "Import recipients from the address book" },
     { p: "postkarte", n: 42, s: "backlog", t: "Remember the last used stamp" },
     { p: "postkarte", n: 44, s: "plan", t: "Offline drafts survive an app restart", need: { kind: "round", text: "Answer round 2 of 3" } },
     { p: "postkarte", n: 40, s: "planned", t: "Card editor v2" },
-    { p: "postkarte", n: 45, s: "ready", t: "Stamp picker: recent stamps row" },
-    { p: "postkarte", n: 48, s: "ready", t: "Font size slider in the editor" },
-    { p: "postkarte", n: 49, s: "in-progress", t: "Font picker with preview", need: { kind: "question", text: "Answer a question" } },
+    { p: "postkarte", n: 39, s: "planned", t: "Small-screen polish" },
+    { p: "postkarte", n: 45, s: "ready", t: "Stamp picker: recent stamps row", parent: 40 },
+    { p: "postkarte", n: 48, s: "ready", t: "Font size slider", parent: 40 },
+    { p: "postkarte", n: 51, s: "ready", t: "Landscape layout for the envelope", parent: 39 },
+    { p: "postkarte", n: 49, s: "in-progress", t: "Font picker with preview", parent: 40, need: { kind: "question", text: "Answer a question" } },
     { p: "postkarte", n: 47, s: "in-progress", t: "Print-ready PDF export", running: true },
-    { p: "postkarte", n: 46, s: "in-review", t: "Fix clipped greeting on small screens", need: { kind: "review", text: "Review PR #52" } },
+    { p: "postkarte", n: 46, s: "in-review", t: "Fix clipped greeting on small screens", parent: 39, need: { kind: "review", text: "Review PR #52" } },
     { p: "postkarte", n: 43, s: "stuck", t: "Move the image cache to drift", need: { kind: "stuck", text: "Decide how to continue" } },
     { p: "postkarte", n: 37, s: "closed", t: "Stamp picker grid" },
     { p: "postkarte", n: 36, s: "closed", t: "Envelope flip animation" },
     { p: "postkarte", n: 35, s: "closed", t: "Greeting text field" },
+    { p: "postkarte", n: 34, s: "closed", t: "App icon and splash" },
     { p: "aisf", n: 24, s: "idea", t: "Keyboard shortcuts" },
     { p: "aisf", n: 22, s: "backlog", t: "Runner: clean up worktrees after merge" },
-    { p: "aisf", n: 23, s: "ready", t: "Watcher: ETag polling loop" },
+    { p: "aisf", n: 19, s: "planned", t: "Watcher module" },
+    { p: "aisf", n: 23, s: "ready", t: "ETag polling loop", parent: 19 },
     { p: "aisf", n: 21, s: "in-progress", t: "Scaffold the Hono server and SPA shell", running: true },
     { p: "aisf", n: 20, s: "closed", t: "Repo setup and CI" },
   ];
-  const state = { project: "postkarte", ticket: null };
+  const state = { view: "project", project: "postkarte", ticket: null, showClosed: false, u5: 62, uw: 38, limit: false };
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const inProject = (p) => T.filter((t) => t.p === p);
   const needing = (p) => inProject(p).filter((t) => t.need);
+  const find = (p, n) => T.find((t) => t.p === p && t.n === n);
+  const parentLine = (t) => t.parent ? `<span class="parent">#${t.parent} ${esc(find(t.p, t.parent).t)}</span>` : "";
+  const pname = () => PROJECTS.find((p) => p.id === state.project).name;
+  const barCls = (v) => (v >= 100 ? "full" : v >= 80 ? "hi" : "");
 
-  function renderChrome() {
-    const total = T.filter((t) => t.need).length;
+  function renderTop() {
     const here = needing(state.project).length;
-    const pname = PROJECTS.find((p) => p.id === state.project).name;
-    $("#tabTitle").textContent = (here ? `(${here}) ` : "") + (state.ticket ? `#${state.ticket} · ` : "") + pname + " · aisf";
-    $("#fav").innerHTML = "a" + (total ? "<b></b>" : "");
-    $("#url").textContent = `localhost:4317/${state.project}` + (state.ticket ? `/${state.ticket}` : "");
-    $("#projects").innerHTML = `<span class="brand"><span class="fav">a</span></span>` +
-      PROJECTS.map((p) => `<button class="ptab" data-project="${p.id}" aria-current="${p.id === state.project}">
+    const title = state.view === "usage" ? "Usage" : (state.ticket ? `#${state.ticket} · ` : "") + pname();
+    $("#tabTitle").textContent = (here && state.view !== "usage" ? `(${here}) ` : "") + title + " · aisf";
+    $("#fav").innerHTML = "a" + (T.some((t) => t.need) ? "<b></b>" : "");
+    $("#url").textContent = "localhost:4317/" + (state.view === "usage" ? "usage" : state.project + (state.ticket ? `/${state.ticket}` : ""));
+    $("#projects").innerHTML = PROJECTS.map((p) => `<button class="ptab" data-project="${p.id}" aria-current="${state.view !== "usage" && p.id === state.project}">
         ${needing(p.id).length && p.id !== state.project ? '<span class="dot" title="Something needs you here"></span>' : ""}${esc(p.name)}</button>`).join("") +
       `<button class="ptab add" data-toast="Opens the Add project flow (decided in #12)">+ Add</button>`;
+    const um = (l, v, r) => `<span class="um"><span class="l">${l}<b>${state.limit && l === "5h" ? "paused" : v + "%"}</b></span><span class="bar"><i class="${barCls(v)}" style="width:${Math.min(v, 100)}%"></i></span><span class="l">${r}</span></span>`;
+    $("#usageBtn").innerHTML = um("5h", state.u5, "resets 14:10") + um("Week", state.uw, "resets Mon");
+    $("#usageBtn").setAttribute("aria-current", state.view === "usage");
+    $("#banner").innerHTML = state.limit ? `<div class="banner" role="status"><b>Paused.</b><span>The 5-hour limit is reached. All projects resume at 14:10.</span><span class="grow"></span><button class="btn ghost" id="reset">Simulate reset</button></div>` : "";
   }
 
   function card(t) {
-    const mark = t.need ? `<span class="mark you">Needs you</span>` : t.running ? `<span class="mark run">Running</span>` : "";
-    return `<button class="tk ${t.need ? "needs-you" : ""}" data-ticket="${t.n}"><span class="num">#${t.n}</span><span class="tt">${esc(t.t)}</span>${mark}</button>`;
+    const k = t.need?.kind;
+    const mark = k === "stuck" ? `<span class="mark stuck">Stuck</span>` : t.need ? `<span class="mark you">Needs you</span>` : t.running ? `<span class="mark run">Running</span>` : "";
+    return `<button class="tk ${k === "stuck" ? "stuck" : t.need ? "needs-you" : ""}" data-ticket="${t.n}">${parentLine(t)}<span class="tt"><span class="num">#${t.n}</span> ${esc(t.t)}</span>${mark}</button>`;
   }
 
   function projectView() {
     const ts = inProject(state.project);
     const need = needing(state.project);
-    const pname = PROJECTS.find((p) => p.id === state.project).name;
-    const cols = COLS.map(([s, label]) => {
-      let items = ts.filter((t) => t.s === s);
-      const extra = s === "closed" && items.length > 2 ? items.length - 2 : 0;
-      if (extra) items = items.slice(0, 2);
-      return `<div class="col ${s}"><div class="col-h"><span class="label">${label}</span><span class="label">${ts.filter((t) => t.s === s).length || ""}</span></div>
-        ${items.map(card).join("")}${extra ? `<span class="more">+ ${extra} more</span>` : ""}</div>`;
+    const lanes = LANES.map(([s, label]) => {
+      const items = ts.filter((t) => t.s === s);
+      if (s === "closed") {
+        return `<div class="lane closed"><div class="lane-h" data-toggle-closed><span class="label">${label}</span><span class="n">${items.length}</span></div>
+          <div class="cards" ${state.showClosed ? "" : 'style="display:block"'}>${state.showClosed ? items.map(card).join("") + `<button class="btn ghost toggle" data-toggle-closed>Hide closed</button>`
+            : `<button class="btn ghost" data-toggle-closed>Show ${items.length} closed</button>`}</div></div>`;
+      }
+      return `<div class="lane ${items.length ? "" : "empty"}"><div class="lane-h"><span class="label">${label}</span><span class="n ${items.length ? "" : "zero"}">${items.length}</span></div>
+        <div class="cards">${items.length ? items.map(card).join("") : "—"}</div></div>`;
     }).join("");
-    return `<div class="head"><h1>${esc(pname)}</h1><span class="grow"></span><button class="btn primary" data-toast="Asks for one line, then opens a create-ticket session (decided in #14)">+ New idea</button></div>
+    return `<div class="head"><h1>${esc(pname())}</h1><span class="grow"></span><button class="btn primary" data-toast="Asks for one line, then opens a create-ticket session (decided in #14)">+ New idea</button></div>
       <section class="needs"><h2>Needs you${need.length ? ` · ${need.length}` : ""}</h2>
-        ${need.length ? need.map((t) => `<button class="need" data-ticket="${t.n}"><span class="num">#${t.n}</span><span>${esc(t.t)}</span><span class="grow"></span><span class="what">${esc(t.need.text)} →</span></button>`).join("")
-          : `<div class="calm">Nothing needs you in ${esc(pname)}. Claude keeps working on the rest.</div>`}
+        ${need.length ? need.map((t) => `<button class="need ${t.need.kind === "stuck" ? "stuck" : ""}" data-ticket="${t.n}">
+            <span class="who">${parentLine(t)}<span><span class="num">#${t.n}</span>${esc(t.t)}</span></span><span class="what">${esc(t.need.text)} →</span></button>`).join("")
+          : `<div class="calm">Nothing needs you in ${esc(pname())}. Claude keeps working on the rest.</div>`}
       </section>
-      <section style="display:grid;gap:10px"><h2>Board</h2><div class="board-wrap"><div class="board">${cols}</div></div></section>`;
+      <section style="display:grid;gap:10px"><h2>Board</h2><div class="board">${lanes}</div></section>`;
+  }
+
+  // --- the questionnaire keeps its decision support: context, mockups, diagrams, why, discuss
+  function roundPanel() {
+    return `<form class="panel you" data-done="Round submitted. Claude continues planning.">
+      <div class="row"><span class="label">plan-ticket · round 2 of 3 · restoring drafts</span><span class="grow"></span>
+        <button type="button" class="btn ghost" data-toast="Takes every suggested answer that you haven't changed">Accept all remaining</button></div>
+      <div class="progress"><i class="on"></i><i class="on"></i><i></i></div>
+
+      <div class="q">
+        <div class="qt">1. When the app starts and a draft is unfinished, where do you land?</div>
+        <p class="ctx-note">Today every launch builds an empty draft, so an unfinished card is lost on restart. Round 1 decided to store drafts in drift.</p>
+        <div class="ctx"><div class="p"><span>lib/editor/editor_init.dart</span><span>line 12</span></div>
+<pre>Model init() =&gt; Model(
+<span class="hl">  draft: Draft.empty(),        // ← loses the unfinished draft</span>
+  stamps: StampCatalog.defaults,
+);</pre></div>
+        <div class="answers">
+          <label class="answer"><span class="t"><input type="radio" name="q1" id="q1a" checked>Reopen it in the editor<span class="sugg">Suggested</span></span>
+            <span class="b">Launch goes straight back to the card and cursor where you left off.</span>
+            <span class="phone"><span class="bar-t"><span>‹ Drafts</span><span>Send</span></span>
+              <span style="display:grid;gap:5px;align-content:start"><span class="blk" style="height:70px"></span>
+              <span>Liebe Oma, danke für<span class="cursor"></span></span><span class="ln"></span><span class="ln s"></span></span></span></label>
+          <label class="answer"><span class="t"><input type="radio" name="q1" id="q1b">“Continue draft?” card on home</span>
+            <span class="b">Home stays the entry point. One tap to get back into the draft.</span>
+            <span class="phone"><span class="bar-t"><span>postkarte</span><span>+</span></span>
+              <span style="display:grid;gap:5px;align-content:start"><span class="card hl"><b>Continue draft?</b><span>To Oma · edited 2 h ago</span><span class="cta">Continue</span></span>
+              <span class="card"><span class="ln"></span><span class="ln s"></span></span><span class="card"><span class="ln"></span><span class="ln s"></span></span></span></span></label>
+        </div>
+        <p class="why"><b>Why</b>Most drafts are abandoned mid-greeting (8 of the last 10 in your own test data), and the editor is the fastest way back.</p>
+        <details class="discuss"><summary>Discuss instead</summary><textarea id="d1" placeholder="Explain what you'd do differently, or ask something first…"></textarea></details>
+      </div>
+
+      <div class="q">
+        <div class="qt">2. The card was already sent from another device. What happens to the draft here?</div>
+        <figure class="figure" style="margin:0">
+          <svg viewBox="0 0 560 150" role="img" aria-label="Sequence: phone sends the card, sync marks it sent, tablet still has the draft">
+            <g font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">
+              <text x="70" y="16" text-anchor="middle">PHONE</text><text x="280" y="16" text-anchor="middle">SYNC</text><text x="490" y="16" text-anchor="middle">TABLET</text></g>
+            <g stroke="var(--border-strong)" stroke-dasharray="3 3"><line x1="70" y1="24" x2="70" y2="146"/><line x1="280" y1="24" x2="280" y2="146"/><line x1="490" y1="24" x2="490" y2="146"/></g>
+            <g stroke="var(--muted)" fill="none" stroke-width="1.2"><line x1="70" y1="50" x2="276" y2="50"/><line x1="280" y1="92" x2="486" y2="92"/></g>
+            <g fill="var(--muted)"><path d="M276 46 l6 4 -6 4z"/><path d="M486 88 l6 4 -6 4z"/></g>
+            <g font-family="Atkinson Hyperlegible, sans-serif" font-size="12" fill="var(--text)">
+              <text x="173" y="44" text-anchor="middle">card #812 sent</text><text x="383" y="86" text-anchor="middle">#812 is sent</text></g>
+            <rect x="430" y="108" width="120" height="30" fill="var(--accent-soft)" stroke="var(--accent)"/>
+            <text x="490" y="127" text-anchor="middle" font-family="Atkinson Hyperlegible, sans-serif" font-size="12" fill="var(--text)">draft of #812: ?</text>
+          </svg>
+          <figcaption>The tablet still holds an old draft of a card that is already in the post.</figcaption>
+        </figure>
+        <div class="answers">
+          <label class="answer"><span class="t"><input type="radio" name="q2" id="q2a" checked>Drop the draft quietly<span class="sugg">Suggested</span></span>
+            <span class="b">Sent wins. The tablet deletes the draft on its next sync, with no message.</span></label>
+          <label class="answer"><span class="t"><input type="radio" name="q2" id="q2b">Keep it as a new card</span>
+            <span class="b">The draft becomes an unsent copy. Useful if you send the same card twice.</span></label>
+          <label class="answer"><span class="t"><input type="radio" name="q2" id="q2c">Ask on the tablet</span>
+            <span class="b">“This card was sent from your phone. Keep a copy?” Costs one dialog.</span></label>
+        </div>
+        <p class="why"><b>Why</b>postkarte is single-user, so a conflict almost always means you finished the card on the other device.</p>
+        <details class="discuss"><summary>Discuss instead</summary><textarea id="d2" placeholder="Explain what you'd do differently, or ask something first…"></textarea></details>
+      </div>
+
+      <div class="row" style="border-top:1px solid var(--border);padding-top:14px"><span class="muted" style="font-size:13.5px">Round 3 covers deleting old drafts.</span><span class="grow"></span><button class="btn primary">Submit round</button></div>
+    </form>`;
   }
 
   function ticketView() {
-    const t = T.find((x) => x.p === state.project && x.n === state.ticket);
-    const col = COLS.find(([s]) => s === t.s)[1];
-    let panel;
+    const t = find(state.project, state.ticket);
+    const col = LANES.find(([s]) => s === t.s)[1];
     const k = t.need?.kind;
-    if (k === "round") panel = `<form class="panel you" data-done="Round submitted. Claude continues planning.">
-        <div class="row"><span class="label">Round 2 of 3</span><span class="grow"></span></div>
-        <div class="progress"><i class="on"></i><i class="on"></i><i></i></div>
-        <div class="q"><div class="qt">When the app starts, what happens to an unfinished draft?</div>
-          <label class="answer"><input type="radio" name="q1" id="q1a" checked><span>Reopen it in the editor<span class="sugg">Suggested</span></span><span class="b">Launch goes straight back to the card you were writing.</span></label>
-          <label class="answer"><input type="radio" name="q1" id="q1b"><span>Show “Continue draft?” on home</span><span class="b">Home stays the entry point, with one extra tap.</span></label>
-          <p class="why">Most drafts are abandoned mid-greeting, and the editor is the fastest way back.</p></div>
-        <div class="q"><div class="qt">The card was already sent from another device. What happens to the draft?</div>
-          <label class="answer"><input type="radio" name="q2" id="q2a" checked><span>Drop it quietly<span class="sugg">Suggested</span></span><span class="b">Sent wins.</span></label>
-          <label class="answer"><input type="radio" name="q2" id="q2b"><span>Keep it as a copy</span><span class="b">The draft becomes a new, unsent card.</span></label></div>
-        <div class="row"><span class="grow"></span><button class="btn primary">Submit</button></div></form>`;
+    let panel;
+    if (k === "round") panel = roundPanel();
     else if (k === "question") panel = `<form class="panel you" data-done="Reply sent. Claude continues.">
         <span class="label">Claude asks</span>
         <p style="font-size:17px">Should the font picker list system fonts, or only the 6 bundled ones?</p>
-        <p class="why">Bundled-only keeps the printed card identical on every device.</p>
+        <p class="why"><b>Why it matters</b>Bundled-only keeps the printed card identical on every device. System fonts differ between phones.</p>
         <textarea id="reply" aria-label="Your reply" placeholder="Your answer…"></textarea>
         <div class="row"><span class="grow"></span><button class="btn primary">Send</button></div></form>`;
     else if (k === "review") panel = `<div class="panel you"><span class="label">Ready for review</span>
@@ -248,46 +389,72 @@ details[open] summary { margin-bottom: 8px; }
         <div class="row"><button class="btn primary" data-toast="Opens github.com/MoritzKopmann/postkarte/pull/52">Open PR #52 ↗</button></div></div>`;
     else if (k === "stuck") panel = `<form class="panel stuck" data-done="Retrying. Claude continues on the same branch.">
         <span class="label">Claude stopped</span>
-        <p>A test still fails after 3 fix attempts: the cache evicts by insertion time, and the new table doesn't store it. This probably needs a decision about the table.</p>
+        <p>A test still fails after 3 fix attempts. The cache evicts by insertion time, and the new table doesn't store it. This probably needs a decision about the table.</p>
+        <div class="ctx"><div class="p"><span>test/image_cache_test.dart › evicts oldest</span><span>failed</span></div>
+<pre>Expected: ['b.png', 'c.png']
+  Actual: ['a.png', 'c.png']</pre></div>
         <textarea id="hint" aria-label="Guidance for the retry" placeholder="Optional: tell Claude how to proceed…"></textarea>
         <div class="row"><button class="btn" type="button" data-toast="Moves the ticket back to Plan">Back to plan</button><span class="grow"></span><button class="btn primary">Retry</button></div></form>`;
-    else if (t.running) panel = `<div class="panel running"><span class="mark run">Claude is working on this</span>
-        <div class="activity"><span>Wrote a test for A6 page size</span><span>Added the PDF exporter with bleed and crop marks</span><span>Running tests…</span></div>
+    else if (t.running) panel = `<div class="panel running"><span class="mark run">${state.limit ? "Paused until 14:10" : "Claude is working on this"}</span>
+        <div class="activity"><span>Wrote a test for the A6 page size</span><span>Added the PDF exporter with bleed and crop marks</span><span>Running tests…</span></div>
         <div class="row"><button class="btn" data-toast="Claude stops at the next step">Stop</button></div></div>`;
     else panel = `<div class="panel"><span class="label">Nothing running</span><p class="muted">Claude picks this ticket up when it reaches the front of the queue.</p></div>`;
-
     return `<div class="ticket">
-      <button class="btn link" data-back style="justify-self:start">← ${esc(PROJECTS.find((p) => p.id === state.project).name)}</button>
-      <div style="display:grid;gap:6px"><span class="row"><span class="chip">${col}</span><span class="label">#${t.n}</span></span><h1 style="text-transform:none;letter-spacing:0;font-family:var(--font-ui);font-size:22px">${esc(t.t)}</h1></div>
+      <button class="btn link" data-back style="justify-self:start">← ${esc(pname())}</button>
+      <div style="display:grid;gap:6px">${parentLine(t)}<span class="row"><span class="chip">${col}</span><span class="label">#${t.n}</span></span>
+        <h1 style="text-transform:none;letter-spacing:0;font-family:var(--font-ui);font-size:22px">${esc(t.t)}</h1></div>
       ${panel}
-      <details><summary>Session log</summary><div class="activity"><span>10:18 Session started</span><span>10:19 Read the ticket and the project skills</span><span>10:24 Asked round 1 · answered 10:31</span><span>10:42 Asked round 2</span></div></details>
+      <details class="log"><summary>Session log</summary><div class="activity"><span>10:18 Session started</span><span>10:19 Read the ticket and the project skills</span><span>10:24 Asked round 1 · answered 10:31</span><span>10:42 Asked round 2</span></div></details>
     </div>`;
   }
 
+  function usageView() {
+    const meter = (name, v, reset, note) => `<div class="meter-card"><span class="label">${name}</span>
+      <div class="row" style="align-items:baseline"><span class="big">${v}%</span><span class="grow"></span><span class="muted">${reset}</span></div>
+      <div class="bar"><i class="${barCls(v)}" style="width:${Math.min(v, 100)}%"></i><span class="tick" style="left:80%"></span></div>
+      <div class="scale"><span>0</span><span>80% warning</span><span>100% pause</span></div><p class="muted" style="font-size:13.5px">${note}</p></div>`;
+    const rows = [["postkarte", 47, "Print-ready PDF export", "implement", "18%"], ["postkarte", 44, "Offline drafts survive an app restart", "plan", "9%"],
+      ["postkarte", 49, "Font picker with preview", "implement", "6%"], ["AISoftwareFactory", 21, "Scaffold the Hono server and SPA shell", "implement", "22%"],
+      ["postkarte", 43, "Move the image cache to drift", "implement", "7%"]];
+    return `<div class="head"><h1>Usage</h1><span class="muted">Your Claude subscription, shared by all projects.</span></div>
+      <div class="meters">
+        ${meter("5-hour window", state.u5, state.limit ? "paused · resets 14:10" : "resets 14:10 · in 47 min", "At 100% every run pauses and resumes on its own after the reset. Pages waiting on you stay open.")}
+        ${meter("Weekly", state.uw, "resets Mon 09:00", "At 100% nothing runs until Monday.")}
+      </div>
+      <section style="display:grid;gap:10px"><h2>This window, by ticket</h2><div class="tablewrap"><table>
+        <thead><tr><th>Project</th><th>Ticket</th><th>Stage</th><th>Share of window</th></tr></thead>
+        <tbody>${rows.map(([p, n, t, s, u]) => `<tr><td>${p}</td><td><span class="num" style="font-family:var(--font-mono);color:var(--muted)">#${n}</span> ${esc(t)}</td><td>${s}</td><td class="num">${u}</td></tr>`).join("")}</tbody>
+      </table></div></section>`;
+  }
+
   function render() {
-    renderChrome();
-    $("#view").innerHTML = state.ticket ? ticketView() : projectView();
+    renderTop();
+    $("#view").innerHTML = state.view === "usage" ? usageView() : state.ticket ? ticketView() : projectView();
   }
   function toast(m) { const t = $("#toast"); t.textContent = m; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => (t.hidden = true), 2600); }
 
   document.addEventListener("click", (e) => {
-    const el = e.target.closest("[data-project],[data-ticket],[data-toast],[data-back],#simOther,.osn");
+    const el = e.target.closest("[data-project],[data-ticket],[data-toast],[data-back],[data-toggle-closed],#simOther,#simLimit,#reset,#usageBtn,.osn");
     if (!el) return;
-    if (el.dataset.project) { state.project = el.dataset.project; state.ticket = null; return render(); }
+    if (el.dataset.project) { Object.assign(state, { view: "project", project: el.dataset.project, ticket: null }); return render(); }
     if (el.dataset.ticket) { state.ticket = +el.dataset.ticket; render(); return window.scrollTo({ top: 0 }); }
     if (el.dataset.toast) return toast(el.dataset.toast);
     if (el.hasAttribute("data-back")) { state.ticket = null; return render(); }
+    if (el.hasAttribute("data-toggle-closed")) { state.showClosed = !state.showClosed; return render(); }
+    if (el.id === "usageBtn") { state.view = "usage"; return render(); }
+    if (el.id === "simLimit") { state.limit = true; state.u5 = 100; return render(); }
+    if (el.id === "reset") { state.limit = false; state.u5 = 3; return render(); }
     if (el.id === "simOther") {
-      const t = T.find((x) => x.n === 21); t.running = false; t.need = { kind: "question", text: "Answer a question" };
+      const t = find("aisf", 23); t.need = { kind: "question", text: "Answer a question" }; t.s = "in-progress";
       const n = document.createElement("div"); n.className = "osn";
-      n.innerHTML = `<span class="ic">a</span><span class="src">aisf · simulated OS notification</span><span class="hd">AISoftwareFactory needs you</span><span>#21 Scaffold the Hono server: Claude asks a question</span>`;
+      n.innerHTML = `<span class="ic">a</span><span class="src">aisf · simulated OS notification</span><span class="hd">AISoftwareFactory needs you</span><span>Watcher module › #23 ETag polling loop: Claude asks a question</span>`;
       $("#os").prepend(n); setTimeout(() => n.remove(), 6000); return render();
     }
-    if (el.classList.contains("osn")) { el.remove(); state.project = "aisf"; state.ticket = 21; return render(); }
+    if (el.classList.contains("osn")) { el.remove(); Object.assign(state, { view: "project", project: "aisf", ticket: 23 }); return render(); }
   });
   document.addEventListener("submit", (e) => {
     e.preventDefault();
-    const t = T.find((x) => x.p === state.project && x.n === state.ticket);
+    const t = find(state.project, state.ticket);
     t.need = null; t.running = true; if (t.s === "stuck") t.s = "in-progress";
     toast(e.target.dataset.done); state.ticket = null; render();
   });
