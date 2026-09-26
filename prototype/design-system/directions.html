@@ -1,0 +1,576 @@
+<title>aisf Kit Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* ------------------------------------------------------------------
+   One token contract, three directions. Components below read ONLY
+   these tokens; a direction is nothing but a token set.
+   ------------------------------------------------------------------ */
+
+/* A · Workbench (also the default) — light */
+:root, :root[data-kit="a"] {
+  --bg: #f4f5f8; --surface: #ffffff; --surface-2: #eceff4; --border: #d8dce5; --border-strong: #b9bfcc;
+  --text: #1b2030; --muted: #5c6477; --accent: #3553d6; --accent-ink: #ffffff; --accent-soft: #e5e9fb;
+  --ok: #1f8a4c; --warn: #a86b12; --danger: #c43a3a; --info: #2f6fb3; --hitl: #8237d6;
+  --font-ui: "IBM Plex Sans", system-ui, sans-serif; --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-display: var(--font-ui); --display-weight: 600; --display-transform: none; --display-spacing: -0.01em;
+  --label-font: var(--font-ui); --label-transform: none; --label-spacing: 0em; --label-size: 12px; --label-weight: 500;
+  --radius: 6px; --radius-sm: 4px; --radius-chip: 4px; --radius-switch: 999px;
+  --space: 4px; --pad: 14px; --gap: 12px; --text-size: 14px; --line: 1.45;
+  --card-border: 1px solid var(--border); --card-shadow: 0 1px 2px rgb(20 30 60 / .06);
+  --chip-fill: 14%; --chip-border: 0%; --chip-font: var(--font-ui); --chip-transform: none; --chip-size: 12px;
+  --figure-bg: var(--surface); --figure-grid: transparent; --lane-alt: var(--surface-2);
+  color-scheme: light;
+}
+/* B · Drafting — light */
+:root[data-kit="b"] {
+  --bg: #e9eef2; --surface: #f8fafb; --surface-2: #dfe6ec; --border: #a9b8c5; --border-strong: #6f8499;
+  --text: #13243a; --muted: #4c6075; --accent: #d05f1a; --accent-ink: #ffffff; --accent-soft: #f8e2d2;
+  --ok: #2b7a44; --warn: #a2640b; --danger: #b8322f; --info: #2d5f93; --hitl: #6b47c2;
+  --font-ui: "Atkinson Hyperlegible", system-ui, sans-serif; --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display: var(--font-mono); --display-weight: 700; --display-transform: uppercase; --display-spacing: 0.04em;
+  --label-font: var(--font-mono); --label-transform: uppercase; --label-spacing: 0.08em; --label-size: 11px; --label-weight: 500;
+  --radius: 0; --radius-sm: 0; --radius-chip: 0; --radius-switch: 0;
+  --space: 4px; --pad: 14px; --gap: 10px; --text-size: 15px; --line: 1.45;
+  --card-border: 1px solid var(--border-strong); --card-shadow: none;
+  --chip-fill: 0%; --chip-border: 100%; --chip-font: var(--font-mono); --chip-transform: uppercase; --chip-size: 11px;
+  --figure-bg: var(--surface); --figure-grid: color-mix(in srgb, var(--info) 12%, transparent); --lane-alt: transparent;
+  color-scheme: light;
+}
+/* C · Studio — light */
+:root[data-kit="c"] {
+  --bg: #edf0ea; --surface: #fbfcf8; --surface-2: #e2e7dc; --border: #d3dacb; --border-strong: #aab5a2;
+  --text: #1e2a23; --muted: #5a695f; --accent: #0e7a6d; --accent-ink: #ffffff; --accent-soft: #d3ebe4;
+  --ok: #2e7d3e; --warn: #9a6a12; --danger: #b43c3c; --info: #2e6a9a; --hitl: #a8457f;
+  --font-ui: "Manrope", system-ui, sans-serif; --font-mono: "DM Mono", ui-monospace, monospace;
+  --font-display: var(--font-ui); --display-weight: 700; --display-transform: none; --display-spacing: -0.015em;
+  --label-font: var(--font-ui); --label-transform: none; --label-spacing: 0em; --label-size: 12.5px; --label-weight: 600;
+  --radius: 14px; --radius-sm: 10px; --radius-chip: 999px; --radius-switch: 999px;
+  --space: 5px; --pad: 18px; --gap: 14px; --text-size: 14.5px; --line: 1.55;
+  --card-border: 1px solid transparent; --card-shadow: 0 1px 2px rgb(30 50 40 / .05), 0 6px 18px rgb(30 50 40 / .06);
+  --chip-fill: 18%; --chip-border: 0%; --chip-font: var(--font-ui); --chip-transform: none; --chip-size: 12px;
+  --figure-bg: var(--surface); --figure-grid: transparent; --lane-alt: var(--surface-2);
+  color-scheme: light;
+}
+
+/* Dark palettes: OS preference unless the viewer forced light */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]), :root[data-kit="a"]:not([data-theme="light"]) {
+    --bg: #11141b; --surface: #191d26; --surface-2: #222734; --border: #313848; --border-strong: #485066;
+    --text: #e5e8f0; --muted: #98a1b3; --accent: #8198ff; --accent-ink: #0c1020; --accent-soft: #252d52;
+    --ok: #4fc483; --warn: #e2aa4c; --danger: #f07070; --info: #6aa8e8; --hitl: #b690ff;
+    --card-shadow: none; color-scheme: dark;
+  }
+  :root[data-kit="b"]:not([data-theme="light"]) {
+    --bg: #0d1924; --surface: #122130; --surface-2: #192b3d; --border: #2e4760; --border-strong: #4d6a86;
+    --text: #d8e4ee; --muted: #8aa1b6; --accent: #ff8a45; --accent-ink: #1c0d03; --accent-soft: #3b2515;
+    --ok: #5cc07a; --warn: #e5ab4e; --danger: #f07268; --info: #6fa6db; --hitl: #a98cf0;
+    color-scheme: dark;
+  }
+  :root[data-kit="c"]:not([data-theme="light"]) {
+    --bg: #141916; --surface: #1c231f; --surface-2: #262f29; --border: #313b34; --border-strong: #4a574e;
+    --text: #e3eae4; --muted: #97a69b; --accent: #43c3ae; --accent-ink: #062019; --accent-soft: #1b3a33;
+    --ok: #66c27a; --warn: #dfae55; --danger: #ec7a72; --info: #74aede; --hitl: #e089bd;
+    --card-shadow: 0 1px 2px rgb(0 0 0 / .3); color-scheme: dark;
+  }
+}
+/* Dark palettes: forced dark (same values) */
+:root[data-theme="dark"], :root[data-kit="a"][data-theme="dark"] {
+  --bg: #11141b; --surface: #191d26; --surface-2: #222734; --border: #313848; --border-strong: #485066;
+  --text: #e5e8f0; --muted: #98a1b3; --accent: #8198ff; --accent-ink: #0c1020; --accent-soft: #252d52;
+  --ok: #4fc483; --warn: #e2aa4c; --danger: #f07070; --info: #6aa8e8; --hitl: #b690ff;
+  --card-shadow: none; color-scheme: dark;
+}
+:root[data-kit="b"][data-theme="dark"] {
+  --bg: #0d1924; --surface: #122130; --surface-2: #192b3d; --border: #2e4760; --border-strong: #4d6a86;
+  --text: #d8e4ee; --muted: #8aa1b6; --accent: #ff8a45; --accent-ink: #1c0d03; --accent-soft: #3b2515;
+  --ok: #5cc07a; --warn: #e5ab4e; --danger: #f07268; --info: #6fa6db; --hitl: #a98cf0;
+  color-scheme: dark;
+}
+:root[data-kit="c"][data-theme="dark"] {
+  --bg: #141916; --surface: #1c231f; --surface-2: #262f29; --border: #313b34; --border-strong: #4a574e;
+  --text: #e3eae4; --muted: #97a69b; --accent: #43c3ae; --accent-ink: #062019; --accent-soft: #1b3a33;
+  --ok: #66c27a; --warn: #dfae55; --danger: #ec7a72; --info: #74aede; --hitl: #e089bd;
+  --card-shadow: 0 1px 2px rgb(0 0 0 / .3); color-scheme: dark;
+}
+
+/* ------------------------------ base ------------------------------ */
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: var(--text-size)/var(--line) var(--font-ui);
+  padding-inline: 16px; padding-block: 20px 48px;
+  transition: background-color .2s, color .2s;
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--font-mono); font-size: .92em; }
+.label {
+  font-family: var(--label-font); text-transform: var(--label-transform); letter-spacing: var(--label-spacing);
+  font-size: var(--label-size); font-weight: var(--label-weight); color: var(--muted);
+}
+h1, h2, h3 {
+  font-family: var(--font-display); font-weight: var(--display-weight);
+  text-transform: var(--display-transform); letter-spacing: var(--display-spacing);
+  text-wrap: balance; margin: 0;
+}
+h1 { font-size: 22px; }
+h2 { font-size: 16px; }
+h3 { font-size: 14.5px; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+
+/* --------------------------- page chrome --------------------------- */
+.top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px; }
+.top p { max-width: 62ch; margin-top: 6px; color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); overflow: hidden; }
+.seg button {
+  font: inherit; font-size: 13px; background: var(--surface); color: var(--text); border: 0; padding: 6px 12px; cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.kits { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.kit-tab {
+  text-align: left; font: inherit; color: var(--text); background: var(--surface); cursor: pointer;
+  border: var(--card-border); border-radius: var(--radius); box-shadow: var(--card-shadow);
+  padding: 12px 14px; display: grid; gap: 4px;
+}
+.kit-tab[aria-selected="true"] { outline: 2px solid var(--accent); outline-offset: -1px; }
+.kit-tab b { font-size: 14px; }
+.kit-tab span { font-size: 12.5px; color: var(--muted); }
+
+.tokens { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.sw { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
+.sw i { width: 18px; height: 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); display: inline-block; }
+
+.stage { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 20px; align-items: start; }
+.stage > .full { grid-column: 1 / -1; }
+@media (max-width: 900px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+.surface-title { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+
+/* ---------------------------- components --------------------------- */
+.card {
+  background: var(--surface); border: var(--card-border); border-radius: var(--radius);
+  box-shadow: var(--card-shadow); padding: var(--pad); display: grid; gap: var(--gap);
+}
+.btn {
+  font: inherit; font-weight: 600; font-size: 13.5px; cursor: pointer; padding: 8px 14px;
+  border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.btn:hover { filter: brightness(1.05); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.spread { justify-content: space-between; }
+
+/* status chip — colour comes from --c, style from tokens */
+.chip {
+  --c: var(--muted);
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  font-family: var(--chip-font); text-transform: var(--chip-transform); font-size: var(--chip-size); font-weight: 500;
+  letter-spacing: calc(var(--label-spacing) * .6);
+  padding: 2px 8px; border-radius: var(--radius-chip); color: var(--c);
+  background: color-mix(in srgb, var(--c) var(--chip-fill), transparent);
+  border: 1px solid color-mix(in srgb, var(--c) var(--chip-border), transparent);
+}
+.chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.chip.flag::before { display: none; }
+.s-idea, .s-backlog { --c: var(--muted); }
+.s-plan, .s-planned { --c: var(--info); }
+.s-ready { --c: var(--accent); }
+.s-progress { --c: var(--accent); }
+.s-progress::before { animation: pulse 1.4s ease-in-out infinite; }
+.s-review { --c: var(--warn); }
+.s-stuck { --c: var(--danger); }
+.s-closed { --c: var(--ok); }
+.f-hitl { --c: var(--hitl); }
+@keyframes pulse { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .s-progress::before { animation: none; } }
+
+/* answer cards (questionnaire) */
+.q { display: grid; gap: 10px; }
+.q + .q { border-top: 1px solid var(--border); padding-top: var(--gap); }
+.q-head { display: grid; gap: 3px; }
+.answers { display: grid; gap: 8px; }
+.answer {
+  display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: start; cursor: pointer;
+  padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface);
+}
+.answer input { margin: 3px 0 0; accent-color: var(--accent); }
+.answer .a-title { font-weight: 600; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.answer .a-body { grid-column: 2; color: var(--muted); font-size: .93em; }
+.answer:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.answer:has(input:checked) .a-body { color: var(--text); }
+.tag-suggested {
+  font-family: var(--label-font); text-transform: var(--label-transform); letter-spacing: var(--label-spacing);
+  font-size: 10.5px; font-weight: 600; color: var(--accent); border: 1px solid currentColor; border-radius: var(--radius-chip);
+  padding: 0 6px;
+}
+textarea {
+  font: inherit; width: 100%; min-height: 64px; resize: vertical; color: var(--text); background: var(--surface);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 8px 10px;
+}
+.progress { display: flex; gap: 4px; }
+.progress i { height: 4px; flex: 1; border-radius: var(--radius-chip); background: var(--surface-2); }
+.progress i.on { background: var(--accent); }
+
+/* accordion */
+details.acc { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); }
+details.acc > summary {
+  list-style: none; cursor: pointer; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  font-weight: 600; font-size: 13.5px;
+}
+details.acc > summary::-webkit-details-marker { display: none; }
+details.acc > summary::after { content: "+"; font-family: var(--font-mono); color: var(--muted); }
+details.acc[open] > summary::after { content: "−"; }
+details.acc[open] > summary { border-bottom: 1px solid var(--border); }
+details.acc > div { padding: 10px 12px; display: grid; gap: 6px; color: var(--muted); font-size: .93em; }
+
+/* switch */
+.switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; }
+.switch input { position: absolute; opacity: 0; pointer-events: none; }
+.switch .track {
+  width: 34px; height: 20px; border-radius: var(--radius-switch); background: var(--surface-2);
+  border: 1px solid var(--border-strong); position: relative; flex: none; transition: background-color .15s;
+}
+.switch .track::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px;
+  border-radius: var(--radius-switch); background: var(--muted); transition: transform .15s, background-color .15s;
+}
+.switch input:checked + .track { background: var(--hitl); border-color: var(--hitl); }
+.switch input:checked + .track::after { transform: translateX(14px); background: var(--surface); }
+.switch input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* confirm figure */
+.figure-wrap {
+  overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background-color: var(--figure-bg);
+  background-image:
+    linear-gradient(var(--figure-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--figure-grid) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+.figure-wrap svg { display: block; min-width: 560px; width: 100%; height: auto; }
+.lane-bg { fill: transparent; }
+.lane-bg.alt { fill: var(--lane-alt); }
+.lane-rule { stroke: var(--border); stroke-width: 1; }
+.lane-label { fill: var(--muted); font-family: var(--label-font); font-size: 11px; font-weight: 600; text-transform: var(--label-transform); letter-spacing: var(--label-spacing); }
+.node rect { stroke-width: 1.5; rx: var(--radius-sm); }
+.node text { font-family: var(--font-mono); font-size: 12px; fill: var(--text); }
+.node.new rect { fill: var(--accent-soft); stroke: var(--accent); }
+.node.changed rect { fill: color-mix(in srgb, var(--warn) 14%, var(--surface)); stroke: var(--warn); stroke-dasharray: 5 3; }
+.node.same rect { fill: var(--surface); stroke: var(--border-strong); }
+.node.same text { fill: var(--muted); }
+.edge { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+.arrowhead { fill: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 10px; border-radius: 2px; border: 1.5px solid; display: inline-block; }
+.lg-new { background: var(--accent-soft); border-color: var(--accent) !important; }
+.lg-changed { background: color-mix(in srgb, var(--warn) 14%, var(--surface)); border-color: var(--warn) !important; border-style: dashed !important; }
+.lg-same { background: var(--surface); border-color: var(--border-strong) !important; }
+
+.subtasks { display: grid; }
+.subtask { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
+.subtask .num { font-family: var(--font-mono); color: var(--muted); font-size: 12.5px; }
+.subtask .why { grid-column: 2 / -1; font-size: 12.5px; color: var(--muted); }
+
+/* UI list view */
+.board { padding: 0; gap: 0; overflow: hidden; }
+.board-head { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; padding: 12px var(--pad); border-bottom: 1px solid var(--border); }
+.group-h { display: flex; gap: 8px; align-items: center; padding: 10px var(--pad) 6px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.group-h .count { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.ticket {
+  display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 4px 14px; align-items: center;
+  padding: 10px var(--pad); border-bottom: 1px solid var(--border);
+}
+.ticket:last-child { border-bottom: 0; }
+.ticket:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.ticket .num { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ticket .title { font-weight: 500; overflow-wrap: anywhere; }
+.ticket .meta { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.ticket .act { grid-column: 3; grid-row: 1 / span 2; }
+.needs-you { box-shadow: inset 3px 0 0 var(--hitl); }
+@media (max-width: 560px) {
+  .ticket { grid-template-columns: minmax(0, 1fr); }
+  .ticket .meta, .ticket .act { grid-column: 1; grid-row: auto; }
+}
+.sample-note { font-size: 12px; color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="label">wayfinder · Prototype the aisf visual design system</div>
+      <h1>aisf kit directions</h1>
+      <p>Three contrasting token sets for <code>/aisf/kit.css</code>. The markup below is identical in each; only the tokens change. Pick a direction, or name the parts you want to mix.</p>
+    </div>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" data-theme-btn="system" aria-pressed="true">System</button>
+      <button type="button" data-theme-btn="light" aria-pressed="false">Light</button>
+      <button type="button" data-theme-btn="dark" aria-pressed="false">Dark</button>
+    </div>
+  </header>
+
+  <div class="kits" role="tablist" aria-label="Direction">
+    <button class="kit-tab" role="tab" data-kit-btn="a" aria-selected="true" id="tab-a">
+      <b>A · Workbench</b><span>Cool slate, indigo accent, IBM Plex. 6px radii, compact rows. Reads like a dev tool.</span>
+    </button>
+    <button class="kit-tab" role="tab" data-kit-btn="b" aria-selected="false" id="tab-b">
+      <b>B · Drafting</b><span>Blueprint paper, navy ink, signal orange. Square corners, mono labels, gridded figures.</span>
+    </button>
+    <button class="kit-tab" role="tab" data-kit-btn="c" aria-selected="false" id="tab-c">
+      <b>C · Studio</b><span>Sage neutrals, teal accent, Manrope. 14px radii, pill chips, soft filled surfaces.</span>
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="row spread"><span class="label">Tokens</span><span class="sample-note" id="type-note"></span></div>
+    <div class="tokens" id="tokens"></div>
+    <div class="row">
+      <span class="chip s-idea">idea</span><span class="chip s-backlog">backlog</span><span class="chip s-plan">plan</span>
+      <span class="chip s-planned">planned</span><span class="chip s-ready">ready</span><span class="chip s-progress">in-progress</span>
+      <span class="chip s-review">in-review</span><span class="chip s-stuck">stuck</span><span class="chip s-closed">closed</span>
+      <span class="chip flag f-hitl">hitl</span>
+    </div>
+  </div>
+
+  <div class="stage">
+    <!-- 1 · Questionnaire round (bridge page) -->
+    <section>
+      <div class="surface-title"><h2>Questionnaire round</h2><span class="label">bridge page</span></div>
+      <form class="card" id="round" onsubmit="event.preventDefault()">
+        <div class="row spread">
+          <span class="label">plan-1142 · round 2 of 3</span>
+          <span class="chip s-plan">plan</span>
+        </div>
+        <div class="progress" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i></div>
+
+        <div class="q">
+          <div class="q-head">
+            <h3>Where does the recipient list live while you compose?</h3>
+            <p class="muted">The picker and the compose screen both edit it.</p>
+          </div>
+          <div class="answers">
+            <label class="answer"><input type="radio" name="q1" id="q1a" checked>
+              <span class="a-title">In a new <code>SendDraft</code> state <span class="tag-suggested">Suggested</span></span>
+              <span class="a-body">One owner. The picker emits events and compose reads the draft.</span></label>
+            <label class="answer"><input type="radio" name="q1" id="q1b">
+              <span class="a-title">Local to the compose screen</span>
+              <span class="a-body">Fewer moving parts, but the draft is lost when the picker is opened as its own route.</span></label>
+            <label class="answer"><input type="radio" name="q1" id="q1c">
+              <span class="a-title">Discuss</span>
+              <span class="a-body">Add a note and the planner will take it up in the next round.</span></label>
+          </div>
+          <details class="acc">
+            <summary>Why the planner asks</summary>
+            <div><p><code>project-architecture</code> requires one owner per piece of state. Both screens mutate recipients, so a shared owner is needed or the draft must stay single-screen.</p></div>
+          </details>
+        </div>
+
+        <div class="q">
+          <div class="q-head">
+            <h3>Cap on recipients per send?</h3>
+          </div>
+          <div class="answers">
+            <label class="answer"><input type="radio" name="q2" id="q2a" checked>
+              <span class="a-title">20, shown in the picker <span class="tag-suggested">Suggested</span></span>
+              <span class="a-body">Matches the print partner's batch limit.</span></label>
+            <label class="answer"><input type="radio" name="q2" id="q2b">
+              <span class="a-title">No cap</span>
+              <span class="a-body">Split into batches behind the scenes.</span></label>
+          </div>
+          <label class="label" for="q2note">Note (optional)</label>
+          <textarea id="q2note" placeholder="Anything the planner should know"></textarea>
+        </div>
+
+        <div class="row spread">
+          <span class="sample-note">Choices save as you go. Submit sends the round.</span>
+          <div class="row"><button type="button" class="btn ghost">Save draft</button><button type="submit" class="btn primary">Submit round</button></div>
+        </div>
+      </form>
+    </section>
+
+    <!-- 2 · Confirm figure -->
+    <section>
+      <div class="surface-title"><h2>Confirm</h2><span class="label">bridge page</span></div>
+      <div class="card">
+        <div class="row spread">
+          <div><span class="label">plan-1142</span><h3>Send one postcard to several recipients</h3></div>
+          <span class="chip s-plan">plan</span>
+        </div>
+        <div class="figure-wrap">
+          <svg viewBox="0 0 640 284" role="img" aria-label="Plan figure: four lanes UI, State, Domain, Storage with the components this plan adds or changes">
+            <defs>
+              <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path class="arrowhead" d="M0,0 L10,5 L0,10 z"/>
+              </marker>
+            </defs>
+            <rect class="lane-bg" x="0" y="2" width="640" height="70"/>
+            <rect class="lane-bg alt" x="0" y="72" width="640" height="70"/>
+            <rect class="lane-bg" x="0" y="142" width="640" height="70"/>
+            <rect class="lane-bg alt" x="0" y="212" width="640" height="70"/>
+            <line class="lane-rule" x1="0" y1="72" x2="640" y2="72"/>
+            <line class="lane-rule" x1="0" y1="142" x2="640" y2="142"/>
+            <line class="lane-rule" x1="0" y1="212" x2="640" y2="212"/>
+            <text class="lane-label" x="14" y="41">UI</text>
+            <text class="lane-label" x="14" y="111">State</text>
+            <text class="lane-label" x="14" y="181">Domain</text>
+            <text class="lane-label" x="14" y="251">Storage</text>
+
+            <line class="edge" x1="250" y1="37" x2="298" y2="37" marker-end="url(#ah)"/>
+            <line class="edge" x1="370" y1="55" x2="370" y2="87" marker-end="url(#ah)"/>
+            <line class="edge" x1="370" y1="125" x2="370" y2="157" marker-end="url(#ah)"/>
+            <line class="edge" x1="440" y1="177" x2="478" y2="177" marker-end="url(#ah)"/>
+            <line class="edge" x1="370" y1="195" x2="370" y2="227" marker-end="url(#ah)"/>
+
+            <g class="node new"><rect x="100" y="19" width="150" height="36"/><text x="175" y="41" text-anchor="middle">RecipientPicker</text></g>
+            <g class="node changed"><rect x="300" y="19" width="140" height="36"/><text x="370" y="41" text-anchor="middle">ComposeScreen</text></g>
+            <g class="node new"><rect x="300" y="89" width="140" height="36"/><text x="370" y="111" text-anchor="middle">SendDraft</text></g>
+            <g class="node new"><rect x="300" y="159" width="140" height="36"/><text x="370" y="181" text-anchor="middle">DeliveryPlan</text></g>
+            <g class="node same"><rect x="480" y="159" width="140" height="36"/><text x="550" y="181" text-anchor="middle">PostageRates</text></g>
+            <g class="node changed"><rect x="300" y="229" width="140" height="36"/><text x="370" y="251" text-anchor="middle">outbox table</text></g>
+          </svg>
+        </div>
+        <div class="legend"><span><i class="lg-new"></i>new</span><span><i class="lg-changed"></i>changed</span><span><i class="lg-same"></i>untouched</span><span>Lanes come from <code>## Plan vocabulary</code></span></div>
+
+        <div class="subtasks">
+          <div class="subtask">
+            <span class="num">1</span><span>Recipient picker screen</span>
+            <label class="switch"><input type="checkbox" role="switch" id="h1" checked><span class="track"></span>hitl</label>
+            <span class="why">Visual taste: picker layout needs your eye on device.</span>
+          </div>
+          <div class="subtask">
+            <span class="num">2</span><span><code>SendDraft</code> state and <code>DeliveryPlan</code></span>
+            <label class="switch"><input type="checkbox" role="switch" id="h2"><span class="track"></span>hitl</label>
+          </div>
+          <div class="subtask">
+            <span class="num">3</span><span>Outbox migration for multi-recipient sends</span>
+            <label class="switch"><input type="checkbox" role="switch" id="h3"><span class="track"></span>hitl</label>
+            <span class="why">Blocked by 2.</span>
+          </div>
+        </div>
+        <details class="acc">
+          <summary>Plan details</summary>
+          <div><p>Frontend, state, domain and storage sections as written to the Dev Notes. Collapsed by default so the figure and the subtasks lead.</p></div>
+        </details>
+        <div class="row spread">
+          <button type="button" class="btn">Reopen with notes</button>
+          <button type="button" class="btn primary">Confirm plan</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 · UI list view -->
+    <section class="full">
+      <div class="surface-title"><h2>Ticket list</h2><span class="label">React UI</span></div>
+      <div class="card board">
+        <div class="board-head">
+          <div class="row"><h3>postkarte</h3><span class="sample-note">sample data</span></div>
+          <div class="row">
+            <span class="chip flag s-backlog">serial · 1 run at a time</span>
+            <span class="chip flag s-review">usage 72% · resets 18:40</span>
+          </div>
+        </div>
+
+        <div class="group-h"><span class="label">Needs you</span><span class="count">2</span></div>
+        <div class="ticket needs-you">
+          <span class="num">#1142</span><span class="title">Send one postcard to several recipients</span>
+          <span class="act"><button class="btn primary" type="button">Open round 2</button></span>
+          <span class="meta"><span class="chip s-plan">plan</span><span class="chip flag f-hitl">hitl</span>waiting 12 min</span>
+        </div>
+        <div class="ticket needs-you">
+          <span class="num">#1129</span><span class="title">Stamp picker shows regional stamps first</span>
+          <span class="act"><button class="btn" type="button">Review PR</button></span>
+          <span class="meta"><span class="chip s-review">in-review</span><span class="chip flag f-hitl">hitl</span>PR #1151 · checks green</span>
+        </div>
+
+        <div class="group-h"><span class="label">Running</span><span class="count">1</span></div>
+        <div class="ticket">
+          <span class="num">#1137</span><span class="title">Retry failed uploads when the app returns to the foreground</span>
+          <span class="act"><button class="btn ghost" type="button">Watch</button></span>
+          <span class="meta"><span class="chip s-progress">in-progress</span>implement-ticket · 6 min · tests passing</span>
+        </div>
+
+        <div class="group-h"><span class="label">Queued</span><span class="count">2</span></div>
+        <div class="ticket">
+          <span class="num">#1140</span><span class="title">Address book import from contacts</span>
+          <span class="act"></span>
+          <span class="meta"><span class="chip s-ready">ready</span>behind #1137</span>
+        </div>
+        <div class="ticket">
+          <span class="num">#1133</span><span class="title">Rework: sender address line wraps on small screens</span>
+          <span class="act"></span>
+          <span class="meta"><span class="chip s-review">in-review</span>changes requested · rework run queued</span>
+        </div>
+
+        <div class="group-h"><span class="label">Stuck</span><span class="count">1</span></div>
+        <div class="ticket">
+          <span class="num">#1118</span><span class="title">Print partner webhook for delivery status</span>
+          <span class="act"><button class="btn" type="button">Read reason</button></span>
+          <span class="meta"><span class="chip s-stuck">stuck</span>escalated: spec gap on retry policy</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var store = {
+    get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  };
+  var TOKENS = ['bg','surface','surface-2','border','text','muted','accent','accent-soft','ok','warn','danger','info','hitl'];
+  var TYPE = {
+    a: 'IBM Plex Sans / IBM Plex Mono',
+    b: 'Atkinson Hyperlegible / JetBrains Mono (headings + labels)',
+    c: 'Manrope / DM Mono'
+  };
+
+  function renderTokens() {
+    var cs = getComputedStyle(root), box = document.getElementById('tokens');
+    box.innerHTML = '';
+    TOKENS.forEach(function (t) {
+      var v = cs.getPropertyValue('--' + t).trim();
+      var s = document.createElement('span'); s.className = 'sw';
+      s.innerHTML = '<i style="background:' + v + '"></i>' + t + ' ' + v;
+      box.appendChild(s);
+    });
+    document.getElementById('type-note').textContent = TYPE[root.dataset.kit || 'a'];
+  }
+
+  function setKit(k) {
+    root.dataset.kit = k;
+    document.querySelectorAll('[data-kit-btn]').forEach(function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.kitBtn === k));
+    });
+    store.set('aisf-kit', k);
+    renderTokens();
+  }
+  function setTheme(t) {
+    if (t === 'system') delete root.dataset.theme; else root.dataset.theme = t;
+    document.querySelectorAll('[data-theme-btn]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.themeBtn === t));
+    });
+    renderTokens();
+  }
+
+  document.querySelectorAll('[data-kit-btn]').forEach(function (b) {
+    b.addEventListener('click', function () { setKit(b.dataset.kitBtn); });
+  });
+  document.querySelectorAll('[data-theme-btn]').forEach(function (b) {
+    b.addEventListener('click', function () { setTheme(b.dataset.themeBtn); });
+  });
+  if (window.matchMedia) {
+    var mq = matchMedia('(prefers-color-scheme: dark)');
+    if (mq.addEventListener) mq.addEventListener('change', renderTokens);
+  }
+
+  var fromHash = (location.hash || '').slice(1);
+  setKit(/^[abc]$/.test(fromHash) ? fromHash : (store.get('aisf-kit') || 'a'));
+})();
+</script>
