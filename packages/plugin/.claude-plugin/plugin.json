@@ -1,0 +1,9 @@
+{
+  "name": "aisf",
+  "version": "0.0.0",
+  "description": "The AISoftwareFactory workflow skills: ticket creation, planning, implementation and commits for projects onboarded to aisf.",
+  "author": {
+    "name": "Moritz Kopmann"
+  },
+  "repository": "https://github.com/MoritzKopmann/AISoftwareFactory"
+}
