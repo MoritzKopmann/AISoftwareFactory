@@ -49,7 +49,7 @@ packages/
 
 - **Must:** only create folders that contain files.
 - **Must:** a module root holds `index.ts` and the three layer folders, nothing else.
-- **Should:** files stay under 300 lines. Over that, split.
+- **Should:** files stay under 500 lines. Over that, split.
 
 **Module-root pattern:** `packages/app/src/modules/<name>/`. The six modules are:
 
