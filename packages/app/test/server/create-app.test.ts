@@ -18,14 +18,22 @@ describe('createApp', () => {
   });
 
   it('should answer ok on the health route when the app is running', async () => {
-    const response = await createApp({ staticDirectory, kitRoutes: new Hono() }).request('/health');
+    const response = await createApp({
+      staticDirectory,
+      kitRoutes: new Hono(),
+      skillsRoutes: new Hono(),
+    }).request('/health');
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ status: 'ok' });
   });
 
   it('should serve the placeholder page on the root path', async () => {
-    const response = await createApp({ staticDirectory, kitRoutes: new Hono() }).request('/');
+    const response = await createApp({
+      staticDirectory,
+      kitRoutes: new Hono(),
+      skillsRoutes: new Hono(),
+    }).request('/');
 
     expect(response.status).toBe(200);
     expect(await response.text()).toContain('placeholder');
@@ -34,8 +42,24 @@ describe('createApp', () => {
   it('should serve the kit routes under /aisf when the app is running', async () => {
     const kitRoutes = new Hono().get('/kit.css', (context) => context.text(':root {}'));
 
-    const response = await createApp({ staticDirectory, kitRoutes }).request('/aisf/kit.css');
+    const response = await createApp({
+      staticDirectory,
+      kitRoutes,
+      skillsRoutes: new Hono(),
+    }).request('/aisf/kit.css');
 
     expect(await response.text()).toBe(':root {}');
+  });
+
+  it('should serve the skills routes under /api/skills when the app is running', async () => {
+    const skillsRoutes = new Hono().get('/status', (context) => context.json({ state: 'passed' }));
+
+    const response = await createApp({
+      staticDirectory,
+      kitRoutes: new Hono(),
+      skillsRoutes,
+    }).request('/api/skills/status');
+
+    expect(await response.json()).toEqual({ state: 'passed' });
   });
 });

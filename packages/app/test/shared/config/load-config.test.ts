@@ -26,6 +26,16 @@ describe('loadConfig', () => {
     expect(config.databasePath).toBe('/tmp/aisf-test/aisf.db');
   });
 
+  it('should put the plugin mirror and the probe directory in the home directory when loaded', () => {
+    const config = loadConfig({
+      environment: { AISF_HOME: '/tmp/aisf-test' },
+      userHomeDirectory: '/home/someone',
+    });
+
+    expect(config.pluginMirrorDirectory).toBe('/tmp/aisf-test/plugins/aisf');
+    expect(config.skillsProbeDirectory).toBe('/tmp/aisf-test/skills-probe');
+  });
+
   it('should default the port to 4317 when AISF_PORT is unset', () => {
     const config = loadConfig({ environment: {}, userHomeDirectory: '/home/someone' });
 
