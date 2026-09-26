@@ -22,6 +22,10 @@ module.exports = {
     doNotFollow: { path: 'node_modules' },
     exclude: { path: '(^|/)(node_modules|dist|coverage)/' },
     tsPreCompilationDeps: true,
+    enhancedResolveOptions: {
+      exportsFields: ['exports'],
+      conditionNames: ['import', 'node', 'default'],
+    },
     tsConfig: { fileName: 'tsconfig.base.json' },
   },
 };
