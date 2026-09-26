@@ -1,0 +1,37 @@
+{
+  "title": "Trip library: trip cards",
+  "project": "postkarte",
+  "issue": 1057,
+  "brief": "The trip list draws a 24 dp dot and a name, and nothing else. A trip that is recording right now, one whose location permission was revoked, and one finished last year all look identical. Give each row the look of a card, carrying the trip's colour, its name and one line of news: where the trip is in its life. Don't change how trips are created, deleted or opened.",
+  "round": 1,
+  "boards": [
+    {
+      "id": "library",
+      "title": "Library",
+      "w": 390,
+      "h": 844,
+      "note": "The page at real width, and the source for every px and colour. Cards sit on surfaceContainerLow, 12 px apart, with 16 px side margins. The card is the existing cardTheme (surface, outlineVariant border, 16 radius). The trip colour becomes a 40 px disc, up from the 24 px dot."
+    },
+    {
+      "id": "status-line",
+      "title": "The second line, state by state",
+      "w": 390,
+      "h": 820,
+      "note": "One card per state the domain can produce. The annotation above each card names the data it reads. Only recording and blocked use labelMedium in colour, because they're the two states that want attention. Everything else is quiet bodySmall in onSurfaceVariant. Every state has a text as well as a colour or icon."
+    },
+    {
+      "id": "delete-flow",
+      "title": "Delete, step by step",
+      "w": 1266,
+      "h": 844,
+      "note": "Behaviour is unchanged (long-press arms, the icon asks to confirm, a failure shows a snackbar). Only the armed card is restyled: errorContainer fill, error border, and a 48 px delete icon button in place of the status line. The failure snackbar keeps today's error background, and the FAB rises above it."
+    },
+    {
+      "id": "states",
+      "title": "Empty, loading, failure",
+      "w": 1266,
+      "h": 844,
+      "note": "The empty state gets a sentence that says what to do. Loading becomes three skeleton cards in place of the spinner, so the page doesn't jump when the trips arrive. Failure is the existing LoadFailureView, unchanged, now on the surfaceContainerLow ground."
+    }
+  ]
+}

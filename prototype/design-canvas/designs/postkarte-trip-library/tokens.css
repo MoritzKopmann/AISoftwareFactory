@@ -1,0 +1,103 @@
+/* postkarte tokens, dumped from lib/features/app/core/config/{app_theme,tracking_status_colors,app_shadows}.dart
+   and lib/features/trip_library/core/config/trip_colors.dart. One variable per token, named after the Dart role. */
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=block");
+
+:root, [data-theme="light"] {
+  --colorScheme-surfaceContainerLow: #F6F3FA;
+  --colorScheme-surface: #FFFFFF;
+  --colorScheme-surfaceContainer: #F0EBF7;
+  --colorScheme-outlineVariant: #E4E0E8;
+  --colorScheme-outline: #88848F;
+  --colorScheme-onSurface: #1C1920;
+  --colorScheme-onSurfaceVariant: #6C6673;
+  --colorScheme-primary: #6750A4;
+  --colorScheme-onPrimary: #FFFFFF;
+  --colorScheme-primaryContainer: #E7DEFF;
+  --colorScheme-onPrimaryContainer: #49307A;
+  --colorScheme-error: #C0453D;
+  --colorScheme-errorContainer: #FFEBE8;
+
+  --trackingStatusColors-recordingDot: #2E7D5B;
+  --trackingStatusColors-recordingContainer: #E4F3EA;
+  --trackingStatusColors-recordingHeadlineInk: #1D5A3E;
+  --trackingStatusColors-awaitingDot: #B4770A;
+  --trackingStatusColors-awaitingContainer: #FBF0DC;
+  --trackingStatusColors-awaitingHeadlineInk: #6B4605;
+
+  --appShadows-card: 0 2px 8px #00000014;
+  --appShadows-raised: 0 10px 24px #211F262E;
+
+  /* not overridden by AppTheme — ColorScheme.fromSeed / M3 defaults, used as Flutter renders them */
+  --colorScheme-onError: #FFFFFF;
+  --m3-dialogScrim: #0000008A;
+  --m3-elevation1: 0 1px 2px #0000004D, 0 1px 3px 1px #00000026;
+}
+
+[data-theme="dark"] {
+  --colorScheme-surfaceContainerLow: #0F0D13;
+  --colorScheme-surface: #1B181F;
+  --colorScheme-surfaceContainer: #2A262F;
+  --colorScheme-outlineVariant: #302C34;
+  --colorScheme-outline: #7D7884;
+  --colorScheme-onSurface: #ECEAF0;
+  --colorScheme-onSurfaceVariant: #B0ABB7;
+  --colorScheme-primary: #C1ABFC;
+  --colorScheme-onPrimary: #341F59;
+  --colorScheme-primaryContainer: #4F3680;
+  --colorScheme-onPrimaryContainer: #EAE3FF;
+  --colorScheme-error: #F58C81;
+  --colorScheme-errorContainer: #491F1B;
+
+  --trackingStatusColors-recordingDot: #7ED9A6;
+  --trackingStatusColors-recordingContainer: #17352A;
+  --trackingStatusColors-recordingHeadlineInk: #B7EFCE;
+  --trackingStatusColors-awaitingDot: #E3B341;
+  --trackingStatusColors-awaitingContainer: #3A2E12;
+  --trackingStatusColors-awaitingHeadlineInk: #F5D98B;
+
+  --appShadows-card: 0 2px 8px #0000008C;
+  --appShadows-raised: 0 10px 24px #0000008C;
+
+  --colorScheme-onError: #690005;
+  --m3-dialogScrim: #0000008A;
+  --m3-elevation1: 0 1px 2px #0000004D, 0 1px 3px 1px #00000026;
+}
+
+:root {
+  /* tripPalette — the trip's own colour; same in both themes */
+  --tripPalette-red300: #E57373;
+  --tripPalette-pink300: #F06292;
+  --tripPalette-purple300: #BA68C8;
+  --tripPalette-indigo300: #7986CB;
+  --tripPalette-blue300: #64B5F6;
+  --tripPalette-teal300: #4DB6AC;
+  --tripPalette-green300: #81C784;
+  --tripPalette-orange300: #FFB74D;
+  --tripPalette-brown300: #A1887F;
+  --tripPalette-blueGrey300: #90A4AE;
+
+  /* textTheme — size/weight from AppTheme; line heights are Flutter's M3 defaults */
+  --textTheme-headlineSmall: 400 24px/32px Roboto, sans-serif;
+  --textTheme-titleLarge: 700 19px/24px Roboto, sans-serif;
+  --textTheme-titleMedium: 600 14.5px/20px Roboto, sans-serif;
+  --textTheme-titleSmall: 600 13px/18px Roboto, sans-serif;
+  --textTheme-bodyLarge: 400 16px/24px Roboto, sans-serif;
+  --textTheme-bodyMedium: 400 14px/20px Roboto, sans-serif;
+  --textTheme-bodySmall: 400 12px/16px Roboto, sans-serif;
+  --textTheme-labelLarge: 500 14px/20px Roboto, sans-serif;
+  --textTheme-labelMedium: 600 12px/16px Roboto, sans-serif;
+  --textTheme-labelSmall: 500 11px/16px Roboto, sans-serif;
+
+  /* cardTheme */
+  --cardTheme-radius: 16px;
+}
+
+/* shared board basics — not tokens */
+* { box-sizing: border-box; margin: 0; }
+body { font: var(--textTheme-bodyMedium); color: var(--colorScheme-onSurface); -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+.icon { font-family: "Material Symbols Outlined"; font-weight: normal; font-style: normal; line-height: 1; display: inline-block; white-space: nowrap; font-feature-settings: "liga"; font-size: 24px; }
+/* in-board annotations: the designer's words, not UI. ui-ticket ignores [data-annotation] as pixels. */
+[data-annotation] { font: 500 11px/15px "JetBrains Mono", ui-monospace, monospace; letter-spacing: .04em; color: #4c6075; }
+[data-theme="dark"] [data-annotation] { color: #8aa1b6; }

@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>aisf Design board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* PROTOTYPE (throwaway). The design-session panel of a ticket page, as the aisf app would serve it. Drafting tokens from #18. */
+:root {
+  --bg: #e9eef2; --surface: #f8fafb; --surface-2: #dfe6ec; --border: #a9b8c5; --border-strong: #6f8499;
+  --text: #13243a; --muted: #4c6075; --accent: #d05f1a; --accent-ink: #ffffff; --accent-soft: #f8e2d2;
+  --ok: #2b7a44; --warn: #a2640b; --danger: #b8322f; --info: #2d5f93; --hitl: #6b47c2;
+  --grid: color-mix(in srgb, var(--info) 9%, transparent);
+  --font-ui: "Atkinson Hyperlegible", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1924; --surface: #122130; --surface-2: #192b3d; --border: #2e4760; --border-strong: #4d6a86;
+    --text: #d8e4ee; --muted: #8aa1b6; --accent: #ff8a45; --accent-ink: #1c0d03; --accent-soft: #3b2515;
+    --ok: #5cc07a; --warn: #e5ab4e; --danger: #f07268; --info: #6fa6db; --hitl: #a98cf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1924; --surface: #122130; --surface-2: #192b3d; --border: #2e4760; --border-strong: #4d6a86;
+  --text: #d8e4ee; --muted: #8aa1b6; --accent: #ff8a45; --accent-ink: #1c0d03; --accent-soft: #3b2515;
+  --ok: #5cc07a; --warn: #e5ab4e; --danger: #f07268; --info: #6fa6db; --hitl: #a98cf0;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 var(--font-ui); display: flex; flex-direction: column; }
+button, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+p { margin: 0; }
+.label { font: 500 11px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+h1, h2, h3 { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .04em; font-weight: 700; margin: 0; }
+h1 { font-size: 14px; } h2 { font-size: 12.5px; } h3 { font-size: 11.5px; }
+.muted { color: var(--muted); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface); padding: 6px 12px; font-size: 14px; line-height: 1.3; }
+.btn:hover { background: var(--surface-2); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
+.btn[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.seg { display: inline-flex; }
+.seg .btn { font: 500 11px var(--font-mono); text-transform: uppercase; letter-spacing: .06em; padding: 5px 9px; margin-left: -1px; }
+
+/* top bar */
+.top { display: flex; align-items: center; gap: 14px; padding: 0 14px; height: 46px; background: var(--surface); border-bottom: 1px solid var(--border-strong); flex: none; }
+.fav { width: 22px; height: 22px; background: var(--accent); color: var(--accent-ink); font: 700 13px/22px var(--font-mono); text-align: center; flex: none; }
+.crumb { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.crumb .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip { font: 700 11px var(--font-mono); text-transform: uppercase; letter-spacing: .07em; padding: 3px 8px; border: 1px solid var(--hitl); color: var(--hitl); white-space: nowrap; }
+.chip.accepted { border-color: var(--ok); color: var(--ok); }
+
+/* layout */
+.work { flex: 1; display: flex; min-height: 0; }
+.canvas-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--bg); flex: none; }
+.canvas { flex: 1; overflow: auto; padding: 28px 28px 80px;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 24px 24px; }
+.canvas.commenting .frame { cursor: crosshair; }
+.boards { display: flex; flex-direction: column; gap: 48px; }
+
+.board { display: grid; gap: 10px; }
+.board-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; max-width: 900px; }
+.board-head .n { font: 700 12px var(--font-mono); color: var(--accent); }
+.board-head .dim { font: 500 11px var(--font-mono); color: var(--muted); }
+.board-head .changed { font: 700 11px var(--font-mono); text-transform: uppercase; letter-spacing: .07em; background: var(--accent-soft); color: var(--accent); padding: 1px 6px; }
+.note { max-width: 760px; font-size: 13.5px; color: var(--muted); border-left: 2px solid var(--border-strong); padding-left: 10px; }
+.frames { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+.frame-col { display: grid; gap: 6px; }
+.frame { position: relative; border: 1px solid var(--border-strong); background: var(--surface); overflow: hidden; }
+.frame iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; pointer-events: none; }
+.frame .hit { position: absolute; inset: 0; }
+.pin { position: absolute; width: 24px; height: 24px; margin: -24px 0 0 -2px; background: var(--hitl); color: #fff; font: 700 11px/24px var(--font-mono); text-align: center; border: 2px solid #fff; box-shadow: 0 1px 3px #0006; pointer-events: none; }
+.pin.sent { background: var(--muted); }
+
+/* side panel */
+.side { width: 360px; flex: none; border-left: 1px solid var(--border-strong); background: var(--surface); display: flex; flex-direction: column; min-height: 0; }
+.side section { padding: 14px 16px; border-bottom: 1px solid var(--border); display: grid; gap: 10px; }
+.side .scroll { flex: 1; overflow: auto; min-height: 0; }
+.brief { font-size: 13.5px; }
+.cmt { display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: start; }
+.cmt .num { width: 24px; height: 24px; background: var(--hitl); color: #fff; font: 700 11px/24px var(--font-mono); text-align: center; }
+.cmt .where { font: 500 10.5px var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+textarea { width: 100%; resize: vertical; min-height: 54px; border: 1px solid var(--border-strong); background: var(--bg); padding: 6px 8px; font-size: 14px; }
+.hint { font-size: 13px; color: var(--muted); }
+.actions { display: grid; gap: 8px; padding: 14px 16px; border-top: 1px solid var(--border-strong); background: var(--surface); }
+.confirm { border: 1px solid var(--ok); padding: 10px; display: grid; gap: 8px; font-size: 13.5px; }
+.log { display: grid; gap: 8px; }
+.log .msg { border: 1px solid var(--border); background: var(--bg); padding: 8px; font-size: 13px; }
+.log .msg pre { margin: 6px 0 0; font: 11px/1.4 var(--font-mono); white-space: pre-wrap; word-break: break-word; max-height: 180px; overflow: auto; }
+.status { font: 500 11px var(--font-mono); text-transform: uppercase; letter-spacing: .07em; display: flex; align-items: center; gap: 8px; }
+.status i { width: 8px; height: 8px; background: var(--warn); display: inline-block; }
+.status.idle i { background: var(--ok); }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="fav">a</div>
+  <div class="crumb"><span class="label">postkarte</span><span class="label">/</span><span class="t" id="title">…</span></div>
+  <span style="flex:1"></span>
+  <span class="chip" id="stepchip">Design · round 1</span>
+</header>
+
+<div class="work">
+  <div class="canvas-wrap">
+    <div class="toolbar">
+      <span class="label">Theme</span>
+      <span class="seg" id="themes">
+        <button class="btn" data-v="both" aria-pressed="true">Both</button><button class="btn" data-v="light">Light</button><button class="btn" data-v="dark">Dark</button>
+      </span>
+      <span class="label">Zoom</span>
+      <span class="seg" id="zooms">
+        <button class="btn" data-v="0.5">50%</button><button class="btn" data-v="0.75" aria-pressed="true">75%</button><button class="btn" data-v="1">100%</button>
+      </span>
+      <span style="flex:1"></span>
+      <button class="btn" id="commentBtn" aria-pressed="false" title="C">＋ Comment on a spot</button>
+    </div>
+    <div class="canvas" id="canvas"><div class="boards" id="boards"></div></div>
+  </div>
+
+  <aside class="side">
+    <div class="scroll">
+      <section>
+        <h2>Brief</h2>
+        <p class="brief" id="brief"></p>
+      </section>
+      <section>
+        <div style="display:flex; align-items:baseline; justify-content:space-between;"><h2 id="fbTitle">Feedback · round 1</h2><span class="status idle" id="status"><i></i><span>Your turn</span></span></div>
+        <div id="comments" style="display:grid; gap:12px;"></div>
+        <p class="hint" id="cmtHint">Turn on <b>Comment on a spot</b> (or press C) and click a board to pin a comment there.</p>
+        <label class="label" for="general">Anything else</label>
+        <textarea id="general" placeholder="Overall reactions, what to try next…"></textarea>
+      </section>
+      <section>
+        <h2>Sent to the session</h2>
+        <div class="log" id="log"><p class="hint">Nothing sent yet.</p></div>
+      </section>
+    </div>
+    <div class="actions" id="actions">
+      <button class="btn primary" id="sendBtn" disabled>Send feedback</button>
+      <button class="btn" id="acceptBtn">Accept design…</button>
+    </div>
+  </aside>
+</div>
+
+<script>
+// PROTOTYPE glue. In the app this is kit.js + bridge.js; here it POSTs to serve.mjs.
+const state = { index: null, theme: 'both', zoom: 0.75, commenting: false, comments: [], sent: [], waiting: false, accepted: false, changed: new Set() };
+let nextPin = 1;
+const $ = (id) => document.getElementById(id);
+
+async function loadIndex() {
+  state.index = await (await fetch('/design/index.json?' + Date.now())).json();
+  $('title').textContent = state.index.title;
+  $('brief').textContent = state.index.brief;
+  document.title = `Design · ${state.index.title}`;
+  renderChrome();
+}
+
+function renderChrome() {
+  const r = state.index.round;
+  $('stepchip').textContent = state.accepted ? `Design accepted · round ${r}` : `Design · round ${r}`;
+  $('stepchip').classList.toggle('accepted', state.accepted);
+  $('fbTitle').textContent = `Feedback · round ${r}`;
+  const st = $('status');
+  st.classList.toggle('idle', !state.waiting);
+  st.lastElementChild.textContent = state.accepted ? 'Accepted' : state.waiting ? 'Session is revising…' : 'Your turn';
+  const has = state.comments.some((c) => c.text.trim()) || $('general').value.trim();
+  $('sendBtn').disabled = !has || state.waiting || state.accepted;
+  $('sendBtn').textContent = `Send feedback${state.comments.length ? ` (${state.comments.length} pinned)` : ''}`;
+  $('acceptBtn').disabled = state.waiting || state.accepted;
+}
+
+function renderBoards() {
+  const el = $('boards');
+  el.innerHTML = '';
+  state.index.boards.forEach((b, i) => {
+    const themes = state.theme === 'both' ? ['light', 'dark'] : [state.theme];
+    const board = document.createElement('div');
+    board.className = 'board';
+    board.innerHTML = `
+      <div class="board-head"><span class="n">${String(i + 1).padStart(2, '0')}</span><h2>${b.title}</h2><span class="dim">${b.w} × ${b.h}</span>${state.changed.has(b.id) ? '<span class="changed">Updated</span>' : ''}</div>
+      <p class="note">${b.note ?? ''}</p>
+      <div class="frames"></div>`;
+    const frames = board.querySelector('.frames');
+    for (const t of themes) {
+      const col = document.createElement('div');
+      col.className = 'frame-col';
+      col.innerHTML = `<span class="label">${t}</span>`;
+      const f = document.createElement('div');
+      f.className = 'frame';
+      f.style.width = b.w * state.zoom + 'px';
+      f.style.height = b.h * state.zoom + 'px';
+      const ifr = document.createElement('iframe');
+      ifr.width = b.w; ifr.height = b.h;
+      ifr.style.transform = `scale(${state.zoom})`;
+      ifr.src = `/design/boards/${b.id}.html?v=${state.index.round}-${Date.now()}`;
+      ifr.addEventListener('load', () => { ifr.contentDocument.documentElement.dataset.theme = t; });
+      const hit = document.createElement('div');
+      hit.className = 'hit';
+      hit.addEventListener('click', (e) => {
+        if (!state.commenting || state.accepted) return;
+        const r = hit.getBoundingClientRect();
+        addComment(b, t, Math.round((e.clientX - r.left) / state.zoom), Math.round((e.clientY - r.top) / state.zoom));
+      });
+      f.append(ifr, hit);
+      for (const c of [...state.comments, ...state.sent].filter((c) => c.board === b.id && c.theme === t)) {
+        const p = document.createElement('div');
+        p.className = 'pin' + (c.round < state.index.round ? ' sent' : '');
+        p.style.left = c.x * state.zoom + 'px'; p.style.top = c.y * state.zoom + 'px';
+        p.textContent = c.n;
+        f.append(p);
+      }
+      col.append(f);
+      frames.append(col);
+    }
+    el.append(board);
+  });
+}
+
+function addComment(b, theme, x, y) {
+  const c = { n: nextPin++, board: b.id, boardTitle: b.title, theme, x, y, text: '', round: state.index.round };
+  state.comments.push(c);
+  renderComments(); renderBoards(); renderChrome();
+  document.querySelector(`[data-n="${c.n}"] textarea`)?.focus();
+}
+
+function renderComments() {
+  const el = $('comments');
+  el.innerHTML = '';
+  $('cmtHint').style.display = state.comments.length ? 'none' : '';
+  for (const c of state.comments) {
+    const row = document.createElement('div');
+    row.className = 'cmt'; row.dataset.n = c.n;
+    row.innerHTML = `<span class="num">${c.n}</span>
+      <div style="display:grid; gap:4px;"><span class="where">${c.boardTitle} · ${c.theme} · ${c.x},${c.y}</span><textarea placeholder="What should change here?"></textarea></div>
+      <button class="btn ghost" title="Remove" style="padding:2px 6px;">✕</button>`;
+    const ta = row.querySelector('textarea');
+    ta.value = c.text;
+    ta.addEventListener('input', () => { c.text = ta.value; renderChrome(); });
+    row.querySelector('button').addEventListener('click', () => {
+      state.comments = state.comments.filter((x) => x !== c);
+      renderComments(); renderBoards(); renderChrome();
+    });
+    el.append(row);
+  }
+}
+
+async function send(tag, payload) {
+  const msg = await (await fetch('/send', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ tag, design: state.index.title, round: state.index.round, ...payload }) })).json();
+  logMsg(msg);
+  return msg;
+}
+
+function logMsg(msg) {
+  const log = $('log');
+  if (log.querySelector('.hint')) log.innerHTML = '';
+  const d = document.createElement('div');
+  d.className = 'msg';
+  const n = msg.comments?.length ?? 0;
+  d.innerHTML = `<div style="display:flex; justify-content:space-between; gap:8px;"><b class="label" style="color:var(--text)">${msg.tag} · round ${msg.round}</b><span class="label">${new Date(msg.at).toLocaleTimeString()}</span></div>
+    <p style="margin-top:4px;">${msg.tag === 'design-accepted' ? 'Design accepted. The app snapshots the folder and moves the ticket to plan.' : `${n} pinned comment${n === 1 ? '' : 's'}${msg.message ? ' + a message' : ''}.`}</p>
+    <details><summary class="label" style="cursor:pointer; margin-top:4px;">Message as the session receives it</summary><pre></pre></details>`;
+  d.querySelector('pre').textContent = JSON.stringify(msg, null, 2);
+  log.prepend(d);
+}
+
+$('sendBtn').addEventListener('click', async () => {
+  const comments = state.comments.filter((c) => c.text.trim()).map(({ n, board, theme, x, y, text }) => ({ n, board, theme, x, y, text: text.trim() }));
+  await send('design-feedback', { comments, message: $('general').value.trim() });
+  state.sent.push(...state.comments);
+  state.comments = []; $('general').value = '';
+  state.waiting = true; state.changed = new Set();
+  renderComments(); renderBoards(); renderChrome();
+});
+
+$('acceptBtn').addEventListener('click', () => {
+  const box = document.createElement('div');
+  box.className = 'confirm';
+  box.innerHTML = `<p><b>Accept round ${state.index.round} as the design?</b> The ticket gets a <code>## Design</code> link and moves to <code>status: plan</code>, and <code>aisf:ui-ticket</code> splits it next.${state.comments.length ? ` <b>${state.comments.length} unsent comment(s) will be dropped.</b>` : ''}</p>
+    <div style="display:flex; gap:8px;"><button class="btn ok">Accept design</button><button class="btn ghost">Cancel</button></div>`;
+  $('actions').prepend(box);
+  $('acceptBtn').style.display = 'none';
+  const [ok, cancel] = box.querySelectorAll('button');
+  cancel.onclick = () => { box.remove(); $('acceptBtn').style.display = ''; };
+  ok.onclick = async () => {
+    await send('design-accepted', {});
+    state.accepted = true; state.commenting = false; state.comments = [];
+    box.remove(); $('acceptBtn').style.display = '';
+    $('commentBtn').setAttribute('aria-pressed', 'false'); $('canvas').classList.remove('commenting');
+    renderComments(); renderBoards(); renderChrome();
+  };
+});
+
+function toggleComment() {
+  if (state.accepted) return;
+  state.commenting = !state.commenting;
+  $('commentBtn').setAttribute('aria-pressed', state.commenting);
+  $('canvas').classList.toggle('commenting', state.commenting);
+}
+$('commentBtn').addEventListener('click', toggleComment);
+document.addEventListener('keydown', (e) => { if (e.key === 'c' && !/TEXTAREA|INPUT/.test(document.activeElement.tagName)) toggleComment(); });
+$('general').addEventListener('input', renderChrome);
+for (const [id, key, parse] of [['themes', 'theme', String], ['zooms', 'zoom', Number]]) {
+  $(id).addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    state[key] = parse(b.dataset.v);
+    $(id).querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    renderBoards();
+  });
+}
+
+// The session edits files; the app watches the folder and tells the page.
+new EventSource('/events').addEventListener('reload', async (e) => {
+  const { file } = JSON.parse(e.data);
+  const before = state.index.round;
+  await loadIndex();
+  const m = file.match(/boards\/(.+)\.html$/);
+  if (m) state.changed.add(m[1]);
+  if (state.index.round !== before) state.waiting = false;
+  renderBoards(); renderChrome();
+});
+
+(async () => {
+  await loadIndex();
+  for (const m of await (await fetch('/outbox')).json()) logMsg(m);
+  renderBoards(); renderComments(); renderChrome();
+})();
+</script>
+</body>
+</html>

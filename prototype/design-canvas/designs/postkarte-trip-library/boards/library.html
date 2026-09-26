@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Library</title>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body style="width:390px; height:844px; overflow:hidden; position:relative; background:var(--colorScheme-surfaceContainerLow);">
+
+<header data-part="app-bar" style="height:64px; display:flex; align-items:center; padding:0 4px 0 16px; background:var(--colorScheme-surfaceContainerLow);">
+  <h1 style="flex:1; font:var(--textTheme-titleLarge); color:var(--colorScheme-onSurface);">Trips</h1>
+  <button aria-label="Settings" style="width:48px; height:48px; display:grid; place-items:center; color:var(--colorScheme-onSurfaceVariant);"><span class="icon">settings</span></button>
+</header>
+
+<main data-part="trip-list" style="display:flex; flex-direction:column; gap:12px; padding:8px 16px 96px;">
+
+  <article data-part="trip-card" style="display:flex; align-items:center; gap:16px; min-height:72px; padding:14px 16px; background:var(--colorScheme-surface); border:1px solid var(--colorScheme-outlineVariant); border-radius:var(--cardTheme-radius);">
+    <div data-part="trip-swatch" style="flex:none; width:40px; height:40px; border-radius:50%; background:var(--tripPalette-blue300);"></div>
+    <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+      <h2 style="font:var(--textTheme-titleMedium); color:var(--colorScheme-onSurface);">Lofoten by bike</h2>
+      <p data-part="status-line" style="display:flex; align-items:center; gap:6px; font:var(--textTheme-labelMedium); color:var(--trackingStatusColors-recordingHeadlineInk);">
+        <span style="flex:none; width:8px; height:8px; border-radius:50%; background:var(--trackingStatusColors-recordingDot); box-shadow:0 0 0 3px var(--trackingStatusColors-recordingContainer);"></span>
+        Recording · 42.3 km so far
+      </p>
+    </div>
+  </article>
+
+  <article data-part="trip-card" style="display:flex; align-items:center; gap:16px; min-height:72px; padding:14px 16px; background:var(--colorScheme-surface); border:1px solid var(--colorScheme-outlineVariant); border-radius:var(--cardTheme-radius);">
+    <div data-part="trip-swatch" style="flex:none; width:40px; height:40px; border-radius:50%; background:var(--tripPalette-orange300);"></div>
+    <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+      <h2 style="font:var(--textTheme-titleMedium); color:var(--colorScheme-onSurface);">Weekend in Lisbon</h2>
+      <p data-part="status-line" style="display:flex; align-items:center; gap:6px; font:var(--textTheme-bodySmall); color:var(--colorScheme-onSurfaceVariant);">
+        <span style="flex:none; width:8px; height:8px; border-radius:50%; background:var(--trackingStatusColors-awaitingDot);"></span>
+        Starts Sat 4 Oct, 08:00
+      </p>
+    </div>
+  </article>
+
+  <article data-part="trip-card" style="display:flex; align-items:center; gap:16px; min-height:72px; padding:14px 16px; background:var(--colorScheme-surface); border:1px solid var(--colorScheme-outlineVariant); border-radius:var(--cardTheme-radius);">
+    <div data-part="trip-swatch" style="flex:none; width:40px; height:40px; border-radius:50%; background:var(--tripPalette-teal300);"></div>
+    <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+      <h2 style="font:var(--textTheme-titleMedium); color:var(--colorScheme-onSurface);">Via Alpina, stages 1–6</h2>
+      <p data-part="status-line" style="display:flex; align-items:center; gap:6px; font:var(--textTheme-bodySmall); color:var(--colorScheme-onSurfaceVariant);">
+        <span class="icon" style="font-size:16px;">route</span>
+        GPX route · 128 km
+      </p>
+    </div>
+  </article>
+
+  <article data-part="trip-card" style="display:flex; align-items:center; gap:16px; min-height:72px; padding:14px 16px; background:var(--colorScheme-surface); border:1px solid var(--colorScheme-outlineVariant); border-radius:var(--cardTheme-radius);">
+    <div data-part="trip-swatch" style="flex:none; width:40px; height:40px; border-radius:50%; background:var(--tripPalette-purple300);"></div>
+    <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+      <h2 style="font:var(--textTheme-titleMedium); color:var(--colorScheme-onSurface); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">North Coast 500 — the long way round, with every detour we could find</h2>
+      <p data-part="status-line" style="display:flex; align-items:center; gap:6px; font:var(--textTheme-bodySmall); color:var(--colorScheme-onSurfaceVariant);">
+        <span class="icon" style="font-size:16px;">flag</span>
+        Finished · 1,042 km
+      </p>
+    </div>
+  </article>
+
+  <article data-part="trip-card" style="display:flex; align-items:center; gap:16px; min-height:72px; padding:14px 16px; background:var(--colorScheme-surface); border:1px solid var(--colorScheme-outlineVariant); border-radius:var(--cardTheme-radius);">
+    <div data-part="trip-swatch" style="flex:none; width:40px; height:40px; border-radius:50%; background:var(--tripPalette-red300);"></div>
+    <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+      <h2 style="font:var(--textTheme-titleMedium); color:var(--colorScheme-onSurface);">Harz hike</h2>
+      <p data-part="status-line" style="display:flex; align-items:center; gap:6px; font:var(--textTheme-labelMedium); color:var(--colorScheme-error);">
+        <span class="icon" style="font-size:16px;">location_disabled</span>
+        Location permission needed
+      </p>
+    </div>
+  </article>
+
+  <article data-part="trip-card" style="display:flex; align-items:center; gap:16px; min-height:72px; padding:14px 16px; background:var(--colorScheme-surface); border:1px solid var(--colorScheme-outlineVariant); border-radius:var(--cardTheme-radius);">
+    <div data-part="trip-swatch" style="flex:none; width:40px; height:40px; border-radius:50%; background:var(--tripPalette-green300);"></div>
+    <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+      <h2 style="font:var(--textTheme-titleMedium); color:var(--colorScheme-onSurface);">Copenhagen</h2>
+      <p data-part="status-line" style="display:flex; align-items:center; gap:6px; font:var(--textTheme-bodySmall); color:var(--colorScheme-onSurfaceVariant);">
+        <span class="icon" style="font-size:16px;">upload_file</span>
+        No route imported yet
+      </p>
+    </div>
+  </article>
+
+</main>
+
+<button data-part="create-fab" aria-label="New trip" style="position:absolute; right:16px; bottom:16px; width:56px; height:56px; border-radius:50%; display:grid; place-items:center; background:var(--colorScheme-primary); color:var(--colorScheme-onPrimary);"><span class="icon">add</span></button>
+
+</body>
+</html>

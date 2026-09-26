@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Empty, loading, failure</title>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body style="width:1266px; height:844px; overflow:hidden; background:var(--colorScheme-surfaceContainer); padding:24px; display:flex; gap:24px;">
+  <figure style="display:flex; flex-direction:column; gap:8px;">
+    <figcaption data-annotation>EMPTY — trips.isEmpty</figcaption>
+    <div data-part="screen" style="width:390px; height:780px; position:relative; overflow:hidden; background:var(--colorScheme-surfaceContainerLow);">
+      <header data-part="app-bar" style="height:64px; display:flex; align-items:center; padding:0 4px 0 16px;">
+        <h1 style="flex:1; font:var(--textTheme-titleLarge); color:var(--colorScheme-onSurface);">Trips</h1>
+        <button aria-label="Settings" style="width:48px; height:48px; display:grid; place-items:center; color:var(--colorScheme-onSurfaceVariant);"><span class="icon">settings</span></button>
+      </header>
+      <div data-part="empty-state" style="position:absolute; inset:64px 0 0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 28px 64px; text-align:center;">
+        <div style="width:72px; height:72px; border-radius:50%; display:grid; place-items:center; background:var(--colorScheme-surfaceContainer); color:var(--colorScheme-onSurfaceVariant);"><span class="icon" style="font-size:36px;">map</span></div>
+        <h2 style="margin-top:16px; font:var(--textTheme-titleMedium); color:var(--colorScheme-onSurface);">No trips yet</h2>
+        <p style="margin-top:4px; max-width:240px; font:var(--textTheme-bodySmall); color:var(--colorScheme-onSurfaceVariant);">Tap + to import a GPX route or to track a trip live.</p>
+      </div>
+      <button data-part="create-fab" aria-label="New trip" style="position:absolute; right:16px; bottom:16px; width:56px; height:56px; border-radius:50%; display:grid; place-items:center; background:var(--colorScheme-primary); color:var(--colorScheme-onPrimary);"><span class="icon">add</span></button>
+      
+    </div>
+  </figure>
+  <figure style="display:flex; flex-direction:column; gap:8px;">
+    <figcaption data-annotation>LOADING — isLoading</figcaption>
+    <div data-part="screen" style="width:390px; height:780px; position:relative; overflow:hidden; background:var(--colorScheme-surfaceContainerLow);">
+      <header data-part="app-bar" style="height:64px; display:flex; align-items:center; padding:0 4px 0 16px;">
+        <h1 style="flex:1; font:var(--textTheme-titleLarge); color:var(--colorScheme-onSurface);">Trips</h1>
+        <button aria-label="Settings" style="width:48px; height:48px; display:grid; place-items:center; color:var(--colorScheme-onSurfaceVariant);"><span class="icon">settings</span></button>
+      </header>
+      <main data-part="trip-list" style="display:flex; flex-direction:column; gap:12px; padding:8px 16px 96px;">
+        <div data-part="trip-card-skeleton" aria-hidden="true" style="display:flex; align-items:center; gap:16px; height:72px; padding:14px 16px; background:var(--colorScheme-surface); border:1px solid var(--colorScheme-outlineVariant); border-radius:var(--cardTheme-radius);">
+          <div style="flex:none; width:40px; height:40px; border-radius:50%; background:var(--colorScheme-surfaceContainer);"></div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+            <div style="width:150px; height:12px; border-radius:6px; background:var(--colorScheme-surfaceContainer);"></div>
+            <div style="width:110px; height:10px; border-radius:5px; background:var(--colorScheme-surfaceContainer);"></div>
+          </div>
+        </div>
+        <div data-part="trip-card-skeleton" aria-hidden="true" style="display:flex; align-items:center; gap:16px; height:72px; padding:14px 16px; background:var(--colorScheme-surface); border:1px solid var(--colorScheme-outlineVariant); border-radius:var(--cardTheme-radius);">
+          <div style="flex:none; width:40px; height:40px; border-radius:50%; background:var(--colorScheme-surfaceContainer);"></div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+            <div style="width:120px; height:12px; border-radius:6px; background:var(--colorScheme-surfaceContainer);"></div>
+            <div style="width:140px; height:10px; border-radius:5px; background:var(--colorScheme-surfaceContainer);"></div>
+          </div>
+        </div>
+        <div data-part="trip-card-skeleton" aria-hidden="true" style="display:flex; align-items:center; gap:16px; height:72px; padding:14px 16px; background:var(--colorScheme-surface); border:1px solid var(--colorScheme-outlineVariant); border-radius:var(--cardTheme-radius);">
+          <div style="flex:none; width:40px; height:40px; border-radius:50%; background:var(--colorScheme-surfaceContainer);"></div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+            <div style="width:170px; height:12px; border-radius:6px; background:var(--colorScheme-surfaceContainer);"></div>
+            <div style="width:90px; height:10px; border-radius:5px; background:var(--colorScheme-surfaceContainer);"></div>
+          </div>
+        </div>
+      </main>
+      <button data-part="create-fab" aria-label="New trip" style="position:absolute; right:16px; bottom:16px; width:56px; height:56px; border-radius:50%; display:grid; place-items:center; background:var(--colorScheme-primary); color:var(--colorScheme-onPrimary);"><span class="icon">add</span></button>
+      
+    </div>
+  </figure>
+  <figure style="display:flex; flex-direction:column; gap:8px;">
+    <figcaption data-annotation>FAILURE — loadError · existing LoadFailureView, unchanged</figcaption>
+    <div data-part="screen" style="width:390px; height:780px; position:relative; overflow:hidden; background:var(--colorScheme-surfaceContainerLow);">
+      <header data-part="app-bar" style="height:64px; display:flex; align-items:center; padding:0 4px 0 16px;">
+        <h1 style="flex:1; font:var(--textTheme-titleLarge); color:var(--colorScheme-onSurface);">Trips</h1>
+        <button aria-label="Settings" style="width:48px; height:48px; display:grid; place-items:center; color:var(--colorScheme-onSurfaceVariant);"><span class="icon">settings</span></button>
+      </header>
+      <div data-part="load-failure" style="position:absolute; inset:64px 0 0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 28px 64px; text-align:center;">
+        <div style="width:56px; height:56px; border-radius:50%; display:grid; place-items:center; background:var(--colorScheme-errorContainer); color:var(--colorScheme-error);"><span class="icon" style="font-size:26px;">error</span></div>
+        <p style="margin-top:16px; max-width:230px; font:var(--textTheme-bodyMedium); color:var(--colorScheme-onSurface);">Couldn’t load your trips. Check that storage is available and try again.</p>
+        <button style="margin-top:16px; height:40px; padding:0 24px; border-radius:20px; font:var(--textTheme-labelLarge); color:var(--colorScheme-primary); background:var(--colorScheme-surfaceContainerLow); box-shadow:var(--m3-elevation1);">Retry</button>
+      </div>
+      
+    </div>
+  </figure>
+</body>
+</html>
