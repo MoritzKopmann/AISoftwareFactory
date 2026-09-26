@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { createBridgeModule } from './modules/bridge/index.js';
 import { isOnPath } from './cli/is-on-path.js';
 import { openBrowser } from './cli/open-browser.js';
 import { parseCliArguments } from './cli/parse-cli-arguments.js';
@@ -24,11 +25,13 @@ if (problems.length > 0) {
 const options = parseCliArguments(process.argv.slice(2));
 const config = loadConfig({ environment: process.env, userHomeDirectory: homedir() });
 const staticDirectory = fileURLToPath(new URL('../../ui/dist', import.meta.url));
+const kitDirectory = fileURLToPath(new URL('../assets/kit', import.meta.url));
+const bridge = createBridgeModule({ kitDirectory });
 
 runMigrations(openDatabase(config.databasePath), migrations);
 
 const runningServer = await startServer({
-  app: createApp({ staticDirectory }),
+  app: createApp({ staticDirectory, kitRoutes: bridge.kitRoutes }),
   port: config.port,
 });
 

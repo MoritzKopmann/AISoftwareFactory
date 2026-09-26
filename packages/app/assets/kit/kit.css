@@ -1,0 +1,205 @@
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('/aisf/fonts/atkinson-hyperlegible-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('/aisf/fonts/atkinson-hyperlegible-latin-700-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('/aisf/fonts/jetbrains-mono-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url('/aisf/fonts/jetbrains-mono-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('/aisf/fonts/jetbrains-mono-latin-700-normal.woff2') format('woff2');
+}
+
+/* Drafting, light. Components read only these tokens. */
+:root {
+  --bg: #e9eef2;
+  --surface: #f8fafb;
+  --surface-2: #dfe6ec;
+  --border: #a9b8c5;
+  --border-strong: #6f8499;
+  --text: #13243a;
+  --muted: #4c6075;
+  --accent: #d05f1a;
+  --accent-ink: #ffffff;
+  --accent-soft: #f8e2d2;
+  --ok: #2b7a44;
+  --warn: #a2640b;
+  --danger: #b8322f;
+  --info: #2d5f93;
+  --hitl: #6b47c2;
+
+  --font-ui: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-display: var(--font-mono);
+  --display-weight: 700;
+  --display-transform: uppercase;
+  --display-spacing: 0.04em;
+  --label-font: var(--font-mono);
+  --label-transform: uppercase;
+  --label-spacing: 0.08em;
+  --label-size: 11px;
+  --label-weight: 500;
+
+  --radius: 0;
+  --radius-sm: 0;
+  --radius-chip: 0;
+  --radius-switch: 0;
+  --space: 4px;
+  --pad: 14px;
+  --gap: 10px;
+  --text-size: 15px;
+  --line: 1.45;
+  --card-border: 1px solid var(--border-strong);
+  --card-shadow: none;
+  --chip-fill: 0%;
+  --chip-border: 100%;
+  --chip-font: var(--font-mono);
+  --chip-transform: uppercase;
+  --chip-size: 11px;
+  --figure-bg: var(--surface);
+  --figure-grid: color-mix(in srgb, var(--info) 12%, transparent);
+  --lane-alt: transparent;
+
+  color-scheme: light;
+}
+
+/* Drafting, dark: the OS preference, unless the viewer forced light. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0d1924;
+    --surface: #122130;
+    --surface-2: #192b3d;
+    --border: #2e4760;
+    --border-strong: #4d6a86;
+    --text: #d8e4ee;
+    --muted: #8aa1b6;
+    --accent: #ff8a45;
+    --accent-ink: #1c0d03;
+    --accent-soft: #3b2515;
+    --ok: #5cc07a;
+    --warn: #e5ab4e;
+    --danger: #f07268;
+    --info: #6fa6db;
+    --hitl: #a98cf0;
+
+    color-scheme: dark;
+  }
+}
+
+/* Drafting, dark: forced by the viewer. */
+:root[data-theme='dark'] {
+  --bg: #0d1924;
+  --surface: #122130;
+  --surface-2: #192b3d;
+  --border: #2e4760;
+  --border-strong: #4d6a86;
+  --text: #d8e4ee;
+  --muted: #8aa1b6;
+  --accent: #ff8a45;
+  --accent-ink: #1c0d03;
+  --accent-soft: #3b2515;
+  --ok: #5cc07a;
+  --warn: #e5ab4e;
+  --danger: #f07268;
+  --info: #6fa6db;
+  --hitl: #a98cf0;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding-inline: 16px;
+  padding-block: 20px 48px;
+  background: var(--bg);
+  color: var(--text);
+  font: var(--text-size) / var(--line) var(--font-ui);
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+code,
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+.label {
+  font-family: var(--label-font);
+  text-transform: var(--label-transform);
+  letter-spacing: var(--label-spacing);
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  color: var(--muted);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  text-transform: var(--display-transform);
+  letter-spacing: var(--display-spacing);
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: 22px;
+}
+
+h2 {
+  font-size: 16px;
+}
+
+h3 {
+  font-size: 14.5px;
+}
+
+p {
+  margin: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
