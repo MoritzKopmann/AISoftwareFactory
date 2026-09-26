@@ -2,6 +2,10 @@
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { createBridgeModule } from './modules/bridge/index.js';
+import { ClaudeCliMarketplaceRegistry } from './modules/skills/infra/integrations/claude-cli-marketplace-registry.js';
+import { ClaudeCliSmokeProbe } from './modules/skills/infra/integrations/claude-cli-smoke-probe.js';
+import { FileSystemPluginMirror } from './modules/skills/infra/integrations/file-system-plugin-mirror.js';
+import { createSkillsModule } from './modules/skills/index.js';
 import { isOnPath } from './cli/is-on-path.js';
 import { openBrowser } from './cli/open-browser.js';
 import { parseCliArguments } from './cli/parse-cli-arguments.js';
@@ -26,16 +30,44 @@ const options = parseCliArguments(process.argv.slice(2));
 const config = loadConfig({ environment: process.env, userHomeDirectory: homedir() });
 const staticDirectory = fileURLToPath(new URL('../../ui/dist', import.meta.url));
 const kitDirectory = fileURLToPath(new URL('../assets/kit', import.meta.url));
+const pluginDirectory = fileURLToPath(new URL('../../plugin', import.meta.url));
 const bridge = createBridgeModule({ kitDirectory });
+const skills = createSkillsModule({
+  pluginMirror: new FileSystemPluginMirror({
+    sourceDirectory: pluginDirectory,
+    mirrorDirectory: config.pluginMirrorDirectory,
+  }),
+  marketplaceRegistry: new ClaudeCliMarketplaceRegistry(),
+  smokeProbe: new ClaudeCliSmokeProbe({
+    probeDirectory: config.skillsProbeDirectory,
+    pluginDirectory: config.pluginMirrorDirectory,
+  }),
+  mirrorDirectory: config.pluginMirrorDirectory,
+});
 
 runMigrations(openDatabase(config.databasePath), migrations);
 
 const runningServer = await startServer({
-  app: createApp({ staticDirectory, kitRoutes: bridge.kitRoutes }),
+  app: createApp({
+    staticDirectory,
+    kitRoutes: bridge.kitRoutes,
+    skillsRoutes: skills.statusRoutes,
+  }),
   port: config.port,
 });
 
 logger.info(`aisf is running at ${runningServer.url}`);
 if (options.openBrowser) {
   openBrowser(runningServer.url);
+}
+
+// The browser panel polls the status route while the start-up checks run.
+try {
+  await skills.start();
+} catch (error) {
+  logger.error(`Skills start-up failed unexpectedly: ${String(error)}`);
+}
+const runsBlocked = skills.runsBlocked();
+if (runsBlocked.blocked) {
+  logger.error(`Runs are blocked: ${runsBlocked.reason}`);
 }
