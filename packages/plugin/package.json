@@ -1,0 +1,6 @@
+{
+  "name": "@aisf/plugin",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The aisf Claude Code skills. Empty until skill content lands."
+}
