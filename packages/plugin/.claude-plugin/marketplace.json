@@ -1,0 +1,14 @@
+{
+  "name": "aisf",
+  "owner": {
+    "name": "Moritz Kopmann"
+  },
+  "description": "Local-directory marketplace for the aisf plugin.",
+  "plugins": [
+    {
+      "name": "aisf",
+      "source": "./",
+      "description": "The AISoftwareFactory workflow skills: ticket creation, planning, implementation and commits for projects onboarded to aisf."
+    }
+  ]
+}
