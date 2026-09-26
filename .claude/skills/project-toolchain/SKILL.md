@@ -14,7 +14,7 @@ test: npm test
 test_file: npm run test:file -- {file}
 manifests: [package.json, package-lock.json, packages/app/package.json, packages/ui/package.json, packages/plugin/package.json]
 registry: npmjs.com
-platforms: [linux, macos]
+platforms: [linux]
 ```
 
 ## Running the commands
