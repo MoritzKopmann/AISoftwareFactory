@@ -34,7 +34,7 @@ Anything not in this table gets a failing test first.
 ## Layout and naming
 
 - Tests live in the package's `test/`, mirroring `src/`, named `<subject>.test.ts`:
-  `packages/app/src/modules/scheduler/logic/plan-runs.ts` → `packages/app/test/modules/scheduler/logic/plan-runs.test.ts`
+  `packages/app/src/modules/scheduler/logic/use-cases/start-run-use-case.ts` → `packages/app/test/modules/scheduler/logic/use-cases/start-run-use-case.test.ts`
 - One `describe` per subject, named after it. Nested `describe` only per public function or method.
 - Name every test `should <X> when <Y>`: `X` is the asserted outcome, `Y` the trigger or condition. Lowercase `should`, no "test" suffix.
   - `it('should queue the run when another run is active for the project', …)`
