@@ -1,6 +1,7 @@
 import type { Project } from './logic/domain/project.js';
 import { CheckoutNotARepositoryError } from './logic/errors/checkout-not-a-repository-error.js';
 import { GitHubCliError } from './logic/errors/github-cli-error.js';
+import { PluginInstallFailedError } from './logic/errors/plugin-install-failed-error.js';
 import { ProjectAlreadyAddedError } from './logic/errors/project-already-added-error.js';
 import {
   AddProjectUseCase,
@@ -9,7 +10,12 @@ import {
 import { ListProjectsUseCase } from './logic/use-cases/list-projects-use-case.js';
 
 export type { Project } from './logic/domain/project.js';
-export { CheckoutNotARepositoryError, GitHubCliError, ProjectAlreadyAddedError };
+export {
+  CheckoutNotARepositoryError,
+  GitHubCliError,
+  PluginInstallFailedError,
+  ProjectAlreadyAddedError,
+};
 
 export type ProjectsModuleDependencies = AddProjectDependencies;
 

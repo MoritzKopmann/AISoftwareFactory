@@ -4,6 +4,7 @@ import { createProjectsRoutes } from '../../../../../src/modules/ui/api/routes/c
 import {
   CheckoutNotARepositoryError,
   GitHubCliError,
+  PluginInstallFailedError,
   ProjectAlreadyAddedError,
   type Project,
 } from '../../../../../src/modules/projects/index.js';
@@ -103,6 +104,22 @@ describe('createProjectsRoutes', () => {
 
     expect(response.status).toBe(502);
     expect(await response.json()).toEqual({ message: 'gh: authentication required' });
+  });
+
+  it('should answer 502 with a message when the plugin install fails', async () => {
+    const projects = new FakeProjects();
+    projects.failure = new PluginInstallFailedError('claude plugin install failed: not found');
+
+    const response = await createTestApp(projects).request('/projects', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ checkoutPath: '/repo' }),
+    });
+
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({
+      message: 'claude plugin install failed: not found',
+    });
   });
 
   it('should answer 415 and never call the use case when the content type is not JSON', async () => {

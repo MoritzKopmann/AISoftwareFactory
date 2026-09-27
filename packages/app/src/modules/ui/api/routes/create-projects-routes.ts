@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import {
   CheckoutNotARepositoryError,
   GitHubCliError,
+  PluginInstallFailedError,
   ProjectAlreadyAddedError,
   type Project,
 } from '../../../projects/index.js';
@@ -35,7 +36,7 @@ export function createProjectsRoutes(projects: ProjectsPort): Hono {
         if (error instanceof CheckoutNotARepositoryError) {
           return context.json({ message: error.message }, 422);
         }
-        if (error instanceof GitHubCliError) {
+        if (error instanceof GitHubCliError || error instanceof PluginInstallFailedError) {
           return context.json({ message: error.message }, 502);
         }
         throw error;

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { PluginInstallFailedError } from '../../../../../src/modules/projects/logic/errors/plugin-install-failed-error.js';
 import { ProjectAlreadyAddedError } from '../../../../../src/modules/projects/logic/errors/project-already-added-error.js';
 import { AddProjectUseCase } from '../../../../../src/modules/projects/logic/use-cases/add-project-use-case.js';
 import {
   FakeClock,
   FakeEventPublisher,
   FakeLabelSync,
+  FakePluginInstaller,
   FakeProjectRepository,
   FakeRepositoryResolver,
 } from '../../fakes/fake-projects-ports.js';
@@ -17,16 +19,26 @@ function createSubject() {
   const repositoryResolver = new FakeRepositoryResolver(reference);
   const projectRepository = new FakeProjectRepository();
   const labelSync = new FakeLabelSync();
+  const pluginInstaller = new FakePluginInstaller();
   const clock = new FakeClock(addedAt);
   const events = new FakeEventPublisher();
   const useCase = new AddProjectUseCase({
     repositoryResolver,
     projectRepository,
     labelSync,
+    pluginInstaller,
     clock,
     events,
   });
-  return { useCase, repositoryResolver, projectRepository, labelSync, clock, events };
+  return {
+    useCase,
+    repositoryResolver,
+    projectRepository,
+    labelSync,
+    pluginInstaller,
+    clock,
+    events,
+  };
 }
 
 describe('AddProjectUseCase', () => {
@@ -118,6 +130,39 @@ describe('AddProjectUseCase', () => {
       await expect(useCase.execute(checkoutPath)).rejects.toThrow(ProjectAlreadyAddedError);
 
       expect(await projectRepository.list()).toHaveLength(1);
+    });
+
+    it('should install the plugin at the checkout path after syncing labels', async () => {
+      const { useCase, pluginInstaller } = createSubject();
+
+      await useCase.execute(checkoutPath);
+
+      expect(pluginInstaller.installCalls).toEqual([checkoutPath]);
+    });
+
+    it('should throw PluginInstallFailedError with the reason and not save when install fails', async () => {
+      const { useCase, pluginInstaller, projectRepository, events } = createSubject();
+      pluginInstaller.result = { state: 'failed', reason: 'claude plugin install failed' };
+
+      await expect(useCase.execute(checkoutPath)).rejects.toThrow(PluginInstallFailedError);
+      await expect(useCase.execute(checkoutPath)).rejects.toThrow('claude plugin install failed');
+
+      expect(await projectRepository.list()).toEqual([]);
+      expect(events.emittedEvents).toEqual([]);
+    });
+
+    it('should not install the plugin when the repository is already added', async () => {
+      const { useCase, pluginInstaller, projectRepository } = createSubject();
+      await projectRepository.save({
+        id: 'moritz/aisf',
+        repository: reference,
+        checkoutPath: '/some/other/path',
+        addedAt,
+      });
+
+      await expect(useCase.execute(checkoutPath)).rejects.toThrow(ProjectAlreadyAddedError);
+
+      expect(pluginInstaller.installCalls).toEqual([]);
     });
 
     it('should propagate a resolver failure without saving or emitting', async () => {
