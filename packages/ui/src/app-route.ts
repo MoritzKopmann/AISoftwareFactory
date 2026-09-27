@@ -3,16 +3,16 @@ export type AppRoute =
   | { readonly kind: 'add-project' }
   | { readonly kind: 'project'; readonly id: string };
 
-const projectRoutePattern = /^#\/projects\/([^/]+)\/([^/]+)$/;
+const projectRoutePattern = /^#\/projects\/([^/]+\/[^/]+)$/;
 
 export function parseAppRoute(hash: string): AppRoute {
   if (hash === '#/projects/new') {
     return { kind: 'add-project' };
   }
   const match = projectRoutePattern.exec(hash);
-  if (match !== null) {
-    const [, owner, name] = match;
-    return { kind: 'project', id: `${owner}/${name}` };
+  const id = match?.[1];
+  if (id !== undefined) {
+    return { kind: 'project', id };
   }
   return { kind: 'home' };
 }
