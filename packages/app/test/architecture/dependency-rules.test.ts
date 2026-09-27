@@ -126,6 +126,39 @@ describe('dependency-cruiser module rules', () => {
     });
   });
 
+  describe('logic-no-other-module', () => {
+    it('should fail when logic deep-imports another module', () => {
+      const result = cruise({
+        'modules/scheduler/logic/use-cases/start.ts':
+          "import '../../../watcher/logic/domain/snapshot.js';\n",
+        'modules/watcher/index.ts': exported,
+        'modules/watcher/logic/domain/snapshot.ts': exported,
+      });
+
+      expect(result.passed).toBe(false);
+      expect(result.output).toContain('logic-no-other-module');
+    });
+
+    it('should fail when logic imports another module through its index', () => {
+      const result = cruise({
+        'modules/scheduler/logic/use-cases/start.ts': "import '../../../watcher/index.js';\n",
+        'modules/watcher/index.ts': exported,
+      });
+
+      expect(result.passed).toBe(false);
+      expect(result.output).toContain('logic-no-other-module');
+    });
+
+    it('should pass when logic imports its own ports', () => {
+      const result = cruise({
+        'modules/scheduler/logic/use-cases/start.ts': "import '../ports/clock.js';\n",
+        'modules/scheduler/logic/ports/clock.ts': exported,
+      });
+
+      expect(result.passed).toBe(true);
+    });
+  });
+
   describe('infra-only-from-main', () => {
     it('should fail when an api adapter imports infra', () => {
       const result = cruise({
