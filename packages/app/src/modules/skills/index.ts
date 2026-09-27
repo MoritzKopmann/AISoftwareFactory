@@ -1,5 +1,3 @@
-import type { Hono } from 'hono';
-import { createSkillsStatusRoutes } from './api/routes/create-skills-status-routes.js';
 import { determineRunsBlocked } from './logic/domain/determine-runs-blocked.js';
 import type { RunsBlocked, SkillsStatus } from './logic/domain/skills-status.js';
 import {
@@ -12,7 +10,7 @@ export type { RunsBlocked, SkillsStatus } from './logic/domain/skills-status.js'
 export type SkillsModule = {
   readonly start: () => Promise<void>;
   readonly runsBlocked: () => RunsBlocked;
-  readonly statusRoutes: Hono;
+  readonly status: () => SkillsStatus;
 };
 
 export function createSkillsModule(dependencies: StartSkillsDependencies): SkillsModule {
@@ -24,6 +22,6 @@ export function createSkillsModule(dependencies: StartSkillsDependencies): Skill
       status = await startSkills.execute();
     },
     runsBlocked: () => determineRunsBlocked(status),
-    statusRoutes: createSkillsStatusRoutes(() => status),
+    status: () => status,
   };
 }
