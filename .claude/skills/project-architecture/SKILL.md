@@ -247,7 +247,7 @@ if (response.status === 304) return previousPage;
 - **No central Store module.** No module owns another module's data.
 - **No import that reaches past another module's `index.ts`** (`modules/x/logic/…` from `modules/y`).
 - **No `new` of a concrete adapter outside `main.ts`.** No service locator, no global singletons.
-- **Only `scheduler` writes to GitHub,** and only its two transitions: closing a finished `planned` parent, and `→ stuck`.
+- **Only `scheduler` writes to GitHub,** and only its two transitions: closing a finished `planned` parent, and `→ stuck`. Named exception: `projects` creates missing aisf labels at Add project, create-only.
 - **Only `runner` imports the Agent SDK.**
 - **No second process:** no daemon plus separate UI process, and no process per project.
 - **No persistence besides `aisf.db`:** no JSON state files, no native SQLite binding.

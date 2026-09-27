@@ -4,6 +4,7 @@ import { AddProjectUseCase } from '../../../../../src/modules/projects/logic/use
 import {
   FakeClock,
   FakeEventPublisher,
+  FakeLabelSync,
   FakeProjectRepository,
   FakeRepositoryResolver,
 } from '../../fakes/fake-projects-ports.js';
@@ -15,10 +16,17 @@ const addedAt = '2026-09-27T00:00:00.000Z';
 function createSubject() {
   const repositoryResolver = new FakeRepositoryResolver(reference);
   const projectRepository = new FakeProjectRepository();
+  const labelSync = new FakeLabelSync();
   const clock = new FakeClock(addedAt);
   const events = new FakeEventPublisher();
-  const useCase = new AddProjectUseCase({ repositoryResolver, projectRepository, clock, events });
-  return { useCase, repositoryResolver, projectRepository, clock, events };
+  const useCase = new AddProjectUseCase({
+    repositoryResolver,
+    projectRepository,
+    labelSync,
+    clock,
+    events,
+  });
+  return { useCase, repositoryResolver, projectRepository, labelSync, clock, events };
 }
 
 describe('AddProjectUseCase', () => {
@@ -52,6 +60,38 @@ describe('AddProjectUseCase', () => {
           },
         },
       ]);
+    });
+
+    it('should sync labels for the resolved repository before saving', async () => {
+      const { useCase, labelSync } = createSubject();
+
+      await useCase.execute(checkoutPath);
+
+      expect(labelSync.syncCalls).toEqual([reference]);
+    });
+
+    it('should throw the label sync failure without saving or emitting', async () => {
+      const { useCase, labelSync, projectRepository, events } = createSubject();
+      labelSync.failure = new Error('gh label create failed');
+
+      await expect(useCase.execute(checkoutPath)).rejects.toThrow('gh label create failed');
+
+      expect(await projectRepository.list()).toEqual([]);
+      expect(events.emittedEvents).toEqual([]);
+    });
+
+    it('should not sync labels when the repository is already added', async () => {
+      const { useCase, labelSync, projectRepository } = createSubject();
+      await projectRepository.save({
+        id: 'moritz/aisf',
+        repository: reference,
+        checkoutPath: '/some/other/path',
+        addedAt,
+      });
+
+      await expect(useCase.execute(checkoutPath)).rejects.toThrow(ProjectAlreadyAddedError);
+
+      expect(labelSync.syncCalls).toEqual([]);
     });
 
     it('should throw ProjectAlreadyAddedError when the resolved repository is already saved', async () => {

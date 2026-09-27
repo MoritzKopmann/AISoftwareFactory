@@ -2,6 +2,7 @@ import type { EventPublisher } from '../../../../src/shared/bus/event-publisher.
 import type { AisfEventMap } from '../../../../src/shared/bus/aisf-event-map.js';
 import type { Project } from '../../../../src/modules/projects/logic/domain/project.js';
 import type { Clock } from '../../../../src/modules/projects/logic/ports/clock.js';
+import type { LabelSync } from '../../../../src/modules/projects/logic/ports/label-sync.js';
 import type { ProjectRepository } from '../../../../src/modules/projects/logic/ports/project-repository.js';
 import type {
   RepositoryReference,
@@ -36,6 +37,18 @@ export class FakeProjectRepository implements ProjectRepository {
 
   async save(project: Project): Promise<void> {
     this.projectsById.set(project.id, project);
+  }
+}
+
+export class FakeLabelSync implements LabelSync {
+  syncCalls: RepositoryReference[] = [];
+  failure: Error | undefined;
+
+  async sync(repository: RepositoryReference): Promise<void> {
+    this.syncCalls.push(repository);
+    if (this.failure !== undefined) {
+      throw this.failure;
+    }
   }
 }
 
