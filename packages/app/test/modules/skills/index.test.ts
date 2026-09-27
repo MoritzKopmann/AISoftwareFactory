@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createSkillsModule } from '../../../src/modules/skills/index.js';
 import { SkillsSetupError } from '../../../src/modules/skills/logic/errors/skills-setup-error.js';
 import {
+  FakeLocalPluginInstaller,
   FakeMarketplaceRegistry,
   FakePluginMirror,
   FakeSmokeProbe,
@@ -11,13 +12,15 @@ const mirrorDirectory = '/home/user/.aisf/plugins/aisf';
 
 function createSubject() {
   const smokeProbe = new FakeSmokeProbe();
+  const localPluginInstaller = new FakeLocalPluginInstaller();
   const skills = createSkillsModule({
     pluginMirror: new FakePluginMirror(),
     marketplaceRegistry: new FakeMarketplaceRegistry(mirrorDirectory),
     smokeProbe,
     mirrorDirectory,
+    localPluginInstaller,
   });
-  return { skills, smokeProbe };
+  return { skills, smokeProbe, localPluginInstaller };
 }
 
 describe('createSkillsModule', () => {
@@ -64,6 +67,52 @@ describe('createSkillsModule', () => {
       expect(skills.status()).toEqual({
         state: 'failed',
         reason: 'claude exited with code 1',
+      });
+    });
+  });
+
+  describe('installPluginLocally', () => {
+    const checkoutPath = '/home/user/repo';
+
+    it('should install directly when start-up has not been called', async () => {
+      const { skills, localPluginInstaller } = createSubject();
+
+      expect(await skills.installPluginLocally(checkoutPath)).toEqual({ state: 'installed' });
+      expect(localPluginInstaller.installCalls).toEqual([checkoutPath]);
+    });
+
+    it('should wait for an in-flight start-up before installing', async () => {
+      const localPluginInstaller = new FakeLocalPluginInstaller();
+      const pluginMirror = new FakePluginMirror();
+      let releaseStart: () => void = () => {};
+      pluginMirror.blocker = new Promise((resolve) => {
+        releaseStart = resolve;
+      });
+      const blockedSkills = createSkillsModule({
+        pluginMirror,
+        marketplaceRegistry: new FakeMarketplaceRegistry(mirrorDirectory),
+        smokeProbe: new FakeSmokeProbe(),
+        mirrorDirectory,
+        localPluginInstaller,
+      });
+
+      const startPromise = blockedSkills.start();
+      const installPromise = blockedSkills.installPluginLocally(checkoutPath);
+
+      expect(localPluginInstaller.installCalls).toEqual([]);
+      releaseStart();
+      await startPromise;
+      expect(await installPromise).toEqual({ state: 'installed' });
+      expect(localPluginInstaller.installCalls).toEqual([checkoutPath]);
+    });
+
+    it('should return the failure reason when the installer fails', async () => {
+      const { skills, localPluginInstaller } = createSubject();
+      localPluginInstaller.failure = new SkillsSetupError('claude plugin install failed');
+
+      expect(await skills.installPluginLocally(checkoutPath)).toEqual({
+        state: 'failed',
+        reason: 'claude plugin install failed',
       });
     });
   });

@@ -8,6 +8,7 @@ import { GhCliRepositoryResolver } from './modules/projects/infra/integrations/g
 import { SystemClock } from './modules/projects/infra/integrations/system-clock.js';
 import { SqliteProjectRepository } from './modules/projects/infra/repositories/sqlite-project-repository.js';
 import { createProjectsModule, type ProjectsModule } from './modules/projects/index.js';
+import { ClaudeCliLocalPluginInstaller } from './modules/skills/infra/integrations/claude-cli-local-plugin-installer.js';
 import { ClaudeCliMarketplaceRegistry } from './modules/skills/infra/integrations/claude-cli-marketplace-registry.js';
 import { ClaudeCliSmokeProbe } from './modules/skills/infra/integrations/claude-cli-smoke-probe.js';
 import { FileSystemPluginMirror } from './modules/skills/infra/integrations/file-system-plugin-mirror.js';
@@ -33,11 +34,16 @@ function buildBridgeModule(kitDirectory: string): BridgeModule {
   return createBridgeModule({ kitDirectory });
 }
 
-function buildProjectsModule(database: DatabaseSync, events: EventPublisher): ProjectsModule {
+function buildProjectsModule(
+  database: DatabaseSync,
+  events: EventPublisher,
+  skills: SkillsModule,
+): ProjectsModule {
   return createProjectsModule({
     projectRepository: new SqliteProjectRepository(database),
     repositoryResolver: new GhCliRepositoryResolver(),
     labelSync: new GhCliLabelSync(),
+    pluginInstaller: { install: (checkoutPath) => skills.installPluginLocally(checkoutPath) },
     clock: new SystemClock(),
     events,
   });
@@ -55,6 +61,7 @@ function buildSkillsModule(config: Config, pluginDirectory: string): SkillsModul
       pluginDirectory: config.pluginMirrorDirectory,
     }),
     mirrorDirectory: config.pluginMirrorDirectory,
+    localPluginInstaller: new ClaudeCliLocalPluginInstaller(),
   });
 }
 
@@ -82,7 +89,7 @@ const eventBus = new TypedEventBus<AisfEventMap>();
 
 const bridge = buildBridgeModule(kitDirectory);
 const skills = buildSkillsModule(config, pluginDirectory);
-const projects = buildProjectsModule(database, eventBus);
+const projects = buildProjectsModule(database, eventBus, skills);
 const ui = buildUiModule(projects, skills);
 
 const runningServer = await startServer({

@@ -1,8 +1,10 @@
 import type { EventPublisher } from '../../../../src/shared/bus/event-publisher.js';
 import type { AisfEventMap } from '../../../../src/shared/bus/aisf-event-map.js';
+import type { PluginInstallResult } from '../../../../src/modules/projects/logic/domain/plugin-install-result.js';
 import type { Project } from '../../../../src/modules/projects/logic/domain/project.js';
 import type { Clock } from '../../../../src/modules/projects/logic/ports/clock.js';
 import type { LabelSync } from '../../../../src/modules/projects/logic/ports/label-sync.js';
+import type { PluginInstaller } from '../../../../src/modules/projects/logic/ports/plugin-installer.js';
 import type { ProjectRepository } from '../../../../src/modules/projects/logic/ports/project-repository.js';
 import type {
   RepositoryReference,
@@ -49,6 +51,16 @@ export class FakeLabelSync implements LabelSync {
     if (this.failure !== undefined) {
       throw this.failure;
     }
+  }
+}
+
+export class FakePluginInstaller implements PluginInstaller {
+  installCalls: string[] = [];
+  result: PluginInstallResult = { state: 'installed' };
+
+  async install(checkoutPath: string): Promise<PluginInstallResult> {
+    this.installCalls.push(checkoutPath);
+    return this.result;
   }
 }
 
