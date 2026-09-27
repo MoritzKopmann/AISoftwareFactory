@@ -51,10 +51,11 @@ packages/
 - **Must:** a module root holds `index.ts` and the three layer folders, nothing else.
 - **Should:** files stay under 500 lines. Over that, split.
 
-**Module-root pattern:** `packages/app/src/modules/<name>/`. The six modules are:
+**Module-root pattern:** `packages/app/src/modules/<name>/`. The seven modules are:
 
 | Module | Owns |
 |---|---|
+| `projects` | Registers a checkout as exactly one GitHub repo, with the repo slug `owner/name` as its id. |
 | `watcher` | Polls GitHub (ETag feeds + GraphQL snapshot) and emits snapshot diffs per repo. Read-only. |
 | `scheduler` | The only module that decides to start work: turns diffs into stage runs, runs pre-flight, enforces concurrency (serial per project). Makes the app's only two GitHub writes. |
 | `runner` | The only module that touches the Agent SDK: `query()` per run, the prompt iterable, `canUseTool`/HITL routing, transcripts, exit status. Also owns worktrees (`~/.aisf/worktrees/<project>/<ticket>`). |
@@ -149,6 +150,8 @@ issues.map((issue) => issue.number);
 - **Must:** `index.ts` exports the module factory, its public interface and the types that interface uses. Nothing else.
 - **Must:** use a synchronous call through the public interface when the caller needs an answer (Scheduler → `runner.start`). Use a typed bus event for announcements nobody has to answer (`snapshot.changed`, `run.finished`).
 - **Must:** each module owns its tables. It persists through a repository in its own `infra/`, on top of `shared/db`. Another module never reads those tables. It asks the owning module through its public interface.
+- **Must:** `logic/` reaches another module only through its own ports, filled in by `main.ts`. It never imports another module directly, not even through that module's `index.ts`.
+- **Must:** a use case announces something by depending on `EventPublisher` (`shared/bus/event-publisher.ts`), never a concrete bus.
 
 ### Composition
 

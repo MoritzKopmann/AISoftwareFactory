@@ -1,5 +1,5 @@
 const minimumNodeMajorVersion = 22;
-const requiredCommands = ['gh', 'claude'];
+const requiredCommands = ['gh', 'claude', 'git'];
 
 export type PreflightProbe = {
   readonly nodeVersion: string;

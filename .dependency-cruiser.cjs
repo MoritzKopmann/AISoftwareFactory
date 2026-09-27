@@ -34,6 +34,14 @@ module.exports = {
       to: { path: `${modulesRoot}/[^/]+/(infra|api)/` },
     },
     {
+      name: 'logic-no-other-module',
+      comment:
+        "A module's logic/ never imports another module, not even through its index.ts. Dependencies come in through ports that main.ts fills in.",
+      severity: 'error',
+      from: { path: `${modulesRoot}/([^/]+)/logic/` },
+      to: { path: `${modulesRoot}/[^/]+/`, pathNot: [`${modulesRoot}/$1/`] },
+    },
+    {
       name: 'infra-only-from-main',
       comment: 'Only main.ts imports infra/ from outside infra/.',
       severity: 'error',
