@@ -24,7 +24,7 @@ packages/
 ├── app/                              ← the server and CLI (@aisf/app)
 │   ├── src/
 │   │   ├── main.ts                   ← composition root
-│   │   ├── shared/                   ← typed event bus, db (connection + migrations), config, logger
+│   │   ├── shared/                   ← typed event bus, db (connection + migrations), config, logger, process
 │   │   └── modules/
 │   │       └── <name>/               ← module root
 │   │           ├── index.ts          ← the module's only public surface
@@ -157,7 +157,7 @@ issues.map((issue) => issue.number);
 - **Must:** `main.ts` constructs every module's infra adapters and passes them to that module's factory. It is the only file outside a module that may import that module's `infra/`.
 - **Must:** each module's wiring is a `build<Name>Module(...)` function local to `main.ts` — it constructs that module's infra adapters and calls its `create<Name>Module` factory, returning the module's public interface. `main.ts`'s top level is then a flat list of `const <name> = build<Name>Module(...)` calls, in start-up order. This keeps every module's construction still in `main.ts` (the rule above still holds) while keeping the top level readable as the module count grows.
 - **Must:** everything under `~/.aisf` is reached through `shared/config`, whose home is overridable, so tests use a temp dir.
-- **Must:** `shared/` holds only cross-cutting infrastructure (bus, db, config, logger). Domain logic never goes there.
+- **Must:** `shared/` holds only cross-cutting infrastructure (bus, db, config, logger, process). Domain logic never goes there.
 
 ### Deep modules
 
