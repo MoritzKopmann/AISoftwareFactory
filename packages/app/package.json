@@ -6,13 +6,17 @@
   "engines": {
     "node": ">=22"
   },
+  "exports": {
+    "./api-schemas/*.js": "./src/modules/ui/api/schemas/*.ts"
+  },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
-    "hono": "^4.13.9"
+    "hono": "^4.13.9",
+    "zod": "^4.6.5"
   },
   "bin": {
     "aisf": "dist/main.js"

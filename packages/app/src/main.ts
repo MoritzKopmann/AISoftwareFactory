@@ -56,8 +56,8 @@ function buildSkillsModule(config: Config, pluginDirectory: string): SkillsModul
   });
 }
 
-function buildUiModule(skills: SkillsModule): UiModule {
-  return createUiModule({ skills });
+function buildUiModule(projects: ProjectsModule, skills: SkillsModule): UiModule {
+  return createUiModule({ projects, skills });
 }
 
 const logger = createLogger(consoleLogSink);
@@ -81,9 +81,7 @@ const eventBus = new TypedEventBus<AisfEventMap>();
 const bridge = buildBridgeModule(kitDirectory);
 const skills = buildSkillsModule(config, pluginDirectory);
 const projects = buildProjectsModule(database, eventBus);
-const ui = buildUiModule(skills);
-// Nothing calls projects.add/list yet: the api routes are a later sub-issue of #66.
-void projects;
+const ui = buildUiModule(projects, skills);
 
 const runningServer = await startServer({
   app: createApp({

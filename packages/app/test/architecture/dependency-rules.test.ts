@@ -36,16 +36,27 @@ describe('dependency-cruiser module rules', () => {
     writeFileSync(absolutePath, content);
   }
 
-  function cruise(files: Readonly<Record<string, string>>): CruiseResult {
-    for (const [relativePath, content] of Object.entries(files)) {
-      writeProjectFile(`${sourceRoot}/${relativePath}`, content);
-    }
+  function runCruise(): CruiseResult {
     const result = spawnSync(
       process.execPath,
       [dependencyCruiserCli, '--config', dependencyCruiserConfig, 'packages'],
       { cwd: projectDirectory, encoding: 'utf8' },
     );
     return { passed: result.status === 0, output: result.stdout + result.stderr };
+  }
+
+  function cruise(files: Readonly<Record<string, string>>): CruiseResult {
+    for (const [relativePath, content] of Object.entries(files)) {
+      writeProjectFile(`${sourceRoot}/${relativePath}`, content);
+    }
+    return runCruise();
+  }
+
+  function cruiseAcrossPackages(files: Readonly<Record<string, string>>): CruiseResult {
+    for (const [relativePath, content] of Object.entries(files)) {
+      writeProjectFile(relativePath, content);
+    }
+    return runCruise();
   }
 
   const exported = 'export const value = 1;\n';
@@ -153,6 +164,28 @@ describe('dependency-cruiser module rules', () => {
       const result = cruise({
         'modules/scheduler/logic/use-cases/start.ts': "import '../ports/clock.js';\n",
         'modules/scheduler/logic/ports/clock.ts': exported,
+      });
+
+      expect(result.passed).toBe(true);
+    });
+  });
+
+  describe('ui-only-api-schemas-from-app', () => {
+    it('should fail when packages/ui imports something other than an api schema from packages/app', () => {
+      const result = cruiseAcrossPackages({
+        'packages/ui/src/main.ts': "import '../../app/src/modules/ui/index.js';\n",
+        'packages/app/src/modules/ui/index.ts': exported,
+      });
+
+      expect(result.passed).toBe(false);
+      expect(result.output).toContain('ui-only-api-schemas-from-app');
+    });
+
+    it('should pass when packages/ui imports an api schema from packages/app', () => {
+      const result = cruiseAcrossPackages({
+        'packages/ui/src/main.ts':
+          "import '../../app/src/modules/ui/api/schemas/projects-schemas.js';\n",
+        'packages/app/src/modules/ui/api/schemas/projects-schemas.ts': exported,
       });
 
       expect(result.passed).toBe(true);
