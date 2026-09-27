@@ -1,14 +1,10 @@
 import { createRoot } from 'react-dom/client';
-import { SkillsStatusPanel } from './skills/skills-status-panel.js';
+import { AppShell } from './app-shell.js';
+import './app.css';
 
 const rootElement = document.getElementById('root');
 if (rootElement === null) {
   throw new Error('Missing #root element');
 }
 
-createRoot(rootElement).render(
-  <>
-    <h1>aisf</h1>
-    <SkillsStatusPanel />
-  </>,
-);
+createRoot(rootElement).render(<AppShell />);
