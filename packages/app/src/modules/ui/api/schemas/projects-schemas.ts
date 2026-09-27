@@ -5,11 +5,20 @@ export const addProjectRequestSchema = z.object({
 });
 export type AddProjectRequest = z.infer<typeof addProjectRequestSchema>;
 
+export const contractPreflightReportSchema = z.object({
+  passed: z.boolean(),
+  missingSlots: z.array(z.string()),
+  missingHeadings: z.array(z.object({ slot: z.string(), heading: z.string() })),
+  missingKeys: z.array(z.string()),
+});
+export type ContractPreflightReportResponse = z.infer<typeof contractPreflightReportSchema>;
+
 export const projectResponseSchema = z.object({
   id: z.string(),
   repository: z.object({ owner: z.string(), name: z.string() }),
   checkoutPath: z.string(),
   addedAt: z.string(),
+  contract: contractPreflightReportSchema,
 });
 export type ProjectResponse = z.infer<typeof projectResponseSchema>;
 

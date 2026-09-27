@@ -8,6 +8,7 @@ describe('@aisf/app/api-schemas', () => {
       repository: { owner: 'owner', name: 'name' },
       checkoutPath: '/repo',
       addedAt: '2026-01-01T00:00:00.000Z',
+      contract: { passed: true, missingSlots: [], missingHeadings: [], missingKeys: [] },
     };
 
     expect(project.id).toBe('owner/name');

@@ -17,7 +17,10 @@ export function AppShell() {
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
-    const handleHashChange = () => setRoute(readRoute());
+    const handleHashChange = () => {
+      setRoute(readRoute());
+      setReloadToken((token) => token + 1);
+    };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
