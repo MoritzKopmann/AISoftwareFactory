@@ -3,6 +3,7 @@ import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import type { DatabaseSync } from 'node:sqlite';
 import { createBridgeModule, type BridgeModule } from './modules/bridge/index.js';
+import { GhCliLabelSync } from './modules/projects/infra/integrations/gh-cli-label-sync.js';
 import { GhCliRepositoryResolver } from './modules/projects/infra/integrations/gh-cli-repository-resolver.js';
 import { SystemClock } from './modules/projects/infra/integrations/system-clock.js';
 import { SqliteProjectRepository } from './modules/projects/infra/repositories/sqlite-project-repository.js';
@@ -36,6 +37,7 @@ function buildProjectsModule(database: DatabaseSync, events: EventPublisher): Pr
   return createProjectsModule({
     projectRepository: new SqliteProjectRepository(database),
     repositoryResolver: new GhCliRepositoryResolver(),
+    labelSync: new GhCliLabelSync(),
     clock: new SystemClock(),
     events,
   });
