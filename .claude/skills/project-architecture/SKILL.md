@@ -77,6 +77,7 @@ Commit scopes: a module's name for changes under its root. Outside module roots:
 | Repository port | `interface` | `logic/ports/` | `RunRepository` |
 | Integration port | `interface` | `logic/ports/` | `GitHubIntegration`, `Clock` |
 | Domain error | class `extends Error` | `logic/errors/` | `WorktreeMissingError` |
+| API schema | zod schema and its inferred type, one file per resource | `modules/ui/api/schemas/` | `projects-schemas.ts` |
 | Route | function returning a Hono app | `api/routes/` | `createRunRoutes` |
 | Subscription | function registering one bus handler | `api/subscriptions/` | `subscribeToSnapshotChanged` |
 | MCP tool handler | function returning the tool definition | `api/tools/` | `createShowArtifactTool` |

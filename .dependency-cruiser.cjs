@@ -49,6 +49,16 @@ module.exports = {
       to: { path: `${modulesRoot}/[^/]+/infra/` },
     },
     {
+      name: 'ui-only-api-schemas-from-app',
+      comment: 'packages/ui imports @aisf/app only through its published API schemas.',
+      severity: 'error',
+      from: { path: '^packages/ui/' },
+      to: {
+        path: '^packages/app/',
+        pathNot: '^packages/app/src/modules/ui/api/schemas/',
+      },
+    },
+    {
       name: 'no-circular',
       severity: 'error',
       from: {},
