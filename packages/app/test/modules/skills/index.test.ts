@@ -49,24 +49,19 @@ describe('createSkillsModule', () => {
     });
   });
 
-  describe('statusRoutes', () => {
-    it('should report pending on the status route when start-up has not finished', async () => {
+  describe('status', () => {
+    it('should report pending when start-up has not finished', () => {
       const { skills } = createSubject();
 
-      const response = await skills.statusRoutes.request('/status');
-
-      expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ state: 'pending' });
+      expect(skills.status()).toEqual({ state: 'pending' });
     });
 
-    it('should report the failure reason on the status route when the smoke test failed', async () => {
+    it('should report the failure reason when the smoke test failed', async () => {
       const { skills, smokeProbe } = createSubject();
       smokeProbe.failure = new SkillsSetupError('claude exited with code 1');
       await skills.start();
 
-      const response = await skills.statusRoutes.request('/status');
-
-      expect(await response.json()).toEqual({
+      expect(skills.status()).toEqual({
         state: 'failed',
         reason: 'claude exited with code 1',
       });

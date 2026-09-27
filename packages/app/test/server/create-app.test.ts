@@ -21,7 +21,7 @@ describe('createApp', () => {
     const response = await createApp({
       staticDirectory,
       kitRoutes: new Hono(),
-      skillsRoutes: new Hono(),
+      uiRoutes: new Hono(),
     }).request('/health');
 
     expect(response.status).toBe(200);
@@ -32,7 +32,7 @@ describe('createApp', () => {
     const response = await createApp({
       staticDirectory,
       kitRoutes: new Hono(),
-      skillsRoutes: new Hono(),
+      uiRoutes: new Hono(),
     }).request('/');
 
     expect(response.status).toBe(200);
@@ -45,19 +45,21 @@ describe('createApp', () => {
     const response = await createApp({
       staticDirectory,
       kitRoutes,
-      skillsRoutes: new Hono(),
+      uiRoutes: new Hono(),
     }).request('/aisf/kit.css');
 
     expect(await response.text()).toBe(':root {}');
   });
 
-  it('should serve the skills routes under /api/skills when the app is running', async () => {
-    const skillsRoutes = new Hono().get('/status', (context) => context.json({ state: 'passed' }));
+  it('should serve the ui routes under /api when the app is running', async () => {
+    const uiRoutes = new Hono().get('/skills/status', (context) =>
+      context.json({ state: 'passed' }),
+    );
 
     const response = await createApp({
       staticDirectory,
       kitRoutes: new Hono(),
-      skillsRoutes,
+      uiRoutes,
     }).request('/api/skills/status');
 
     expect(await response.json()).toEqual({ state: 'passed' });

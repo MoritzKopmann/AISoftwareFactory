@@ -6,6 +6,7 @@ import { ClaudeCliMarketplaceRegistry } from './modules/skills/infra/integration
 import { ClaudeCliSmokeProbe } from './modules/skills/infra/integrations/claude-cli-smoke-probe.js';
 import { FileSystemPluginMirror } from './modules/skills/infra/integrations/file-system-plugin-mirror.js';
 import { createSkillsModule, type SkillsModule } from './modules/skills/index.js';
+import { createUiModule, type UiModule } from './modules/ui/index.js';
 import { isOnPath } from './cli/is-on-path.js';
 import { openBrowser } from './cli/open-browser.js';
 import { parseCliArguments } from './cli/parse-cli-arguments.js';
@@ -38,6 +39,10 @@ function buildSkillsModule(config: Config, pluginDirectory: string): SkillsModul
   });
 }
 
+function buildUiModule(skills: SkillsModule): UiModule {
+  return createUiModule({ skills });
+}
+
 const logger = createLogger(consoleLogSink);
 
 const problems = findPreflightProblems({ nodeVersion: process.versions.node, isOnPath });
@@ -54,6 +59,7 @@ const pluginDirectory = fileURLToPath(new URL('../../plugin', import.meta.url));
 
 const bridge = buildBridgeModule(kitDirectory);
 const skills = buildSkillsModule(config, pluginDirectory);
+const ui = buildUiModule(skills);
 
 runMigrations(openDatabase(config.databasePath), migrations);
 
@@ -61,7 +67,7 @@ const runningServer = await startServer({
   app: createApp({
     staticDirectory,
     kitRoutes: bridge.kitRoutes,
-    skillsRoutes: skills.statusRoutes,
+    uiRoutes: ui.routes,
   }),
   port: config.port,
 });
