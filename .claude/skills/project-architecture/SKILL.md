@@ -155,6 +155,7 @@ issues.map((issue) => issue.number);
 **Rule:** `main.ts` is the only place that builds concrete classes.
 
 - **Must:** `main.ts` constructs every module's infra adapters and passes them to that module's factory. It is the only file outside a module that may import that module's `infra/`.
+- **Must:** each module's wiring is a `build<Name>Module(...)` function local to `main.ts` — it constructs that module's infra adapters and calls its `create<Name>Module` factory, returning the module's public interface. `main.ts`'s top level is then a flat list of `const <name> = build<Name>Module(...)` calls, in start-up order. This keeps every module's construction still in `main.ts` (the rule above still holds) while keeping the top level readable as the module count grows.
 - **Must:** everything under `~/.aisf` is reached through `shared/config`, whose home is overridable, so tests use a temp dir.
 - **Must:** `shared/` holds only cross-cutting infrastructure (bus, db, config, logger). Domain logic never goes there.
 
@@ -266,7 +267,7 @@ Confirm-page lanes, left to right: **UI** · **api** · **logic** · **infra** �
 
 ## Easy-to-miss wiring
 
-- **A new module** needs its `index.ts` factory, construction in `main.ts`, and a matching dependency-cruiser rule.
+- **A new module** needs its `index.ts` factory, a `build<Name>Module` function in `main.ts`, and a matching dependency-cruiser rule.
 - **A new table** needs a migration in `shared/db`. Never edit an applied migration.
 - **A new bus event** needs its type added to the bus's event map in `shared/`, or subscribers don't type-check.
 - **A new API route** needs its Zod schema shared with `packages/ui`, so the SPA and server agree.
