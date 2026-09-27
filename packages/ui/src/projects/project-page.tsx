@@ -1,4 +1,5 @@
 import type { ProjectResponse } from '@aisf/app/api-schemas/projects-schemas.js';
+import { ContractReport } from './contract-report.js';
 
 type ProjectPageProps = {
   readonly id: string;
@@ -14,6 +15,7 @@ export function ProjectPage({ id, project }: ProjectPageProps) {
     <section>
       <h2 className="mono">{project.id}</h2>
       <p className="mono muted">{project.checkoutPath}</p>
+      <ContractReport report={project.contract} />
     </section>
   );
 }

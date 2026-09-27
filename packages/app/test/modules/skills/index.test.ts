@@ -5,6 +5,7 @@ import {
   FakeLocalPluginInstaller,
   FakeMarketplaceRegistry,
   FakePluginMirror,
+  FakeSlotReader,
   FakeSmokeProbe,
 } from './fakes/fake-skills-ports.js';
 
@@ -12,15 +13,17 @@ const mirrorDirectory = '/home/user/.aisf/plugins/aisf';
 
 function createSubject() {
   const smokeProbe = new FakeSmokeProbe();
+  const slotReader = new FakeSlotReader();
   const localPluginInstaller = new FakeLocalPluginInstaller();
   const skills = createSkillsModule({
     pluginMirror: new FakePluginMirror(),
     marketplaceRegistry: new FakeMarketplaceRegistry(mirrorDirectory),
     smokeProbe,
     mirrorDirectory,
+    slotReader,
     localPluginInstaller,
   });
-  return { skills, smokeProbe, localPluginInstaller };
+  return { skills, smokeProbe, slotReader, localPluginInstaller };
 }
 
 describe('createSkillsModule', () => {
@@ -71,6 +74,21 @@ describe('createSkillsModule', () => {
     });
   });
 
+  describe('runContractPreflight', () => {
+    it('should report every required slot as missing when the checkout has none of them', async () => {
+      const { skills } = createSubject();
+
+      const report = await skills.runContractPreflight('/home/user/repo');
+
+      expect(report.passed).toBe(false);
+      expect(report.missingSlots).toEqual([
+        'project-architecture',
+        'project-testing',
+        'project-toolchain',
+      ]);
+    });
+  });
+
   describe('installPluginLocally', () => {
     const checkoutPath = '/home/user/repo';
 
@@ -93,6 +111,7 @@ describe('createSkillsModule', () => {
         marketplaceRegistry: new FakeMarketplaceRegistry(mirrorDirectory),
         smokeProbe: new FakeSmokeProbe(),
         mirrorDirectory,
+        slotReader: new FakeSlotReader(),
         localPluginInstaller,
       });
 

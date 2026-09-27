@@ -7,15 +7,23 @@ import {
   PluginInstallFailedError,
   ProjectAlreadyAddedError,
   type Project,
+  type ProjectWithContract,
 } from '../../../../../src/modules/projects/index.js';
 import type { ProjectsPort } from '../../../../../src/modules/ui/index.js';
 
+const passingReport = {
+  passed: true,
+  missingSlots: [],
+  missingHeadings: [],
+  missingKeys: [],
+};
+
 class FakeProjects implements ProjectsPort {
-  private readonly projects: Project[] = [];
+  private readonly projects: ProjectWithContract[] = [];
   readonly addCalls: string[] = [];
   failure: Error | undefined;
 
-  async list(): Promise<ReadonlyArray<Project>> {
+  async list(): Promise<ReadonlyArray<ProjectWithContract>> {
     return this.projects;
   }
 
@@ -24,11 +32,12 @@ class FakeProjects implements ProjectsPort {
     if (this.failure !== undefined) {
       throw this.failure;
     }
-    const project: Project = {
+    const project: ProjectWithContract = {
       id: 'owner/name',
       repository: { owner: 'owner', name: 'name' },
       checkoutPath,
       addedAt: '2026-01-01T00:00:00.000Z',
+      contract: passingReport,
     };
     this.projects.push(project);
     return project;
@@ -61,6 +70,15 @@ describe('createProjectsRoutes', () => {
     expect(response.status).toBe(201);
     expect(await response.json()).toMatchObject({ checkoutPath: '/repo' });
     expect(await projects.list()).toHaveLength(1);
+  });
+
+  it("should include each project's contract report when listing", async () => {
+    const projects = new FakeProjects();
+    await projects.add('/repo');
+
+    const response = await createTestApp(projects).request('/projects');
+
+    expect(await response.json()).toMatchObject([{ contract: passingReport }]);
   });
 
   it('should answer 409 with a message and leave the list unchanged when the project already exists', async () => {

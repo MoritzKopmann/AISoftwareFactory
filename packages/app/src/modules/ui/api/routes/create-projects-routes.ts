@@ -5,11 +5,12 @@ import {
   PluginInstallFailedError,
   ProjectAlreadyAddedError,
   type Project,
+  type ProjectWithContract,
 } from '../../../projects/index.js';
 import { addProjectRequestSchema } from '../schemas/projects-schemas.js';
 
 export type ProjectsPort = {
-  readonly list: () => Promise<ReadonlyArray<Project>>;
+  readonly list: () => Promise<ReadonlyArray<ProjectWithContract>>;
   readonly add: (checkoutPath: string) => Promise<Project>;
 };
 
