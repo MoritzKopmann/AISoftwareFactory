@@ -54,19 +54,7 @@ packages/
 - **Must:** a module root holds `index.ts` and the three layer folders, nothing else.
 - **Should:** files stay under 500 lines. Over that, split.
 
-**Module-root pattern:** `packages/app/src/modules/<name>/`. The seven modules are:
-
-| Module | Owns |
-|---|---|
-| `projects` | Registers a checkout as exactly one GitHub repo, with the repo slug `owner/name` as its id. |
-| `watcher` | Polls GitHub (ETag feeds + GraphQL snapshot) and emits snapshot diffs per repo. Read-only. |
-| `scheduler` | The only module that decides to start work: turns diffs into stage runs, runs pre-flight, enforces concurrency (serial per project). Makes the app's only two GitHub writes. |
-| `runner` | The only module that touches the Agent SDK: `query()` per run, the prompt iterable, `canUseTool`/HITL routing, transcripts, exit status. Also owns worktrees (`~/.aisf/worktrees/<project>/<ticket>`). |
-| `bridge` | Serves `<worktree>/.aisf/artifacts`, `bridge.js`, `kit.js`/`kit.css` and SSE, and provides the `aisf_show_artifact` tool. |
-| `skills` | The `aisf` plugin mirror in `~/.aisf/plugins`, per-project install/sync, and the pre-flight checks the Scheduler calls. |
-| `ui` | The Hono JSON API + SSE for the browser views, and serving the static SPA. |
-
-Commit scopes: a module's name for changes under its root. Outside module roots: `shared` (`packages/app/src/shared/`), `app` (`main.ts` and other `packages/app` files), `ui` (`packages/ui/`), `plugin` (`packages/plugin/`).
+**Module-root pattern:** `packages/app/src/modules/<name>/`.
 
 ## Class types
 
@@ -257,13 +245,10 @@ if (response.status === 304) return previousPage;
 - **No central Store module.** No module owns another module's data.
 - **No import that reaches past another module's `index.ts`** (`modules/x/logic/…` from `modules/y`).
 - **No `new` of a concrete adapter outside `main.ts`.** No service locator, no global singletons.
-- **Only `scheduler` writes to GitHub,** and only its two transitions: closing a finished `planned` parent, and `→ stuck`. Named exception: `projects` creates missing aisf labels at Add project, create-only.
-- **Only `runner` imports the Agent SDK.**
 - **No second process:** no daemon plus separate UI process, and no process per project.
 - **No persistence besides `aisf.db`:** no JSON state files, no native SQLite binding.
 - **Rejected stacks stay rejected:** htmx, Fastify, Svelte, Docker, a single binary.
 - **No global 3-layer split** (a top-level `api/`, `logic/`, `infra/` across modules). Layers live inside each module.
-- **No fresh worktree per stage.** One worktree per ticket, reused across its stages.
 - **No parallel sibling runs by default.** Concurrency is serial per project.
 
 ## Plan vocabulary
