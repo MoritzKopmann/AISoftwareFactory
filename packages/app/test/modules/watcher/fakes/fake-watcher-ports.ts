@@ -1,6 +1,11 @@
 import type { RepositoryReference } from '../../../../src/modules/watcher/logic/domain/types/repository-reference.js';
 import type { Ticket } from '../../../../src/modules/watcher/logic/domain/types/ticket.js';
 import type { TicketSnapshot } from '../../../../src/modules/watcher/logic/domain/types/ticket-snapshot.js';
+import type {
+  RegisteredRepositories,
+  RegisteredRepository,
+} from '../../../../src/modules/watcher/logic/ports/registered-repositories.js';
+import type { IssueFeeds } from '../../../../src/modules/watcher/logic/ports/issue-feeds.js';
 import type { GitHubToken } from '../../../../src/modules/watcher/logic/ports/github-token.js';
 import type { TicketSource } from '../../../../src/modules/watcher/logic/ports/ticket-source.js';
 
@@ -21,17 +26,47 @@ export class FakeGitHubToken implements GitHubToken {
   }
 }
 
+export class FakeRegisteredRepositories implements RegisteredRepositories {
+  constructor(private readonly registered: ReadonlyArray<RegisteredRepository>) {}
+
+  async list(): Promise<ReadonlyArray<RegisteredRepository>> {
+    return this.registered;
+  }
+}
+
+export class FakeIssueFeeds implements IssueFeeds {
+  readonly requests: RepositoryReference[] = [];
+  changed = false;
+  failure: Error | undefined;
+
+  async changedSince(repository: RepositoryReference): Promise<boolean> {
+    this.requests.push(repository);
+    if (this.failure !== undefined) {
+      throw this.failure;
+    }
+    return this.changed;
+  }
+}
+
 export class FakeTicketSource implements TicketSource {
   readonly snapshotRequests: RepositoryReference[] = [];
   readonly ticketRequests: Array<{ repository: RepositoryReference; number: number }> = [];
+  failure: Error | undefined;
+  readonly failuresByRepositoryName = new Map<string, Error>();
+  release: Promise<void> | undefined;
 
   constructor(
-    private readonly snapshotToReturn: TicketSnapshot,
+    public snapshotToReturn: TicketSnapshot,
     private readonly ticketsByNumber: ReadonlyMap<number, Ticket> = new Map(),
   ) {}
 
   async snapshot(repository: RepositoryReference): Promise<TicketSnapshot> {
     this.snapshotRequests.push(repository);
+    await this.release;
+    const failure = this.failuresByRepositoryName.get(repository.name) ?? this.failure;
+    if (failure !== undefined) {
+      throw failure;
+    }
     return this.snapshotToReturn;
   }
 

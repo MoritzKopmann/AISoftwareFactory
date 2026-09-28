@@ -1,9 +1,6 @@
-import type { EventPublisher } from '../../../../src/shared/bus/event-publisher.js';
-import type { AisfEventMap } from '../../../../src/shared/bus/aisf-event-map.js';
 import type { ContractPreflightReport } from '../../../../src/modules/projects/logic/domain/types/contract-preflight-report.js';
 import type { PluginInstallResult } from '../../../../src/modules/projects/logic/domain/types/plugin-install-result.js';
 import type { Project } from '../../../../src/modules/projects/logic/domain/types/project.js';
-import type { Clock } from '../../../../src/modules/projects/logic/ports/clock.js';
 import type { ContractPreflight } from '../../../../src/modules/projects/logic/ports/contract-preflight.js';
 import type { LabelSync } from '../../../../src/modules/projects/logic/ports/label-sync.js';
 import type { PluginInstaller } from '../../../../src/modules/projects/logic/ports/plugin-installer.js';
@@ -73,14 +70,6 @@ export class FakePluginInstaller implements PluginInstaller {
   }
 }
 
-export class FakeClock implements Clock {
-  constructor(private currentTime: string) {}
-
-  now(): string {
-    return this.currentTime;
-  }
-}
-
 export class FakeContractPreflight implements ContractPreflight {
   checkCalls: string[] = [];
 
@@ -93,14 +82,5 @@ export class FakeContractPreflight implements ContractPreflight {
   async check(checkoutPath: string): Promise<ContractPreflightReport> {
     this.checkCalls.push(checkoutPath);
     return this.reportsByPath.get(checkoutPath) ?? passingReport;
-  }
-}
-
-export class FakeEventPublisher implements EventPublisher {
-  readonly emittedEvents: Array<{ readonly name: keyof AisfEventMap; readonly payload: unknown }> =
-    [];
-
-  emit<Name extends keyof AisfEventMap>(name: Name, payload: AisfEventMap[Name]): void {
-    this.emittedEvents.push({ name, payload });
   }
 }

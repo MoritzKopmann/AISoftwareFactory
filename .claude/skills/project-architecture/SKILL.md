@@ -24,7 +24,7 @@ packages/
 ├── app/                              ← the server and CLI (@aisf/app)
 │   ├── src/
 │   │   ├── main.ts                   ← composition root
-│   │   ├── shared/                   ← typed event bus, db (connection + migrations), config, logger, process
+│   │   ├── shared/                   ← typed event bus, clock, db (connection + migrations), config, logger, process
 │   │   └── modules/
 │   │       └── <name>/               ← module root
 │   │           ├── index.ts          ← the module's only public surface
@@ -38,7 +38,7 @@ packages/
 │   │           │   │   ├── functions/← pure functions over domain types
 │   │           │   │   └── constants/← fixed domain data, one canonical value per file
 │   │           │   ├── use-cases/    ← one use case per file
-│   │           │   ├── ports/        ← interfaces logic needs: repositories, integrations, clock
+│   │           │   ├── ports/        ← interfaces logic needs: repositories, integrations
 │   │           │   └── errors/       ← domain errors, one per file
 │   │           └── infra/            ← outbound adapters, implementing logic's ports
 │   │               ├── repositories/ ← SQLite implementations of repository ports
@@ -79,14 +79,14 @@ Commit scopes: a module's name for changes under its root. Outside module roots:
 | Domain constant | `const` typed by a readonly domain type | `logic/domain/constants/` | `projectContract`, `aisfLabels` |
 | Use case | class, constructed with its ports, one public method `execute` | `logic/use-cases/` | `StartRunUseCase` |
 | Repository port | `interface` | `logic/ports/` | `RunRepository` |
-| Integration port | `interface` | `logic/ports/` | `GitHubIntegration`, `Clock` |
+| Integration port | `interface` | `logic/ports/` | `GitHubIntegration`, `TicketSource` |
 | Domain error | class `extends Error` | `logic/errors/` | `WorktreeMissingError` |
 | API schema | zod schema and its inferred type, one file per resource | `modules/ui/api/schemas/` | `projects-schemas.ts` |
 | Route | function returning a Hono app | `api/routes/` | `createRunRoutes` |
 | Subscription | function registering one bus handler | `api/subscriptions/` | `subscribeToSnapshotChanged` |
 | MCP tool handler | function returning the tool definition | `api/tools/` | `createShowArtifactTool` |
 | Repository impl | class `implements` a repository port | `infra/repositories/` | `SqliteRunRepository` |
-| Integration impl | class `implements` an integration port | `infra/integrations/` | `GhCliGitHubIntegration`, `SystemClock` |
+| Integration impl | class `implements` an integration port | `infra/integrations/` | `GhCliGitHubIntegration`, `FetchIssueFeeds` |
 | Module factory | function taking the module's adapters, returning its public interface | `index.ts` | `createRunnerModule` |
 
 ### Where does X go?
@@ -168,7 +168,7 @@ issues.map((issue) => issue.number);
 - **Must:** `main.ts` constructs every module's infra adapters and passes them to that module's factory. It is the only file outside a module that may import that module's `infra/`.
 - **Must:** each module's wiring is a `build<Name>Module(...)` function local to `main.ts` — it constructs that module's infra adapters and calls its `create<Name>Module` factory, returning the module's public interface. `main.ts`'s top level is then a flat list of `const <name> = build<Name>Module(...)` calls, in start-up order. This keeps every module's construction still in `main.ts` (the rule above still holds) while keeping the top level readable as the module count grows.
 - **Must:** everything under `~/.aisf` is reached through `shared/config`, whose home is overridable, so tests use a temp dir.
-- **Must:** `shared/` holds only cross-cutting infrastructure (bus, db, config, logger, process). Domain logic never goes there.
+- **Must:** `shared/` holds only cross-cutting infrastructure (bus, clock, db, config, logger, process). Domain logic never goes there.
 
 ### Deep modules
 

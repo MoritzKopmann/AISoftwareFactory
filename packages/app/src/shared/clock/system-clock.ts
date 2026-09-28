@@ -1,4 +1,4 @@
-import type { Clock } from '../../logic/ports/clock.js';
+import type { Clock } from './clock.js';
 
 export class SystemClock implements Clock {
   now(): string {
