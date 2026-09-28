@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite';
-import type { Project } from '../../logic/domain/project.js';
+import type { Project } from '../../logic/domain/types/project.js';
 import { ProjectAlreadyAddedError } from '../../logic/errors/project-already-added-error.js';
 import type { ProjectRepository } from '../../logic/ports/project-repository.js';
 

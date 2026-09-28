@@ -1,5 +1,5 @@
 import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
-import type { Project } from '../domain/project.js';
+import type { Project } from '../domain/types/project.js';
 import { PluginInstallFailedError } from '../errors/plugin-install-failed-error.js';
 import { ProjectAlreadyAddedError } from '../errors/project-already-added-error.js';
 import type { Clock } from '../ports/clock.js';

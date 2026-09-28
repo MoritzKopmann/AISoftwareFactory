@@ -1,7 +1,7 @@
-import { determineRunsBlocked } from './logic/domain/determine-runs-blocked.js';
-import type { ContractPreflightReport } from './logic/domain/contract-preflight-report.js';
-import type { PluginInstallOutcome } from './logic/domain/plugin-install-outcome.js';
-import type { RunsBlocked, SkillsStatus } from './logic/domain/skills-status.js';
+import { determineRunsBlocked } from './logic/domain/functions/determine-runs-blocked.js';
+import type { ContractPreflightReport } from './logic/domain/types/contract-preflight-report.js';
+import type { PluginInstallOutcome } from './logic/domain/types/plugin-install-outcome.js';
+import type { RunsBlocked, SkillsStatus } from './logic/domain/types/skills-status.js';
 import type { LocalPluginInstaller } from './logic/ports/local-plugin-installer.js';
 import {
   ContractPreflightUseCase,
@@ -13,9 +13,9 @@ import {
   type StartSkillsDependencies,
 } from './logic/use-cases/start-skills-use-case.js';
 
-export type { RunsBlocked, SkillsStatus } from './logic/domain/skills-status.js';
-export type { ContractPreflightReport } from './logic/domain/contract-preflight-report.js';
-export type { PluginInstallOutcome } from './logic/domain/plugin-install-outcome.js';
+export type { RunsBlocked, SkillsStatus } from './logic/domain/types/skills-status.js';
+export type { ContractPreflightReport } from './logic/domain/types/contract-preflight-report.js';
+export type { PluginInstallOutcome } from './logic/domain/types/plugin-install-outcome.js';
 
 export type SkillsModuleDependencies = StartSkillsDependencies &
   ContractPreflightDependencies & {

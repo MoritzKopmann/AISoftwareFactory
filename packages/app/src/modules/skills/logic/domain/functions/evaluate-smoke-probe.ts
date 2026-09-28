@@ -1,5 +1,5 @@
-import type { SmokeProbeReport } from './smoke-probe-report.js';
-import type { SmokeTestResult } from './skills-status.js';
+import type { SmokeProbeReport } from '../types/smoke-probe-report.js';
+import type { SmokeTestResult } from '../types/skills-status.js';
 
 const minimumClaudeCodeVersion = '2.1.0';
 const pluginSkillPrefix = 'aisf:';

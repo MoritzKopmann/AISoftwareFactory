@@ -1,5 +1,5 @@
-import type { ContractPreflightReport } from '../domain/contract-preflight-report.js';
-import type { Project } from '../domain/project.js';
+import type { ContractPreflightReport } from '../domain/types/contract-preflight-report.js';
+import type { Project } from '../domain/types/project.js';
 import type { ContractPreflight } from '../ports/contract-preflight.js';
 import type { ProjectRepository } from '../ports/project-repository.js';
 

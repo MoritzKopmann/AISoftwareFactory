@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { checkContract } from '../../../../../src/modules/skills/logic/domain/check-contract.js';
-import type { ProjectContract } from '../../../../../src/modules/skills/logic/domain/project-contract.js';
+import { checkContract } from '../../../../../../src/modules/skills/logic/domain/functions/check-contract.js';
+import type { ProjectContract } from '../../../../../../src/modules/skills/logic/domain/constants/project-contract.js';
 
 const contract: ProjectContract = {
   slots: [

@@ -1,4 +1,4 @@
-import type { RunsBlocked, SkillsStatus } from './skills-status.js';
+import type { RunsBlocked, SkillsStatus } from '../types/skills-status.js';
 
 export function determineRunsBlocked(status: SkillsStatus): RunsBlocked {
   switch (status.state) {

@@ -1,4 +1,4 @@
-import type { Project } from '../domain/project.js';
+import type { Project } from '../domain/types/project.js';
 
 export interface ProjectRepository {
   findById(id: string): Promise<Project | undefined>;

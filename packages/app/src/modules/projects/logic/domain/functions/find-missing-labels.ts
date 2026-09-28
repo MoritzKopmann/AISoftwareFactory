@@ -1,4 +1,4 @@
-import type { AisfLabel } from './aisf-labels.js';
+import type { AisfLabel } from '../constants/aisf-labels.js';
 
 export function findMissingLabels(
   aisfLabels: ReadonlyArray<AisfLabel>,

@@ -1,6 +1,6 @@
-import { checkContract } from '../domain/check-contract.js';
-import type { ContractPreflightReport } from '../domain/contract-preflight-report.js';
-import { projectContract } from '../domain/project-contract.js';
+import { checkContract } from '../domain/functions/check-contract.js';
+import type { ContractPreflightReport } from '../domain/types/contract-preflight-report.js';
+import { projectContract } from '../domain/constants/project-contract.js';
 import type { SlotReader } from '../ports/slot-reader.js';
 
 export type ContractPreflightDependencies = {

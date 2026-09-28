@@ -1,4 +1,4 @@
-import type { Project } from './logic/domain/project.js';
+import type { Project } from './logic/domain/types/project.js';
 import { CheckoutNotARepositoryError } from './logic/errors/checkout-not-a-repository-error.js';
 import { GitHubCliError } from './logic/errors/github-cli-error.js';
 import { PluginInstallFailedError } from './logic/errors/plugin-install-failed-error.js';
@@ -13,8 +13,8 @@ import {
   type ProjectWithContract,
 } from './logic/use-cases/list-projects-use-case.js';
 
-export type { Project } from './logic/domain/project.js';
-export type { ContractPreflightReport } from './logic/domain/contract-preflight-report.js';
+export type { Project } from './logic/domain/types/project.js';
+export type { ContractPreflightReport } from './logic/domain/types/contract-preflight-report.js';
 export type { ProjectWithContract } from './logic/use-cases/list-projects-use-case.js';
 export {
   CheckoutNotARepositoryError,

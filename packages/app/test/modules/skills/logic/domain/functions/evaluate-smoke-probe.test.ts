@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateSmokeProbe } from '../../../../../src/modules/skills/logic/domain/evaluate-smoke-probe.js';
-import type { SmokeProbeReport } from '../../../../../src/modules/skills/logic/domain/smoke-probe-report.js';
+import { evaluateSmokeProbe } from '../../../../../../src/modules/skills/logic/domain/functions/evaluate-smoke-probe.js';
+import type { SmokeProbeReport } from '../../../../../../src/modules/skills/logic/domain/types/smoke-probe-report.js';
 
 const healthyReport: SmokeProbeReport = {
   claudeCodeVersion: '2.1.283',

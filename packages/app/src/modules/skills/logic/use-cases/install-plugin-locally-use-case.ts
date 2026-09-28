@@ -1,4 +1,4 @@
-import type { PluginInstallOutcome } from '../domain/plugin-install-outcome.js';
+import type { PluginInstallOutcome } from '../domain/types/plugin-install-outcome.js';
 import { SkillsSetupError } from '../errors/skills-setup-error.js';
 import type { LocalPluginInstaller } from '../ports/local-plugin-installer.js';
 

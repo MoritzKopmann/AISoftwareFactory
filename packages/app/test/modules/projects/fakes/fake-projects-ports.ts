@@ -1,8 +1,8 @@
 import type { EventPublisher } from '../../../../src/shared/bus/event-publisher.js';
 import type { AisfEventMap } from '../../../../src/shared/bus/aisf-event-map.js';
-import type { ContractPreflightReport } from '../../../../src/modules/projects/logic/domain/contract-preflight-report.js';
-import type { PluginInstallResult } from '../../../../src/modules/projects/logic/domain/plugin-install-result.js';
-import type { Project } from '../../../../src/modules/projects/logic/domain/project.js';
+import type { ContractPreflightReport } from '../../../../src/modules/projects/logic/domain/types/contract-preflight-report.js';
+import type { PluginInstallResult } from '../../../../src/modules/projects/logic/domain/types/plugin-install-result.js';
+import type { Project } from '../../../../src/modules/projects/logic/domain/types/project.js';
 import type { Clock } from '../../../../src/modules/projects/logic/ports/clock.js';
 import type { ContractPreflight } from '../../../../src/modules/projects/logic/ports/contract-preflight.js';
 import type { LabelSync } from '../../../../src/modules/projects/logic/ports/label-sync.js';
