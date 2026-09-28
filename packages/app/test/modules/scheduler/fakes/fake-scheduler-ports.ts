@@ -78,8 +78,12 @@ export class FakeRunnerPort implements RunnerPort {
   activeTicketNumber: number | undefined;
   lastEndedAt: string | undefined;
 
-  async start(request: { projectId: string; ticketNumber: number }): Promise<void> {
+  async start(request: {
+    projectId: string;
+    ticketNumber: number;
+  }): Promise<{ readonly id: string; readonly startedAt: string }> {
     this.calls.push(`start ${request.projectId} #${request.ticketNumber}`);
+    return { id: 'run-1', startedAt: '2026-09-29T09:00:00.000Z' };
   }
 
   async activeRun(): Promise<{ readonly ticketNumber: number } | undefined> {

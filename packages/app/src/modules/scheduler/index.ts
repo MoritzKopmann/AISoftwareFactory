@@ -3,6 +3,7 @@ import type { Logger } from '../../shared/logger/create-logger.js';
 import { subscribeToRunFinished } from './api/subscriptions/subscribe-to-run-finished.js';
 import { subscribeToSnapshotChanged } from './api/subscriptions/subscribe-to-snapshot-changed.js';
 import type { RunAvailability } from './logic/domain/types/run-availability.js';
+import type { StartedRun } from './logic/domain/types/started-run.js';
 import { RunNotAvailableError } from './logic/errors/run-not-available-error.js';
 import type { GitHubWrites } from './logic/ports/github-writes.js';
 import type { ProjectLookup } from './logic/ports/project-lookup.js';
@@ -16,6 +17,7 @@ import { SettleFinishedRunUseCase } from './logic/use-cases/settle-finished-run-
 import { StartTicketRunUseCase } from './logic/use-cases/start-ticket-run-use-case.js';
 
 export type { RunAvailability } from './logic/domain/types/run-availability.js';
+export type { StartedRun } from './logic/domain/types/started-run.js';
 export type { RunsBlocked } from './logic/domain/types/runs-blocked.js';
 export type { SchedulableTicket } from './logic/domain/types/schedulable-ticket.js';
 export type { TicketStatus } from './logic/domain/types/ticket-status.js';
@@ -35,7 +37,7 @@ export type SchedulerModuleDependencies = {
 
 export type SchedulerModule = {
   readonly start: () => void;
-  readonly startRun: (projectId: string, ticketNumber: number) => Promise<void>;
+  readonly startRun: (projectId: string, ticketNumber: number) => Promise<StartedRun>;
   readonly runAvailability: (projectId: string, ticketNumber: number) => Promise<RunAvailability>;
 };
 

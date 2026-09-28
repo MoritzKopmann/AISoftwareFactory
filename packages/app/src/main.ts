@@ -166,7 +166,13 @@ function buildSchedulerModule(
     gitHubWrites: new GhCliGitHubWrites(),
     runner: {
       start: async ({ projectId, ticketNumber }) => {
-        await runner.start({ projectId, ticketNumber, stage: 'implement', mode: 'afk' });
+        const { id, startedAt } = await runner.start({
+          projectId,
+          ticketNumber,
+          stage: 'implement',
+          mode: 'afk',
+        });
+        return { id, startedAt };
       },
       activeRun: async (projectId) => {
         const activeRun = await runner.activeRun(projectId);
@@ -216,8 +222,21 @@ function buildUiModule(
   projects: ProjectsModule,
   skills: SkillsModule,
   watcher: WatcherModule,
+  runner: RunnerModule,
+  scheduler: SchedulerModule,
 ): UiModule {
-  return createUiModule({ projects, skills, watcher });
+  return createUiModule({
+    projects,
+    skills,
+    watcher,
+    runs: {
+      availability: (projectId, ticketNumber) => scheduler.runAvailability(projectId, ticketNumber),
+      activeRun: (projectId) => runner.activeRun(projectId),
+      latestRun: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber),
+      start: (projectId, ticketNumber) => scheduler.startRun(projectId, ticketNumber),
+      stop: (runId) => runner.stop(runId),
+    },
+  });
 }
 
 const logger = createLogger(consoleLogSink);
@@ -253,7 +272,7 @@ const runner = buildRunnerModule(
 );
 const scheduler = buildSchedulerModule(eventBus, projects, skills, watcher, runner, logger);
 scheduler.start();
-const ui = buildUiModule(projects, skills, watcher);
+const ui = buildUiModule(projects, skills, watcher, runner, scheduler);
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {

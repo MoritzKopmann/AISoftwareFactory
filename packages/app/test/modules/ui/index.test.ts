@@ -12,7 +12,18 @@ function createSubject(status: SkillsStatus) {
     projects: { list: async () => [], add: async (checkoutPath) => notImplemented(checkoutPath) },
     skills: { status: () => status },
     watcher: pendingWatcher,
+    runs: {
+      availability: async () => ({ kind: 'absent' }),
+      activeRun: async () => undefined,
+      latestRun: async () => undefined,
+      start: async () => notExpected('start'),
+      stop: async () => notExpected('stop'),
+    },
   });
+}
+
+function notExpected(operation: string): never {
+  throw new Error(`${operation} was not expected to be called`);
 }
 
 function notImplemented(checkoutPath: string): never {
@@ -62,5 +73,14 @@ describe('createUiModule', () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ projectId: 'owner/name', sync: { state: 'pending' } });
+  });
+
+  it('should serve a ticket run under /projects/:owner/:name/tickets/:number/run', async () => {
+    const ui = createSubject({ state: 'pending' });
+
+    const response = await ui.routes.request('/projects/owner/name/tickets/5/run');
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ availability: { kind: 'absent' } });
   });
 });
