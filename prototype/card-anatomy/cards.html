@@ -1,6 +1,8 @@
 <title>aisf Card Prototype</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!--
+  CHOSEN (#111): card=a rows=wrap links=one list=divided empty=inline; rows with an action
+  use a stretched title link to the ticket page plus a real action button; no caps.
   PROTOTYPE, throwaway. Answers "Prototype the card and list anatomy, links and collapsing" (#111)
   on the map "Map: app-wide UI direction within Drafting" (#105).
   Card variants: #a stacked, #b header line, #c single line. Switch with the bottom bar or the hash.
@@ -326,7 +328,7 @@ summary:hover .toggle-text { color: var(--text); text-decoration-color: var(--ac
   // ---------- Prototype state ----------
   const readHash = () => (/^#([abc])$/.exec(location.hash) || [])[1];
   const S = {
-    card: readHash() || 'a', overflow: 'strip', links: 'one', list: 'divided', empty: 'inline',
+    card: readHash() || 'a', overflow: 'wrap', links: 'one', list: 'divided', empty: 'inline',
     theme: 'auto', scenario: 'normal', page: 'board', polling: true, poll: 0,
     open: new Set(), expanded: new Set(), last: '—',
   };
@@ -431,7 +433,7 @@ summary:hover .toggle-text { color: var(--text); text-decoration-color: var(--ac
   };
   // A row is one link ("one") or a stretched title link with its own action ("stretched").
   function lrow(kind, lead, title, href, sub, action, aside) {
-    const real = S.links === 'stretched';
+    const real = S.links === 'stretched' || !!action;
     const t = real ? `<a class="stretch" href="${href}" data-link>${title}</a>` : title;
     const act = action ? (real ? action.real : `<span class="btn act">${action.label}</span>`) : '';
     const tail = `<span class="act" style="display:flex;gap:12px;align-items:center">${aside ? `<span class="aside">${aside}</span>` : ''}${act}</span>`;
@@ -450,7 +452,7 @@ summary:hover .toggle-text { color: var(--text); text-decoration-color: var(--ac
   function lists() {
     const real = S.links === 'stretched';
     const needGroups = [...new Set(NEEDS.map((n) => n.p))].map((p) => `<div class="group-h">${esc(p)} · ${NEEDS.filter((n) => n.p === p).length}</div>` +
-      NEEDS.filter((n) => n.p === p).map((n) => lrow('need', REASON[n.why], `<span class="num-id sm mono">#${n.n}</span> ${esc(n.t)}`, n.why === 'review' ? gh('pull/' + n.pr) : `#/sessions/${n.n}`,
+      NEEDS.filter((n) => n.p === p).map((n) => lrow('need', REASON[n.why], `<span class="num-id sm mono">#${n.n}</span> ${esc(n.t)}`, inApp(n.n),
         esc(n.text), { label: n.act, real: `<a class="btn act" href="${n.why === 'review' ? gh('pull/' + n.pr) : '#/sessions/' + n.n}" ${n.why === 'review' ? 'target="_blank" rel="noopener"' : ''} data-link>${n.act}${n.why === 'review' ? ' ↗' : ''}</a>` }, n.age)).join('')).join('');
     let bugs = BUGS;
     if (S.scenario === 'many') for (let i = 0; i < 27; i++) bugs = [...bugs, { text: FILL[i % FILL.length] + ' is not covered by a test.', pr: 70 + i, n: 60 + i, t: FILL[(i + 3) % FILL.length], age: (i + 2) + ' d' }];
