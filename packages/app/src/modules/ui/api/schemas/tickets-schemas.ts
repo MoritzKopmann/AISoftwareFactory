@@ -75,6 +75,7 @@ export const projectBoardResponseSchema = z.object({
   projectId: z.string(),
   sync: syncStatusResponseSchema,
   board: z.object({ rows: z.array(boardRowResponseSchema) }).optional(),
+  runningTicketNumber: z.number().optional(),
 });
 export type ProjectBoardResponse = z.infer<typeof projectBoardResponseSchema>;
 

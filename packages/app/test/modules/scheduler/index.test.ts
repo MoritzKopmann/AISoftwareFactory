@@ -46,6 +46,13 @@ describe('createSchedulerModule', () => {
     expect(runner.calls).toEqual(['start moritz/aisf #138']);
   });
 
+  it('should return the started run when startRun is called for an available ticket', async () => {
+    expect(await scheduler.startRun('moritz/aisf', 138)).toEqual({
+      id: 'run-1',
+      startedAt: '2026-09-29T09:00:00.000Z',
+    });
+  });
+
   it('should throw RunNotAvailableError when startRun is called while another run is active', async () => {
     runner.activeTicketNumber = 42;
 
