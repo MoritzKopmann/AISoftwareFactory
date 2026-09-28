@@ -1,0 +1,565 @@
+<title>aisf Shell Prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  PROTOTYPE, throwaway. Answers "Prototype the app shell, navigation, layout and density" (#110)
+  on the map "Map: app-wide UI direction within Drafting" (#105).
+  Three shells: #a top tabs, #b sidebar, #c inbox home. Switch with the bottom bar or the hash.
+  (The skill asks for ?v=, but Artifact pages only see a bare #token, so the hash carries it.)
+  Tokens are kit.css with the #108 diff applied. Status marks follow #109.
+  Board rows and cards are filler for judging density; their anatomy is #111.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Drafting, light, with the #108 diff. */
+:root {
+  --bg: #e9eef2; --surface: #f8fafb; --surface-2: #dfe6ec;
+  --border: #a9b8c5; --border-strong: #6f8499;
+  --text: #13243a; --muted: #4c6075;
+  --accent: #c45404; --accent-ink: #ffffff; --accent-soft: #f8e2d2;
+  --ok: #257540; --warn: #935902; --danger: #b8322f; --info: #2d5f93; --hitl: #6b47c2;
+  --font-ui: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --label-spacing: 0.08em;
+  --radius: 4px; --radius-sm: 2px;
+  --pad: 16px; --gap: 8px;
+  --text-size: 15px; --text-size-sm: 13px;
+  --gutter: 16px;
+  --card-pad: 8px 12px; --card-min: 40px; --row-gap: 12px;
+  --proto: #7a2e8f;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0d1924; --surface: #122130; --surface-2: #192b3d;
+    --border: #2e4760; --border-strong: #587592;
+    --text: #d8e4ee; --muted: #9ab2c7;
+    --accent: #ff8a45; --accent-ink: #1c0d03; --accent-soft: #3b2515;
+    --ok: #5cc07a; --warn: #e5ab4e; --danger: #ff8f84; --info: #7cb4ea; --hitl: #baa0ff;
+    --proto: #e0a3f0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --bg: #0d1924; --surface: #122130; --surface-2: #192b3d;
+  --border: #2e4760; --border-strong: #587592;
+  --text: #d8e4ee; --muted: #9ab2c7;
+  --accent: #ff8a45; --accent-ink: #1c0d03; --accent-soft: #3b2515;
+  --ok: #5cc07a; --warn: #e5ab4e; --danger: #ff8f84; --info: #7cb4ea; --hitl: #baa0ff;
+  --proto: #e0a3f0;
+  color-scheme: dark;
+}
+@media (min-width: 720px) { :root { --gutter: 24px; } }
+:root[data-density='compact'] { --card-pad: 4px 8px; --card-min: 32px; --row-gap: 8px; }
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: var(--text-size) / 1.45 var(--font-ui);
+  padding-bottom: 120px;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+h1, h2, h3 { margin: 0; font-family: var(--font-mono); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; text-wrap: balance; }
+h1 { font-size: 22px; } h2 { font-size: 16px; } h3 { font-size: 14px; }
+p { margin: 0; }
+.sm { font-size: var(--text-size-sm); line-height: 1.4; color: var(--muted); }
+.mono { font-family: var(--font-mono); font-size: 0.92em; }
+.label { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: var(--label-spacing); font-size: 11px; font-weight: 500; color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+a { color: var(--text); text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 2px; }
+a:hover, a:focus-visible { text-decoration-color: var(--accent); }
+button { font: inherit; color: inherit; }
+
+/* Controls */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 32px;
+  padding: 6px 12px; font-size: 13px; font-weight: 600;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius);
+  color: var(--text); cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.btn:hover { border-color: var(--text); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.quiet { background: transparent; border-color: transparent; }
+.btn.quiet:hover { border-color: var(--border-strong); }
+input[type=text] {
+  width: 100%; max-width: 520px; min-height: 36px; padding: 6px 8px;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius);
+  color: var(--text); font: 14px var(--font-mono);
+}
+
+/* Status marks (#109) */
+.shape { display: inline-block; width: 1em; text-align: center; font-family: var(--font-mono); }
+.s-neutral { color: var(--muted); } .s-flow { color: var(--info); } .s-done { color: var(--ok); }
+.s-warn { color: var(--warn); } .s-danger { color: var(--danger); } .s-hitl { color: var(--hitl); }
+.pulse { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 0 6px; line-height: 18px;
+  font: 500 11px var(--font-mono); text-transform: uppercase; letter-spacing: var(--label-spacing);
+  border: 1px solid var(--border-strong); color: var(--text); white-space: nowrap;
+}
+.chip.hitl { border-color: var(--hitl); }
+.chip.danger { border-color: var(--danger); }
+.chip.flow { border-color: var(--info); }
+.count {
+  display: inline-block; min-width: 18px; padding: 0 4px; line-height: 16px; text-align: center;
+  font: 700 11px var(--font-mono); font-variant-numeric: tabular-nums;
+  border: 1px solid var(--hitl); color: var(--text);
+}
+.count.danger { border-color: var(--danger); }
+
+/* Page frame */
+.page { padding-inline: var(--gutter); padding-block: var(--pad) 0; display: grid; gap: calc(var(--pad) * 1.5); }
+:root[data-width='capped'] .page { max-width: 1440px; margin-inline: auto; width: 100%; }
+.page-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.page-head .grow { flex: 1; }
+.page-head h1 { text-transform: none; letter-spacing: 0; font-family: var(--font-ui); font-size: 22px; }
+
+/* Banners and panels */
+.banner {
+  display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline;
+  padding: 8px var(--gutter); border-bottom: 1px solid var(--border-strong); background: var(--surface);
+}
+.banner.danger { border-left: 4px solid var(--danger); }
+.banner.info { border-left: 4px solid var(--info); }
+.panel { border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); padding: 12px var(--pad); display: grid; gap: 8px; }
+.panel.warn { border-left: 4px solid var(--warn); }
+.panel ul { margin: 0; padding-left: 20px; }
+
+/* Board filler (anatomy is #111) */
+.board { display: grid; gap: var(--row-gap); }
+.row { display: grid; gap: 6px; }
+.row-h { display: flex; align-items: baseline; gap: 6px; }
+.row-h .label { color: var(--text); font-weight: 700; }
+.row-h .n { font: 500 11px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.cards { display: flex; flex-wrap: wrap; gap: var(--gap); }
+.card {
+  display: grid; gap: 2px; align-content: center; min-height: var(--card-min); width: 280px; max-width: 100%;
+  padding: var(--card-pad); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius);
+  text-decoration: none;
+}
+.card:hover { border-color: var(--text); }
+.card .t { line-height: 1.3; }
+.card .t b { font: 500 12px var(--font-mono); color: var(--muted); margin-right: 4px; }
+.card .meta { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.row.empty .cards { display: none; }
+.row.empty .row-h::after { content: 'None'; font-size: var(--text-size-sm); color: var(--muted); margin-left: 4px; }
+details.row > summary { cursor: pointer; list-style: none; }
+details.row > summary::-webkit-details-marker { display: none; }
+details.row > summary .chev { font-family: var(--font-mono); color: var(--muted); display: inline-block; transition: transform .15s; }
+details.row[open] > summary .chev { transform: rotate(90deg); }
+
+/* Needs you list */
+.needs { display: grid; gap: var(--pad); }
+.needs-group { display: grid; gap: 6px; }
+.need {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: center;
+  min-height: var(--card-min); padding: var(--card-pad);
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); text-decoration: none;
+}
+.need:hover { border-color: var(--text); }
+.need .why { grid-column: 2; }
+@media (max-width: 600px) { .need { grid-template-columns: auto 1fr; } .need .act { grid-column: 2; } }
+
+/* Settings filler */
+.settings { display: grid; gap: 0; max-width: 720px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); }
+.settings > div { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; padding: 12px var(--pad); border-top: 1px solid var(--border); }
+.settings > div:first-child { border-top: 0; }
+.settings dt { min-width: 160px; }
+
+/* Empty state */
+.empty-state { display: grid; gap: 12px; justify-items: start; padding: 32px 0; max-width: 560px; }
+
+/* ---------- Variant A: top tabs ---------- */
+.a-top {
+  display: flex; align-items: stretch; gap: 0; background: var(--surface);
+  border-bottom: 1px solid var(--border-strong); padding-inline: var(--gutter);
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+}
+.a-brand { display: flex; align-items: center; padding-right: 16px; margin-right: 4px; border-right: 1px solid var(--border); font: 700 14px var(--font-mono); letter-spacing: .04em; text-decoration: none; }
+.a-tabs { display: flex; min-width: 0; overflow-x: auto; overflow-y: hidden; flex: 1; scrollbar-width: thin; }
+.a-tab {
+  display: flex; align-items: center; gap: 6px; padding: 10px 12px; white-space: nowrap;
+  color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  font: 14px var(--font-mono); background: none; border-top: 0; border-left: 0; border-right: 0; cursor: pointer;
+}
+.a-tab:hover { color: var(--text); }
+.a-tab[aria-current='page'] { color: var(--text); border-bottom-color: var(--accent); }
+.a-tab.add { font-family: var(--font-ui); font-size: 13px; font-weight: 600; }
+.a-right { display: flex; align-items: center; gap: 4px; padding-left: 8px; border-left: 1px solid var(--border); }
+.a-right .a-tab { font-family: var(--font-ui); font-size: 13px; font-weight: 600; }
+@media (max-width: 600px) {
+  .a-top { flex-wrap: wrap; }
+  .a-tabs { order: 3; flex-basis: 100%; border-top: 1px solid var(--border); }
+  .a-right { margin-left: auto; border-left: 0; }
+  .a-brand { border-right: 0; }
+}
+
+/* ---------- Variant B: sidebar ---------- */
+.b-wrap { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
+.b-rail {
+  position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; height: 100vh;
+  display: flex; flex-direction: column; gap: 16px; padding: 12px 8px;
+  background: var(--surface); border-right: 1px solid var(--border-strong); overflow-y: auto;
+}
+.b-brand { font: 700 14px var(--font-mono); letter-spacing: .04em; padding: 4px 8px; }
+.b-nav { display: grid; gap: 2px; }
+.b-item {
+  display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius);
+  color: var(--muted); text-decoration: none; background: none; border: 0; cursor: pointer; text-align: left; width: 100%;
+  font-size: 14px;
+}
+.b-item:hover { color: var(--text); background: var(--surface-2); }
+.b-item[aria-current='page'] { color: var(--text); background: var(--surface-2); box-shadow: inset 2px 0 0 var(--accent); }
+.b-item .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.b-item.mono { font-family: var(--font-mono); font-size: 13px; }
+.b-sec { padding: 0 8px 4px; }
+.b-foot { margin-top: auto; display: grid; gap: 2px; border-top: 1px solid var(--border); padding-top: 8px; }
+.b-main { min-width: 0; }
+@media (max-width: 760px) {
+  .b-wrap { grid-template-columns: 1fr; }
+  .b-rail { position: static; height: auto; flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--border-strong); gap: 8px; }
+  .b-nav { display: flex; flex-wrap: wrap; }
+  .b-item { width: auto; }
+  .b-sec { display: none; }
+  .b-foot { margin-top: 0; border-top: 0; padding-top: 0; display: flex; }
+}
+
+/* ---------- Variant C: inbox home ---------- */
+.c-top {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px var(--gutter);
+  background: var(--surface); border-bottom: 1px solid var(--border-strong);
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+}
+.c-top .grow { flex: 1; }
+.c-brand { font: 700 14px var(--font-mono); letter-spacing: .04em; margin-right: 8px; }
+.c-switch { position: relative; }
+.c-menu {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 10; min-width: 280px; max-height: 60vh; overflow: auto;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18); padding: 4px; display: grid; gap: 2px;
+}
+.c-menu button { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 6px 8px; background: none; border: 0; border-radius: var(--radius-sm); cursor: pointer; font: 13px var(--font-mono); text-align: left; color: var(--text); }
+.c-menu button:hover { background: var(--surface-2); }
+.c-menu hr { border: 0; border-top: 1px solid var(--border); margin: 4px 0; }
+.btn[aria-current='page'] { border-color: var(--accent); }
+.c-sub { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+.c-sub button { padding: 6px 10px; background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); }
+.c-sub button[aria-current='page'] { color: var(--text); border-bottom-color: var(--accent); }
+.c-status {
+  position: fixed; left: 0; right: 0; bottom: 64px; z-index: 4;
+  display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 4px var(--gutter);
+  background: var(--surface-2); border-top: 1px solid var(--border-strong);
+  font: 12px var(--font-mono);
+}
+
+/* ---------- Prototype bar (not part of any design) ---------- */
+.proto {
+  position: fixed; left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 50;
+  display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center;
+  padding: 6px 10px; background: var(--bg); border: 2px dashed var(--proto); border-radius: 6px;
+  font: 12px var(--font-mono); box-shadow: 0 4px 16px rgb(0 0 0 / 0.2);
+}
+.proto b { color: var(--proto); letter-spacing: .08em; }
+.proto .grp { display: inline-flex; gap: 2px; align-items: center; }
+.proto .grp span { color: var(--muted); margin-right: 4px; }
+.proto button { padding: 2px 8px; border: 1px solid var(--border-strong); background: var(--surface); border-radius: 3px; cursor: pointer; font: inherit; color: var(--text); }
+.proto button[aria-pressed='true'] { background: var(--proto); border-color: var(--proto); color: var(--bg); }
+.proto select { font: inherit; padding: 2px 4px; background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); border-radius: 3px; }
+.proto .state { flex-basis: 100%; color: var(--muted); font-size: 11px; }
+</style>
+
+<div id="app"></div>
+<div class="proto" id="proto" role="region" aria-label="Prototype controls"></div>
+
+<script>
+(() => {
+  // ---------- Example data ----------
+  const BASE_PROJECTS = [
+    { id: 'MoritzKopmann/AISoftwareFactory', path: '~/Software/AIStudio' },
+    { id: 'MoritzKopmann/postkarte', path: '~/Software/postkarte' },
+  ];
+  const EXTRA_PROJECTS = ['acme/billing-service', 'acme/web-frontend', 'kopmann/dotfiles', 'kopmann/photo-archive',
+    'open-source/markdown-lint-rules', 'open-source/tiny-http', 'MoritzKopmann/course-notes']
+    .map((id) => ({ id, path: '~/src/' + id.split('/')[1] }));
+
+  const STATUSES = [
+    ['idea', 'Idea', 'neutral', '○'], ['backlog', 'Backlog', 'neutral', '○'],
+    ['plan', 'Plan', 'flow', '●'], ['planned', 'Planned', 'flow', '●'], ['ready', 'Ready', 'flow', '●'],
+    ['in-progress', 'In progress', 'flow', '●'], ['in-review', 'In review', 'flow', '●'],
+    ['stuck', 'Stuck', 'danger', '■'], ['conflict', 'Conflict', 'warn', '▲'], ['closed', 'Closed', 'done', '✓'],
+  ];
+  const TICKETS = {
+    'MoritzKopmann/postkarte': [
+      [41, 'idea', 'Share a postcard as a link'], [50, 'idea', 'Handwriting font for the greeting'],
+      [38, 'backlog', 'Import recipients from the address book'], [42, 'backlog', 'Remember the last used stamp'],
+      [44, 'plan', 'Offline drafts survive an app restart', { hitl: true }],
+      [40, 'planned', 'Card editor v2'], [39, 'planned', 'Small-screen polish'],
+      [45, 'ready', 'Stamp picker: recent stamps row', { parent: 'Card editor v2' }],
+      [48, 'ready', 'Font size slider', { parent: 'Card editor v2', blocked: 45 }],
+      [51, 'ready', 'Landscape layout for the envelope', { parent: 'Small-screen polish' }],
+      [49, 'in-progress', 'Font picker with preview', { parent: 'Card editor v2', hitl: true }],
+      [47, 'in-progress', 'Print-ready PDF export'],
+      [46, 'in-review', 'Fix clipped greeting on small screens', { parent: 'Small-screen polish', pr: 52 }],
+      [43, 'stuck', 'Move the image cache to drift'],
+      [37, 'closed', 'Stamp picker grid'], [36, 'closed', 'Envelope flip animation'], [35, 'closed', 'Greeting text field'],
+    ],
+    'MoritzKopmann/AISoftwareFactory': [
+      [24, 'idea', 'Keyboard shortcuts'], [22, 'backlog', 'Runner: clean up worktrees after merge'],
+      [110, 'plan', 'Prototype the app shell, navigation, layout and density', { hitl: true }],
+      [19, 'planned', 'Watcher module'], [23, 'ready', 'ETag polling loop', { parent: 'Watcher module' }],
+      [91, 'in-progress', 'Board and ticket routes with closed tickets fetched live', { parent: 'Watcher module' }],
+      [97, 'conflict', 'Serve kit.css from the bridge', { clash: 'plan · ready' }],
+      [20, 'closed', 'Repo setup and CI'],
+    ],
+  };
+  const NEEDS = [
+    { p: 'MoritzKopmann/postkarte', n: 43, t: 'Move the image cache to drift', why: 'stuck', text: 'Stuck after 3 attempts. Decide how to continue.', act: 'Decide' },
+    { p: 'MoritzKopmann/postkarte', n: 44, t: 'Offline drafts survive an app restart', why: 'hitl', text: 'Planning session waits for round 2 of 3.', act: 'Answer' },
+    { p: 'MoritzKopmann/postkarte', n: 49, t: 'Font picker with preview', why: 'hitl', text: 'Asked a question 12 min ago.', act: 'Answer' },
+    { p: 'MoritzKopmann/postkarte', n: 46, t: 'Fix clipped greeting on small screens', why: 'review', text: 'PR #52 is ready for your review.', act: 'Review PR' },
+    { p: 'MoritzKopmann/AISoftwareFactory', n: 110, t: 'Prototype the app shell, navigation, layout and density', why: 'hitl', text: 'Grilling session waits for you.', act: 'Answer' },
+  ];
+
+  // ---------- Prototype state ----------
+  const readHash = () => (/^#([abc])$/.exec(location.hash) || [])[1];
+  const S = {
+    v: readHash() || 'a', theme: 'auto', density: 'comfortable', width: 'full', scenario: 'normal',
+    page: 'board', project: 'MoritzKopmann/postkarte', menu: false, sub: 'board',
+  };
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const repo = (id) => id.split('/')[1];
+  const owner = (id) => id.split('/')[0];
+
+  const projects = () => S.scenario === 'none' ? [] : S.scenario === 'many' ? [...BASE_PROJECTS, ...EXTRA_PROJECTS] : BASE_PROJECTS;
+  const needsFor = (p) => S.scenario === 'none' ? [] : NEEDS.filter((n) => n.p === p);
+  const allNeeds = () => S.scenario === 'none' ? [] : NEEDS;
+  const current = () => projects().find((p) => p.id === S.project) || projects()[0];
+
+  // A count badge takes its most severe member's colour (G-BOARD-8): stuck red, else purple.
+  function countBadge(list) {
+    if (!list.length) return '';
+    const sev = list.some((n) => n.why === 'stuck') ? ' danger' : '';
+    return `<span class="count${sev}" title="${list.length} need you">${list.length}</span>`;
+  }
+
+  // ---------- Shared content ----------
+  function skillsBanner() {
+    if (S.scenario === 'skills-failed') {
+      return `<div class="banner danger" role="alert"><span class="shape s-danger" aria-hidden="true">■</span><b>Runs are blocked.</b>
+        <span>The skills smoke test failed: <code class="mono">claude</code> could not load <code class="mono">aisf:implement-ticket</code>. Reinstall the plugin, then restart aisf.</span></div>`;
+    }
+    if (S.scenario === 'skills-pending') {
+      return `<div class="banner info" role="status"><span class="shape s-flow pulse" aria-hidden="true">●</span><b>Checking skills…</b>
+        <span class="sm">Runs start once the smoke test passes.</span></div>`;
+    }
+    return '';
+  }
+  function skillsLine() {
+    if (S.scenario === 'skills-failed') return '<span class="shape s-danger" aria-hidden="true">■</span> Runs blocked';
+    if (S.scenario === 'skills-pending') return '<span class="shape s-flow pulse" aria-hidden="true">●</span> Checking skills…';
+    return '<span class="shape s-done" aria-hidden="true">✓</span> Skills ready';
+  }
+  function contractPanel(compact) {
+    const failing = S.scenario === 'contract' && current().id === 'MoritzKopmann/postkarte';
+    if (!failing) return compact ? '' : `<p class="sm"><span class="shape s-done" aria-hidden="true">✓</span> Contract pre-flight passed</p>`;
+    return `<section class="panel warn" role="alert">
+      <h3><span class="shape s-warn" aria-hidden="true">▲</span> Contract pre-flight: 2 parts missing</h3>
+      <p class="sm">Runs for this project wait until these exist in the checkout.</p>
+      <ul><li class="mono">docs/agents/project-architecture.md</li><li class="mono">aisf.config.json: checks.test</li></ul>
+    </section>`;
+  }
+  function projectHead(extra = '') {
+    const p = current();
+    return `<div class="page-head"><h1>${esc(repo(p.id))}</h1><span class="sm mono">${esc(owner(p.id))} · ${esc(p.path)}</span>
+      <span class="grow"></span>${extra}<button class="btn primary" type="button">+ New idea</button></div>`;
+  }
+  function card([n, , title, o = {}]) {
+    const meta = [
+      o.parent ? `<span class="sm">${esc(o.parent)}</span>` : '',
+      o.clash ? `<span class="sm">${esc(o.clash)}</span>` : '',
+      o.hitl ? '<span class="chip hitl">HITL</span>' : '',
+      o.blocked ? `<span class="sm">blocked by #${o.blocked}</span>` : '',
+      o.pr ? `<span class="chip">PR #${o.pr}</span>` : '',
+    ].filter(Boolean).join('');
+    return `<a class="card" href="#" data-noop><span class="t"><b>#${n}</b>${esc(title)}</span>${meta ? `<span class="meta">${meta}</span>` : ''}</a>`;
+  }
+  function board() {
+    const ts = TICKETS[current().id] || [[1, 'idea', 'First idea']];
+    return `<div class="board" aria-label="Board (filler, card anatomy is #111)">` + STATUSES.map(([s, label, fam, shape]) => {
+      const items = ts.filter((t) => t[1] === s);
+      const pulse = s === 'in-progress' ? ' pulse' : '';
+      const head = `<span class="shape s-${fam}${pulse}" aria-hidden="true">${shape}</span><span class="label">${label}</span><span class="n">${items.length}</span>`;
+      if (s === 'closed') {
+        return `<details class="row"><summary class="row-h"><span class="chev" aria-hidden="true">›</span>${head}<span class="sm">Show closed</span></summary><div class="cards">${items.map(card).join('')}</div></details>`;
+      }
+      return `<section class="row ${items.length ? '' : 'empty'}"><div class="row-h">${head}</div><div class="cards">${items.map(card).join('')}</div></section>`;
+    }).join('') + '</div>';
+  }
+  const WHY = {
+    stuck: '<span class="chip danger"><span class="shape s-danger" aria-hidden="true">■</span>Stuck</span>',
+    hitl: '<span class="chip hitl">HITL</span>',
+    review: '<span class="chip flow"><span class="shape s-flow" aria-hidden="true">●</span>In review</span>',
+  };
+  function needRow(n, showProject) {
+    return `<a class="need" href="#" data-noop>${WHY[n.why]}
+      <span><span class="mono sm">#${n.n}</span> ${esc(n.t)}${showProject ? ` <span class="sm mono">· ${esc(repo(n.p))}</span>` : ''}</span>
+      <span class="btn act">${n.act}</span><span class="sm why">${esc(n.text)}</span></a>`;
+  }
+  function needsPage(title = 'Needs you') {
+    const list = allNeeds();
+    if (!list.length) {
+      return `<div class="page-head"><h1>${title}</h1></div><div class="empty-state"><p><span class="shape s-done" aria-hidden="true">✓</span> Nothing needs you right now.</p><p class="sm">Stuck tickets, review requests and waiting sessions from every project show up here.</p></div>`;
+    }
+    const groups = [...new Set(list.map((n) => n.p))].map((p) => `<section class="needs-group"><h2 class="label" style="color:var(--text)">${esc(repo(p))} <span class="num">· ${list.filter((n) => n.p === p).length}</span></h2>
+      ${list.filter((n) => n.p === p).map((n) => needRow(n, false)).join('')}</section>`).join('');
+    return `<div class="page-head"><h1>${title}</h1><span class="sm num">${list.length} across ${new Set(list.map((n) => n.p)).size} projects, stuck first</span></div><div class="needs">${groups}</div>`;
+  }
+  function settingsPage() {
+    return `<div class="page-head"><h1>Settings</h1><span class="sm">Content is designed later. This shows where things live.</span></div>
+      <dl class="settings">
+        <div><dt class="label">Skills</dt><dd style="margin:0">${skillsLine()} <span class="sm">· smoke test ran at 09:14</span></dd></div>
+        <div><dt class="label">Projects</dt><dd style="margin:0">${projects().length} registered <span class="sm">· remove or re-check a project</span></dd></div>
+        <div><dt class="label">Theme</dt><dd style="margin:0">System <span class="sm">· light, dark</span></dd></div>
+        <div><dt class="label">Notifications</dt><dd style="margin:0 " class="sm">On the map's fog</dd></div>
+        <div><dt class="label">Usage</dt><dd style="margin:0" class="sm">Claude limits, shared by all projects</dd></div>
+      </dl>`;
+  }
+  function addPage() {
+    return `<div class="page-head"><h1>Add project</h1></div>
+      <form class="panel" style="max-width:640px" onsubmit="event.preventDefault()">
+        <label for="checkout" class="label">Checkout path</label>
+        <input type="text" id="checkout" value="~/Software/postkarte">
+        <p class="sm">A local clone of a GitHub repo. aisf reads its remote, creates the missing aisf labels and checks the contract.</p>
+        <div><button class="btn primary" type="submit">Add project</button></div>
+      </form>`;
+  }
+  function emptyProjects() {
+    return `<div class="empty-state"><h1 style="font-family:var(--font-ui);text-transform:none;letter-spacing:0">No projects yet</h1>
+      <p>Add a local checkout of a GitHub repo. aisf then watches its issues and shows them as a board.</p>
+      <button class="btn primary" type="button" data-go="add">Add project</button></div>`;
+  }
+  function mainContent(boardExtras) {
+    if (S.page === 'needs') return needsPage();
+    if (S.page === 'settings') return settingsPage();
+    if (S.page === 'add') return addPage();
+    if (!projects().length) return emptyProjects();
+    return projectHead() + contractPanel(boardExtras === 'compact') + board();
+  }
+
+  // ---------- Variant A: top tabs ----------
+  function viewA() {
+    const ps = projects();
+    const tabs = ps.map((p) => `<button class="a-tab" data-project="${esc(p.id)}" title="${esc(p.id)}" aria-current="${S.page === 'board' && p.id === current().id ? 'page' : 'false'}">${esc(repo(p.id))}${countBadge(needsFor(p.id))}</button>`).join('');
+    const need = allNeeds();
+    return `<header class="a-top">
+        <span class="a-brand">aisf</span>
+        <nav class="a-tabs" aria-label="Projects">${tabs}<button class="a-tab add" data-go="add" aria-current="${S.page === 'add' ? 'page' : 'false'}">+ Add project</button></nav>
+        <nav class="a-right" aria-label="App">
+          <button class="a-tab" data-go="needs" aria-current="${S.page === 'needs' ? 'page' : 'false'}">Needs you ${countBadge(need)}</button>
+          <button class="a-tab" data-go="settings" aria-current="${S.page === 'settings' ? 'page' : 'false'}">Settings</button>
+        </nav>
+      </header>
+      ${skillsBanner()}
+      <main class="page">${mainContent()}</main>`;
+  }
+
+  // ---------- Variant B: sidebar ----------
+  function viewB() {
+    const ps = projects();
+    const items = ps.map((p) => `<button class="b-item mono" data-project="${esc(p.id)}" title="${esc(p.id)}" aria-current="${S.page === 'board' && p.id === current().id ? 'page' : 'false'}"><span class="grow">${esc(repo(p.id))}</span>${countBadge(needsFor(p.id))}</button>`).join('');
+    return `<div class="b-wrap">
+      <aside class="b-rail" aria-label="Navigation">
+        <div class="b-brand">aisf</div>
+        <nav class="b-nav"><button class="b-item" data-go="needs" aria-current="${S.page === 'needs' ? 'page' : 'false'}"><span class="grow">Needs you</span>${countBadge(allNeeds())}</button></nav>
+        <nav class="b-nav" aria-label="Projects"><div class="b-sec label">Projects</div>${items}
+          <button class="b-item" data-go="add" aria-current="${S.page === 'add' ? 'page' : 'false'}"><span class="grow">+ Add project</span></button></nav>
+        <div class="b-foot">
+          <button class="b-item" data-go="settings" title="Skills status, open settings"><span class="grow sm" style="color:inherit">${skillsLine()}</span></button>
+          <button class="b-item" data-go="settings" aria-current="${S.page === 'settings' ? 'page' : 'false'}"><span class="grow">Settings</span></button>
+        </div>
+      </aside>
+      <div class="b-main">${skillsBanner()}<main class="page">${mainContent()}</main></div>
+    </div>`;
+  }
+
+  // ---------- Variant C: inbox home ----------
+  function viewC() {
+    const ps = projects();
+    const p = current();
+    const menu = S.menu ? `<div class="c-menu" role="menu">${ps.map((x) => `<button role="menuitem" data-project="${esc(x.id)}"><span>${esc(x.id)}</span>${countBadge(needsFor(x.id))}</button>`).join('')}
+      <hr><button role="menuitem" data-go="add">+ Add project</button></div>` : '';
+    let body;
+    if (S.page === 'board') {
+      if (!ps.length) body = emptyProjects();
+      else {
+        const failing = S.scenario === 'contract' && p.id === 'MoritzKopmann/postkarte';
+        body = projectHead() + `<nav class="c-sub" aria-label="Project"><button data-sub="board" aria-current="${S.sub === 'board' ? 'page' : 'false'}">Board</button>
+          <button data-sub="contract" aria-current="${S.sub === 'contract' ? 'page' : 'false'}">Contract ${failing ? '<span class="shape s-warn" aria-hidden="true">▲</span>' : ''}</button></nav>` +
+          (S.sub === 'contract' ? (contractPanel(false) || '') : (failing ? `<p class="sm"><span class="shape s-warn" aria-hidden="true">▲</span> 2 contract parts missing. <a href="#" data-sub="contract">See Contract</a></p>` : '') + board());
+      }
+    } else body = mainContent();
+    const pollAge = S.scenario === 'none' ? '' : '<span>Updated 1 min ago</span>';
+    return `<header class="c-top">
+        <span class="c-brand">aisf</span>
+        <button class="btn" data-go="needs" aria-current="${S.page === 'needs' ? 'page' : 'false'}">Needs you ${countBadge(allNeeds())}</button>
+        ${ps.length ? `<span class="c-switch"><button class="btn" data-menu aria-haspopup="menu" aria-expanded="${S.menu}" aria-current="${S.page === 'board' ? 'page' : 'false'}"><span class="mono">${esc(repo(p.id))}</span> ${countBadge(needsFor(p.id))} <span aria-hidden="true">▾</span></button>${menu}</span>`
+          : '<button class="btn" data-go="add">+ Add project</button>'}
+        <span class="grow"></span>
+        <button class="btn quiet" data-go="settings" aria-current="${S.page === 'settings' ? 'page' : 'false'}">Settings</button>
+      </header>
+      ${skillsBanner()}
+      <main class="page">${body}</main>
+      <footer class="c-status" aria-label="Status"><span>${skillsLine()}</span>${pollAge}<span class="muted">${ps.length} projects</span></footer>`;
+  }
+
+  // ---------- Prototype bar ----------
+  function seg(key, label, options) {
+    return `<span class="grp"><span>${label}</span>${options.map(([v, t]) => `<button data-set="${key}" data-val="${v}" aria-pressed="${S[key] === v}">${t}</button>`).join('')}</span>`;
+  }
+  function renderProto() {
+    $('#proto').innerHTML = `<b>PROTOTYPE</b>
+      ${seg('v', 'shell', [['a', 'A top tabs'], ['b', 'B sidebar'], ['c', 'C inbox home']])}
+      ${seg('theme', 'theme', [['auto', 'auto'], ['light', 'light'], ['dark', 'dark']])}
+      ${seg('density', 'density', [['comfortable', '40px'], ['compact', '32px']])}
+      ${seg('width', 'width', [['full', 'full'], ['capped', '1440']])}
+      <span class="grp"><span>scenario</span><select id="scenario" aria-label="Scenario">
+        ${[['normal', 'normal'], ['skills-failed', 'skills failed'], ['skills-pending', 'skills checking'], ['contract', 'contract missing'], ['none', 'no projects'], ['many', '9 projects']]
+          .map(([v, t]) => `<option value="${v}" ${S.scenario === v ? 'selected' : ''}>${t}</option>`).join('')}</select></span>
+      <span class="state">state: shell=${S.v} theme=${S.theme} density=${S.density} width=${S.width} scenario=${S.scenario} page=${S.page} project=${S.project}${S.v === 'c' ? ' sub=' + S.sub : ''} viewport=${innerWidth}px</span>`;
+  }
+
+  function render() {
+    const root = document.documentElement;
+    if (S.theme === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', S.theme);
+    root.dataset.density = S.density;
+    root.dataset.width = S.width;
+    $('#app').innerHTML = S.v === 'a' ? viewA() : S.v === 'b' ? viewB() : viewC();
+    renderProto();
+  }
+
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-set],[data-go],[data-project],[data-menu],[data-sub],[data-noop]');
+    if (!t) { if (S.menu) { S.menu = false; render(); } return; }
+    if (t.matches('[data-noop]')) { e.preventDefault(); return; }
+    e.preventDefault();
+    if (t.dataset.set) {
+      S[t.dataset.set] = t.dataset.val;
+      if (t.dataset.set === 'v') history.replaceState(null, '', '#' + S.v);
+    } else if (t.dataset.go) { S.page = t.dataset.go; S.menu = false; }
+    else if (t.dataset.project) { S.project = t.dataset.project; S.page = 'board'; S.menu = false; }
+    else if (t.matches('[data-menu]')) S.menu = !S.menu;
+    else if (t.dataset.sub) S.sub = t.dataset.sub;
+    render();
+  });
+  document.addEventListener('change', (e) => {
+    if (e.target.id === 'scenario') { S.scenario = e.target.value; if (S.scenario === 'none' && S.page === 'board') S.page = 'board'; render(); }
+  });
+  addEventListener('hashchange', () => { const v = readHash(); if (v) { S.v = v; render(); } });
+  addEventListener('resize', renderProto);
+  render();
+})();
+</script>
