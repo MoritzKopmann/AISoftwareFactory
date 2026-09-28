@@ -1,0 +1,1550 @@
+<title>aisf Board Design</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<!--
+  The board and ticket page design for #68, built in #103 on the UI direction (docs/design/ui-direction.html).
+  Tokens are packages/app/assets/kit/kit.css as merged in #115. Nothing here adds a token or a font.
+  Every specimen renders twice, light and dark, from one copy of the markup (see the script at the end).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+/>
+<style>
+  /* ---------- Tokens: kit.css, verbatim ---------- */
+  :root,
+  .t-light {
+    --bg: #e9eef2;
+    --surface: #f8fafb;
+    --surface-2: #dfe6ec;
+    --surface-sunken: #e1e8ed;
+    --border: #a9b8c5;
+    --border-strong: #6f8499;
+    --text: #13243a;
+    --muted: #4c6075;
+    --accent: #c45404;
+    --accent-ink: #ffffff;
+    --accent-soft: #f8e2d2;
+    --ok: #257540;
+    --warn: #935902;
+    --danger: #b8322f;
+    --info: #2d5f93;
+    --hitl: #6b47c2;
+    --font-ui: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --label-spacing: 0.08em;
+    --radius: 4px;
+    --radius-sm: 2px;
+    --pad: 16px;
+    --gap: 8px;
+    --text-size: 15px;
+    --text-size-sm: 13px;
+    --line-sm: 1.4;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --bg: #0d1924;
+      --surface: #122130;
+      --surface-2: #192b3d;
+      --surface-sunken: #0a141d;
+      --border: #2e4760;
+      --border-strong: #587592;
+      --text: #d8e4ee;
+      --muted: #9ab2c7;
+      --accent: #ff8a45;
+      --accent-ink: #1c0d03;
+      --accent-soft: #3b2515;
+      --ok: #5cc07a;
+      --warn: #e5ab4e;
+      --danger: #ff8f84;
+      --info: #7cb4ea;
+      --hitl: #baa0ff;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme='dark'],
+  .t-dark {
+    --bg: #0d1924;
+    --surface: #122130;
+    --surface-2: #192b3d;
+    --surface-sunken: #0a141d;
+    --border: #2e4760;
+    --border-strong: #587592;
+    --text: #d8e4ee;
+    --muted: #9ab2c7;
+    --accent: #ff8a45;
+    --accent-ink: #1c0d03;
+    --accent-soft: #3b2515;
+    --ok: #5cc07a;
+    --warn: #e5ab4e;
+    --danger: #ff8f84;
+    --info: #7cb4ea;
+    --hitl: #baa0ff;
+    color-scheme: dark;
+  }
+  /* The light pane must stay light even when the viewer's page is dark. */
+  .t-light {
+    color-scheme: light;
+  }
+
+  /* ---------- Base (kit.css) ---------- */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: var(--text-size) / 1.45 var(--font-ui);
+    padding-inline: 16px;
+    padding-block: 24px 64px;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+    }
+  }
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-wrap: balance;
+  }
+  h1 {
+    font-size: 22px;
+  }
+  h2 {
+    font-size: 16px;
+  }
+  h3 {
+    font-size: 14px;
+  }
+  p,
+  ul,
+  ol,
+  dl,
+  dd {
+    margin: 0;
+  }
+  code,
+  .mono {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+  }
+  .sm {
+    font-size: var(--text-size-sm);
+    line-height: var(--line-sm);
+    color: var(--muted);
+  }
+  .label {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--label-spacing);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  a {
+    color: var(--text);
+    text-decoration: underline;
+    text-decoration-color: var(--border-strong);
+    text-underline-offset: 2px;
+  }
+  a:hover,
+  a:focus-visible {
+    text-decoration-color: var(--accent);
+  }
+  a.ext::after {
+    content: ' ↗';
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    color: var(--muted);
+  }
+  button {
+    font: inherit;
+    color: inherit;
+  }
+  .vh {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* ---------- Design doc layout (not part of the design) ---------- */
+  .doc {
+    max-width: 1880px;
+    margin: 0 auto;
+    display: grid;
+    gap: 56px;
+  }
+  .doc > header {
+    display: grid;
+    gap: 12px;
+    max-width: 80ch;
+  }
+  .doc > header h1 {
+    font-size: 28px;
+  }
+  .lede {
+    font-size: 17px;
+    line-height: 1.5;
+  }
+  .toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    font-size: var(--text-size-sm);
+  }
+  .toc a {
+    white-space: nowrap;
+  }
+  .review {
+    display: grid;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: inset 4px 0 0 var(--hitl);
+  }
+  section.part {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+  }
+  .part > header {
+    display: grid;
+    gap: 8px;
+    max-width: 80ch;
+    border-top: 2px solid var(--text);
+    padding-top: 12px;
+  }
+  .rules {
+    display: grid;
+    gap: 6px;
+    padding-left: 20px;
+    max-width: 88ch;
+  }
+  .rules li::marker {
+    color: var(--muted);
+  }
+  .duo {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 880px), 1fr));
+    gap: 12px;
+  }
+  .duo.narrow {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+  }
+  .pane {
+    position: relative;
+    min-width: 0;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    padding: 28px 16px 16px;
+    overflow-x: auto;
+    font: var(--text-size) / 1.45 var(--font-ui);
+  }
+  .pane::before {
+    content: attr(data-name);
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 2px 8px;
+    font: 500 10px var(--font-mono);
+    letter-spacing: var(--label-spacing);
+    text-transform: uppercase;
+    color: var(--muted);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stack {
+    display: grid;
+    gap: 12px;
+  }
+  .caption {
+    font: 500 11px var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--label-spacing);
+    color: var(--muted);
+  }
+  .tbl-wrap {
+    overflow-x: auto;
+  }
+  table.ref {
+    border-collapse: collapse;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    font-size: 14px;
+  }
+  table.ref th,
+  table.ref td {
+    text-align: left;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.ref th {
+    font: 500 11px var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--label-spacing);
+    color: var(--muted);
+    border-top: 0;
+    white-space: nowrap;
+  }
+
+  /* ========== The design (what app.css builds) ========== */
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--text);
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .btn:hover {
+    border-color: var(--text);
+  }
+  .btn.ext::after {
+    content: ' ↗';
+    font-family: var(--font-mono);
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  /* Status marks and chips */
+  .shape {
+    display: inline-block;
+    width: 1em;
+    text-align: center;
+    font-family: var(--font-mono);
+  }
+  .s-neutral {
+    color: var(--muted);
+  }
+  .s-flow {
+    color: var(--info);
+  }
+  .s-done {
+    color: var(--ok);
+  }
+  .s-warn {
+    color: var(--warn);
+  }
+  .s-danger {
+    color: var(--danger);
+  }
+  .pulse {
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    50% {
+      opacity: 0.35;
+    }
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px;
+    line-height: 18px;
+    font: 500 11px var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--label-spacing);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .chip.hitl {
+    border-color: var(--hitl);
+  }
+  .chip.flow {
+    border-color: var(--info);
+  }
+  .chip.done {
+    border-color: var(--ok);
+  }
+  .chip.danger {
+    border-color: var(--danger);
+  }
+  .chip.warn {
+    border-color: var(--warn);
+  }
+  .chip.neutral {
+    border-color: var(--muted);
+  }
+
+  /* Shell: sidebar plus main */
+  .shell {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    min-height: 420px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg);
+    min-width: 820px;
+  }
+  .rail {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 12px 8px;
+    background: var(--surface);
+    border-right: 1px solid var(--border-strong);
+  }
+  .brand {
+    font: 700 14px var(--font-mono);
+    letter-spacing: 0.04em;
+    padding: 4px 8px;
+  }
+  .nav {
+    display: grid;
+    gap: 2px;
+  }
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: var(--radius);
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 14px;
+  }
+  .item:hover {
+    color: var(--text);
+    background: var(--surface-2);
+  }
+  .item[aria-current='page'] {
+    color: var(--text);
+    background: var(--surface-2);
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+  .item .grow {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .item.repo {
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .sec {
+    padding: 0 8px 4px;
+  }
+  .main {
+    min-width: 0;
+    display: grid;
+    align-content: start;
+  }
+  .page {
+    padding: var(--pad) 24px 24px;
+    display: grid;
+    gap: 24px;
+    min-width: 0;
+  }
+  .page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+  }
+  .page-head .grow {
+    flex: 1;
+  }
+  .page-head h1 {
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: var(--font-ui);
+    font-size: 22px;
+  }
+  .updated {
+    font-size: var(--text-size-sm);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Banners (board sync) */
+  .banner {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px 10px;
+    align-items: start;
+    padding: 10px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-strong);
+    box-shadow: inset 4px 0 0 var(--c);
+  }
+  .banner .shape {
+    color: var(--c);
+    line-height: 1.45;
+  }
+  .banner > :not(.shape) {
+    grid-column: 2;
+  }
+  .banner.warn {
+    --c: var(--warn);
+  }
+  .banner.danger {
+    --c: var(--danger);
+  }
+  .banner.info {
+    --c: var(--info);
+  }
+  .cmd {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 6px 6px 12px;
+    background: var(--surface-sunken);
+    border-radius: var(--radius);
+    font: 13px / 1.5 var(--font-mono);
+    max-width: 520px;
+  }
+  .cmd code {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    white-space: pre;
+    font-size: 13px;
+  }
+  .cmd .btn {
+    min-height: 26px;
+    padding: 2px 10px;
+    font-size: 12px;
+  }
+
+  /* Contract report, only when the check failed */
+  .panel {
+    display: grid;
+    gap: 6px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: inset 4px 0 0 var(--warn);
+  }
+  .panel ul {
+    padding-left: 18px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  /* Board rows */
+  .board {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+  }
+  .row {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+  .row-h {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .row-h .label {
+    color: var(--text);
+    font-weight: 700;
+  }
+  .row-h .n {
+    font: 500 11px var(--font-mono);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .row-note {
+    font-size: var(--text-size-sm);
+  }
+  .none {
+    font-size: var(--text-size-sm);
+    color: var(--muted);
+    margin-left: 4px;
+  }
+  details.row > summary {
+    cursor: pointer;
+    list-style: none;
+  }
+  details.row > summary::-webkit-details-marker {
+    display: none;
+  }
+  .chev {
+    font-family: var(--font-mono);
+    color: var(--muted);
+    display: inline-block;
+    transition: transform 0.15s;
+  }
+  details[open] > summary .chev {
+    transform: rotate(90deg);
+  }
+  .toggle-text {
+    font-size: var(--text-size-sm);
+    color: var(--muted);
+    text-decoration: underline;
+    text-decoration-color: var(--border-strong);
+    text-underline-offset: 2px;
+  }
+  summary:hover .toggle-text {
+    color: var(--text);
+    text-decoration-color: var(--accent);
+  }
+  details[open] .t-show,
+  details:not([open]) .t-hide {
+    display: none;
+  }
+  .cards {
+    display: grid;
+    gap: var(--gap);
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+
+  /* Ticket card: one link, stacked lines */
+  .card {
+    position: relative;
+    display: grid;
+    gap: 2px;
+    align-content: start;
+    min-height: 40px;
+    min-width: 0;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: var(--text);
+  }
+  .card:hover,
+  .card.is-hover {
+    border-color: var(--text);
+  }
+  .card.is-focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .num-id {
+    font: 500 12px var(--font-mono);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .card .title {
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card .title .num-id {
+    margin-right: 6px;
+  }
+  .card .parent {
+    font-size: var(--text-size-sm);
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    align-items: center;
+    font-size: var(--text-size-sm);
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Loading skeleton: static, no shimmer */
+  .sk {
+    display: block;
+    background: var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .sk-card {
+    height: 58px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    display: grid;
+    gap: 8px;
+    align-content: start;
+  }
+  .sk-line {
+    height: 10px;
+  }
+
+  /* Empty */
+  .empty {
+    display: grid;
+    gap: 10px;
+    justify-items: start;
+    padding: 16px 0;
+  }
+
+  /* Inline error (ticket page) */
+  .err {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 6px 8px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--danger);
+    border-radius: var(--radius);
+    justify-items: start;
+  }
+  .err .shape {
+    color: var(--danger);
+    line-height: 1.45;
+  }
+  .err > :not(.shape) {
+    grid-column: 2;
+  }
+
+  /* Ticket page stub */
+  .back {
+    font-size: var(--text-size-sm);
+    justify-self: start;
+  }
+  .back .arrow {
+    font-family: var(--font-mono);
+    color: var(--muted);
+    margin-right: 4px;
+  }
+  .ticket-head {
+    display: grid;
+    gap: 8px;
+  }
+  .ticket-head h1 {
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: var(--font-ui);
+    font-size: 22px;
+    line-height: 1.3;
+  }
+  .ticket-head h1 .num-id {
+    font-size: 20px;
+    margin-right: 8px;
+  }
+  .ticket-head .inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    align-items: center;
+    font-size: var(--text-size-sm);
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: 10px 16px;
+    align-items: baseline;
+    max-width: 720px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .facts ul {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 4px;
+  }
+  .facts .pr-state {
+    font-size: var(--text-size-sm);
+    color: var(--muted);
+    margin-left: 6px;
+  }
+</style>
+
+<div class="doc">
+  <header>
+    <p class="label">aisf · design · board and ticket page · 2026-09-28</p>
+    <h1>Board and ticket page</h1>
+    <p class="lede">
+      The read-only board of a project's tickets and the ticket page stub it links to, in every
+      state the app can put them in. Built on the UI direction and on the view models from #102;
+      the component tickets for #68 are split from this page.
+    </p>
+    <p class="sm">
+      Sources:
+      <a class="ext" href="https://github.com/MoritzKopmann/AISoftwareFactory/issues/68" target="_blank" rel="noopener">#68 Dev Notes</a>
+      (behaviour),
+      <a class="ext" href="https://github.com/MoritzKopmann/AISoftwareFactory/blob/main/docs/design/ui-direction.html" target="_blank" rel="noopener">docs/design/ui-direction.html</a>
+      (layout, density, status vocabulary, state patterns, copy), and <code>kit.css</code> as
+      merged in #115 (tokens, fonts). No new token and no new font.
+    </p>
+
+    <div class="review">
+      <p class="label" style="color: var(--text)">For review: where this follows the direction over the older plan</p>
+      <ul class="rules">
+        <li>
+          <b>Sidebar instead of tabs.</b> The direction puts projects in a left sidebar, so
+          <code>project-tabs.tsx</code> becomes the sidebar. It shows only what the app backs today:
+          the <code>aisf</code> wordmark, Projects, and + Add project. Needs you, counts, Settings
+          and + New idea wait for their features.
+        </li>
+        <li>
+          <b>Rows wrap; no sideways strip.</b> #103 asks for "a long row that scrolls sideways";
+          the direction replaced it. Variant 7 shows a long row wrapping.
+        </li>
+        <li>
+          <b>Stale board:</b> "Updated 20 min ago" in the header plus a warn banner, instead of
+          "Showing the board from HH:MM".
+        </li>
+        <li>
+          <b>Loading:</b> a skeleton in the shape of the board with a hidden "Loading tickets…"
+          status, instead of a visible loading line.
+        </li>
+        <li>
+          <b>Copy follows section 9 of the direction.</b> The view models from #102 need their
+          strings updated (listed under 12), which the board component ticket carries.
+        </li>
+      </ul>
+    </div>
+
+    <nav class="toc" aria-label="Variants">
+      <a href="#full">1 Full board</a><a href="#empty">2 No tickets</a><a href="#failed">3 Sync failed</a
+      ><a href="#closed">4 Closed expanded</a><a href="#conflict">5 Conflict</a
+      ><a href="#cards">6 Cards</a><a href="#long">7 Long row</a><a href="#loading">8 Loading</a
+      ><a href="#contract">9 Contract check failed</a><a href="#ticket">10 Ticket page</a
+      ><a href="#ticket-states">11 Ticket page states</a><a href="#copy">12 Copy</a>
+    </nav>
+  </header>
+
+  <!-- ===================================================== 1 -->
+  <section class="part" id="full">
+    <header>
+      <h2>1 Full board</h2>
+      <p>
+        The project tab after a good poll. One row per status in lifecycle order, Idea first,
+        Closed collapsed at the end. The row label carries shape, name and count, so cards carry
+        no status chip. An empty row keeps its label, a 0 and "None".
+      </p>
+    </header>
+    <ul class="rules">
+      <li>
+        Header: repo name as a sentence-case h1 (22 UI 700), <code>owner · checkout path</code>
+        in small mono, and "Updated 3 min ago" on the right as <code>&lt;time&gt;</code> with the
+        absolute time in <code>title</code>, from <code>sync.checkedAt</code>. It ticks once a
+        minute.
+      </li>
+      <li>
+        Page padding <code>16px 24px 24px</code>, 24 px between header and board, 12 px between
+        rows, 6 px from a row's label to its cards, 8 px between cards.
+      </li>
+      <li>In progress pulses its ● (1.6 s); nothing else moves. The poll refreshes silently every 5 s.</li>
+    </ul>
+    <div class="duo">
+      <div class="shell">
+        <aside class="rail" aria-label="Navigation">
+          <div class="brand">aisf</div>
+          <nav class="nav" aria-label="Projects">
+            <div class="sec label">Projects</div>
+            <a class="item repo" href="#full" aria-current="page" title="MoritzKopmann/postkarte"><span class="grow">postkarte</span></a>
+            <a class="item repo" href="#full" title="MoritzKopmann/AISoftwareFactory"><span class="grow">AISoftwareFactory</span></a>
+            <a class="item repo" href="#full" title="MoritzKopmann/dotfiles"><span class="grow">dotfiles</span></a>
+            <a class="item" href="#full"><span class="grow">+ Add project</span></a>
+          </nav>
+        </aside>
+        <div class="main">
+          <main class="page">
+            <div class="page-head">
+              <h1>postkarte</h1>
+              <span class="sm mono">MoritzKopmann · ~/Software/postkarte</span><span class="grow"></span
+              ><time class="updated" datetime="2026-09-28T09:38" title="28 Sep 2026 09:38">Updated 3 min ago</time>
+            </div>
+            <div class="board">
+              <section class="row">
+                <div class="row-h"><span class="shape s-neutral" aria-hidden="true">○</span><span class="label">Idea</span><span class="n">2</span></div>
+                <div class="cards">
+                  <a class="card" href="#full"><span class="title"><span class="num-id">#58</span>Share a postcard as a link</span></a>
+                  <a class="card" href="#full"><span class="title"><span class="num-id">#59</span>Print at A6 with bleed marks</span></a>
+                </div>
+              </section>
+              <section class="row">
+                <div class="row-h"><span class="shape s-neutral" aria-hidden="true">○</span><span class="label">Backlog</span><span class="n">0</span><span class="none">None</span></div>
+              </section>
+              <section class="row">
+                <div class="row-h"><span class="shape s-flow" aria-hidden="true">●</span><span class="label">Plan</span><span class="n">1</span></div>
+                <div class="cards">
+                  <a class="card" href="#full"><span class="title"><span class="num-id">#44</span>Card editor v2</span></a>
+                </div>
+              </section>
+              <section class="row">
+                <div class="row-h"><span class="shape s-flow" aria-hidden="true">●</span><span class="label">Planned</span><span class="n">1</span></div>
+                <div class="cards">
+                  <a class="card" href="#full"><span class="title"><span class="num-id">#40</span>Small-screen polish</span></a>
+                </div>
+              </section>
+              <section class="row">
+                <div class="row-h"><span class="shape s-flow" aria-hidden="true">●</span><span class="label">Ready</span><span class="n">3</span></div>
+                <div class="cards">
+                  <a class="card" href="#full"><span class="title"><span class="num-id">#45</span>Stamp picker: recent stamps row</span><span class="parent">↳ Card editor v2</span></a>
+                  <a class="card" href="#full" title="Font size slider that remembers the last size per card and per recipient"><span class="title"><span class="num-id">#48</span>Font size slider that remembers the last size per card and per recipient</span><span class="parent">↳ Card editor v2</span><span class="meta"><span>blocked by #45</span></span></a>
+                  <a class="card" href="#full"><span class="title"><span class="num-id">#56</span>Retry a failed upload</span></a>
+                </div>
+              </section>
+              <section class="row">
+                <div class="row-h"><span class="shape s-flow pulse" aria-hidden="true">●</span><span class="label">In progress</span><span class="n">1</span></div>
+                <div class="cards">
+                  <a class="card" href="#full"><span class="title"><span class="num-id">#49</span>Font picker with preview</span><span class="parent">↳ Card editor v2</span><span class="meta"><span class="chip hitl">HITL</span></span></a>
+                </div>
+              </section>
+              <section class="row">
+                <div class="row-h"><span class="shape s-flow" aria-hidden="true">●</span><span class="label">In review</span><span class="n">1</span></div>
+                <div class="cards">
+                  <a class="card" href="#full"><span class="title"><span class="num-id">#46</span>Fix clipped greeting on small screens</span><span class="parent">↳ Small-screen polish</span><span class="meta"><span class="chip">PR #52</span></span></a>
+                </div>
+              </section>
+              <section class="row">
+                <div class="row-h"><span class="shape s-danger" aria-hidden="true">■</span><span class="label">Stuck</span><span class="n">1</span></div>
+                <div class="cards">
+                  <a class="card" href="#full"><span class="title"><span class="num-id">#43</span>Move the image cache to drift</span><span class="parent">↳ Card editor v2</span><span class="meta"><span class="chip">PR #55</span></span></a>
+                </div>
+              </section>
+              <section class="row">
+                <div class="row-h"><span class="shape s-warn" aria-hidden="true">▲</span><span class="label">Conflict</span><span class="n">0</span><span class="none">None</span></div>
+              </section>
+              <details class="row">
+                <summary class="row-h"><span class="chev" aria-hidden="true">›</span><span class="shape s-done" aria-hidden="true">✓</span><span class="label">Closed</span><span class="n">50 of 214</span><span class="toggle-text"><span class="t-show">Show closed</span><span class="t-hide">Hide closed</span></span></summary>
+                <div class="cards">
+                  <a class="card" href="#full"><span class="title"><span class="num-id">#37</span>Stamp picker grid</span></a>
+                </div>
+              </details>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 2 -->
+  <section class="part" id="empty">
+    <header>
+      <h2>2 A project with no tickets</h2>
+      <p>
+        When every row counts 0, the rows are hidden and one line takes their place, with a quiet
+        button to open a new issue on GitHub (<code>https://github.com/&lt;id&gt;/issues/new</code>,
+        new tab). The header stays as in variant 1.
+      </p>
+    </header>
+    <div class="duo">
+      <div class="shell" style="min-height: 240px">
+        <aside class="rail" aria-label="Navigation">
+          <div class="brand">aisf</div>
+          <nav class="nav" aria-label="Projects">
+            <div class="sec label">Projects</div>
+            <a class="item repo" href="#empty" title="MoritzKopmann/postkarte"><span class="grow">postkarte</span></a>
+            <a class="item repo" href="#empty" aria-current="page" title="MoritzKopmann/weather-cli"><span class="grow">weather-cli</span></a>
+            <a class="item" href="#empty"><span class="grow">+ Add project</span></a>
+          </nav>
+        </aside>
+        <div class="main">
+          <main class="page">
+            <div class="page-head">
+              <h1>weather-cli</h1>
+              <span class="sm mono">MoritzKopmann · ~/Software/weather-cli</span><span class="grow"></span
+              ><time class="updated" datetime="2026-09-28T09:41" title="28 Sep 2026 09:41">Updated just now</time>
+            </div>
+            <div class="empty">
+              <p>No tickets in MoritzKopmann/weather-cli yet.</p>
+              <a class="btn ext" href="https://github.com/MoritzKopmann/weather-cli/issues/new" target="_blank" rel="noopener">New ticket</a>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 3 -->
+  <section class="part" id="failed">
+    <header>
+      <h2>3 A failed sync with a stale board</h2>
+      <p>
+        The poll answers <code>sync: failed</code> with the last good board, or the request itself
+        fails. A banner at the top of the main area names the cause and the recovery; the board
+        below stays as it was, not dimmed, with its counts. "Updated" now reads from
+        <code>sync.snapshotTakenAt</code>, so it shows how old the board is. The poll keeps going
+        every 5 s and the banner goes away on the first good answer.
+      </p>
+    </header>
+    <ul class="rules">
+      <li>
+        Warn ▲ (<code>role="status"</code>) when it recovers by itself: rate limit, GitHub not
+        answering, the app unreachable, the project not watched yet. Danger ■
+        (<code>role="alert"</code>) when it needs you: <code>gh</code> not logged in, an unexpected
+        error.
+      </li>
+      <li>
+        Banner: <code>10px 24px</code>, <code>--surface</code>, 1px <code>--border-strong</code>
+        bottom edge, a 4 px inset stripe in the status colour. The raw server message goes on a
+        muted mono second line. No Retry button: polled data retries by itself.
+      </li>
+    </ul>
+    <div class="duo">
+      <div class="shell" style="min-height: 0">
+        <aside class="rail" aria-label="Navigation">
+          <div class="brand">aisf</div>
+          <nav class="nav" aria-label="Projects">
+            <div class="sec label">Projects</div>
+            <a class="item repo" href="#failed" aria-current="page" title="MoritzKopmann/postkarte"><span class="grow">postkarte</span></a>
+            <a class="item repo" href="#failed" title="MoritzKopmann/AISoftwareFactory"><span class="grow">AISoftwareFactory</span></a>
+            <a class="item" href="#failed"><span class="grow">+ Add project</span></a>
+          </nav>
+        </aside>
+        <div class="main">
+          <div class="banner warn" role="status">
+            <span class="shape" aria-hidden="true">▲</span>
+            <p>Couldn't refresh the board. GitHub rate limit reached; resuming in 20 min.</p>
+          </div>
+          <main class="page">
+            <div class="page-head">
+              <h1>postkarte</h1>
+              <span class="sm mono">MoritzKopmann · ~/Software/postkarte</span><span class="grow"></span
+              ><time class="updated" datetime="2026-09-28T09:21" title="28 Sep 2026 09:21">Updated 20 min ago</time>
+            </div>
+            <div class="board">
+              <section class="row">
+                <div class="row-h"><span class="shape s-flow" aria-hidden="true">●</span><span class="label">Ready</span><span class="n">3</span></div>
+                <div class="cards">
+                  <a class="card" href="#failed"><span class="title"><span class="num-id">#45</span>Stamp picker: recent stamps row</span><span class="parent">↳ Card editor v2</span></a>
+                  <a class="card" href="#failed"><span class="title"><span class="num-id">#48</span>Font size slider that remembers the last size per card and per recipient</span><span class="parent">↳ Card editor v2</span><span class="meta"><span>blocked by #45</span></span></a>
+                  <a class="card" href="#failed"><span class="title"><span class="num-id">#56</span>Retry a failed upload</span></a>
+                </div>
+              </section>
+              <section class="row">
+                <div class="row-h"><span class="shape s-flow pulse" aria-hidden="true">●</span><span class="label">In progress</span><span class="n">1</span></div>
+                <div class="cards">
+                  <a class="card" href="#failed"><span class="title"><span class="num-id">#49</span>Font picker with preview</span><span class="parent">↳ Card editor v2</span><span class="meta"><span class="chip hitl">HITL</span></span></a>
+                </div>
+              </section>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+
+    <p class="caption">The banner per cause, in place of the one above</p>
+    <div class="duo narrow">
+      <div class="stack">
+        <div class="banner danger" role="alert">
+          <span class="shape" aria-hidden="true">■</span>
+          <p>Can't reach GitHub: <code>gh</code> isn't logged in. Run:</p>
+          <div class="cmd"><code>gh auth login</code><button class="btn copy" type="button">Copy</button><span class="vh" role="status"></span></div>
+          <p class="sm">The board refreshes by itself once it works.</p>
+          <p class="sm mono">You are not logged into any GitHub hosts. To log in, run: gh auth login</p>
+        </div>
+        <div class="banner warn" role="status">
+          <span class="shape" aria-hidden="true">▲</span>
+          <p>Couldn't refresh the board. GitHub rate limit reached; resuming in 20 min.</p>
+        </div>
+        <div class="banner warn" role="status">
+          <span class="shape" aria-hidden="true">▲</span>
+          <p>Couldn't refresh the board. GitHub didn't answer; the watcher tries again at its next poll.</p>
+          <p class="sm mono">gh: HTTP 502 Bad Gateway (api.github.com)</p>
+        </div>
+        <div class="banner danger" role="alert">
+          <span class="shape" aria-hidden="true">■</span>
+          <p>Couldn't refresh the board. The watcher hit an unexpected error; see the aisf log.</p>
+          <p class="sm mono">TypeError: Cannot read properties of undefined (reading 'nodes')</p>
+        </div>
+        <div class="banner warn" role="status">
+          <span class="shape" aria-hidden="true">▲</span>
+          <p>Can't reach aisf. The board tries again every 5 s.</p>
+        </div>
+        <div class="banner info" role="status">
+          <span class="shape" aria-hidden="true">●</span>
+          <p>The watcher hasn't picked up MoritzKopmann/postkarte yet. The board appears after its next poll.</p>
+        </div>
+      </div>
+    </div>
+    <ul class="rules">
+      <li>
+        <b>Not watched yet</b> (404) has no board to keep, so the rows area shows the loading
+        skeleton (variant 8) under an info ● banner, and polling continues.
+      </li>
+      <li>
+        <b>Can't reach aisf</b> (the fetch throws) keeps the last board and its "Updated" time.
+      </li>
+    </ul>
+  </section>
+
+  <!-- ===================================================== 4 -->
+  <section class="part" id="closed">
+    <header>
+      <h2>4 Closed, expanded</h2>
+      <p>
+        Closed is a native <code>&lt;details&gt;</code>, collapsed by default, so a poll never
+        re-collapses it. The server loads the newest 50, so the count reads "50 of N" and the row
+        ends with a link to all closed issues on GitHub. When N ≤ 50 the count is just N and the
+        last line reads "All closed on GitHub ↗" alone.
+      </p>
+    </header>
+    <ul class="rules">
+      <li>
+        Summary: chevron › (rotates 90° when open, 0.15 s), ✓ in <code>--ok</code>, the label, the
+        count, and "Show closed" / "Hide closed" as small muted underlined text. The whole summary
+        is the click target.
+      </li>
+    </ul>
+    <div class="duo">
+      <div class="board">
+        <details class="row" open>
+          <summary class="row-h"><span class="chev" aria-hidden="true">›</span><span class="shape s-done" aria-hidden="true">✓</span><span class="label">Closed</span><span class="n">50 of 214</span><span class="toggle-text"><span class="t-show">Show closed</span><span class="t-hide">Hide closed</span></span></summary>
+          <div class="cards">
+            <a class="card" href="#closed"><span class="title"><span class="num-id">#42</span>Envelope back with return address</span><span class="parent">↳ Card editor v2</span></a>
+            <a class="card" href="#closed"><span class="title"><span class="num-id">#39</span>Crop photos to the card ratio</span></a>
+            <a class="card" href="#closed"><span class="title"><span class="num-id">#37</span>Stamp picker grid</span><span class="parent">↳ Card editor v2</span><span class="meta"><span class="chip">PR #38</span></span></a>
+            <a class="card" href="#closed"><span class="title"><span class="num-id">#36</span>Envelope flip animation</span></a>
+            <a class="card" href="#closed"><span class="title"><span class="num-id">#35</span>Greeting text field</span></a>
+          </div>
+          <p class="row-note sm">The newest 50. <a class="ext" href="https://github.com/MoritzKopmann/postkarte/issues?q=is%3Aissue+is%3Aclosed" target="_blank" rel="noopener">All closed on GitHub</a></p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 5 -->
+  <section class="part" id="conflict">
+    <header>
+      <h2>5 Conflict row and card</h2>
+      <p>
+        A ticket with more than one <code>status:</code> label lands here. The row has a one-line
+        note naming the fix; each card lists the clashing labels as muted text, joined with " · ",
+        first on its meta line.
+      </p>
+    </header>
+    <div class="duo narrow">
+      <div class="board">
+        <section class="row">
+          <div class="row-h"><span class="shape s-warn" aria-hidden="true">▲</span><span class="label">Conflict</span><span class="n">2</span></div>
+          <p class="row-note">These tickets carry more than one <code>status:</code> label. Keep one on GitHub.</p>
+          <div class="cards">
+            <a class="card" href="#conflict"><span class="title"><span class="num-id">#52</span>Address autocomplete</span><span class="meta"><span>plan · ready</span><span class="chip hitl">HITL</span></span></a>
+            <a class="card" href="#conflict"><span class="title"><span class="num-id">#57</span>Dark envelope theme</span><span class="parent">↳ Small-screen polish</span><span class="meta"><span>in progress · in review · stuck</span></span></a>
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 6 -->
+  <section class="part" id="cards">
+    <header>
+      <h2>6 Cards</h2>
+      <p>
+        One <code>&lt;a&gt;</code> to the ticket page (<code>#/projects/&lt;id&gt;/tickets/&lt;n&gt;</code>),
+        one tab stop. Three lines, each left out when empty.
+      </p>
+    </header>
+    <ul class="rules">
+      <li>
+        <b>Box:</b> min 40 px tall, <code>8px 12px</code>, <code>--surface</code>, 1px
+        <code>--border-strong</code>, 4 px radius, 2 px gap between lines. Hover turns the border
+        <code>--text</code>; focus is the 2 px accent ring with a 2 px offset.
+      </li>
+      <li>
+        <b>Line 1:</b> <code>#N</code> (12 mono 500, muted, 6 px right) then the title (15/1.3),
+        clamped to 2 lines with the full title in the card's <code>title</code>.
+      </li>
+      <li><b>Line 2:</b> <code>↳ parent title</code>, 13 muted, one line with an ellipsis.</li>
+      <li>
+        <b>Line 3</b> (4 px above, wraps, <code>4px 8px</code> gaps, 13 muted), in this order:
+        conflict labels, HITL chip (<code>--hitl</code> border), "blocked by #N" per open blocker
+        ("blocked by owner/name#N" for another repo), one <code>PR #N</code> chip per closing PR.
+      </li>
+      <li>
+        Chips are inert <code>&lt;span&gt;</code>s, no ↗: a link inside the card link is invalid.
+        The PR links live on the ticket page.
+      </li>
+    </ul>
+    <div class="duo narrow">
+      <div class="cards">
+        <a class="card" href="#cards"><span class="title"><span class="num-id">#56</span>Retry a failed upload</span></a>
+        <a class="card" href="#cards"><span class="title"><span class="num-id">#45</span>Stamp picker: recent stamps row</span><span class="parent">↳ Card editor v2</span></a>
+        <a class="card" href="#cards"><span class="title"><span class="num-id">#49</span>Font picker with preview</span><span class="parent">↳ Card editor v2</span><span class="meta"><span class="chip hitl">HITL</span></span></a>
+        <a class="card" href="#cards"><span class="title"><span class="num-id">#51</span>Landscape layout for the envelope</span><span class="parent">↳ Small-screen polish</span><span class="meta"><span>blocked by #46</span><span>blocked by kopmann/print-kit#12</span></span></a>
+        <a class="card" href="#cards"><span class="title"><span class="num-id">#46</span>Fix clipped greeting on small screens</span><span class="parent">↳ Small-screen polish</span><span class="meta"><span class="chip">PR #52</span><span class="chip">PR #54</span></span></a>
+        <a class="card" href="#cards" title="Remember the last recipient's address and offer it first when a new card is started from the same template"><span class="title"><span class="num-id">#60</span>Remember the last recipient's address and offer it first when a new card is started from the same template</span><span class="parent">↳ A very long parent title that runs past the edge of the card and ends in an ellipsis</span><span class="meta"><span class="chip hitl">HITL</span><span>blocked by #45</span><span>blocked by kopmann/print-kit#12</span><span class="chip">PR #61</span></span></a>
+        <a class="card is-hover" href="#cards"><span class="title"><span class="num-id">#45</span>Hover</span><span class="parent">↳ Card editor v2</span></a>
+        <a class="card is-focus" href="#cards"><span class="title"><span class="num-id">#45</span>Keyboard focus</span><span class="parent">↳ Card editor v2</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 7 -->
+  <section class="part" id="long">
+    <header>
+      <h2>7 A long row</h2>
+      <p>
+        No cap and no sideways strip: cards sit in
+        <code>repeat(auto-fill, minmax(260px, 1fr))</code> and the row wraps onto as many lines as
+        it needs. The page scrolls; there is no inner scroll box.
+      </p>
+    </header>
+    <div class="duo">
+      <div class="board">
+        <section class="row">
+          <div class="row-h"><span class="shape s-flow" aria-hidden="true">●</span><span class="label">Ready</span><span class="n">11</span></div>
+          <div class="cards">
+            <a class="card" href="#long"><span class="title"><span class="num-id">#62</span>Import contacts from a vCard file</span></a>
+            <a class="card" href="#long"><span class="title"><span class="num-id">#63</span>Group recipients into lists</span><span class="parent">↳ Address book</span></a>
+            <a class="card" href="#long"><span class="title"><span class="num-id">#64</span>Merge duplicate contacts</span><span class="parent">↳ Address book</span><span class="meta"><span>blocked by #63</span></span></a>
+            <a class="card" href="#long"><span class="title"><span class="num-id">#65</span>Postage rates for Switzerland</span></a>
+            <a class="card" href="#long"><span class="title"><span class="num-id">#66</span>Show the send date on the envelope</span></a>
+            <a class="card" href="#long"><span class="title"><span class="num-id">#67</span>Undo the last edit on a card</span><span class="parent">↳ Card editor v2</span></a>
+            <a class="card" href="#long"><span class="title"><span class="num-id">#68</span>Keyboard shortcuts for the editor</span><span class="parent">↳ Card editor v2</span><span class="meta"><span class="chip hitl">HITL</span></span></a>
+            <a class="card" href="#long"><span class="title"><span class="num-id">#69</span>Export a card as PDF</span></a>
+            <a class="card" href="#long"><span class="title"><span class="num-id">#70</span>Handwriting font for greetings</span><span class="parent">↳ Card editor v2</span></a>
+            <a class="card" href="#long"><span class="title"><span class="num-id">#71</span>Batch-send a list</span><span class="parent">↳ Address book</span><span class="meta"><span>blocked by #63</span></span></a>
+            <a class="card" href="#long"><span class="title"><span class="num-id">#72</span>Preview the card at print size</span></a>
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 8 -->
+  <section class="part" id="loading">
+    <header>
+      <h2>8 Loading</h2>
+      <p>
+        Before the first board arrives, or while the watcher hasn't taken a snapshot
+        (<code>sync: pending</code>). A static skeleton in the shape of the board, shown after
+        300 ms and kept at least 500 ms. No shimmer.
+      </p>
+    </header>
+    <ul class="rules">
+      <li>
+        Every status row keeps its real label and shape, with a 14×10 count block and 2 card
+        blocks (58 px tall, <code>--border</code> edge, lines in <code>--border</code>). Closed shows
+        its collapsed summary with a count block.
+      </li>
+      <li>
+        <code>aria-busy="true"</code> on the board and a visually hidden
+        <code>role="status"</code> "Loading tickets…". The header shows no "Updated" yet.
+      </li>
+    </ul>
+    <div class="duo narrow">
+      <div class="board" aria-busy="true">
+        <span class="vh" role="status">Loading tickets…</span>
+        <section class="row">
+          <div class="row-h"><span class="shape s-neutral" aria-hidden="true">○</span><span class="label">Idea</span><span class="sk" style="width: 14px; height: 10px"></span></div>
+          <div class="cards">
+            <span class="sk-card"><span class="sk sk-line" style="width: 80%"></span><span class="sk sk-line" style="width: 50%"></span></span>
+            <span class="sk-card"><span class="sk sk-line" style="width: 70%"></span><span class="sk sk-line" style="width: 40%"></span></span>
+          </div>
+        </section>
+        <section class="row">
+          <div class="row-h"><span class="shape s-neutral" aria-hidden="true">○</span><span class="label">Backlog</span><span class="sk" style="width: 14px; height: 10px"></span></div>
+          <div class="cards">
+            <span class="sk-card"><span class="sk sk-line" style="width: 75%"></span><span class="sk sk-line" style="width: 45%"></span></span>
+            <span class="sk-card"><span class="sk sk-line" style="width: 60%"></span><span class="sk sk-line" style="width: 35%"></span></span>
+          </div>
+        </section>
+        <section class="row">
+          <div class="row-h"><span class="shape s-flow" aria-hidden="true">●</span><span class="label">Plan</span><span class="sk" style="width: 14px; height: 10px"></span></div>
+          <div class="cards">
+            <span class="sk-card"><span class="sk sk-line" style="width: 80%"></span><span class="sk sk-line" style="width: 50%"></span></span>
+            <span class="sk-card"><span class="sk sk-line" style="width: 70%"></span><span class="sk sk-line" style="width: 40%"></span></span>
+          </div>
+        </section>
+        <p class="sm">… and so on for every status …</p>
+        <details class="row">
+          <summary class="row-h"><span class="chev" aria-hidden="true">›</span><span class="shape s-done" aria-hidden="true">✓</span><span class="label">Closed</span><span class="sk" style="width: 14px; height: 10px"></span></summary>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 9 -->
+  <section class="part" id="contract">
+    <header>
+      <h2>9 Contract check failed</h2>
+      <p>
+        The project page shows the contract report only when the check failed, as a warn panel
+        between the header and the board. When it passed, nothing shows.
+      </p>
+    </header>
+    <ul class="rules">
+      <li>
+        Panel: <code>10px 14px</code>, <code>--surface</code>, 1px <code>--border-strong</code>, 4 px
+        radius, 4 px inset <code>--warn</code> stripe. Headline with ▲, then the missing parts as a
+        13 px mono list. <code>role="alert"</code>.
+      </li>
+    </ul>
+    <div class="duo">
+      <div class="shell" style="min-height: 0">
+        <aside class="rail" aria-label="Navigation">
+          <div class="brand">aisf</div>
+          <nav class="nav" aria-label="Projects">
+            <div class="sec label">Projects</div>
+            <a class="item repo" href="#contract" aria-current="page" title="MoritzKopmann/postkarte"><span class="grow">postkarte</span></a>
+            <a class="item" href="#contract"><span class="grow">+ Add project</span></a>
+          </nav>
+        </aside>
+        <div class="main">
+          <main class="page">
+            <div class="page-head">
+              <h1>postkarte</h1>
+              <span class="sm mono">MoritzKopmann · ~/Software/postkarte</span><span class="grow"></span
+              ><time class="updated" datetime="2026-09-28T09:38" title="28 Sep 2026 09:38">Updated 3 min ago</time>
+            </div>
+            <div class="panel" role="alert">
+              <span><span class="shape s-warn" aria-hidden="true">▲</span> <b>Contract pre-flight: 2 parts missing</b></span>
+              <ul>
+                <li>.claude/skills/project-testing/SKILL.md</li>
+                <li>.claude/skills/project-toolchain/SKILL.md</li>
+              </ul>
+            </div>
+            <div class="board">
+              <section class="row">
+                <div class="row-h"><span class="shape s-neutral" aria-hidden="true">○</span><span class="label">Idea</span><span class="n">2</span></div>
+                <div class="cards">
+                  <a class="card" href="#contract"><span class="title"><span class="num-id">#58</span>Share a postcard as a link</span></a>
+                  <a class="card" href="#contract"><span class="title"><span class="num-id">#59</span>Print at A6 with bleed marks</span></a>
+                </div>
+              </section>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 10 -->
+  <section class="part" id="ticket">
+    <header>
+      <h2>10 Ticket page stub</h2>
+      <p>
+        <code>#/projects/&lt;id&gt;/tickets/&lt;n&gt;</code>. Fetched once, never polled. The
+        sidebar keeps the project highlighted. Outside its board row a ticket carries a status
+        chip.
+      </p>
+    </header>
+    <ul class="rules">
+      <li>
+        <b>Back:</b> "← Back to the board", 13 px, a plain <code>href</code> to
+        <code>#/projects/&lt;id&gt;</code>. The browser's Back works too.
+      </li>
+      <li>
+        <b>Head:</b> <code>#N</code> (20 mono 500, muted) and the title (22 UI 700, sentence case,
+        wraps, never clamped). Below it, 8 px down: the status chip (shape in the status colour,
+        pulsing for In progress) and "Open on GitHub ↗" (new tab, 13 px).
+      </li>
+      <li>
+        <b>Facts:</b> a <code>&lt;dl&gt;</code>, 112 px label column, <code>10px 16px</code> gaps, a
+        hairline above, max 720 px wide. Parent links in-app to its ticket page; a ticket without a
+        parent leaves the row out. Pull requests link to GitHub (↗, new tab) with their state in
+        small muted text; none reads "None".
+      </li>
+    </ul>
+    <div class="duo">
+      <div class="shell" style="min-height: 0">
+        <aside class="rail" aria-label="Navigation">
+          <div class="brand">aisf</div>
+          <nav class="nav" aria-label="Projects">
+            <div class="sec label">Projects</div>
+            <a class="item repo" href="#ticket" aria-current="page" title="MoritzKopmann/postkarte"><span class="grow">postkarte</span></a>
+            <a class="item repo" href="#ticket" title="MoritzKopmann/AISoftwareFactory"><span class="grow">AISoftwareFactory</span></a>
+            <a class="item" href="#ticket"><span class="grow">+ Add project</span></a>
+          </nav>
+        </aside>
+        <div class="main">
+          <main class="page">
+            <a class="back" href="#ticket"><span class="arrow" aria-hidden="true">←</span>Back to the board</a>
+            <div class="ticket-head">
+              <h1><span class="num-id">#46</span>Fix clipped greeting on small screens</h1>
+              <div class="inline">
+                <span class="chip flow"><span class="shape s-flow" aria-hidden="true">●</span>In review</span>
+                <a class="ext" href="https://github.com/MoritzKopmann/postkarte/issues/46" target="_blank" rel="noopener">Open on GitHub</a>
+              </div>
+            </div>
+            <dl class="facts">
+              <dt class="label">Parent</dt>
+              <dd><a href="#ticket"><span class="num-id">#40</span> Small-screen polish</a></dd>
+              <dt class="label">Pull requests</dt>
+              <dd>
+                <ul>
+                  <li><a class="ext" href="https://github.com/MoritzKopmann/postkarte/pull/52" target="_blank" rel="noopener">PR #52</a><span class="pr-state">open</span></li>
+                  <li><a class="ext" href="https://github.com/MoritzKopmann/postkarte/pull/54" target="_blank" rel="noopener">PR #54</a><span class="pr-state">merged</span></li>
+                </ul>
+              </dd>
+            </dl>
+          </main>
+        </div>
+      </div>
+    </div>
+
+    <p class="caption">A closed ticket with no parent and no pull request</p>
+    <div class="duo narrow">
+      <main class="page" style="padding: 0">
+        <a class="back" href="#ticket"><span class="arrow" aria-hidden="true">←</span>Back to the board</a>
+        <div class="ticket-head">
+          <h1><span class="num-id">#36</span>Envelope flip animation</h1>
+          <div class="inline">
+            <span class="chip done"><span class="shape s-done" aria-hidden="true">✓</span>Closed</span>
+            <a class="ext" href="https://github.com/MoritzKopmann/postkarte/issues/36" target="_blank" rel="noopener">Open on GitHub</a>
+          </div>
+        </div>
+        <dl class="facts">
+          <dt class="label">Pull requests</dt>
+          <dd class="sm">None</dd>
+        </dl>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===================================================== 11 -->
+  <section class="part" id="ticket-states">
+    <header>
+      <h2>11 Ticket page states</h2>
+      <p>
+        The page fetches once, so a failure is a one-off request: it gets a Retry button. Back is
+        always there.
+      </p>
+    </header>
+    <div class="duo narrow">
+      <div class="stack" style="gap: 32px">
+        <div class="stack">
+          <p class="caption">Loading</p>
+          <main class="page" style="padding: 0" aria-busy="true">
+            <span class="vh" role="status">Loading #46…</span>
+            <a class="back" href="#ticket-states"><span class="arrow" aria-hidden="true">←</span>Back to the board</a>
+            <div class="ticket-head">
+              <span class="sk" style="width: 70%; height: 22px"></span>
+              <span class="sk" style="width: 110px; height: 18px"></span>
+            </div>
+            <div class="facts">
+              <span class="sk sk-line" style="width: 60px"></span><span class="sk sk-line" style="width: 40%"></span>
+              <span class="sk sk-line" style="width: 80px"></span><span class="sk sk-line" style="width: 25%"></span>
+            </div>
+          </main>
+        </div>
+        <div class="stack">
+          <p class="caption">Not found (404)</p>
+          <main class="page" style="padding: 0">
+            <a class="back" href="#ticket-states"><span class="arrow" aria-hidden="true">←</span>Back to the board</a>
+            <div class="err" role="alert">
+              <span class="shape" aria-hidden="true">■</span>
+              <p>#999 isn't a ticket in MoritzKopmann/postkarte.</p>
+            </div>
+          </main>
+        </div>
+        <div class="stack">
+          <p class="caption">The request failed</p>
+          <main class="page" style="padding: 0">
+            <a class="back" href="#ticket-states"><span class="arrow" aria-hidden="true">←</span>Back to the board</a>
+            <div class="err" role="alert">
+              <span class="shape" aria-hidden="true">■</span>
+              <p>Couldn't load #36. GitHub didn't answer in time.</p>
+              <button class="btn" type="button">Retry</button>
+              <p class="sm mono">gh: HTTP 504 Gateway Timeout (api.github.com)</p>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 12 -->
+  <section class="part" id="copy">
+    <header>
+      <h2>12 Copy</h2>
+      <p>
+        Every string on these screens. Where it differs from what the #102 view models return
+        today, the board component ticket changes the view model and its test.
+      </p>
+    </header>
+    <div class="tbl-wrap">
+      <table class="ref">
+        <tr><th>Where</th><th>Text</th><th>View model today</th></tr>
+        <tr><td>Empty project</td><td>No tickets in {id} yet.</td><td class="sm">No tickets in {id} yet (no full stop)</td></tr>
+        <tr><td>Empty row</td><td>None</td><td class="sm">—</td></tr>
+        <tr><td>Conflict row note</td><td>These tickets carry more than one <code>status:</code> label. Keep one on GitHub.</td><td class="sm">These tickets carry conflicting status labels.</td></tr>
+        <tr><td>Conflict card</td><td>plan · ready (lowercase status names)</td><td class="sm">Plan, Ready (as labels)</td></tr>
+        <tr><td>Closed count</td><td>50 of 214</td><td class="sm">same</td></tr>
+        <tr><td>Closed note</td><td>The newest 50. All closed on GitHub ↗</td><td class="sm">Showing the 50 most recent of 214</td></tr>
+        <tr><td>Stale</td><td>Updated 20 min ago (header)</td><td class="sm">Showing the board from HH:MM (snapshot note)</td></tr>
+        <tr><td>Loading</td><td>Loading tickets… (hidden status)</td><td class="sm">Loading the board… (status line)</td></tr>
+        <tr><td>auth</td><td>Can't reach GitHub: <code>gh</code> isn't logged in. Run: <code>gh auth login</code> · The board refreshes by itself once it works.</td><td class="sm">the raw message</td></tr>
+        <tr><td>rate-limited</td><td>Couldn't refresh the board. GitHub rate limit reached; resuming in 20 min.</td><td class="sm">GitHub rate limit reached. The app retries at HH:MM.</td></tr>
+        <tr><td>unavailable</td><td>Couldn't refresh the board. GitHub didn't answer; the watcher tries again at its next poll.</td><td class="sm">{message} The app retries automatically.</td></tr>
+        <tr><td>unexpected</td><td>Couldn't refresh the board. The watcher hit an unexpected error; see the aisf log.</td><td class="sm">{message} See the aisf log.</td></tr>
+        <tr><td>App unreachable</td><td>Can't reach aisf. The board tries again every 5 s.</td><td class="sm">— (component)</td></tr>
+        <tr><td>404, board</td><td>The watcher hasn't picked up {id} yet. The board appears after its next poll.</td><td class="sm">— (component: "{id} is not watched yet")</td></tr>
+        <tr><td>404, ticket</td><td>#{n} isn't a ticket in {id}.</td><td class="sm">— (component)</td></tr>
+        <tr><td>Ticket failed</td><td>Couldn't load #{n}. {cause} · Retry</td><td class="sm">— (component)</td></tr>
+        <tr><td>Back</td><td>← Back to the board</td><td class="sm">—</td></tr>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+  // Render each specimen twice, light and dark, from one copy of the markup.
+  document.querySelectorAll('.duo').forEach((duo) => {
+    const html = duo.innerHTML;
+    duo.innerHTML = '';
+    for (const [themeClass, name] of [
+      ['t-light', 'Light'],
+      ['t-dark', 'Dark'],
+    ]) {
+      const pane = document.createElement('div');
+      pane.className = `pane ${themeClass}`;
+      pane.dataset.name = name;
+      pane.innerHTML = html;
+      duo.append(pane);
+    }
+  });
+  // Copy buttons on command blocks.
+  document.addEventListener('click', async (event) => {
+    const button = event.target.closest('.copy');
+    if (!button) return;
+    const code = button.parentElement.querySelector('code');
+    const status = button.parentElement.querySelector('[role="status"]');
+    try {
+      await navigator.clipboard.writeText(code.textContent);
+    } catch {
+      const range = document.createRange();
+      range.selectNodeContents(code);
+      const selection = getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    button.textContent = 'Copied';
+    if (status) status.textContent = 'Copied to the clipboard';
+    setTimeout(() => {
+      button.textContent = 'Copy';
+      if (status) status.textContent = '';
+    }, 2000);
+  });
+</script>
