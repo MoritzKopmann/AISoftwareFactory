@@ -1,0 +1,2511 @@
+<title>aisf UI Direction</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<!--
+  The app-wide UI direction for aisf, from the map "Map: app-wide UI direction within Drafting" (#105).
+  Every specimen renders twice, light and dark, from the same markup (see the script at the end).
+  Tokens are kit.css with the diff in section 2 applied. The live kit.css is unchanged until the follow-up ticket applies that diff.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+/>
+<style>
+  /* ---------- Tokens: Drafting with the section 2 diff ---------- */
+  :root,
+  .t-light {
+    --bg: #e9eef2;
+    --surface: #f8fafb;
+    --surface-2: #dfe6ec;
+    --surface-sunken: #e1e8ed;
+    --border: #a9b8c5;
+    --border-strong: #6f8499;
+    --text: #13243a;
+    --muted: #4c6075;
+    --accent: #c45404;
+    --accent-ink: #ffffff;
+    --accent-soft: #f8e2d2;
+    --ok: #257540;
+    --warn: #935902;
+    --danger: #b8322f;
+    --info: #2d5f93;
+    --hitl: #6b47c2;
+    --font-ui: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --label-spacing: 0.08em;
+    --radius: 4px;
+    --radius-sm: 2px;
+    --pad: 16px;
+    --gap: 8px;
+    --text-size: 15px;
+    --text-size-sm: 13px;
+    --gutter: 24px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --bg: #0d1924;
+      --surface: #122130;
+      --surface-2: #192b3d;
+      --surface-sunken: #0a141d;
+      --border: #2e4760;
+      --border-strong: #587592;
+      --text: #d8e4ee;
+      --muted: #9ab2c7;
+      --accent: #ff8a45;
+      --accent-ink: #1c0d03;
+      --accent-soft: #3b2515;
+      --ok: #5cc07a;
+      --warn: #e5ab4e;
+      --danger: #ff8f84;
+      --info: #7cb4ea;
+      --hitl: #baa0ff;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme='dark'],
+  .t-dark {
+    --bg: #0d1924;
+    --surface: #122130;
+    --surface-2: #192b3d;
+    --surface-sunken: #0a141d;
+    --border: #2e4760;
+    --border-strong: #587592;
+    --text: #d8e4ee;
+    --muted: #9ab2c7;
+    --accent: #ff8a45;
+    --accent-ink: #1c0d03;
+    --accent-soft: #3b2515;
+    --ok: #5cc07a;
+    --warn: #e5ab4e;
+    --danger: #ff8f84;
+    --info: #7cb4ea;
+    --hitl: #baa0ff;
+    color-scheme: dark;
+  }
+
+  /* ---------- Base (kit.css with the diff) ---------- */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: var(--text-size) / 1.45 var(--font-ui);
+    padding-inline: 16px;
+    padding-block: 24px 64px;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-wrap: balance;
+  }
+  h1 {
+    font-size: 22px;
+  }
+  h2 {
+    font-size: 16px;
+  }
+  h3 {
+    font-size: 14px;
+  }
+  p,
+  ul,
+  ol {
+    margin: 0;
+  }
+  code,
+  .mono {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+  }
+  .sm {
+    font-size: var(--text-size-sm);
+    line-height: 1.4;
+    color: var(--muted);
+  }
+  .label {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--label-spacing);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+  a {
+    color: var(--text);
+    text-decoration: underline;
+    text-decoration-color: var(--border-strong);
+    text-underline-offset: 2px;
+  }
+  a:hover,
+  a:focus-visible {
+    text-decoration-color: var(--accent);
+  }
+  a.ext::after {
+    content: ' ↗';
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    color: var(--muted);
+  }
+  button {
+    font: inherit;
+    color: inherit;
+  }
+  .vh {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* ---------- Reference page layout (not part of the direction) ---------- */
+  .doc {
+    max-width: 1240px;
+    margin: 0 auto;
+    display: grid;
+    gap: 56px;
+  }
+  .doc > header {
+    display: grid;
+    gap: 12px;
+    max-width: 72ch;
+  }
+  .doc > header h1 {
+    font-size: 28px;
+  }
+  .lede {
+    font-size: 17px;
+    line-height: 1.5;
+  }
+  .toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    font-size: var(--text-size-sm);
+  }
+  .toc a {
+    white-space: nowrap;
+  }
+  section.part {
+    display: grid;
+    gap: 20px;
+  }
+  .part > header {
+    display: grid;
+    gap: 8px;
+    max-width: 72ch;
+    border-top: 2px solid var(--text);
+    padding-top: 12px;
+  }
+  .part > header .src {
+    font-size: var(--text-size-sm);
+    color: var(--muted);
+  }
+  .spec-block {
+    display: grid;
+    gap: 10px;
+  }
+  .spec-block > h3 {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+  }
+  .rules {
+    display: grid;
+    gap: 6px;
+    padding-left: 20px;
+    max-width: 80ch;
+  }
+  .rules li::marker {
+    color: var(--muted);
+  }
+  .duo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .duo.wide {
+    grid-template-columns: 1fr;
+  }
+  @media (max-width: 900px) {
+    .duo {
+      grid-template-columns: 1fr;
+    }
+  }
+  .pane {
+    position: relative;
+    min-width: 0;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    padding: 28px 16px 16px;
+    overflow-x: auto;
+    font: var(--text-size) / 1.45 var(--font-ui);
+  }
+  .pane::before {
+    content: attr(data-name);
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 2px 8px;
+    font: 500 10px var(--font-mono);
+    letter-spacing: var(--label-spacing);
+    text-transform: uppercase;
+    color: var(--muted);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stack {
+    display: grid;
+    gap: 12px;
+  }
+  .inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    align-items: center;
+  }
+  .tbl-wrap {
+    overflow-x: auto;
+  }
+  table.ref {
+    border-collapse: collapse;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    font-size: 14px;
+  }
+  table.ref th,
+  table.ref td {
+    text-align: left;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.ref th {
+    font: 500 11px var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--label-spacing);
+    color: var(--muted);
+    border-top: 0;
+    white-space: nowrap;
+  }
+  table.ref td.mono {
+    white-space: nowrap;
+  }
+  .chg {
+    font: 700 10px var(--font-mono);
+    letter-spacing: var(--label-spacing);
+    text-transform: uppercase;
+    border: 1px solid var(--accent);
+    padding: 0 4px;
+    margin-left: 6px;
+    white-space: nowrap;
+  }
+  .sw {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    vertical-align: -2px;
+    border: 1px solid var(--border-strong);
+    margin-right: 6px;
+  }
+  .old {
+    text-decoration: line-through;
+    color: var(--muted);
+  }
+  pre.diff {
+    margin: 0;
+    padding: 12px 16px;
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font: 13px / 1.55 var(--font-mono);
+  }
+  pre.diff .del {
+    color: var(--danger);
+  }
+  pre.diff .add {
+    color: var(--ok);
+  }
+  pre.diff .ctx {
+    color: var(--muted);
+  }
+  .do-dont {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 700px) {
+    .do-dont {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ========== The direction's components (what the specimens show) ========== */
+
+  /* Buttons: 13px/600, 8px 12px, 4px radius. One primary per page. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--text);
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .btn:hover {
+    border-color: var(--text);
+  }
+  .btn.primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
+  }
+  .btn.quiet {
+    background: transparent;
+    border-color: transparent;
+    color: var(--muted);
+    padding-inline: 4px;
+    min-height: 28px;
+  }
+  .btn.quiet:hover {
+    color: var(--text);
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+  }
+  .btn.ext::after {
+    content: ' ↗';
+    font-family: var(--font-mono);
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .btn.primary.ext::after {
+    color: inherit;
+  }
+  .input {
+    font: inherit;
+    font-size: 15px;
+    padding: 7px 10px;
+    min-height: 36px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+  }
+
+  /* Status marks (Decide the status vocabulary) */
+  .shape {
+    display: inline-block;
+    width: 1em;
+    text-align: center;
+    font-family: var(--font-mono);
+  }
+  .s-neutral {
+    color: var(--muted);
+  }
+  .s-flow {
+    color: var(--info);
+  }
+  .s-done {
+    color: var(--ok);
+  }
+  .s-warn {
+    color: var(--warn);
+  }
+  .s-danger {
+    color: var(--danger);
+  }
+  .pulse {
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    50% {
+      opacity: 0.35;
+    }
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px;
+    line-height: 18px;
+    font: 500 11px var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--label-spacing);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .chip.hitl {
+    border-color: var(--hitl);
+  }
+  .chip.danger {
+    border-color: var(--danger);
+  }
+  .chip.flow {
+    border-color: var(--info);
+  }
+  .chip.done {
+    border-color: var(--ok);
+  }
+  .chip.warn {
+    border-color: var(--warn);
+  }
+  .chip.neutral {
+    border-color: var(--muted);
+  }
+  .chip.accent {
+    border-color: var(--accent);
+  }
+  .count {
+    display: inline-block;
+    min-width: 18px;
+    padding: 0 4px;
+    line-height: 16px;
+    text-align: center;
+    font: 700 11px var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    border: 1px solid var(--hitl);
+    color: var(--text);
+  }
+  .count.danger {
+    border-color: var(--danger);
+  }
+
+  /* Shell (Prototype the app shell, navigation, layout and density) */
+  .shell {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    min-height: 520px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg);
+    min-width: 820px;
+  }
+  .rail {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 12px 8px;
+    background: var(--surface);
+    border-right: 1px solid var(--border-strong);
+  }
+  .brand {
+    font: 700 14px var(--font-mono);
+    letter-spacing: 0.04em;
+    padding: 4px 8px;
+  }
+  .nav {
+    display: grid;
+    gap: 2px;
+  }
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: var(--radius);
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 14px;
+  }
+  .item:hover {
+    color: var(--text);
+    background: var(--surface-2);
+  }
+  .item[aria-current='page'] {
+    color: var(--text);
+    background: var(--surface-2);
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+  .item .grow {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .item.repo {
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .sec {
+    padding: 0 8px 4px;
+  }
+  .foot {
+    margin-top: auto;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+  }
+  .main {
+    min-width: 0;
+    display: grid;
+    align-content: start;
+  }
+  .page {
+    padding: var(--pad) var(--gutter) 24px;
+    display: grid;
+    gap: 24px;
+    min-width: 0;
+  }
+  .page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+  }
+  .page-head .grow {
+    flex: 1;
+  }
+  .page-head h1 {
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: var(--font-ui);
+    font-size: 22px;
+  }
+
+  /* Banners and panels */
+  .banner {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 2px 10px;
+    align-items: start;
+    padding: 10px var(--gutter);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-strong);
+    box-shadow: inset 4px 0 0 var(--c);
+  }
+  .banner .shape {
+    color: var(--c);
+    line-height: 1.45;
+  }
+  .banner .raw {
+    grid-column: 2;
+  }
+  .banner.warn {
+    --c: var(--warn);
+  }
+  .banner.danger {
+    --c: var(--danger);
+  }
+  .banner.info {
+    --c: var(--info);
+  }
+  .banner.boxed {
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding-inline: 16px;
+  }
+  .panel {
+    display: grid;
+    gap: 6px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: inset 4px 0 0 var(--warn);
+  }
+  .panel ul {
+    padding-left: 18px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  /* Board rows */
+  .board {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+  }
+  .row {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+  .row-h {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .row-h .label {
+    color: var(--text);
+    font-weight: 700;
+  }
+  .row-h .n {
+    font: 500 11px var(--font-mono);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .row-note {
+    font-size: var(--text-size-sm);
+  }
+  .none {
+    font-size: var(--text-size-sm);
+    color: var(--muted);
+    margin-left: 4px;
+  }
+  details.row > summary {
+    cursor: pointer;
+    list-style: none;
+  }
+  details.row > summary::-webkit-details-marker {
+    display: none;
+  }
+  .chev {
+    font-family: var(--font-mono);
+    color: var(--muted);
+    display: inline-block;
+    transition: transform 0.15s;
+  }
+  details[open] > summary .chev {
+    transform: rotate(90deg);
+  }
+  .toggle-text {
+    font-size: var(--text-size-sm);
+    color: var(--muted);
+    text-decoration: underline;
+    text-decoration-color: var(--border-strong);
+    text-underline-offset: 2px;
+  }
+  summary:hover .toggle-text {
+    color: var(--text);
+    text-decoration-color: var(--accent);
+  }
+  details[open] .t-show,
+  details:not([open]) .t-hide {
+    display: none;
+  }
+  .cards {
+    display: grid;
+    gap: var(--gap);
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+
+  /* Card (stacked, one link) */
+  .card {
+    position: relative;
+    display: grid;
+    gap: 2px;
+    align-content: start;
+    min-height: 40px;
+    min-width: 0;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: var(--text);
+  }
+  .card:hover {
+    border-color: var(--text);
+  }
+  .num-id {
+    font: 500 12px var(--font-mono);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .card .title {
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card .title .num-id {
+    margin-right: 6px;
+  }
+  .card .parent {
+    font-size: var(--text-size-sm);
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    align-items: center;
+    font-size: var(--text-size-sm);
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* List rows (divided) */
+  .rows {
+    display: grid;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .lrow {
+    position: relative;
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr) auto;
+    gap: 2px 12px;
+    align-items: center;
+    min-height: 40px;
+    padding: 8px 12px;
+    background: var(--surface);
+    color: var(--text);
+    text-decoration: none;
+    border-top: 1px solid var(--border);
+  }
+  .rows > .lrow:first-child,
+  .group-h + .lrow {
+    border-top: 0;
+  }
+  .lrow:hover {
+    background: var(--surface-2);
+  }
+  .lrow .t {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lrow .sub {
+    font-size: var(--text-size-sm);
+    color: var(--muted);
+    grid-column: 2;
+    min-width: 0;
+  }
+  .lrow .act {
+    grid-row: 1 / span 2;
+    grid-column: 3;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-self: end;
+  }
+  .lrow .aside {
+    font: 12px var(--font-mono);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .lrow .stretch {
+    color: inherit;
+    text-decoration: none;
+  }
+  .lrow .stretch::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+  .lrow .stretch:focus-visible {
+    outline: none;
+  }
+  .lrow:has(.stretch:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+  .lrow .act > *,
+  .lrow .sub a {
+    position: relative;
+    z-index: 1;
+  }
+  .group-h {
+    font: 700 11px var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--label-spacing);
+    padding: 8px 12px 4px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+  }
+  .rows > .group-h:first-child {
+    border-top: 0;
+  }
+  .list-sec {
+    display: grid;
+    gap: 8px;
+  }
+  .list-sec > header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* Loading skeleton: static blocks, no shimmer */
+  .sk {
+    display: block;
+    background: var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .sk-card {
+    height: 58px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    display: grid;
+    gap: 8px;
+    align-content: start;
+  }
+  .sk-line {
+    height: 10px;
+  }
+
+  /* Empty */
+  .empty {
+    display: grid;
+    gap: 10px;
+    justify-items: start;
+    padding: 16px 0;
+  }
+
+  /* Inline error */
+  .err {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 2px 8px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--danger);
+    border-radius: var(--radius);
+  }
+  .err .shape {
+    color: var(--danger);
+    line-height: 1.45;
+  }
+  .err > :not(.shape) {
+    grid-column: 2;
+  }
+
+  /* Stale line */
+  .updated {
+    font-size: var(--text-size-sm);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Command block */
+  .cmd {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 6px 6px 12px;
+    background: var(--surface-sunken);
+    border-radius: var(--radius);
+    font: 13px / 1.5 var(--font-mono);
+    max-width: 520px;
+  }
+  .cmd code {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    white-space: pre;
+    font-size: 13px;
+  }
+  .cmd .btn {
+    min-height: 26px;
+    padding: 2px 10px;
+    font-size: 12px;
+  }
+</style>
+
+<div class="doc">
+  <header>
+    <p class="label">aisf · design reference · 2026-09-28</p>
+    <h1>UI direction</h1>
+    <p class="lede">
+      How every aisf screen looks and behaves: the Drafting theme with measured tweaks, one status
+      vocabulary, one card, one list row, and fixed patterns for loading, empty, error, stale and
+      too much data. The board and every later view build on this page.
+    </p>
+    <p class="sm">
+      Charted on
+      <a
+        class="ext"
+        href="https://github.com/MoritzKopmann/AISoftwareFactory/issues/105"
+        target="_blank"
+        rel="noopener"
+        >Map: app-wide UI direction within Drafting</a
+      >. Every specimen renders in light and dark from the same markup. The tokens here already
+      include the diff in section 2; <code>kit.css</code> itself changes only when the follow-up
+      ticket applies it.
+    </p>
+    <nav class="toc" aria-label="Sections">
+      <a href="#foundations">1 Foundations</a><a href="#diff">2 Diff against kit.css</a
+      ><a href="#shell">3 Shell and layout</a> <a href="#status">4 Status vocabulary</a
+      ><a href="#cards">5 Cards and board rows</a><a href="#lists">6 List rows</a>
+      <a href="#links">7 Links and collapsing</a><a href="#states">8 State patterns</a
+      ><a href="#voice">9 Copy voice</a><a href="#open">10 Still open</a>
+    </nav>
+  </header>
+
+  <!-- ===================================================== 1 -->
+  <section class="part" id="foundations">
+    <header>
+      <h2>1 Foundations</h2>
+      <p>
+        Drafting stays. The colour changes are measured fixes that make every pairing pass WCAG AA;
+        the type and spacing changes put it on a clean scale with real font weights.
+      </p>
+      <p class="src">
+        From
+        <a
+          class="ext"
+          href="https://github.com/MoritzKopmann/AISoftwareFactory/issues/108"
+          target="_blank"
+          rel="noopener"
+          >Decide the palette and type tweaks to Drafting</a
+        >, with numbers from
+        <a
+          class="ext"
+          href="https://github.com/MoritzKopmann/AISoftwareFactory/issues/107"
+          target="_blank"
+          rel="noopener"
+          >Research how readable the Drafting tokens and fonts are</a
+        >.
+      </p>
+    </header>
+
+    <div class="spec-block">
+      <h3>Colour tokens</h3>
+      <div class="tbl-wrap">
+        <table class="ref">
+          <tr>
+            <th>Token</th>
+            <th>Light</th>
+            <th>Dark</th>
+            <th>Role</th>
+          </tr>
+          <tr>
+            <td class="mono">--bg</td>
+            <td class="mono"><span class="sw" style="background: #e9eef2"></span>#e9eef2</td>
+            <td class="mono"><span class="sw" style="background: #0d1924"></span>#0d1924</td>
+            <td>Page ground; group header bands</td>
+          </tr>
+          <tr>
+            <td class="mono">--surface</td>
+            <td class="mono"><span class="sw" style="background: #f8fafb"></span>#f8fafb</td>
+            <td class="mono"><span class="sw" style="background: #122130"></span>#122130</td>
+            <td>Cards, list containers, sidebar, banners</td>
+          </tr>
+          <tr>
+            <td class="mono">--surface-2</td>
+            <td class="mono"><span class="sw" style="background: #dfe6ec"></span>#dfe6ec</td>
+            <td class="mono"><span class="sw" style="background: #192b3d"></span>#192b3d</td>
+            <td>Hover and the current sidebar item</td>
+          </tr>
+          <tr>
+            <td class="mono">--surface-sunken<span class="chg">new</span></td>
+            <td class="mono"><span class="sw" style="background: #e1e8ed"></span>#e1e8ed</td>
+            <td class="mono"><span class="sw" style="background: #0a141d"></span>#0a141d</td>
+            <td>Command blocks (named in the state-patterns decision; values set here)</td>
+          </tr>
+          <tr>
+            <td class="mono">--border</td>
+            <td class="mono"><span class="sw" style="background: #a9b8c5"></span>#a9b8c5</td>
+            <td class="mono"><span class="sw" style="background: #2e4760"></span>#2e4760</td>
+            <td>Hairlines between rows; skeleton blocks</td>
+          </tr>
+          <tr>
+            <td class="mono">--border-strong</td>
+            <td class="mono"><span class="sw" style="background: #6f8499"></span>#6f8499</td>
+            <td class="mono">
+              <span class="sw" style="background: #587592"></span
+              ><span class="old">#4d6a86</span> #587592<span class="chg">changed</span>
+            </td>
+            <td>Card, input and container edges (≥ 3:1)</td>
+          </tr>
+          <tr>
+            <td class="mono">--text</td>
+            <td class="mono"><span class="sw" style="background: #13243a"></span>#13243a</td>
+            <td class="mono"><span class="sw" style="background: #d8e4ee"></span>#d8e4ee</td>
+            <td>All text, including chip labels and links</td>
+          </tr>
+          <tr>
+            <td class="mono">--muted</td>
+            <td class="mono"><span class="sw" style="background: #4c6075"></span>#4c6075</td>
+            <td class="mono">
+              <span class="sw" style="background: #9ab2c7"></span
+              ><span class="old">#8aa1b6</span> #9ab2c7<span class="chg">changed</span>
+            </td>
+            <td>Metadata, secondary text; the neutral status</td>
+          </tr>
+          <tr>
+            <td class="mono">--accent</td>
+            <td class="mono">
+              <span class="sw" style="background: #c45404"></span
+              ><span class="old">#d05f1a</span> #c45404<span class="chg">changed</span>
+            </td>
+            <td class="mono"><span class="sw" style="background: #ff8a45"></span>#ff8a45</td>
+            <td>Fills, rules, borders and focus only. <b>Never text.</b></td>
+          </tr>
+          <tr>
+            <td class="mono">--accent-ink</td>
+            <td class="mono"><span class="sw" style="background: #ffffff"></span>#ffffff</td>
+            <td class="mono"><span class="sw" style="background: #1c0d03"></span>#1c0d03</td>
+            <td>Text on an accent fill (4.55:1 light)</td>
+          </tr>
+          <tr>
+            <td class="mono">--accent-soft</td>
+            <td class="mono"><span class="sw" style="background: #f8e2d2"></span>#f8e2d2</td>
+            <td class="mono"><span class="sw" style="background: #3b2515"></span>#3b2515</td>
+            <td>Selected answer fill on bridge pages</td>
+          </tr>
+          <tr>
+            <td class="mono">--ok</td>
+            <td class="mono">
+              <span class="sw" style="background: #257540"></span
+              ><span class="old">#2b7a44</span> #257540<span class="chg">changed</span>
+            </td>
+            <td class="mono"><span class="sw" style="background: #5cc07a"></span>#5cc07a</td>
+            <td>Done ✓</td>
+          </tr>
+          <tr>
+            <td class="mono">--warn</td>
+            <td class="mono">
+              <span class="sw" style="background: #935902"></span
+              ><span class="old">#a2640b</span> #935902<span class="chg">changed</span>
+            </td>
+            <td class="mono"><span class="sw" style="background: #e5ab4e"></span>#e5ab4e</td>
+            <td>Warning ▲: conflict, self-recovering problems</td>
+          </tr>
+          <tr>
+            <td class="mono">--danger</td>
+            <td class="mono"><span class="sw" style="background: #b8322f"></span>#b8322f</td>
+            <td class="mono">
+              <span class="sw" style="background: #ff8f84"></span
+              ><span class="old">#f07268</span> #ff8f84<span class="chg">changed</span>
+            </td>
+            <td>Error ■: stuck, failures that need you</td>
+          </tr>
+          <tr>
+            <td class="mono">--info</td>
+            <td class="mono"><span class="sw" style="background: #2d5f93"></span>#2d5f93</td>
+            <td class="mono">
+              <span class="sw" style="background: #7cb4ea"></span
+              ><span class="old">#6fa6db</span> #7cb4ea<span class="chg">changed</span>
+            </td>
+            <td>Flow ●: work moving</td>
+          </tr>
+          <tr>
+            <td class="mono">--hitl</td>
+            <td class="mono"><span class="sw" style="background: #6b47c2"></span>#6b47c2</td>
+            <td class="mono">
+              <span class="sw" style="background: #baa0ff"></span
+              ><span class="old">#a98cf0</span> #baa0ff<span class="chg">changed</span>
+            </td>
+            <td>Only the hitl flag and hitl moments</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="spec-block">
+      <h3>The accent rule</h3>
+      <ul class="rules">
+        <li>
+          Orange is never text. It fills the one primary button per page, marks the current sidebar
+          item, draws focus rings, and borders accent chips.
+        </li>
+        <li>
+          Links are <code>--text</code> with a <code>--border-strong</code> underline that turns
+          <code>--accent</code> on hover and focus.
+        </li>
+      </ul>
+      <div class="duo">
+        <div class="inline">
+          <a class="btn primary" href="#foundations">+ New idea</a>
+          <a class="btn" href="#foundations">Retry</a>
+          <a class="btn quiet" href="#foundations">Show closed</a>
+          <span class="chip accent">Suggested</span>
+          <a href="#foundations">A link in prose</a>
+          <input class="input" aria-label="Example input" value="~/Software/postkarte" size="18" />
+        </div>
+      </div>
+    </div>
+
+    <div class="spec-block">
+      <h3>Type scale</h3>
+      <ul class="rules">
+        <li>
+          Atkinson Hyperlegible Next 400 / 600 / 700 for the UI; JetBrains Mono 400 / 500 / 700 for
+          headings, labels, chips, ids and code.
+        </li>
+        <li>
+          Uppercase mono only for short chrome (section names, labels, chips). Never for ticket
+          titles, questions or other prose. 11 px is the floor.
+        </li>
+        <li>Pixels throughout; page zoom covers resizing.</li>
+      </ul>
+      <div class="duo">
+        <div class="stack">
+          <h1>h1 · 22 mono 700</h1>
+          <h2>h2 · 16 mono 700</h2>
+          <h3>h3 · 14 mono 700</h3>
+          <p>
+            Body 15 / 1.45. The watcher polls every repo in turn and pauses when GitHub's rate limit
+            runs low.
+          </p>
+          <p class="sm">
+            Small 13 / 1.4, muted: ↳ Card editor v2 · blocked by #45 · Updated 3 min ago
+          </p>
+          <p><span class="label">Label 11 mono 500, 0.08em</span></p>
+          <p><span class="btn">Button 13 / 600</span></p>
+          <p style="font-size: 22px; font-weight: 700">Page title · 22 UI 700, sentence case</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec-block">
+      <h3>Spacing, radii, density</h3>
+      <ul class="rules">
+        <li>
+          Steps: 4 / 8 / 12 / 16 / 24 / 32. <code>--gap</code> 8 between siblings,
+          <code>--pad</code> 16 as the vertical rhythm, 24 px page gutter.
+        </li>
+        <li>
+          Radius 4 on cards, inputs and buttons; 2 on small inner elements; chips, switches and
+          progress bars stay square.
+        </li>
+        <li>
+          Cards and list rows are at least 40 px tall with <code>8px 12px</code> padding; 12 px
+          between board rows. One density, no setting.
+        </li>
+      </ul>
+      <div class="duo">
+        <div class="inline" style="align-items: flex-end">
+          <span class="stack" style="gap: 4px; justify-items: center"
+            ><span class="sk" style="width: 4px; height: 32px; background: var(--info)"></span
+            ><span class="sm num">4</span></span
+          >
+          <span class="stack" style="gap: 4px; justify-items: center"
+            ><span class="sk" style="width: 8px; height: 32px; background: var(--info)"></span
+            ><span class="sm num">8</span></span
+          >
+          <span class="stack" style="gap: 4px; justify-items: center"
+            ><span class="sk" style="width: 12px; height: 32px; background: var(--info)"></span
+            ><span class="sm num">12</span></span
+          >
+          <span class="stack" style="gap: 4px; justify-items: center"
+            ><span class="sk" style="width: 16px; height: 32px; background: var(--info)"></span
+            ><span class="sm num">16</span></span
+          >
+          <span class="stack" style="gap: 4px; justify-items: center"
+            ><span class="sk" style="width: 24px; height: 32px; background: var(--info)"></span
+            ><span class="sm num">24</span></span
+          >
+          <span class="stack" style="gap: 4px; justify-items: center"
+            ><span class="sk" style="width: 32px; height: 32px; background: var(--info)"></span
+            ><span class="sm num">32</span></span
+          >
+          <span style="width: 24px"></span>
+          <span class="card" style="width: 120px"><span class="sm">radius 4</span></span>
+          <span class="chip">radius 0</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 2 -->
+  <section class="part" id="diff">
+    <header>
+      <h2>2 Diff against kit.css</h2>
+      <p>
+        Everything this direction changes in <code>packages/app/assets/kit/kit.css</code>. A
+        follow-up ticket applies it and checks the bridge pages; this page does not edit
+        <code>kit.css</code>. Components (chips, cards, rows, banners) are not in
+        <code>kit.css</code> today; their rules are the specimens in sections 3 to 9, for the views
+        that build on this direction.
+      </p>
+    </header>
+    <pre
+      class="diff"
+    ><span class="ctx">/* Fonts: Atkinson Hyperlegible → Atkinson Hyperlegible Next, static woff2, same metrics */</span>
+<span class="del">- @font-face { font-family: 'Atkinson Hyperlegible'; font-weight: 400; … atkinson-hyperlegible-latin-400-normal.woff2 }</span>
+<span class="del">- @font-face { font-family: 'Atkinson Hyperlegible'; font-weight: 700; … atkinson-hyperlegible-latin-700-normal.woff2 }</span>
+<span class="add">+ @font-face { font-family: 'Atkinson Hyperlegible Next'; font-weight: 400; … atkinson-hyperlegible-next-latin-400-normal.woff2 }</span>
+<span class="add">+ @font-face { font-family: 'Atkinson Hyperlegible Next'; font-weight: 600; … atkinson-hyperlegible-next-latin-600-normal.woff2 }</span>
+<span class="add">+ @font-face { font-family: 'Atkinson Hyperlegible Next'; font-weight: 700; … atkinson-hyperlegible-next-latin-700-normal.woff2 }</span>
+<span class="ctx">  (JetBrains Mono 400/500/700 unchanged)</span>
+
+<span class="ctx">:root {                                   /* light */</span>
+<span class="add">+   --surface-sunken: #e1e8ed;</span>
+<span class="del">-   --accent: #d05f1a;</span>
+<span class="add">+   --accent: #c45404;</span>
+<span class="del">-   --ok: #2b7a44;</span>
+<span class="add">+   --ok: #257540;</span>
+<span class="del">-   --warn: #a2640b;</span>
+<span class="add">+   --warn: #935902;</span>
+<span class="del">-   --font-ui: 'Atkinson Hyperlegible', system-ui, sans-serif;</span>
+<span class="add">+   --font-ui: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif;</span>
+<span class="del">-   --radius: 0;</span>
+<span class="del">-   --radius-sm: 0;</span>
+<span class="add">+   --radius: 4px;</span>
+<span class="add">+   --radius-sm: 2px;</span>
+<span class="ctx">    --radius-chip: 0;  --radius-switch: 0;   (unchanged)</span>
+<span class="del">-   --pad: 14px;</span>
+<span class="del">-   --gap: 10px;</span>
+<span class="add">+   --pad: 16px;</span>
+<span class="add">+   --gap: 8px;</span>
+<span class="add">+   --text-size-sm: 13px;</span>
+<span class="add">+   --line-sm: 1.4;</span>
+<span class="ctx">}</span>
+
+<span class="ctx">/* dark: both the prefers-color-scheme block and :root[data-theme='dark'] */</span>
+<span class="add">+   --surface-sunken: #0a141d;</span>
+<span class="del">-   --border-strong: #4d6a86;</span>
+<span class="add">+   --border-strong: #587592;</span>
+<span class="del">-   --muted: #8aa1b6;</span>
+<span class="add">+   --muted: #9ab2c7;</span>
+<span class="del">-   --danger: #f07268;</span>
+<span class="add">+   --danger: #ff8f84;</span>
+<span class="del">-   --info: #6fa6db;</span>
+<span class="add">+   --info: #7cb4ea;</span>
+<span class="del">-   --hitl: #a98cf0;</span>
+<span class="add">+   --hitl: #baa0ff;</span>
+
+<span class="ctx">h3 {</span>
+<span class="del">-   font-size: 14.5px;</span>
+<span class="add">+   font-size: 14px;</span>
+<span class="ctx">}</span>
+
+<span class="add">+ a { color: var(--text); text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 2px; }</span>
+<span class="add">+ a:hover, a:focus-visible { text-decoration-color: var(--accent); }</span>
+<span class="add">+ small, .sm { font-size: var(--text-size-sm); line-height: var(--line-sm); color: var(--muted); }</span></pre>
+    <div class="spec-block">
+      <h3>What the follow-up checks on the bridge pages</h3>
+      <p class="sm">
+        No <code>&lt;aisf-*&gt;</code> elements exist yet, so "the bridge pages" means the
+        questionnaire and confirm specimens in <code>prototype/design-system/directions.html</code>.
+        The palette decision already checked them and found no conflicts.
+      </p>
+      <ul class="rules">
+        <li>
+          Chip text moves from the status colour (<code>color: var(--c)</code>) to
+          <code>--text</code>, with the status colour on the 1px border and the shape. Chips use the
+          full 0.08em label spacing and stay square.
+        </li>
+        <li>
+          <code>.tag-suggested</code> becomes 11 px <code>--text</code> with an
+          <code>--accent</code> border. No orange text anywhere.
+        </li>
+        <li><code>.ticket .meta</code> (12.5 px) becomes <code>--text-size-sm</code>.</li>
+        <li>
+          The checked answer keeps its orange border and <code>--accent-soft</code> fill. The
+          primary button picks up the new accent.
+        </li>
+        <li>
+          The progress bar and switch stay square. Buttons and accordion summaries go to 13 px /
+          600.
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===================================================== 3 -->
+  <section class="part" id="shell">
+    <header>
+      <h2>3 Shell and layout</h2>
+      <p>
+        A left sidebar and a full-width main area. The project page stacks its header, its own Needs
+        you list and the board. aisf runs on a laptop or PC, so there is no narrow layout.
+      </p>
+      <p class="src">
+        From
+        <a
+          class="ext"
+          href="https://github.com/MoritzKopmann/AISoftwareFactory/issues/110"
+          target="_blank"
+          rel="noopener"
+          >Prototype the app shell, navigation, layout and density</a
+        >
+        (<a
+          class="ext"
+          href="https://github.com/MoritzKopmann/AISoftwareFactory/blob/prototype/app-shell/prototype/app-shell/shell.html"
+          target="_blank"
+          rel="noopener"
+          >shell.html</a
+        >).
+      </p>
+    </header>
+    <ul class="rules">
+      <li>
+        <b>Sidebar</b> (232 px, sticky, full height, <code>--surface</code>,
+        <code>--border-strong</code> right edge): the <code>aisf</code> wordmark, Needs you with its
+        total, a Projects label with one item per repo (mono repo name, <code>owner/repo</code> in
+        the tooltip, its own count), + Add project, and Settings pinned to the bottom.
+      </li>
+      <li>
+        The current item gets <code>--surface-2</code> and a 2 px accent inset on the left. Other
+        items are muted and turn <code>--text</code> on hover.
+      </li>
+      <li>
+        <b>Counts</b> are square mono badges with <code>--text</code> numerals. The border takes the
+        most severe member's colour: danger if anything is stuck, otherwise hitl. A zero count is
+        not shown.
+      </li>
+      <li>
+        <b>Main area:</b> no width cap, 24 px gutter, 16 px rhythm. The project page is the header
+        (repo name as a sentence-case h1, <code>owner · checkout path</code> in small mono, "Updated
+        3 min ago", and + New idea as the one primary button), then the project's Needs you list
+        (hidden when empty), then the board.
+      </li>
+      <li>
+        <b>Skills status</b> shows only while it matters: a full-width banner above the main area
+        while checking (● info) or blocked (■ danger with the fix). When it passes, nothing shows,
+        and the details live in Settings.
+      </li>
+      <li>
+        <b>Contract report</b> shows nothing when it passes. When parts are missing, a warn panel
+        above the board lists them in mono.
+      </li>
+    </ul>
+    <div class="duo wide">
+      <div class="shell">
+        <aside class="rail" aria-label="Navigation">
+          <div class="brand">aisf</div>
+          <nav class="nav">
+            <a class="item" href="#shell"
+              ><span class="grow">Needs you</span><span class="count danger">5</span></a
+            >
+          </nav>
+          <nav class="nav" aria-label="Projects">
+            <div class="sec label">Projects</div>
+            <a class="item repo" href="#shell" aria-current="page" title="MoritzKopmann/postkarte"
+              ><span class="grow">postkarte</span><span class="count danger">4</span></a
+            >
+            <a class="item repo" href="#shell" title="MoritzKopmann/AISoftwareFactory"
+              ><span class="grow">AISoftwareFactory</span><span class="count">1</span></a
+            >
+            <a class="item repo" href="#shell" title="MoritzKopmann/dotfiles"
+              ><span class="grow">dotfiles</span></a
+            >
+            <a class="item" href="#shell"><span class="grow">+ Add project</span></a>
+          </nav>
+          <div class="foot">
+            <a class="item" href="#shell"><span class="grow">Settings</span></a>
+          </div>
+        </aside>
+        <div class="main">
+          <div class="banner info" role="status">
+            <span class="shape pulse" aria-hidden="true">●</span
+            ><span>Checking the skills. Runs start once the smoke test passes.</span>
+          </div>
+          <main class="page">
+            <div class="page-head">
+              <h1>postkarte</h1>
+              <span class="sm mono">MoritzKopmann · ~/Software/postkarte</span
+              ><span class="grow"></span
+              ><time class="updated" datetime="2026-09-28T09:38" title="28 Sep 2026 09:38"
+                >Updated 3 min ago</time
+              ><a class="btn primary" href="#shell">+ New idea</a>
+            </div>
+            <div class="panel" role="status">
+              <span
+                ><span class="shape s-warn" aria-hidden="true">▲</span>
+                <b>Contract pre-flight: 2 parts missing</b></span
+              >
+              <ul>
+                <li>.claude/skills/project-testing/SKILL.md</li>
+                <li>.claude/skills/project-toolchain/SKILL.md</li>
+              </ul>
+            </div>
+            <section class="list-sec">
+              <header>
+                <h2>Needs you</h2>
+                <span class="sm num">2</span>
+              </header>
+              <div class="rows">
+                <div class="lrow">
+                  <span class="chip danger"
+                    ><span class="shape s-danger" aria-hidden="true">■</span>Stuck</span
+                  ><span class="t"
+                    ><a class="stretch" href="#shell"
+                      ><span class="num-id">#43</span> Move the image cache to drift</a
+                    ></span
+                  ><span class="act"
+                    ><span class="aside">2 h</span><a class="btn" href="#shell">Decide</a></span
+                  ><span class="sub">Stuck after 3 attempts. Decide how to continue.</span>
+                </div>
+                <div class="lrow">
+                  <span class="chip hitl">HITL</span
+                  ><span class="t"
+                    ><a class="stretch" href="#shell"
+                      ><span class="num-id">#49</span> Font picker with preview</a
+                    ></span
+                  ><span class="act"
+                    ><span class="aside">12 min</span><a class="btn" href="#shell">Answer</a></span
+                  ><span class="sub">Asked a question 12 min ago.</span>
+                </div>
+              </div>
+            </section>
+            <div class="board">
+              <section class="row">
+                <div class="row-h">
+                  <span class="shape s-neutral" aria-hidden="true">○</span
+                  ><span class="label">Idea</span><span class="n">1</span>
+                </div>
+                <div class="cards">
+                  <a class="card" href="#shell"
+                    ><span class="title"
+                      ><span class="num-id">#41</span>Share a postcard as a link</span
+                    ></a
+                  >
+                </div>
+              </section>
+              <section class="row">
+                <div class="row-h">
+                  <span class="shape s-flow pulse" aria-hidden="true">●</span
+                  ><span class="label">In progress</span><span class="n">1</span>
+                </div>
+                <div class="cards">
+                  <a class="card" href="#shell"
+                    ><span class="title"
+                      ><span class="num-id">#49</span>Font picker with preview</span
+                    ><span class="parent">↳ Card editor v2</span
+                    ><span class="meta"><span class="chip hitl">HITL</span></span></a
+                  >
+                </div>
+              </section>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 4 -->
+  <section class="part" id="status">
+    <header>
+      <h2>4 Status vocabulary</h2>
+      <p>
+        Every status is colour, shape and text together, never colour alone. One shape per colour
+        family; the text tells statuses within a family apart. Orange is never a status.
+      </p>
+      <p class="src">
+        From
+        <a
+          class="ext"
+          href="https://github.com/MoritzKopmann/AISoftwareFactory/issues/109"
+          target="_blank"
+          rel="noopener"
+          >Decide the status vocabulary</a
+        >.
+      </p>
+    </header>
+    <div class="tbl-wrap">
+      <table class="ref">
+        <tr>
+          <th>Family</th>
+          <th>Colour</th>
+          <th>Shape</th>
+          <th>Statuses (lifecycle order)</th>
+        </tr>
+        <tr>
+          <td>Neutral, not started</td>
+          <td class="mono">--muted</td>
+          <td><span class="shape s-neutral">○</span> hollow circle</td>
+          <td>idea, backlog</td>
+        </tr>
+        <tr>
+          <td>Flow, work moving</td>
+          <td class="mono">--info</td>
+          <td>
+            <span class="shape s-flow">●</span> filled circle; in-progress pulses (still under
+            reduced motion)
+          </td>
+          <td>plan, planned, ready, in-progress, in-review</td>
+        </tr>
+        <tr>
+          <td>Error</td>
+          <td class="mono">--danger</td>
+          <td><span class="shape s-danger">■</span> square</td>
+          <td>stuck</td>
+        </tr>
+        <tr>
+          <td>Warning</td>
+          <td class="mono">--warn</td>
+          <td><span class="shape s-warn">▲</span> triangle</td>
+          <td>conflict</td>
+        </tr>
+        <tr>
+          <td>Done</td>
+          <td class="mono">--ok</td>
+          <td><span class="shape s-done">✓</span> check</td>
+          <td>closed (also closed as not planned, for now)</td>
+        </tr>
+      </table>
+    </div>
+    <ul class="rules">
+      <li>
+        <b>Chips:</b> the label in <code>--text</code>, the shape in the status colour, a 1px border
+        in the status colour, no fill, square. Shapes are <code>aria-hidden</code>; the text carries
+        the meaning.
+      </li>
+      <li>
+        <b>Names:</b> written in sentence case with a space ("In progress"), shown uppercase via CSS
+        in chips and row labels. Raw label names (<code>status: ready</code>) appear only where they
+        are the point: the clashing labels on a conflict ticket.
+      </li>
+      <li>
+        <b>Where:</b> a board row label carries shape, name and count, and its cards carry no status
+        chip. Everywhere a ticket appears outside its row (ticket page, Needs you, run transcripts,
+        parent links) it gets a status chip.
+      </li>
+      <li>
+        <b>The hitl flag</b> means "runs as an interactive session": a chip with a purple border and
+        no shape, because it is a flag, not a status. Purple means only this.
+      </li>
+      <li>
+        <b>Needs you</b> is not a status. It is a shell and list concern, marked by its reason:
+        stuck shows red, a hitl moment shows purple.
+      </li>
+    </ul>
+    <div class="duo">
+      <div class="stack">
+        <div class="inline">
+          <span class="chip neutral"
+            ><span class="shape s-neutral" aria-hidden="true">○</span>Idea</span
+          >
+          <span class="chip neutral"
+            ><span class="shape s-neutral" aria-hidden="true">○</span>Backlog</span
+          >
+          <span class="chip flow"><span class="shape s-flow" aria-hidden="true">●</span>Plan</span>
+          <span class="chip flow"
+            ><span class="shape s-flow" aria-hidden="true">●</span>Planned</span
+          >
+          <span class="chip flow"><span class="shape s-flow" aria-hidden="true">●</span>Ready</span>
+          <span class="chip flow"
+            ><span class="shape s-flow pulse" aria-hidden="true">●</span>In progress</span
+          >
+          <span class="chip flow"
+            ><span class="shape s-flow" aria-hidden="true">●</span>In review</span
+          >
+          <span class="chip danger"
+            ><span class="shape s-danger" aria-hidden="true">■</span>Stuck</span
+          >
+          <span class="chip warn"
+            ><span class="shape s-warn" aria-hidden="true">▲</span>Conflict</span
+          >
+          <span class="chip done"
+            ><span class="shape s-done" aria-hidden="true">✓</span>Closed</span
+          >
+        </div>
+        <div class="inline">
+          <span class="chip hitl">HITL</span><span class="sm">flag, no shape</span
+          ><span class="count danger">4</span><span class="sm">count with a stuck member</span
+          ><span class="count">1</span><span class="sm">count, hitl only</span>
+        </div>
+        <div class="board">
+          <div class="row-h">
+            <span class="shape s-flow" aria-hidden="true">●</span><span class="label">Ready</span
+            ><span class="n">3</span>
+          </div>
+          <div class="row-h">
+            <span class="shape s-danger" aria-hidden="true">■</span><span class="label">Stuck</span
+            ><span class="n">1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 5 -->
+  <section class="part" id="cards">
+    <header>
+      <h2>5 Cards and board rows</h2>
+      <p>
+        A card is one link to the ticket page, stacked in three lines. Board rows wrap onto as many
+        lines as they need.
+      </p>
+      <p class="src">
+        From
+        <a
+          class="ext"
+          href="https://github.com/MoritzKopmann/AISoftwareFactory/issues/111"
+          target="_blank"
+          rel="noopener"
+          >Prototype the card and list anatomy, links and collapsing</a
+        >
+        (<a
+          class="ext"
+          href="https://github.com/MoritzKopmann/AISoftwareFactory/blob/prototype/card-anatomy/prototype/card-anatomy/cards.html"
+          target="_blank"
+          rel="noopener"
+          >cards.html</a
+        >).
+      </p>
+    </header>
+    <ul class="rules">
+      <li>
+        <b>Card:</b> at least 40 px, <code>8px 12px</code>, <code>--surface</code>, 1px
+        <code>--border-strong</code>, 4 px radius; the border turns <code>--text</code> on hover.
+        Lines: <code>#N</code> (muted 12 px mono) and the title clamped to 2 lines with the full
+        title in <code>title</code>; <code>↳ parent</code> in small muted text on one line; a meta
+        line with the conflict labels, HITL, "blocked by #N" (<code>owner/name#N</code> for another
+        repo) and one <code>PR #N</code> chip per PR. Empty lines are left out.
+      </li>
+      <li>
+        The chips inside a card are inert spans without ↗. Their real links live on the ticket page.
+      </li>
+      <li>
+        <b>Rows:</b> the label row (shape, name, count), then cards in
+        <code>repeat(auto-fill, minmax(260px, 1fr))</code> with an 8 px gap. No cap and no sideways
+        strip. An empty row keeps its label, a 0 and a muted "None". The Conflict row has a one-line
+        note naming the fix.
+      </li>
+      <li>
+        <b>Closed</b> is a native <code>&lt;details&gt;</code>, collapsed by default, reading "50 of
+        N" because the server loads only the newest 50, and ending with a link to all closed tickets
+        on GitHub.
+      </li>
+    </ul>
+    <div class="duo wide">
+      <div class="board" style="min-width: 560px">
+        <section class="row">
+          <div class="row-h">
+            <span class="shape s-neutral" aria-hidden="true">○</span
+            ><span class="label">Backlog</span><span class="n">0</span
+            ><span class="none">None</span>
+          </div>
+        </section>
+        <section class="row">
+          <div class="row-h">
+            <span class="shape s-flow" aria-hidden="true">●</span><span class="label">Ready</span
+            ><span class="n">4</span>
+          </div>
+          <div class="cards">
+            <a class="card" href="#cards"
+              ><span class="title"
+                ><span class="num-id">#45</span>Stamp picker: recent stamps row</span
+              ><span class="parent">↳ Card editor v2</span></a
+            >
+            <a
+              class="card"
+              href="#cards"
+              title="Font size slider that remembers the last size per card and per recipient"
+              ><span class="title"
+                ><span class="num-id">#48</span>Font size slider that remembers the last size per
+                card and per recipient</span
+              ><span class="parent">↳ Card editor v2</span
+              ><span class="meta"><span>blocked by #45</span></span></a
+            >
+            <a class="card" href="#cards"
+              ><span class="title"
+                ><span class="num-id">#51</span>Landscape layout for the envelope</span
+              ><span class="parent">↳ Small-screen polish</span
+              ><span class="meta"
+                ><span>blocked by #46</span><span>blocked by kopmann/print-kit#12</span></span
+              ></a
+            >
+            <a class="card" href="#cards"
+              ><span class="title"><span class="num-id">#56</span>Retry a failed upload</span></a
+            >
+          </div>
+        </section>
+        <section class="row">
+          <div class="row-h">
+            <span class="shape s-flow" aria-hidden="true">●</span
+            ><span class="label">In review</span><span class="n">1</span>
+          </div>
+          <div class="cards">
+            <a class="card" href="#cards"
+              ><span class="title"
+                ><span class="num-id">#46</span>Fix clipped greeting on small screens</span
+              ><span class="parent">↳ Small-screen polish</span
+              ><span class="meta"
+                ><span class="chip">PR #52</span><span class="chip">PR #54</span></span
+              ></a
+            >
+          </div>
+        </section>
+        <section class="row">
+          <div class="row-h">
+            <span class="shape s-danger" aria-hidden="true">■</span><span class="label">Stuck</span
+            ><span class="n">1</span>
+          </div>
+          <div class="cards">
+            <a class="card" href="#cards"
+              ><span class="title"
+                ><span class="num-id">#43</span>Move the image cache to drift</span
+              ><span class="parent">↳ Card editor v2</span
+              ><span class="meta"><span class="chip">PR #55</span></span></a
+            >
+          </div>
+        </section>
+        <section class="row">
+          <div class="row-h">
+            <span class="shape s-warn" aria-hidden="true">▲</span><span class="label">Conflict</span
+            ><span class="n">1</span>
+          </div>
+          <p class="row-note">
+            These tickets carry more than one <code>status:</code> label. Keep one on GitHub.
+          </p>
+          <div class="cards">
+            <a class="card" href="#cards"
+              ><span class="title"><span class="num-id">#52</span>Address autocomplete</span
+              ><span class="meta"
+                ><span>plan · ready</span><span class="chip hitl">HITL</span></span
+              ></a
+            >
+          </div>
+        </section>
+        <details class="row">
+          <summary class="row-h">
+            <span class="chev" aria-hidden="true">›</span
+            ><span class="shape s-done" aria-hidden="true">✓</span><span class="label">Closed</span
+            ><span class="n">50 of 214</span
+            ><span class="toggle-text"
+              ><span class="t-show">Show closed</span><span class="t-hide">Hide closed</span></span
+            >
+          </summary>
+          <div class="cards">
+            <a class="card" href="#cards"
+              ><span class="title"><span class="num-id">#37</span>Stamp picker grid</span></a
+            ><a class="card" href="#cards"
+              ><span class="title"><span class="num-id">#36</span>Envelope flip animation</span></a
+            ><a class="card" href="#cards"
+              ><span class="title"><span class="num-id">#35</span>Greeting text field</span></a
+            >
+          </div>
+          <p class="row-note sm">
+            The newest 50.
+            <a
+              class="ext"
+              href="https://github.com/MoritzKopmann/postkarte/issues?q=is%3Aclosed"
+              target="_blank"
+              rel="noopener"
+              >All closed on GitHub</a
+            >
+          </p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 6 -->
+  <section class="part" id="lists">
+    <header>
+      <h2>6 List rows</h2>
+      <p>
+        Every list is one bordered container of divided rows: a lead chip, a title with a sub-line,
+        then metadata and the action. Lists are never capped.
+      </p>
+      <p class="src">
+        From
+        <a
+          class="ext"
+          href="https://github.com/MoritzKopmann/AISoftwareFactory/issues/111"
+          target="_blank"
+          rel="noopener"
+          >Prototype the card and list anatomy, links and collapsing</a
+        >. The row content is example text; each view's content is designed later.
+      </p>
+    </header>
+    <ul class="rules">
+      <li>
+        Rows are separated by 1px <code>--border</code> hairlines and fill with
+        <code>--surface-2</code> on hover; 40 px minimum and <code>8px 12px</code> padding, like
+        cards.
+      </li>
+      <li>
+        Columns: a 112 px lead chip (reason, status or run state); the title on one line with an
+        ellipsis and a small muted sub-line; muted mono tabular metadata (age, duration) and the
+        action.
+      </li>
+      <li>
+        A row with an action stretches its title link over the row to the ticket page, and the
+        action is a real button or link above it. A row without an action is one link.
+      </li>
+      <li>
+        A group header (a project on Needs you) is an 11 px mono uppercase band on
+        <code>--bg</code>. Needs you sorts stuck first.
+      </li>
+    </ul>
+    <div class="duo wide">
+      <div class="stack" style="min-width: 620px; gap: 24px">
+        <section class="list-sec">
+          <header>
+            <h2>Needs you</h2>
+            <span class="sm num">4 across 2 projects</span>
+          </header>
+          <div class="rows">
+            <div class="group-h">postkarte · 3</div>
+            <div class="lrow">
+              <span class="chip danger"
+                ><span class="shape s-danger" aria-hidden="true">■</span>Stuck</span
+              ><span class="t"
+                ><a class="stretch" href="#lists"
+                  ><span class="num-id">#43</span> Move the image cache to drift</a
+                ></span
+              ><span class="act"
+                ><span class="aside">2 h</span><a class="btn" href="#lists">Decide</a></span
+              ><span class="sub">Stuck after 3 attempts. Decide how to continue.</span>
+            </div>
+            <div class="lrow">
+              <span class="chip hitl">HITL</span
+              ><span class="t"
+                ><a class="stretch" href="#lists"
+                  ><span class="num-id">#44</span> Offline drafts survive an app restart</a
+                ></span
+              ><span class="act"
+                ><span class="aside">25 min</span><a class="btn" href="#lists">Answer</a></span
+              ><span class="sub">Planning session waits for round 2 of 3.</span>
+            </div>
+            <div class="lrow">
+              <span class="chip flow"
+                ><span class="shape s-flow" aria-hidden="true">●</span>In review</span
+              ><span class="t"
+                ><a class="stretch" href="#lists"
+                  ><span class="num-id">#46</span> Fix clipped greeting on small screens</a
+                ></span
+              ><span class="act"
+                ><span class="aside">4 h</span
+                ><a
+                  class="btn ext"
+                  href="https://github.com/MoritzKopmann/postkarte/pull/52"
+                  target="_blank"
+                  rel="noopener"
+                  >Review PR</a
+                ></span
+              ><span class="sub">PR #52 is ready for your review.</span>
+            </div>
+            <div class="group-h">AISoftwareFactory · 1</div>
+            <div class="lrow">
+              <span class="chip hitl">HITL</span
+              ><span class="t"
+                ><a class="stretch" href="#lists"
+                  ><span class="num-id">#111</span> Prototype the card and list anatomy, links and
+                  collapsing</a
+                ></span
+              ><span class="act"
+                ><span class="aside">just now</span><a class="btn" href="#lists">Answer</a></span
+              ><span class="sub">Prototype session waits for you.</span>
+            </div>
+          </div>
+        </section>
+        <section class="list-sec">
+          <header>
+            <h2>Known bugs</h2>
+            <span class="sm num">2 from PR bodies</span>
+          </header>
+          <div class="rows">
+            <div class="lrow">
+              <span class="chip neutral"
+                ><span class="shape s-neutral" aria-hidden="true">○</span>Open</span
+              ><span class="t"
+                ><a class="stretch" href="#lists"
+                  >Greeting still clips when the font size is above 28 px.</a
+                ></span
+              ><span class="act"
+                ><span class="aside">4 h</span
+                ><button class="btn" type="button">File ticket</button></span
+              ><span class="sub"
+                >From
+                <a
+                  class="ext"
+                  href="https://github.com/MoritzKopmann/postkarte/pull/52"
+                  target="_blank"
+                  rel="noopener"
+                  >PR #52</a
+                >
+                on <a href="#lists">#46 Fix clipped greeting on small screens</a></span
+              >
+            </div>
+            <div class="lrow">
+              <span class="chip done"
+                ><span class="shape s-done" aria-hidden="true">✓</span>Filed</span
+              ><span class="t"
+                ><a class="stretch" href="#lists"
+                  >No test for a recipient without a postcode.</a
+                ></span
+              ><span class="act"><span class="aside">6 d</span></span
+              ><span class="sub"
+                >From PR #33 on #30 Recipient form validation · filed as
+                <a href="#lists">#58</a></span
+              >
+            </div>
+          </div>
+        </section>
+        <section class="list-sec">
+          <header>
+            <h2>Runs</h2>
+            <span class="sm">Newest first</span>
+          </header>
+          <div class="rows">
+            <a class="lrow" href="#lists"
+              ><span class="chip flow"
+                ><span class="shape s-flow pulse" aria-hidden="true">●</span>Running</span
+              ><span class="t"
+                ><span class="mono">implement-ticket</span> <span class="num-id">#49</span> Font
+                picker with preview</span
+              ><span class="act"><span class="aside">14 min</span></span
+              ><span class="sub">Started 09:41</span></a
+            >
+            <a class="lrow" href="#lists"
+              ><span class="chip hitl">Waits for you</span
+              ><span class="t"
+                ><span class="mono">plan-ticket</span> <span class="num-id">#44</span> Offline
+                drafts survive an app restart</span
+              ><span class="act"><span class="aside">32 min</span></span
+              ><span class="sub">Started 09:12</span></a
+            >
+            <a class="lrow" href="#lists"
+              ><span class="chip danger"
+                ><span class="shape s-danger" aria-hidden="true">■</span>Failed</span
+              ><span class="t"
+                ><span class="mono">implement-ticket</span> <span class="num-id">#43</span> Move the
+                image cache to drift</span
+              ><span class="act"><span class="aside">51 min</span></span
+              ><span class="sub"
+                ><span style="color: var(--text)">Tests still red after 3 attempts.</span> Started
+                08:02</span
+              ></a
+            >
+            <a class="lrow" href="#lists"
+              ><span class="chip done"
+                ><span class="shape s-done" aria-hidden="true">✓</span>Done</span
+              ><span class="t"
+                ><span class="mono">implement-ticket</span> <span class="num-id">#46</span> Fix
+                clipped greeting on small screens</span
+              ><span class="act"><span class="aside">38 min</span></span
+              ><span class="sub">Started 27 Sep 17:20</span></a
+            >
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 7 -->
+  <section class="part" id="links">
+    <header>
+      <h2>7 Links and collapsing</h2>
+      <p>
+        In-app links stay in the tab; anything that leaves aisf opens a new tab and says so with ↗.
+        Collapsing is only native <code>&lt;details&gt;</code> with words next to the chevron.
+      </p>
+      <p class="src">
+        From
+        <a
+          class="ext"
+          href="https://github.com/MoritzKopmann/AISoftwareFactory/issues/111"
+          target="_blank"
+          rel="noopener"
+          >Prototype the card and list anatomy, links and collapsing</a
+        >.
+      </p>
+    </header>
+    <div class="duo wide">
+      <div class="tbl-wrap">
+        <table class="ref">
+          <tr>
+            <th>Kind</th>
+            <th>Specimen</th>
+            <th>Behaviour</th>
+          </tr>
+          <tr>
+            <td>In-app</td>
+            <td><a href="#links">#45 Stamp picker: recent stamps row</a></td>
+            <td class="sm">
+              Same tab, with a real <code>href</code>, so Ctrl-click and middle-click open a new
+              tab. Back is a plain link.
+            </td>
+          </tr>
+          <tr>
+            <td>Leaves aisf</td>
+            <td>
+              <a
+                class="ext"
+                href="https://github.com/MoritzKopmann/postkarte/issues/45"
+                target="_blank"
+                rel="noopener"
+                >Open on GitHub</a
+              >
+            </td>
+            <td class="sm">
+              New tab (<code>target=_blank rel=noopener</code>), muted ↗ after the text. Applies to
+              GitHub issues and PRs and to other repos.
+            </td>
+          </tr>
+          <tr>
+            <td>Button that leaves</td>
+            <td>
+              <a
+                class="btn ext"
+                href="https://github.com/MoritzKopmann/postkarte/pull/52"
+                target="_blank"
+                rel="noopener"
+                >Review PR</a
+              >
+            </td>
+            <td class="sm">Same rule for actions: the ↗ rides on the button label.</td>
+          </tr>
+          <tr>
+            <td>Card</td>
+            <td>
+              <a class="card" href="#links" style="max-width: 300px"
+                ><span class="title"
+                  ><span class="num-id">#46</span>Fix clipped greeting on small screens</span
+                ><span class="meta"><span class="chip">PR #52</span></span></a
+              >
+            </td>
+            <td class="sm">
+              One <code>&lt;a&gt;</code>; the chips are spans. One tab stop per card.
+            </td>
+          </tr>
+          <tr>
+            <td>Row with an action</td>
+            <td class="sm">See Needs you in section 6</td>
+            <td class="sm">
+              Stretched title link to the ticket page, plus a real button above it. Focus shows as
+              the row's outline. Never nested links.
+            </td>
+          </tr>
+          <tr>
+            <td>Section</td>
+            <td>
+              <details>
+                <summary style="cursor: pointer; list-style: none">
+                  <span class="chev" aria-hidden="true">›</span>
+                  <span class="toggle-text"
+                    ><span class="t-show">Show 3 closed</span
+                    ><span class="t-hide">Hide closed</span></span
+                  >
+                </summary>
+                <p class="sm" style="padding: 6px 0 0 16px">Native <code>&lt;details&gt;</code>.</p>
+              </details>
+            </td>
+            <td class="sm">
+              Chevron plus text, never a bare icon. Open state survives polls (React keeps the node)
+              and resets on reload.
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 8 -->
+  <section class="part" id="states">
+    <header>
+      <h2>8 State patterns</h2>
+      <p>Every surface covers loading, empty, error, stale and too much data the same way.</p>
+      <p class="src">
+        From
+        <a
+          class="ext"
+          href="https://github.com/MoritzKopmann/AISoftwareFactory/issues/112"
+          target="_blank"
+          rel="noopener"
+          >Decide the state patterns and the copy voice</a
+        >, citing
+        <a
+          class="ext"
+          href="https://github.com/MoritzKopmann/AISoftwareFactory/issues/106"
+          target="_blank"
+          rel="noopener"
+          >Research UI/UX guidelines for dense, readable tool UIs</a
+        >.
+      </p>
+    </header>
+
+    <div class="spec-block">
+      <h3>Loading</h3>
+      <ul class="rules">
+        <li>
+          A static skeleton in the shape of the real layout. It appears after 300 ms and stays at
+          least 500 ms. No shimmer: the pulsing in-progress mark is the only motion.
+        </li>
+        <li>
+          Board rows keep their real label with a count placeholder and 2 card blocks; lists show 3
+          divided rows; Closed shows one row of blocks inside its <code>&lt;details&gt;</code>.
+        </li>
+        <li>
+          <code>aria-busy="true"</code> on the region and a visually hidden
+          <code>role="status"</code> text such as "Loading tickets…".
+        </li>
+      </ul>
+      <div class="duo">
+        <div class="stack" aria-busy="true">
+          <span class="vh" role="status">Loading tickets…</span>
+          <section class="row">
+            <div class="row-h">
+              <span class="shape s-flow" aria-hidden="true">●</span><span class="label">Ready</span
+              ><span class="sk" style="width: 14px; height: 10px"></span>
+            </div>
+            <div class="cards" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr))">
+              <span class="sk-card"
+                ><span class="sk sk-line" style="width: 80%"></span
+                ><span class="sk sk-line" style="width: 50%"></span></span
+              ><span class="sk-card"
+                ><span class="sk sk-line" style="width: 70%"></span
+                ><span class="sk sk-line" style="width: 40%"></span
+              ></span>
+            </div>
+          </section>
+          <div class="rows">
+            <div class="lrow">
+              <span class="sk" style="height: 18px; width: 80px"></span
+              ><span class="sk sk-line" style="width: 70%"></span><span></span
+              ><span class="sk sk-line" style="width: 40%; grid-column: 2"></span>
+            </div>
+            <div class="lrow">
+              <span class="sk" style="height: 18px; width: 80px"></span
+              ><span class="sk sk-line" style="width: 55%"></span><span></span
+              ><span class="sk sk-line" style="width: 30%; grid-column: 2"></span>
+            </div>
+            <div class="lrow">
+              <span class="sk" style="height: 18px; width: 80px"></span
+              ><span class="sk sk-line" style="width: 62%"></span><span></span
+              ><span class="sk sk-line" style="width: 35%; grid-column: 2"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec-block">
+      <h3>Empty</h3>
+      <ul class="rules">
+        <li>Text in place of the element, with at most one quiet action. No illustrations.</li>
+        <li>
+          First use names the next step. Good news is one plain line with no action. Data that
+          failed to load is never shown as empty; it uses the error pattern.
+        </li>
+      </ul>
+      <div class="duo">
+        <div class="stack">
+          <div class="empty">
+            <p>No projects yet.</p>
+            <a class="btn" href="#states">Add project</a>
+          </div>
+          <div class="empty">
+            <p>No open tickets in MoritzKopmann/postkarte yet.</p>
+            <a
+              class="btn ext"
+              href="https://github.com/MoritzKopmann/postkarte/issues/new"
+              target="_blank"
+              rel="noopener"
+              >New ticket</a
+            >
+          </div>
+          <div class="empty">
+            <p>
+              <span class="shape s-done" aria-hidden="true">✓</span> Nothing needs you right now.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec-block">
+      <h3>Errors</h3>
+      <ul class="rules">
+        <li>
+          Say what happened, then the fix, in one or two sentences with no error codes. If no fix is
+          known, say so. The raw server message goes on a muted second line.
+        </li>
+        <li>
+          <b>Inline</b> in place of what failed: the ■ danger mark with <code>role="alert"</code>.
+          Data that is still good stays up.
+        </li>
+        <li>
+          <b>Banner</b> for app-wide and project-wide conditions, full width at the top of the main
+          area. Warn ▲ (<code>role="status"</code>) when it recovers by itself; danger ■
+          (<code>role="alert"</code>) when it needs you. Banners stack, most severe first. No
+          toasts.
+        </li>
+        <li>Polled data retries by itself and says when. One-off requests get a Retry button.</li>
+      </ul>
+      <div class="duo">
+        <div class="stack">
+          <div class="err" role="alert">
+            <span class="shape" aria-hidden="true">■</span>
+            <p>Couldn't load closed tickets. GitHub didn't answer in time.</p>
+            <div class="inline"><button class="btn" type="button">Retry</button></div>
+            <p class="sm mono">gh: HTTP 504 Gateway Timeout (api.github.com)</p>
+          </div>
+          <div class="banner danger boxed" role="alert">
+            <span class="shape" aria-hidden="true">■</span>
+            <div class="stack" style="gap: 8px">
+              <p>Can't reach GitHub: <code>gh</code> isn't logged in. Run, then Retry:</p>
+              <div class="cmd">
+                <code>gh auth login</code><button class="btn copy" type="button">Copy</button
+                ><span class="vh" role="status"></span>
+              </div>
+            </div>
+            <button class="btn" type="button">Retry</button>
+            <p class="sm mono raw">
+              You are not logged into any GitHub hosts. To log in, run: gh auth login
+            </p>
+          </div>
+          <div class="banner warn boxed" role="status">
+            <span class="shape" aria-hidden="true">▲</span>
+            <p>Couldn't refresh the board. GitHub rate limit reached; resuming in 20 min.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec-block">
+      <h3>Stale</h3>
+      <ul class="rules">
+        <li>
+          Always visible: a muted 13 px "Updated 3 min ago" on the right of each project page's
+          header and on Needs you, as <code>&lt;time&gt;</code> with the absolute time in
+          <code>title</code>.
+        </li>
+        <li>
+          When a poll fails or the watcher pauses, a warn banner gives the cause and the recovery
+          without repeating the time. No dimming; counts stay, because they describe the snapshot
+          shown.
+        </li>
+        <li>
+          Refreshes are not announced. This replaces the board design's earlier "Showing the board
+          from HH:MM".
+        </li>
+      </ul>
+      <div class="duo wide">
+        <div class="stack">
+          <div class="banner warn boxed" role="status">
+            <span class="shape" aria-hidden="true">▲</span>
+            <p>
+              Couldn't refresh the board. The watcher is paused; it resumes at the next poll in 2
+              min.
+            </p>
+          </div>
+          <div class="page-head">
+            <h1 style="font-family: var(--font-ui); text-transform: none; letter-spacing: 0">
+              postkarte
+            </h1>
+            <span class="sm mono">MoritzKopmann · ~/Software/postkarte</span
+            ><span class="grow"></span
+            ><time class="updated" datetime="2026-09-28T09:21" title="28 Sep 2026 09:21"
+              >Updated 20 min ago</time
+            ><a class="btn primary" href="#states">+ New idea</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec-block">
+      <h3>Too much data</h3>
+      <ul class="rules">
+        <li>Never cap on the client: board rows wrap without limit and every list row shows.</li>
+        <li>
+          Where the server limits what it loads, say "50 of N" and link the full list on GitHub ↗
+          (Closed in section 5).
+        </li>
+        <li>
+          Card titles clamp at 2 lines with the full title in <code>title</code>; all other text
+          wraps and is never cut. The page scrolls; no inner scroll boxes.
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===================================================== 9 -->
+  <section class="part" id="voice">
+    <header>
+      <h2>9 Copy voice</h2>
+      <p>
+        Plain and direct. Name who acted (aisf, GitHub, <code>gh</code>, the watcher). Fixes are
+        imperative.
+      </p>
+      <p class="src">
+        From
+        <a
+          class="ext"
+          href="https://github.com/MoritzKopmann/AISoftwareFactory/issues/112"
+          target="_blank"
+          rel="noopener"
+          >Decide the state patterns and the copy voice</a
+        >.
+      </p>
+    </header>
+    <ul class="rules">
+      <li>
+        No "we", "please", "sorry" or exclamation marks. Sentence case everywhere, except status
+        names and 11 px mono labels, which go uppercase through CSS.
+      </li>
+      <li>
+        Numbers as digits with correct plurals ("1 part", "2 parts"). Buttons name the action ("Add
+        project", "Retry"), never "OK" or "Continue".
+      </li>
+      <li>
+        <b>Time:</b> relative under 24 h ("just now", "3 min ago", "2 h ago", "in 20 min"), ticking
+        once a minute; from 24 h on, local 24-hour "27 Sep 14:32", with the year only when it isn't
+        the current one. Every time is <code>&lt;time datetime&gt;</code> with the full timestamp in
+        <code>title</code>. Durations read "3 min" or "2 h 5 min".
+      </li>
+      <li>
+        <b>Commands:</b> a runnable command is a block on its own line after a sentence ending
+        "Run:" or "Run, then Retry:". Mono on <code>--surface-sunken</code>, 4 px radius, no
+        <code>$</code> prompt, one command per block, and a Copy button that reads "Copied" for 2 s
+        (announced via <code>role="status"</code>). Names in prose (a label, a path, a branch) stay
+        inline <code>&lt;code&gt;</code> without a copy button.
+      </li>
+    </ul>
+    <div class="do-dont">
+      <div class="tbl-wrap">
+        <table class="ref">
+          <tr>
+            <th>Write</th>
+          </tr>
+          <tr>
+            <td>Can't reach GitHub: <code>gh</code> isn't logged in. Run, then Retry:</td>
+          </tr>
+          <tr>
+            <td>Contract pre-flight: 2 parts missing</td>
+          </tr>
+          <tr>
+            <td>Nothing needs you right now.</td>
+          </tr>
+          <tr>
+            <td>Couldn't refresh the board. GitHub rate limit reached; resuming in 20 min.</td>
+          </tr>
+        </table>
+      </div>
+      <div class="tbl-wrap">
+        <table class="ref">
+          <tr>
+            <th>Not</th>
+          </tr>
+          <tr>
+            <td class="sm">Oops! Something went wrong. Please try again. (Error 401)</td>
+          </tr>
+          <tr>
+            <td class="sm">We found 2 missing part(s)</td>
+          </tr>
+          <tr>
+            <td class="sm">All caught up! 🎉</td>
+          </tr>
+          <tr>
+            <td class="sm">Data may be outdated. Last sync: 2026-09-28T09:21:04Z</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div class="duo">
+      <div class="stack">
+        <p>Run, then Retry:</p>
+        <div class="cmd">
+          <code>gh auth login</code><button class="btn copy" type="button">Copy</button
+          ><span class="vh" role="status"></span>
+        </div>
+        <p class="sm">
+          Opened <time datetime="2026-09-28T09:38" title="28 Sep 2026 09:38">3 min ago</time> ·
+          closed <time datetime="2026-09-27T14:32" title="27 Sep 2026 14:32">27 Sep 14:32</time> ·
+          ran 2 h 5 min · on branch <code>aisf/46-clipped-greeting</code>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== 10 -->
+  <section class="part" id="open">
+    <header>
+      <h2>10 Still open</h2>
+      <p>
+        Not decided by this direction. Each is left for later work on the map or the views that need
+        it.
+      </p>
+    </header>
+    <ul class="rules">
+      <li>
+        <b>Notifications:</b> browser notifications for hitl moments, and how they fit the shell
+        (toasts are ruled out for errors).
+      </li>
+      <li>
+        <b>Live updates:</b> how a card that moved rows, or a new ticket, is signalled after a poll.
+      </li>
+      <li>
+        <b>Keyboard and focus:</b> navigation between sidebar, rows and cards. Today each card or
+        row is one tab stop, plus its action.
+      </li>
+      <li>
+        <b>Closed as not planned:</b> shows ✓ for now; its own mark needs the watcher to read
+        GitHub's <code>stateReason</code>.
+      </li>
+      <li>
+        <b>Icons:</b> whether the app uses an icon set. Status shapes are drawn in CSS or inline SVG
+        either way.
+      </li>
+    </ul>
+    <p class="sm">
+      Out of scope here: per-view designs (the ticket page, Needs you content, run transcripts,
+      Known bugs, settings), small-screen layouts, and the <code>aisf:design</code> tool.
+    </p>
+  </section>
+</div>
+
+<script>
+  // Render each specimen twice, light and dark, from one copy of the markup.
+  document.querySelectorAll('.duo').forEach((duo) => {
+    const html = duo.innerHTML;
+    duo.innerHTML = '';
+    for (const [cls, name] of [
+      ['t-light', 'Light'],
+      ['t-dark', 'Dark'],
+    ]) {
+      const pane = document.createElement('div');
+      pane.className = `pane ${cls}`;
+      pane.dataset.name = name;
+      pane.innerHTML = html;
+      duo.append(pane);
+    }
+  });
+  // Copy buttons on command blocks.
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.copy');
+    if (!btn) return;
+    const text = btn.parentElement.querySelector('code').textContent;
+    const status = btn.parentElement.querySelector('[role="status"]');
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const range = document.createRange();
+      range.selectNodeContents(btn.parentElement.querySelector('code'));
+      const sel = getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    btn.textContent = 'Copied';
+    if (status) status.textContent = 'Copied to the clipboard';
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      if (status) status.textContent = '';
+    }, 2000);
+  });
+</script>
