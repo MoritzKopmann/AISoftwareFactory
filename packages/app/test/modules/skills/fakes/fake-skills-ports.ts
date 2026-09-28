@@ -1,3 +1,5 @@
+import type { CredentialSnapshot } from '../../../../src/modules/skills/logic/domain/types/credential-snapshot.js';
+import type { CredentialSource } from '../../../../src/modules/skills/logic/ports/credential-source.js';
 import type { SmokeProbeReport } from '../../../../src/modules/skills/logic/domain/types/smoke-probe-report.js';
 import type { LocalPluginInstaller } from '../../../../src/modules/skills/logic/ports/local-plugin-installer.js';
 import type { MarketplaceRegistry } from '../../../../src/modules/skills/logic/ports/marketplace-registry.js';
@@ -65,6 +67,16 @@ export class FakeSmokeProbe implements SmokeProbe {
       throw this.failure;
     }
     return this.report;
+  }
+}
+
+export class FakeCredentialSource implements CredentialSource {
+  constructor(
+    public snapshot: CredentialSnapshot = { setEnvironmentVariables: [], apiKeyHelperFiles: [] },
+  ) {}
+
+  async read(): Promise<CredentialSnapshot> {
+    return this.snapshot;
   }
 }
 
