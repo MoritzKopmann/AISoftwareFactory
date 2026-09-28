@@ -98,8 +98,12 @@ function buildWatcherModule(
   });
 }
 
-function buildUiModule(projects: ProjectsModule, skills: SkillsModule): UiModule {
-  return createUiModule({ projects, skills });
+function buildUiModule(
+  projects: ProjectsModule,
+  skills: SkillsModule,
+  watcher: WatcherModule,
+): UiModule {
+  return createUiModule({ projects, skills, watcher });
 }
 
 const logger = createLogger(consoleLogSink);
@@ -124,7 +128,7 @@ const bridge = buildBridgeModule(kitDirectory);
 const skills = buildSkillsModule(config, pluginDirectory);
 const projects = buildProjectsModule(database, eventBus, skills);
 const watcher = buildWatcherModule(config, eventBus, projects);
-const ui = buildUiModule(projects, skills);
+const ui = buildUiModule(projects, skills, watcher);
 
 const runningServer = await startServer({
   app: createApp({

@@ -185,4 +185,34 @@ describe('createWatcherModule', () => {
       });
     });
   });
+
+  describe('ticket', () => {
+    it('should return undefined when the project is not watched', async () => {
+      const { watcher } = createSubject();
+      await watcher.start();
+      watcher.stop();
+
+      expect(await watcher.ticket('owner/unknown', 1)).toBeUndefined();
+    });
+
+    it('should serve an open ticket from the snapshot when the project is watched', async () => {
+      const { watcher, ticketSource } = createSubject();
+      await watcher.start();
+      watcher.stop();
+
+      const projectTicket = await watcher.ticket('owner/name', 1);
+
+      expect(projectTicket?.ticket?.number).toBe(1);
+      expect(projectTicket?.sync.state).toBe('ok');
+      expect(ticketSource.ticketRequests).toHaveLength(0);
+    });
+
+    it('should return undefined when the ticket does not exist', async () => {
+      const { watcher } = createSubject();
+      await watcher.start();
+      watcher.stop();
+
+      expect(await watcher.ticket('owner/name', 99)).toBeUndefined();
+    });
+  });
 });
