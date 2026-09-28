@@ -790,20 +790,34 @@
     <h1>Board and ticket page</h1>
     <p class="lede">
       The read-only board of a project's tickets and the ticket page stub it links to, in every
-      state the app can put them in. Built on the UI direction and on the view models from #102;
-      the component tickets for #68 are split from this page.
+      state the app can put them in. Built on the UI direction and on the view models from #102; the
+      component tickets for #68 are split from this page.
     </p>
     <p class="sm">
       Sources:
-      <a class="ext" href="https://github.com/MoritzKopmann/AISoftwareFactory/issues/68" target="_blank" rel="noopener">#68 Dev Notes</a>
+      <a
+        class="ext"
+        href="https://github.com/MoritzKopmann/AISoftwareFactory/issues/68"
+        target="_blank"
+        rel="noopener"
+        >#68 Dev Notes</a
+      >
       (behaviour),
-      <a class="ext" href="https://github.com/MoritzKopmann/AISoftwareFactory/blob/main/docs/design/ui-direction.html" target="_blank" rel="noopener">docs/design/ui-direction.html</a>
-      (layout, density, status vocabulary, state patterns, copy), and <code>kit.css</code> as
-      merged in #115 (tokens, fonts). No new token and no new font.
+      <a
+        class="ext"
+        href="https://github.com/MoritzKopmann/AISoftwareFactory/blob/main/docs/design/ui-direction.html"
+        target="_blank"
+        rel="noopener"
+        >docs/design/ui-direction.html</a
+      >
+      (layout, density, status vocabulary, state patterns, copy), and <code>kit.css</code> as merged
+      in #115 (tokens, fonts). No new token and no new font.
     </p>
 
     <div class="review">
-      <p class="label" style="color: var(--text)">For review: where this follows the direction over the older plan</p>
+      <p class="label" style="color: var(--text)">
+        For review: where this follows the direction over the older plan
+      </p>
       <ul class="rules">
         <li>
           <b>Sidebar instead of tabs.</b> The direction puts projects in a left sidebar, so
@@ -812,8 +826,8 @@
           and + New idea wait for their features.
         </li>
         <li>
-          <b>Rows wrap; no sideways strip.</b> #103 asks for "a long row that scrolls sideways";
-          the direction replaced it. Variant 7 shows a long row wrapping.
+          <b>Rows wrap; no sideways strip.</b> #103 asks for "a long row that scrolls sideways"; the
+          direction replaced it. Variant 7 shows a long row wrapping.
         </li>
         <li>
           <b>Stale board:</b> "Updated 20 min ago" in the header plus a warn banner, instead of
@@ -831,11 +845,12 @@
     </div>
 
     <nav class="toc" aria-label="Variants">
-      <a href="#full">1 Full board</a><a href="#empty">2 No tickets</a><a href="#failed">3 Sync failed</a
-      ><a href="#closed">4 Closed expanded</a><a href="#conflict">5 Conflict</a
-      ><a href="#cards">6 Cards</a><a href="#long">7 Long row</a><a href="#loading">8 Loading</a
-      ><a href="#contract">9 Contract check failed</a><a href="#ticket">10 Ticket page</a
-      ><a href="#ticket-states">11 Ticket page states</a><a href="#copy">12 Copy</a>
+      <a href="#full">1 Full board</a><a href="#empty">2 No tickets</a
+      ><a href="#failed">3 Sync failed</a><a href="#closed">4 Closed expanded</a
+      ><a href="#conflict">5 Conflict</a><a href="#cards">6 Cards</a><a href="#long">7 Long row</a
+      ><a href="#loading">8 Loading</a><a href="#contract">9 Contract check failed</a
+      ><a href="#ticket">10 Ticket page</a><a href="#ticket-states">11 Ticket page states</a
+      ><a href="#copy">12 Copy</a>
     </nav>
   </header>
 
@@ -844,15 +859,15 @@
     <header>
       <h2>1 Full board</h2>
       <p>
-        The project tab after a good poll. One row per status in lifecycle order, Idea first,
-        Closed collapsed at the end. The row label carries shape, name and count, so cards carry
-        no status chip. An empty row keeps its label, a 0 and "None".
+        The project tab after a good poll. One row per status in lifecycle order, Idea first, Closed
+        collapsed at the end. The row label carries shape, name and count, so cards carry no status
+        chip. An empty row keeps its label, a 0 and "None".
       </p>
     </header>
     <ul class="rules">
       <li>
-        Header: repo name as a sentence-case h1 (22 UI 700), <code>owner · checkout path</code>
-        in small mono, and "Updated 3 min ago" on the right as <code>&lt;time&gt;</code> with the
+        Header: repo name as a sentence-case h1 (22 UI 700), <code>owner · checkout path</code> in
+        small mono, and "Updated 3 min ago" on the right as <code>&lt;time&gt;</code> with the
         absolute time in <code>title</code>, from <code>sync.checkedAt</code>. It ticks once a
         minute.
       </li>
@@ -860,7 +875,9 @@
         Page padding <code>16px 24px 24px</code>, 24 px between header and board, 12 px between
         rows, 6 px from a row's label to its cards, 8 px between cards.
       </li>
-      <li>In progress pulses its ● (1.6 s); nothing else moves. The poll refreshes silently every 5 s.</li>
+      <li>
+        In progress pulses its ● (1.6 s); nothing else moves. The poll refreshes silently every 5 s.
+      </li>
     </ul>
     <div class="duo">
       <div class="shell">
@@ -868,9 +885,15 @@
           <div class="brand">aisf</div>
           <nav class="nav" aria-label="Projects">
             <div class="sec label">Projects</div>
-            <a class="item repo" href="#full" aria-current="page" title="MoritzKopmann/postkarte"><span class="grow">postkarte</span></a>
-            <a class="item repo" href="#full" title="MoritzKopmann/AISoftwareFactory"><span class="grow">AISoftwareFactory</span></a>
-            <a class="item repo" href="#full" title="MoritzKopmann/dotfiles"><span class="grow">dotfiles</span></a>
+            <a class="item repo" href="#full" aria-current="page" title="MoritzKopmann/postkarte"
+              ><span class="grow">postkarte</span></a
+            >
+            <a class="item repo" href="#full" title="MoritzKopmann/AISoftwareFactory"
+              ><span class="grow">AISoftwareFactory</span></a
+            >
+            <a class="item repo" href="#full" title="MoritzKopmann/dotfiles"
+              ><span class="grow">dotfiles</span></a
+            >
             <a class="item" href="#full"><span class="grow">+ Add project</span></a>
           </nav>
         </aside>
@@ -878,65 +901,153 @@
           <main class="page">
             <div class="page-head">
               <h1>postkarte</h1>
-              <span class="sm mono">MoritzKopmann · ~/Software/postkarte</span><span class="grow"></span
-              ><time class="updated" datetime="2026-09-28T09:38" title="28 Sep 2026 09:38">Updated 3 min ago</time>
+              <span class="sm mono">MoritzKopmann · ~/Software/postkarte</span
+              ><span class="grow"></span
+              ><time class="updated" datetime="2026-09-28T09:38" title="28 Sep 2026 09:38"
+                >Updated 3 min ago</time
+              >
             </div>
             <div class="board">
               <section class="row">
-                <div class="row-h"><span class="shape s-neutral" aria-hidden="true">○</span><span class="label">Idea</span><span class="n">2</span></div>
+                <div class="row-h">
+                  <span class="shape s-neutral" aria-hidden="true">○</span
+                  ><span class="label">Idea</span><span class="n">2</span>
+                </div>
                 <div class="cards">
-                  <a class="card" href="#full"><span class="title"><span class="num-id">#58</span>Share a postcard as a link</span></a>
-                  <a class="card" href="#full"><span class="title"><span class="num-id">#59</span>Print at A6 with bleed marks</span></a>
+                  <a class="card" href="#full"
+                    ><span class="title"
+                      ><span class="num-id">#58</span>Share a postcard as a link</span
+                    ></a
+                  >
+                  <a class="card" href="#full"
+                    ><span class="title"
+                      ><span class="num-id">#59</span>Print at A6 with bleed marks</span
+                    ></a
+                  >
                 </div>
               </section>
               <section class="row">
-                <div class="row-h"><span class="shape s-neutral" aria-hidden="true">○</span><span class="label">Backlog</span><span class="n">0</span><span class="none">None</span></div>
-              </section>
-              <section class="row">
-                <div class="row-h"><span class="shape s-flow" aria-hidden="true">●</span><span class="label">Plan</span><span class="n">1</span></div>
-                <div class="cards">
-                  <a class="card" href="#full"><span class="title"><span class="num-id">#44</span>Card editor v2</span></a>
+                <div class="row-h">
+                  <span class="shape s-neutral" aria-hidden="true">○</span
+                  ><span class="label">Backlog</span><span class="n">0</span
+                  ><span class="none">None</span>
                 </div>
               </section>
               <section class="row">
-                <div class="row-h"><span class="shape s-flow" aria-hidden="true">●</span><span class="label">Planned</span><span class="n">1</span></div>
+                <div class="row-h">
+                  <span class="shape s-flow" aria-hidden="true">●</span
+                  ><span class="label">Plan</span><span class="n">1</span>
+                </div>
                 <div class="cards">
-                  <a class="card" href="#full"><span class="title"><span class="num-id">#40</span>Small-screen polish</span></a>
+                  <a class="card" href="#full"
+                    ><span class="title"><span class="num-id">#44</span>Card editor v2</span></a
+                  >
                 </div>
               </section>
               <section class="row">
-                <div class="row-h"><span class="shape s-flow" aria-hidden="true">●</span><span class="label">Ready</span><span class="n">3</span></div>
+                <div class="row-h">
+                  <span class="shape s-flow" aria-hidden="true">●</span
+                  ><span class="label">Planned</span><span class="n">1</span>
+                </div>
                 <div class="cards">
-                  <a class="card" href="#full"><span class="title"><span class="num-id">#45</span>Stamp picker: recent stamps row</span><span class="parent">↳ Card editor v2</span></a>
-                  <a class="card" href="#full" title="Font size slider that remembers the last size per card and per recipient"><span class="title"><span class="num-id">#48</span>Font size slider that remembers the last size per card and per recipient</span><span class="parent">↳ Card editor v2</span><span class="meta"><span>blocked by #45</span></span></a>
-                  <a class="card" href="#full"><span class="title"><span class="num-id">#56</span>Retry a failed upload</span></a>
+                  <a class="card" href="#full"
+                    ><span class="title"
+                      ><span class="num-id">#40</span>Small-screen polish</span
+                    ></a
+                  >
                 </div>
               </section>
               <section class="row">
-                <div class="row-h"><span class="shape s-flow pulse" aria-hidden="true">●</span><span class="label">In progress</span><span class="n">1</span></div>
+                <div class="row-h">
+                  <span class="shape s-flow" aria-hidden="true">●</span
+                  ><span class="label">Ready</span><span class="n">3</span>
+                </div>
                 <div class="cards">
-                  <a class="card" href="#full"><span class="title"><span class="num-id">#49</span>Font picker with preview</span><span class="parent">↳ Card editor v2</span><span class="meta"><span class="chip hitl">HITL</span></span></a>
+                  <a class="card" href="#full"
+                    ><span class="title"
+                      ><span class="num-id">#45</span>Stamp picker: recent stamps row</span
+                    ><span class="parent">↳ Card editor v2</span></a
+                  >
+                  <a
+                    class="card"
+                    href="#full"
+                    title="Font size slider that remembers the last size per card and per recipient"
+                    ><span class="title"
+                      ><span class="num-id">#48</span>Font size slider that remembers the last size
+                      per card and per recipient</span
+                    ><span class="parent">↳ Card editor v2</span
+                    ><span class="meta"><span>blocked by #45</span></span></a
+                  >
+                  <a class="card" href="#full"
+                    ><span class="title"
+                      ><span class="num-id">#56</span>Retry a failed upload</span
+                    ></a
+                  >
                 </div>
               </section>
               <section class="row">
-                <div class="row-h"><span class="shape s-flow" aria-hidden="true">●</span><span class="label">In review</span><span class="n">1</span></div>
+                <div class="row-h">
+                  <span class="shape s-flow pulse" aria-hidden="true">●</span
+                  ><span class="label">In progress</span><span class="n">1</span>
+                </div>
                 <div class="cards">
-                  <a class="card" href="#full"><span class="title"><span class="num-id">#46</span>Fix clipped greeting on small screens</span><span class="parent">↳ Small-screen polish</span><span class="meta"><span class="chip">PR #52</span></span></a>
+                  <a class="card" href="#full"
+                    ><span class="title"
+                      ><span class="num-id">#49</span>Font picker with preview</span
+                    ><span class="parent">↳ Card editor v2</span
+                    ><span class="meta"><span class="chip hitl">HITL</span></span></a
+                  >
                 </div>
               </section>
               <section class="row">
-                <div class="row-h"><span class="shape s-danger" aria-hidden="true">■</span><span class="label">Stuck</span><span class="n">1</span></div>
+                <div class="row-h">
+                  <span class="shape s-flow" aria-hidden="true">●</span
+                  ><span class="label">In review</span><span class="n">1</span>
+                </div>
                 <div class="cards">
-                  <a class="card" href="#full"><span class="title"><span class="num-id">#43</span>Move the image cache to drift</span><span class="parent">↳ Card editor v2</span><span class="meta"><span class="chip">PR #55</span></span></a>
+                  <a class="card" href="#full"
+                    ><span class="title"
+                      ><span class="num-id">#46</span>Fix clipped greeting on small screens</span
+                    ><span class="parent">↳ Small-screen polish</span
+                    ><span class="meta"><span class="chip">PR #52</span></span></a
+                  >
                 </div>
               </section>
               <section class="row">
-                <div class="row-h"><span class="shape s-warn" aria-hidden="true">▲</span><span class="label">Conflict</span><span class="n">0</span><span class="none">None</span></div>
+                <div class="row-h">
+                  <span class="shape s-danger" aria-hidden="true">■</span
+                  ><span class="label">Stuck</span><span class="n">1</span>
+                </div>
+                <div class="cards">
+                  <a class="card" href="#full"
+                    ><span class="title"
+                      ><span class="num-id">#43</span>Move the image cache to drift</span
+                    ><span class="parent">↳ Card editor v2</span
+                    ><span class="meta"><span class="chip">PR #55</span></span></a
+                  >
+                </div>
+              </section>
+              <section class="row">
+                <div class="row-h">
+                  <span class="shape s-warn" aria-hidden="true">▲</span
+                  ><span class="label">Conflict</span><span class="n">0</span
+                  ><span class="none">None</span>
+                </div>
               </section>
               <details class="row">
-                <summary class="row-h"><span class="chev" aria-hidden="true">›</span><span class="shape s-done" aria-hidden="true">✓</span><span class="label">Closed</span><span class="n">50 of 214</span><span class="toggle-text"><span class="t-show">Show closed</span><span class="t-hide">Hide closed</span></span></summary>
+                <summary class="row-h">
+                  <span class="chev" aria-hidden="true">›</span
+                  ><span class="shape s-done" aria-hidden="true">✓</span
+                  ><span class="label">Closed</span><span class="n">50 of 214</span
+                  ><span class="toggle-text"
+                    ><span class="t-show">Show closed</span
+                    ><span class="t-hide">Hide closed</span></span
+                  >
+                </summary>
                 <div class="cards">
-                  <a class="card" href="#full"><span class="title"><span class="num-id">#37</span>Stamp picker grid</span></a>
+                  <a class="card" href="#full"
+                    ><span class="title"><span class="num-id">#37</span>Stamp picker grid</span></a
+                  >
                 </div>
               </details>
             </div>
@@ -962,8 +1073,12 @@
           <div class="brand">aisf</div>
           <nav class="nav" aria-label="Projects">
             <div class="sec label">Projects</div>
-            <a class="item repo" href="#empty" title="MoritzKopmann/postkarte"><span class="grow">postkarte</span></a>
-            <a class="item repo" href="#empty" aria-current="page" title="MoritzKopmann/weather-cli"><span class="grow">weather-cli</span></a>
+            <a class="item repo" href="#empty" title="MoritzKopmann/postkarte"
+              ><span class="grow">postkarte</span></a
+            >
+            <a class="item repo" href="#empty" aria-current="page" title="MoritzKopmann/weather-cli"
+              ><span class="grow">weather-cli</span></a
+            >
             <a class="item" href="#empty"><span class="grow">+ Add project</span></a>
           </nav>
         </aside>
@@ -971,12 +1086,21 @@
           <main class="page">
             <div class="page-head">
               <h1>weather-cli</h1>
-              <span class="sm mono">MoritzKopmann · ~/Software/weather-cli</span><span class="grow"></span
-              ><time class="updated" datetime="2026-09-28T09:41" title="28 Sep 2026 09:41">Updated just now</time>
+              <span class="sm mono">MoritzKopmann · ~/Software/weather-cli</span
+              ><span class="grow"></span
+              ><time class="updated" datetime="2026-09-28T09:41" title="28 Sep 2026 09:41"
+                >Updated just now</time
+              >
             </div>
             <div class="empty">
               <p>No tickets in MoritzKopmann/weather-cli yet.</p>
-              <a class="btn ext" href="https://github.com/MoritzKopmann/weather-cli/issues/new" target="_blank" rel="noopener">New ticket</a>
+              <a
+                class="btn ext"
+                href="https://github.com/MoritzKopmann/weather-cli/issues/new"
+                target="_blank"
+                rel="noopener"
+                >New ticket</a
+              >
             </div>
           </main>
         </div>
@@ -1015,8 +1139,12 @@
           <div class="brand">aisf</div>
           <nav class="nav" aria-label="Projects">
             <div class="sec label">Projects</div>
-            <a class="item repo" href="#failed" aria-current="page" title="MoritzKopmann/postkarte"><span class="grow">postkarte</span></a>
-            <a class="item repo" href="#failed" title="MoritzKopmann/AISoftwareFactory"><span class="grow">AISoftwareFactory</span></a>
+            <a class="item repo" href="#failed" aria-current="page" title="MoritzKopmann/postkarte"
+              ><span class="grow">postkarte</span></a
+            >
+            <a class="item repo" href="#failed" title="MoritzKopmann/AISoftwareFactory"
+              ><span class="grow">AISoftwareFactory</span></a
+            >
             <a class="item" href="#failed"><span class="grow">+ Add project</span></a>
           </nav>
         </aside>
@@ -1028,22 +1156,50 @@
           <main class="page">
             <div class="page-head">
               <h1>postkarte</h1>
-              <span class="sm mono">MoritzKopmann · ~/Software/postkarte</span><span class="grow"></span
-              ><time class="updated" datetime="2026-09-28T09:21" title="28 Sep 2026 09:21">Updated 20 min ago</time>
+              <span class="sm mono">MoritzKopmann · ~/Software/postkarte</span
+              ><span class="grow"></span
+              ><time class="updated" datetime="2026-09-28T09:21" title="28 Sep 2026 09:21"
+                >Updated 20 min ago</time
+              >
             </div>
             <div class="board">
               <section class="row">
-                <div class="row-h"><span class="shape s-flow" aria-hidden="true">●</span><span class="label">Ready</span><span class="n">3</span></div>
+                <div class="row-h">
+                  <span class="shape s-flow" aria-hidden="true">●</span
+                  ><span class="label">Ready</span><span class="n">3</span>
+                </div>
                 <div class="cards">
-                  <a class="card" href="#failed"><span class="title"><span class="num-id">#45</span>Stamp picker: recent stamps row</span><span class="parent">↳ Card editor v2</span></a>
-                  <a class="card" href="#failed"><span class="title"><span class="num-id">#48</span>Font size slider that remembers the last size per card and per recipient</span><span class="parent">↳ Card editor v2</span><span class="meta"><span>blocked by #45</span></span></a>
-                  <a class="card" href="#failed"><span class="title"><span class="num-id">#56</span>Retry a failed upload</span></a>
+                  <a class="card" href="#failed"
+                    ><span class="title"
+                      ><span class="num-id">#45</span>Stamp picker: recent stamps row</span
+                    ><span class="parent">↳ Card editor v2</span></a
+                  >
+                  <a class="card" href="#failed"
+                    ><span class="title"
+                      ><span class="num-id">#48</span>Font size slider that remembers the last size
+                      per card and per recipient</span
+                    ><span class="parent">↳ Card editor v2</span
+                    ><span class="meta"><span>blocked by #45</span></span></a
+                  >
+                  <a class="card" href="#failed"
+                    ><span class="title"
+                      ><span class="num-id">#56</span>Retry a failed upload</span
+                    ></a
+                  >
                 </div>
               </section>
               <section class="row">
-                <div class="row-h"><span class="shape s-flow pulse" aria-hidden="true">●</span><span class="label">In progress</span><span class="n">1</span></div>
+                <div class="row-h">
+                  <span class="shape s-flow pulse" aria-hidden="true">●</span
+                  ><span class="label">In progress</span><span class="n">1</span>
+                </div>
                 <div class="cards">
-                  <a class="card" href="#failed"><span class="title"><span class="num-id">#49</span>Font picker with preview</span><span class="parent">↳ Card editor v2</span><span class="meta"><span class="chip hitl">HITL</span></span></a>
+                  <a class="card" href="#failed"
+                    ><span class="title"
+                      ><span class="num-id">#49</span>Font picker with preview</span
+                    ><span class="parent">↳ Card editor v2</span
+                    ><span class="meta"><span class="chip hitl">HITL</span></span></a
+                  >
                 </div>
               </section>
             </div>
@@ -1058,9 +1214,14 @@
         <div class="banner danger" role="alert">
           <span class="shape" aria-hidden="true">■</span>
           <p>Can't reach GitHub: <code>gh</code> isn't logged in. Run:</p>
-          <div class="cmd"><code>gh auth login</code><button class="btn copy" type="button">Copy</button><span class="vh" role="status"></span></div>
+          <div class="cmd">
+            <code>gh auth login</code><button class="btn copy" type="button">Copy</button
+            ><span class="vh" role="status"></span>
+          </div>
           <p class="sm">The board refreshes by itself once it works.</p>
-          <p class="sm mono">You are not logged into any GitHub hosts. To log in, run: gh auth login</p>
+          <p class="sm mono">
+            You are not logged into any GitHub hosts. To log in, run: gh auth login
+          </p>
         </div>
         <div class="banner warn" role="status">
           <span class="shape" aria-hidden="true">▲</span>
@@ -1068,7 +1229,10 @@
         </div>
         <div class="banner warn" role="status">
           <span class="shape" aria-hidden="true">▲</span>
-          <p>Couldn't refresh the board. GitHub didn't answer; the watcher tries again at its next poll.</p>
+          <p>
+            Couldn't refresh the board. GitHub didn't answer; the watcher tries again at its next
+            poll.
+          </p>
           <p class="sm mono">gh: HTTP 502 Bad Gateway (api.github.com)</p>
         </div>
         <div class="banner danger" role="alert">
@@ -1082,7 +1246,10 @@
         </div>
         <div class="banner info" role="status">
           <span class="shape" aria-hidden="true">●</span>
-          <p>The watcher hasn't picked up MoritzKopmann/postkarte yet. The board appears after its next poll.</p>
+          <p>
+            The watcher hasn't picked up MoritzKopmann/postkarte yet. The board appears after its
+            next poll.
+          </p>
         </div>
       </div>
     </div>
@@ -1118,15 +1285,47 @@
     <div class="duo">
       <div class="board">
         <details class="row" open>
-          <summary class="row-h"><span class="chev" aria-hidden="true">›</span><span class="shape s-done" aria-hidden="true">✓</span><span class="label">Closed</span><span class="n">50 of 214</span><span class="toggle-text"><span class="t-show">Show closed</span><span class="t-hide">Hide closed</span></span></summary>
+          <summary class="row-h">
+            <span class="chev" aria-hidden="true">›</span
+            ><span class="shape s-done" aria-hidden="true">✓</span><span class="label">Closed</span
+            ><span class="n">50 of 214</span
+            ><span class="toggle-text"
+              ><span class="t-show">Show closed</span><span class="t-hide">Hide closed</span></span
+            >
+          </summary>
           <div class="cards">
-            <a class="card" href="#closed"><span class="title"><span class="num-id">#42</span>Envelope back with return address</span><span class="parent">↳ Card editor v2</span></a>
-            <a class="card" href="#closed"><span class="title"><span class="num-id">#39</span>Crop photos to the card ratio</span></a>
-            <a class="card" href="#closed"><span class="title"><span class="num-id">#37</span>Stamp picker grid</span><span class="parent">↳ Card editor v2</span><span class="meta"><span class="chip">PR #38</span></span></a>
-            <a class="card" href="#closed"><span class="title"><span class="num-id">#36</span>Envelope flip animation</span></a>
-            <a class="card" href="#closed"><span class="title"><span class="num-id">#35</span>Greeting text field</span></a>
+            <a class="card" href="#closed"
+              ><span class="title"
+                ><span class="num-id">#42</span>Envelope back with return address</span
+              ><span class="parent">↳ Card editor v2</span></a
+            >
+            <a class="card" href="#closed"
+              ><span class="title"
+                ><span class="num-id">#39</span>Crop photos to the card ratio</span
+              ></a
+            >
+            <a class="card" href="#closed"
+              ><span class="title"><span class="num-id">#37</span>Stamp picker grid</span
+              ><span class="parent">↳ Card editor v2</span
+              ><span class="meta"><span class="chip">PR #38</span></span></a
+            >
+            <a class="card" href="#closed"
+              ><span class="title"><span class="num-id">#36</span>Envelope flip animation</span></a
+            >
+            <a class="card" href="#closed"
+              ><span class="title"><span class="num-id">#35</span>Greeting text field</span></a
+            >
           </div>
-          <p class="row-note sm">The newest 50. <a class="ext" href="https://github.com/MoritzKopmann/postkarte/issues?q=is%3Aissue+is%3Aclosed" target="_blank" rel="noopener">All closed on GitHub</a></p>
+          <p class="row-note sm">
+            The newest 50.
+            <a
+              class="ext"
+              href="https://github.com/MoritzKopmann/postkarte/issues?q=is%3Aissue+is%3Aclosed"
+              target="_blank"
+              rel="noopener"
+              >All closed on GitHub</a
+            >
+          </p>
         </details>
       </div>
     </div>
@@ -1145,11 +1344,25 @@
     <div class="duo narrow">
       <div class="board">
         <section class="row">
-          <div class="row-h"><span class="shape s-warn" aria-hidden="true">▲</span><span class="label">Conflict</span><span class="n">2</span></div>
-          <p class="row-note">These tickets carry more than one <code>status:</code> label. Keep one on GitHub.</p>
+          <div class="row-h">
+            <span class="shape s-warn" aria-hidden="true">▲</span><span class="label">Conflict</span
+            ><span class="n">2</span>
+          </div>
+          <p class="row-note">
+            These tickets carry more than one <code>status:</code> label. Keep one on GitHub.
+          </p>
           <div class="cards">
-            <a class="card" href="#conflict"><span class="title"><span class="num-id">#52</span>Address autocomplete</span><span class="meta"><span>plan · ready</span><span class="chip hitl">HITL</span></span></a>
-            <a class="card" href="#conflict"><span class="title"><span class="num-id">#57</span>Dark envelope theme</span><span class="parent">↳ Small-screen polish</span><span class="meta"><span>in progress · in review · stuck</span></span></a>
+            <a class="card" href="#conflict"
+              ><span class="title"><span class="num-id">#52</span>Address autocomplete</span
+              ><span class="meta"
+                ><span>plan · ready</span><span class="chip hitl">HITL</span></span
+              ></a
+            >
+            <a class="card" href="#conflict"
+              ><span class="title"><span class="num-id">#57</span>Dark envelope theme</span
+              ><span class="parent">↳ Small-screen polish</span
+              ><span class="meta"><span>in progress · in review · stuck</span></span></a
+            >
           </div>
         </section>
       </div>
@@ -1161,8 +1374,9 @@
     <header>
       <h2>6 Cards</h2>
       <p>
-        One <code>&lt;a&gt;</code> to the ticket page (<code>#/projects/&lt;id&gt;/tickets/&lt;n&gt;</code>),
-        one tab stop. Three lines, each left out when empty.
+        One <code>&lt;a&gt;</code> to the ticket page
+        (<code>#/projects/&lt;id&gt;/tickets/&lt;n&gt;</code>), one tab stop. Three lines, each left
+        out when empty.
       </p>
     </header>
     <ul class="rules">
@@ -1188,14 +1402,57 @@
     </ul>
     <div class="duo narrow">
       <div class="cards">
-        <a class="card" href="#cards"><span class="title"><span class="num-id">#56</span>Retry a failed upload</span></a>
-        <a class="card" href="#cards"><span class="title"><span class="num-id">#45</span>Stamp picker: recent stamps row</span><span class="parent">↳ Card editor v2</span></a>
-        <a class="card" href="#cards"><span class="title"><span class="num-id">#49</span>Font picker with preview</span><span class="parent">↳ Card editor v2</span><span class="meta"><span class="chip hitl">HITL</span></span></a>
-        <a class="card" href="#cards"><span class="title"><span class="num-id">#51</span>Landscape layout for the envelope</span><span class="parent">↳ Small-screen polish</span><span class="meta"><span>blocked by #46</span><span>blocked by kopmann/print-kit#12</span></span></a>
-        <a class="card" href="#cards"><span class="title"><span class="num-id">#46</span>Fix clipped greeting on small screens</span><span class="parent">↳ Small-screen polish</span><span class="meta"><span class="chip">PR #52</span><span class="chip">PR #54</span></span></a>
-        <a class="card" href="#cards" title="Remember the last recipient's address and offer it first when a new card is started from the same template"><span class="title"><span class="num-id">#60</span>Remember the last recipient's address and offer it first when a new card is started from the same template</span><span class="parent">↳ A very long parent title that runs past the edge of the card and ends in an ellipsis</span><span class="meta"><span class="chip hitl">HITL</span><span>blocked by #45</span><span>blocked by kopmann/print-kit#12</span><span class="chip">PR #61</span></span></a>
-        <a class="card is-hover" href="#cards"><span class="title"><span class="num-id">#45</span>Hover</span><span class="parent">↳ Card editor v2</span></a>
-        <a class="card is-focus" href="#cards"><span class="title"><span class="num-id">#45</span>Keyboard focus</span><span class="parent">↳ Card editor v2</span></a>
+        <a class="card" href="#cards"
+          ><span class="title"><span class="num-id">#56</span>Retry a failed upload</span></a
+        >
+        <a class="card" href="#cards"
+          ><span class="title"><span class="num-id">#45</span>Stamp picker: recent stamps row</span
+          ><span class="parent">↳ Card editor v2</span></a
+        >
+        <a class="card" href="#cards"
+          ><span class="title"><span class="num-id">#49</span>Font picker with preview</span
+          ><span class="parent">↳ Card editor v2</span
+          ><span class="meta"><span class="chip hitl">HITL</span></span></a
+        >
+        <a class="card" href="#cards"
+          ><span class="title"
+            ><span class="num-id">#51</span>Landscape layout for the envelope</span
+          ><span class="parent">↳ Small-screen polish</span
+          ><span class="meta"
+            ><span>blocked by #46</span><span>blocked by kopmann/print-kit#12</span></span
+          ></a
+        >
+        <a class="card" href="#cards"
+          ><span class="title"
+            ><span class="num-id">#46</span>Fix clipped greeting on small screens</span
+          ><span class="parent">↳ Small-screen polish</span
+          ><span class="meta"
+            ><span class="chip">PR #52</span><span class="chip">PR #54</span></span
+          ></a
+        >
+        <a
+          class="card"
+          href="#cards"
+          title="Remember the last recipient's address and offer it first when a new card is started from the same template"
+          ><span class="title"
+            ><span class="num-id">#60</span>Remember the last recipient's address and offer it first
+            when a new card is started from the same template</span
+          ><span class="parent"
+            >↳ A very long parent title that runs past the edge of the card and ends in an
+            ellipsis</span
+          ><span class="meta"
+            ><span class="chip hitl">HITL</span><span>blocked by #45</span
+            ><span>blocked by kopmann/print-kit#12</span><span class="chip">PR #61</span></span
+          ></a
+        >
+        <a class="card is-hover" href="#cards"
+          ><span class="title"><span class="num-id">#45</span>Hover</span
+          ><span class="parent">↳ Card editor v2</span></a
+        >
+        <a class="card is-focus" href="#cards"
+          ><span class="title"><span class="num-id">#45</span>Keyboard focus</span
+          ><span class="parent">↳ Card editor v2</span></a
+        >
       </div>
     </div>
   </section>
@@ -1213,19 +1470,63 @@
     <div class="duo">
       <div class="board">
         <section class="row">
-          <div class="row-h"><span class="shape s-flow" aria-hidden="true">●</span><span class="label">Ready</span><span class="n">11</span></div>
+          <div class="row-h">
+            <span class="shape s-flow" aria-hidden="true">●</span><span class="label">Ready</span
+            ><span class="n">11</span>
+          </div>
           <div class="cards">
-            <a class="card" href="#long"><span class="title"><span class="num-id">#62</span>Import contacts from a vCard file</span></a>
-            <a class="card" href="#long"><span class="title"><span class="num-id">#63</span>Group recipients into lists</span><span class="parent">↳ Address book</span></a>
-            <a class="card" href="#long"><span class="title"><span class="num-id">#64</span>Merge duplicate contacts</span><span class="parent">↳ Address book</span><span class="meta"><span>blocked by #63</span></span></a>
-            <a class="card" href="#long"><span class="title"><span class="num-id">#65</span>Postage rates for Switzerland</span></a>
-            <a class="card" href="#long"><span class="title"><span class="num-id">#66</span>Show the send date on the envelope</span></a>
-            <a class="card" href="#long"><span class="title"><span class="num-id">#67</span>Undo the last edit on a card</span><span class="parent">↳ Card editor v2</span></a>
-            <a class="card" href="#long"><span class="title"><span class="num-id">#68</span>Keyboard shortcuts for the editor</span><span class="parent">↳ Card editor v2</span><span class="meta"><span class="chip hitl">HITL</span></span></a>
-            <a class="card" href="#long"><span class="title"><span class="num-id">#69</span>Export a card as PDF</span></a>
-            <a class="card" href="#long"><span class="title"><span class="num-id">#70</span>Handwriting font for greetings</span><span class="parent">↳ Card editor v2</span></a>
-            <a class="card" href="#long"><span class="title"><span class="num-id">#71</span>Batch-send a list</span><span class="parent">↳ Address book</span><span class="meta"><span>blocked by #63</span></span></a>
-            <a class="card" href="#long"><span class="title"><span class="num-id">#72</span>Preview the card at print size</span></a>
+            <a class="card" href="#long"
+              ><span class="title"
+                ><span class="num-id">#62</span>Import contacts from a vCard file</span
+              ></a
+            >
+            <a class="card" href="#long"
+              ><span class="title"><span class="num-id">#63</span>Group recipients into lists</span
+              ><span class="parent">↳ Address book</span></a
+            >
+            <a class="card" href="#long"
+              ><span class="title"><span class="num-id">#64</span>Merge duplicate contacts</span
+              ><span class="parent">↳ Address book</span
+              ><span class="meta"><span>blocked by #63</span></span></a
+            >
+            <a class="card" href="#long"
+              ><span class="title"
+                ><span class="num-id">#65</span>Postage rates for Switzerland</span
+              ></a
+            >
+            <a class="card" href="#long"
+              ><span class="title"
+                ><span class="num-id">#66</span>Show the send date on the envelope</span
+              ></a
+            >
+            <a class="card" href="#long"
+              ><span class="title"><span class="num-id">#67</span>Undo the last edit on a card</span
+              ><span class="parent">↳ Card editor v2</span></a
+            >
+            <a class="card" href="#long"
+              ><span class="title"
+                ><span class="num-id">#68</span>Keyboard shortcuts for the editor</span
+              ><span class="parent">↳ Card editor v2</span
+              ><span class="meta"><span class="chip hitl">HITL</span></span></a
+            >
+            <a class="card" href="#long"
+              ><span class="title"><span class="num-id">#69</span>Export a card as PDF</span></a
+            >
+            <a class="card" href="#long"
+              ><span class="title"
+                ><span class="num-id">#70</span>Handwriting font for greetings</span
+              ><span class="parent">↳ Card editor v2</span></a
+            >
+            <a class="card" href="#long"
+              ><span class="title"><span class="num-id">#71</span>Batch-send a list</span
+              ><span class="parent">↳ Address book</span
+              ><span class="meta"><span>blocked by #63</span></span></a
+            >
+            <a class="card" href="#long"
+              ><span class="title"
+                ><span class="num-id">#72</span>Preview the card at print size</span
+              ></a
+            >
           </div>
         </section>
       </div>
@@ -1237,16 +1538,17 @@
     <header>
       <h2>8 Loading</h2>
       <p>
-        Before the first board arrives, or while the watcher hasn't taken a snapshot
-        (<code>sync: pending</code>). A static skeleton in the shape of the board, shown after
-        300 ms and kept at least 500 ms. No shimmer.
+        Before the first board arrives, or while the watcher hasn't taken a snapshot (<code
+          >sync: pending</code
+        >). A static skeleton in the shape of the board, shown after 300 ms and kept at least 500
+        ms. No shimmer.
       </p>
     </header>
     <ul class="rules">
       <li>
-        Every status row keeps its real label and shape, with a 14×10 count block and 2 card
-        blocks (58 px tall, <code>--border</code> edge, lines in <code>--border</code>). Closed shows
-        its collapsed summary with a count block.
+        Every status row keeps its real label and shape, with a 14×10 count block and 2 card blocks
+        (58 px tall, <code>--border</code> edge, lines in <code>--border</code>). Closed shows its
+        collapsed summary with a count block.
       </li>
       <li>
         <code>aria-busy="true"</code> on the board and a visually hidden
@@ -1257,29 +1559,61 @@
       <div class="board" aria-busy="true">
         <span class="vh" role="status">Loading tickets…</span>
         <section class="row">
-          <div class="row-h"><span class="shape s-neutral" aria-hidden="true">○</span><span class="label">Idea</span><span class="sk" style="width: 14px; height: 10px"></span></div>
+          <div class="row-h">
+            <span class="shape s-neutral" aria-hidden="true">○</span><span class="label">Idea</span
+            ><span class="sk" style="width: 14px; height: 10px"></span>
+          </div>
           <div class="cards">
-            <span class="sk-card"><span class="sk sk-line" style="width: 80%"></span><span class="sk sk-line" style="width: 50%"></span></span>
-            <span class="sk-card"><span class="sk sk-line" style="width: 70%"></span><span class="sk sk-line" style="width: 40%"></span></span>
+            <span class="sk-card"
+              ><span class="sk sk-line" style="width: 80%"></span
+              ><span class="sk sk-line" style="width: 50%"></span
+            ></span>
+            <span class="sk-card"
+              ><span class="sk sk-line" style="width: 70%"></span
+              ><span class="sk sk-line" style="width: 40%"></span
+            ></span>
           </div>
         </section>
         <section class="row">
-          <div class="row-h"><span class="shape s-neutral" aria-hidden="true">○</span><span class="label">Backlog</span><span class="sk" style="width: 14px; height: 10px"></span></div>
+          <div class="row-h">
+            <span class="shape s-neutral" aria-hidden="true">○</span
+            ><span class="label">Backlog</span
+            ><span class="sk" style="width: 14px; height: 10px"></span>
+          </div>
           <div class="cards">
-            <span class="sk-card"><span class="sk sk-line" style="width: 75%"></span><span class="sk sk-line" style="width: 45%"></span></span>
-            <span class="sk-card"><span class="sk sk-line" style="width: 60%"></span><span class="sk sk-line" style="width: 35%"></span></span>
+            <span class="sk-card"
+              ><span class="sk sk-line" style="width: 75%"></span
+              ><span class="sk sk-line" style="width: 45%"></span
+            ></span>
+            <span class="sk-card"
+              ><span class="sk sk-line" style="width: 60%"></span
+              ><span class="sk sk-line" style="width: 35%"></span
+            ></span>
           </div>
         </section>
         <section class="row">
-          <div class="row-h"><span class="shape s-flow" aria-hidden="true">●</span><span class="label">Plan</span><span class="sk" style="width: 14px; height: 10px"></span></div>
+          <div class="row-h">
+            <span class="shape s-flow" aria-hidden="true">●</span><span class="label">Plan</span
+            ><span class="sk" style="width: 14px; height: 10px"></span>
+          </div>
           <div class="cards">
-            <span class="sk-card"><span class="sk sk-line" style="width: 80%"></span><span class="sk sk-line" style="width: 50%"></span></span>
-            <span class="sk-card"><span class="sk sk-line" style="width: 70%"></span><span class="sk sk-line" style="width: 40%"></span></span>
+            <span class="sk-card"
+              ><span class="sk sk-line" style="width: 80%"></span
+              ><span class="sk sk-line" style="width: 50%"></span
+            ></span>
+            <span class="sk-card"
+              ><span class="sk sk-line" style="width: 70%"></span
+              ><span class="sk sk-line" style="width: 40%"></span
+            ></span>
           </div>
         </section>
         <p class="sm">… and so on for every status …</p>
         <details class="row">
-          <summary class="row-h"><span class="chev" aria-hidden="true">›</span><span class="shape s-done" aria-hidden="true">✓</span><span class="label">Closed</span><span class="sk" style="width: 14px; height: 10px"></span></summary>
+          <summary class="row-h">
+            <span class="chev" aria-hidden="true">›</span
+            ><span class="shape s-done" aria-hidden="true">✓</span><span class="label">Closed</span
+            ><span class="sk" style="width: 14px; height: 10px"></span>
+          </summary>
         </details>
       </div>
     </div>
@@ -1296,9 +1630,9 @@
     </header>
     <ul class="rules">
       <li>
-        Panel: <code>10px 14px</code>, <code>--surface</code>, 1px <code>--border-strong</code>, 4 px
-        radius, 4 px inset <code>--warn</code> stripe. Headline with ▲, then the missing parts as a
-        13 px mono list. <code>role="alert"</code>.
+        Panel: <code>10px 14px</code>, <code>--surface</code>, 1px <code>--border-strong</code>, 4
+        px radius, 4 px inset <code>--warn</code> stripe. Headline with ▲, then the missing parts as
+        a 13 px mono list. <code>role="alert"</code>.
       </li>
     </ul>
     <div class="duo">
@@ -1307,7 +1641,13 @@
           <div class="brand">aisf</div>
           <nav class="nav" aria-label="Projects">
             <div class="sec label">Projects</div>
-            <a class="item repo" href="#contract" aria-current="page" title="MoritzKopmann/postkarte"><span class="grow">postkarte</span></a>
+            <a
+              class="item repo"
+              href="#contract"
+              aria-current="page"
+              title="MoritzKopmann/postkarte"
+              ><span class="grow">postkarte</span></a
+            >
             <a class="item" href="#contract"><span class="grow">+ Add project</span></a>
           </nav>
         </aside>
@@ -1315,11 +1655,17 @@
           <main class="page">
             <div class="page-head">
               <h1>postkarte</h1>
-              <span class="sm mono">MoritzKopmann · ~/Software/postkarte</span><span class="grow"></span
-              ><time class="updated" datetime="2026-09-28T09:38" title="28 Sep 2026 09:38">Updated 3 min ago</time>
+              <span class="sm mono">MoritzKopmann · ~/Software/postkarte</span
+              ><span class="grow"></span
+              ><time class="updated" datetime="2026-09-28T09:38" title="28 Sep 2026 09:38"
+                >Updated 3 min ago</time
+              >
             </div>
             <div class="panel" role="alert">
-              <span><span class="shape s-warn" aria-hidden="true">▲</span> <b>Contract pre-flight: 2 parts missing</b></span>
+              <span
+                ><span class="shape s-warn" aria-hidden="true">▲</span>
+                <b>Contract pre-flight: 2 parts missing</b></span
+              >
               <ul>
                 <li>.claude/skills/project-testing/SKILL.md</li>
                 <li>.claude/skills/project-toolchain/SKILL.md</li>
@@ -1327,10 +1673,21 @@
             </div>
             <div class="board">
               <section class="row">
-                <div class="row-h"><span class="shape s-neutral" aria-hidden="true">○</span><span class="label">Idea</span><span class="n">2</span></div>
+                <div class="row-h">
+                  <span class="shape s-neutral" aria-hidden="true">○</span
+                  ><span class="label">Idea</span><span class="n">2</span>
+                </div>
                 <div class="cards">
-                  <a class="card" href="#contract"><span class="title"><span class="num-id">#58</span>Share a postcard as a link</span></a>
-                  <a class="card" href="#contract"><span class="title"><span class="num-id">#59</span>Print at A6 with bleed marks</span></a>
+                  <a class="card" href="#contract"
+                    ><span class="title"
+                      ><span class="num-id">#58</span>Share a postcard as a link</span
+                    ></a
+                  >
+                  <a class="card" href="#contract"
+                    ><span class="title"
+                      ><span class="num-id">#59</span>Print at A6 with bleed marks</span
+                    ></a
+                  >
                 </div>
               </section>
             </div>
@@ -1346,8 +1703,7 @@
       <h2>10 Ticket page stub</h2>
       <p>
         <code>#/projects/&lt;id&gt;/tickets/&lt;n&gt;</code>. Fetched once, never polled. The
-        sidebar keeps the project highlighted. Outside its board row a ticket carries a status
-        chip.
+        sidebar keeps the project highlighted. Outside its board row a ticket carries a status chip.
       </p>
     </header>
     <ul class="rules">
@@ -1373,29 +1729,61 @@
           <div class="brand">aisf</div>
           <nav class="nav" aria-label="Projects">
             <div class="sec label">Projects</div>
-            <a class="item repo" href="#ticket" aria-current="page" title="MoritzKopmann/postkarte"><span class="grow">postkarte</span></a>
-            <a class="item repo" href="#ticket" title="MoritzKopmann/AISoftwareFactory"><span class="grow">AISoftwareFactory</span></a>
+            <a class="item repo" href="#ticket" aria-current="page" title="MoritzKopmann/postkarte"
+              ><span class="grow">postkarte</span></a
+            >
+            <a class="item repo" href="#ticket" title="MoritzKopmann/AISoftwareFactory"
+              ><span class="grow">AISoftwareFactory</span></a
+            >
             <a class="item" href="#ticket"><span class="grow">+ Add project</span></a>
           </nav>
         </aside>
         <div class="main">
           <main class="page">
-            <a class="back" href="#ticket"><span class="arrow" aria-hidden="true">←</span>Back to the board</a>
+            <a class="back" href="#ticket"
+              ><span class="arrow" aria-hidden="true">←</span>Back to the board</a
+            >
             <div class="ticket-head">
               <h1><span class="num-id">#46</span>Fix clipped greeting on small screens</h1>
               <div class="inline">
-                <span class="chip flow"><span class="shape s-flow" aria-hidden="true">●</span>In review</span>
-                <a class="ext" href="https://github.com/MoritzKopmann/postkarte/issues/46" target="_blank" rel="noopener">Open on GitHub</a>
+                <span class="chip flow"
+                  ><span class="shape s-flow" aria-hidden="true">●</span>In review</span
+                >
+                <a
+                  class="ext"
+                  href="https://github.com/MoritzKopmann/postkarte/issues/46"
+                  target="_blank"
+                  rel="noopener"
+                  >Open on GitHub</a
+                >
               </div>
             </div>
             <dl class="facts">
               <dt class="label">Parent</dt>
-              <dd><a href="#ticket"><span class="num-id">#40</span> Small-screen polish</a></dd>
+              <dd>
+                <a href="#ticket"><span class="num-id">#40</span> Small-screen polish</a>
+              </dd>
               <dt class="label">Pull requests</dt>
               <dd>
                 <ul>
-                  <li><a class="ext" href="https://github.com/MoritzKopmann/postkarte/pull/52" target="_blank" rel="noopener">PR #52</a><span class="pr-state">open</span></li>
-                  <li><a class="ext" href="https://github.com/MoritzKopmann/postkarte/pull/54" target="_blank" rel="noopener">PR #54</a><span class="pr-state">merged</span></li>
+                  <li>
+                    <a
+                      class="ext"
+                      href="https://github.com/MoritzKopmann/postkarte/pull/52"
+                      target="_blank"
+                      rel="noopener"
+                      >PR #52</a
+                    ><span class="pr-state">open</span>
+                  </li>
+                  <li>
+                    <a
+                      class="ext"
+                      href="https://github.com/MoritzKopmann/postkarte/pull/54"
+                      target="_blank"
+                      rel="noopener"
+                      >PR #54</a
+                    ><span class="pr-state">merged</span>
+                  </li>
                 </ul>
               </dd>
             </dl>
@@ -1407,12 +1795,22 @@
     <p class="caption">A closed ticket with no parent and no pull request</p>
     <div class="duo narrow">
       <main class="page" style="padding: 0">
-        <a class="back" href="#ticket"><span class="arrow" aria-hidden="true">←</span>Back to the board</a>
+        <a class="back" href="#ticket"
+          ><span class="arrow" aria-hidden="true">←</span>Back to the board</a
+        >
         <div class="ticket-head">
           <h1><span class="num-id">#36</span>Envelope flip animation</h1>
           <div class="inline">
-            <span class="chip done"><span class="shape s-done" aria-hidden="true">✓</span>Closed</span>
-            <a class="ext" href="https://github.com/MoritzKopmann/postkarte/issues/36" target="_blank" rel="noopener">Open on GitHub</a>
+            <span class="chip done"
+              ><span class="shape s-done" aria-hidden="true">✓</span>Closed</span
+            >
+            <a
+              class="ext"
+              href="https://github.com/MoritzKopmann/postkarte/issues/36"
+              target="_blank"
+              rel="noopener"
+              >Open on GitHub</a
+            >
           </div>
         </div>
         <dl class="facts">
@@ -1438,21 +1836,27 @@
           <p class="caption">Loading</p>
           <main class="page" style="padding: 0" aria-busy="true">
             <span class="vh" role="status">Loading #46…</span>
-            <a class="back" href="#ticket-states"><span class="arrow" aria-hidden="true">←</span>Back to the board</a>
+            <a class="back" href="#ticket-states"
+              ><span class="arrow" aria-hidden="true">←</span>Back to the board</a
+            >
             <div class="ticket-head">
               <span class="sk" style="width: 70%; height: 22px"></span>
               <span class="sk" style="width: 110px; height: 18px"></span>
             </div>
             <div class="facts">
-              <span class="sk sk-line" style="width: 60px"></span><span class="sk sk-line" style="width: 40%"></span>
-              <span class="sk sk-line" style="width: 80px"></span><span class="sk sk-line" style="width: 25%"></span>
+              <span class="sk sk-line" style="width: 60px"></span
+              ><span class="sk sk-line" style="width: 40%"></span>
+              <span class="sk sk-line" style="width: 80px"></span
+              ><span class="sk sk-line" style="width: 25%"></span>
             </div>
           </main>
         </div>
         <div class="stack">
           <p class="caption">Not found (404)</p>
           <main class="page" style="padding: 0">
-            <a class="back" href="#ticket-states"><span class="arrow" aria-hidden="true">←</span>Back to the board</a>
+            <a class="back" href="#ticket-states"
+              ><span class="arrow" aria-hidden="true">←</span>Back to the board</a
+            >
             <div class="err" role="alert">
               <span class="shape" aria-hidden="true">■</span>
               <p>#999 isn't a ticket in MoritzKopmann/postkarte.</p>
@@ -1462,7 +1866,9 @@
         <div class="stack">
           <p class="caption">The request failed</p>
           <main class="page" style="padding: 0">
-            <a class="back" href="#ticket-states"><span class="arrow" aria-hidden="true">←</span>Back to the board</a>
+            <a class="back" href="#ticket-states"
+              ><span class="arrow" aria-hidden="true">←</span>Back to the board</a
+            >
             <div class="err" role="alert">
               <span class="shape" aria-hidden="true">■</span>
               <p>Couldn't load #36. GitHub didn't answer in time.</p>
@@ -1480,30 +1886,110 @@
     <header>
       <h2>12 Copy</h2>
       <p>
-        Every string on these screens. Where it differs from what the #102 view models return
-        today, the board component ticket changes the view model and its test.
+        Every string on these screens. Where it differs from what the #102 view models return today,
+        the board component ticket changes the view model and its test.
       </p>
     </header>
     <div class="tbl-wrap">
       <table class="ref">
-        <tr><th>Where</th><th>Text</th><th>View model today</th></tr>
-        <tr><td>Empty project</td><td>No tickets in {id} yet.</td><td class="sm">No tickets in {id} yet (no full stop)</td></tr>
-        <tr><td>Empty row</td><td>None</td><td class="sm">—</td></tr>
-        <tr><td>Conflict row note</td><td>These tickets carry more than one <code>status:</code> label. Keep one on GitHub.</td><td class="sm">These tickets carry conflicting status labels.</td></tr>
-        <tr><td>Conflict card</td><td>plan · ready (lowercase status names)</td><td class="sm">Plan, Ready (as labels)</td></tr>
-        <tr><td>Closed count</td><td>50 of 214</td><td class="sm">same</td></tr>
-        <tr><td>Closed note</td><td>The newest 50. All closed on GitHub ↗</td><td class="sm">Showing the 50 most recent of 214</td></tr>
-        <tr><td>Stale</td><td>Updated 20 min ago (header)</td><td class="sm">Showing the board from HH:MM (snapshot note)</td></tr>
-        <tr><td>Loading</td><td>Loading tickets… (hidden status)</td><td class="sm">Loading the board… (status line)</td></tr>
-        <tr><td>auth</td><td>Can't reach GitHub: <code>gh</code> isn't logged in. Run: <code>gh auth login</code> · The board refreshes by itself once it works.</td><td class="sm">the raw message</td></tr>
-        <tr><td>rate-limited</td><td>Couldn't refresh the board. GitHub rate limit reached; resuming in 20 min.</td><td class="sm">GitHub rate limit reached. The app retries at HH:MM.</td></tr>
-        <tr><td>unavailable</td><td>Couldn't refresh the board. GitHub didn't answer; the watcher tries again at its next poll.</td><td class="sm">{message} The app retries automatically.</td></tr>
-        <tr><td>unexpected</td><td>Couldn't refresh the board. The watcher hit an unexpected error; see the aisf log.</td><td class="sm">{message} See the aisf log.</td></tr>
-        <tr><td>App unreachable</td><td>Can't reach aisf. The board tries again every 5 s.</td><td class="sm">— (component)</td></tr>
-        <tr><td>404, board</td><td>The watcher hasn't picked up {id} yet. The board appears after its next poll.</td><td class="sm">— (component: "{id} is not watched yet")</td></tr>
-        <tr><td>404, ticket</td><td>#{n} isn't a ticket in {id}.</td><td class="sm">— (component)</td></tr>
-        <tr><td>Ticket failed</td><td>Couldn't load #{n}. {cause} · Retry</td><td class="sm">— (component)</td></tr>
-        <tr><td>Back</td><td>← Back to the board</td><td class="sm">—</td></tr>
+        <tr>
+          <th>Where</th>
+          <th>Text</th>
+          <th>View model today</th>
+        </tr>
+        <tr>
+          <td>Empty project</td>
+          <td>No tickets in {id} yet.</td>
+          <td class="sm">No tickets in {id} yet (no full stop)</td>
+        </tr>
+        <tr>
+          <td>Empty row</td>
+          <td>None</td>
+          <td class="sm">—</td>
+        </tr>
+        <tr>
+          <td>Conflict row note</td>
+          <td>These tickets carry more than one <code>status:</code> label. Keep one on GitHub.</td>
+          <td class="sm">These tickets carry conflicting status labels.</td>
+        </tr>
+        <tr>
+          <td>Conflict card</td>
+          <td>plan · ready (lowercase status names)</td>
+          <td class="sm">Plan, Ready (as labels)</td>
+        </tr>
+        <tr>
+          <td>Closed count</td>
+          <td>50 of 214</td>
+          <td class="sm">same</td>
+        </tr>
+        <tr>
+          <td>Closed note</td>
+          <td>The newest 50. All closed on GitHub ↗</td>
+          <td class="sm">Showing the 50 most recent of 214</td>
+        </tr>
+        <tr>
+          <td>Stale</td>
+          <td>Updated 20 min ago (header)</td>
+          <td class="sm">Showing the board from HH:MM (snapshot note)</td>
+        </tr>
+        <tr>
+          <td>Loading</td>
+          <td>Loading tickets… (hidden status)</td>
+          <td class="sm">Loading the board… (status line)</td>
+        </tr>
+        <tr>
+          <td>auth</td>
+          <td>
+            Can't reach GitHub: <code>gh</code> isn't logged in. Run: <code>gh auth login</code> ·
+            The board refreshes by itself once it works.
+          </td>
+          <td class="sm">the raw message</td>
+        </tr>
+        <tr>
+          <td>rate-limited</td>
+          <td>Couldn't refresh the board. GitHub rate limit reached; resuming in 20 min.</td>
+          <td class="sm">GitHub rate limit reached. The app retries at HH:MM.</td>
+        </tr>
+        <tr>
+          <td>unavailable</td>
+          <td>
+            Couldn't refresh the board. GitHub didn't answer; the watcher tries again at its next
+            poll.
+          </td>
+          <td class="sm">{message} The app retries automatically.</td>
+        </tr>
+        <tr>
+          <td>unexpected</td>
+          <td>
+            Couldn't refresh the board. The watcher hit an unexpected error; see the aisf log.
+          </td>
+          <td class="sm">{message} See the aisf log.</td>
+        </tr>
+        <tr>
+          <td>App unreachable</td>
+          <td>Can't reach aisf. The board tries again every 5 s.</td>
+          <td class="sm">— (component)</td>
+        </tr>
+        <tr>
+          <td>404, board</td>
+          <td>The watcher hasn't picked up {id} yet. The board appears after its next poll.</td>
+          <td class="sm">— (component: "{id} is not watched yet")</td>
+        </tr>
+        <tr>
+          <td>404, ticket</td>
+          <td>#{n} isn't a ticket in {id}.</td>
+          <td class="sm">— (component)</td>
+        </tr>
+        <tr>
+          <td>Ticket failed</td>
+          <td>Couldn't load #{n}. {cause} · Retry</td>
+          <td class="sm">— (component)</td>
+        </tr>
+        <tr>
+          <td>Back</td>
+          <td>← Back to the board</td>
+          <td class="sm">—</td>
+        </tr>
       </table>
     </div>
   </section>
