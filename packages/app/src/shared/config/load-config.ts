@@ -9,6 +9,7 @@ export type Config = {
   readonly databasePath: string;
   readonly pluginMirrorDirectory: string;
   readonly skillsProbeDirectory: string;
+  readonly worktreesDirectory: string;
   readonly port: number;
   readonly watcherPollIntervalMilliseconds: number;
   readonly watcherSnapshotIntervalMilliseconds: number;
@@ -28,6 +29,7 @@ export function loadConfig(options: LoadConfigOptions): Config {
     databasePath: join(homeDirectory, 'aisf.db'),
     pluginMirrorDirectory: join(homeDirectory, 'plugins', 'aisf'),
     skillsProbeDirectory: join(homeDirectory, 'skills-probe'),
+    worktreesDirectory: join(homeDirectory, 'worktrees'),
     port: Number(options.environment['AISF_PORT'] ?? defaultPort),
     watcherPollIntervalMilliseconds: Number(
       options.environment['AISF_WATCHER_POLL_INTERVAL_MILLISECONDS'] ??

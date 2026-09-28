@@ -15,4 +15,33 @@ export const migrations: ReadonlyArray<Migration> = [
       )
     `,
   },
+  {
+    version: 3,
+    name: 'create-runs',
+    sql: `
+      CREATE TABLE runs (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        ticket_number INTEGER NOT NULL,
+        stage TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        session_id TEXT NOT NULL,
+        worktree_path TEXT NOT NULL,
+        branch_name TEXT NOT NULL,
+        state TEXT NOT NULL,
+        ending_kind TEXT,
+        ending_reason TEXT,
+        escalation_kind TEXT,
+        blocker_number INTEGER,
+        tool_name TEXT,
+        tool_input TEXT,
+        started_at TEXT NOT NULL,
+        ended_at TEXT,
+        settled_at TEXT
+      );
+      CREATE UNIQUE INDEX runs_one_running_per_project
+        ON runs (project_id)
+        WHERE state = 'running';
+    `,
+  },
 ];
