@@ -1,10 +1,10 @@
 import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
 import type { RunRepository } from '../ports/run-repository.js';
-import type { RunFinisher } from '../ports/run-finisher.js';
+import type { FinishRun } from '../domain/types/finish-run.js';
 
 export type RecoverInterruptedRunsDependencies = {
   readonly runRepository: RunRepository;
-  readonly finishRun: RunFinisher;
+  readonly finishRun: FinishRun;
   readonly events: EventPublisher;
 };
 
@@ -18,7 +18,7 @@ export class RecoverInterruptedRunsUseCase {
     const interruptedRuns = await runRepository.listByState('running');
 
     for (const run of interruptedRuns) {
-      await finishRun.finish(run.id, { kind: 'app-restarted' });
+      await finishRun(run.id, { kind: 'app-restarted' });
     }
     for (const run of unsettledRuns) {
       if (run.ending !== undefined) {

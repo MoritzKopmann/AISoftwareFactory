@@ -21,7 +21,7 @@ describe('RecoverInterruptedRunsUseCase', () => {
     });
     recoverInterruptedRuns = new RecoverInterruptedRunsUseCase({
       runRepository,
-      finishRun: { finish: (runId, ending) => finishRun.execute(runId, ending) },
+      finishRun: (runId, ending) => finishRun.execute(runId, ending),
       events,
     });
   });

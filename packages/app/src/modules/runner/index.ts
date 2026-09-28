@@ -3,6 +3,7 @@ import type { Clock } from '../../shared/clock/clock.js';
 import type { Logger } from '../../shared/logger/create-logger.js';
 import { createEscalateTool } from './api/tools/create-escalate-tool.js';
 import { createParkTool } from './api/tools/create-park-tool.js';
+import type { FinishRun } from './logic/domain/types/finish-run.js';
 import type { Run } from './logic/domain/types/run.js';
 import type { RunTool } from './logic/domain/types/run-tool.js';
 import { RunAlreadyActiveError } from './logic/errors/run-already-active-error.js';
@@ -12,7 +13,6 @@ import { WorktreeSetupFailedError } from './logic/errors/worktree-setup-failed-e
 import type { AgentSessions } from './logic/ports/agent-sessions.js';
 import type { Identifiers } from './logic/ports/identifiers.js';
 import type { RecentRunSteps } from './logic/ports/recent-run-steps.js';
-import type { RunFinisher } from './logic/ports/run-finisher.js';
 import type { RunRepository } from './logic/ports/run-repository.js';
 import type { RunTargets } from './logic/ports/run-targets.js';
 import type { Worktrees } from './logic/ports/worktrees.js';
@@ -71,9 +71,7 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
   const { runRepository, agentSessions, recentRunSteps, clock, events } = dependencies;
 
   const finishRunUseCase = new FinishRunUseCase({ runRepository, agentSessions, clock, events });
-  const finishRun: RunFinisher = {
-    finish: (runId, ending) => finishRunUseCase.execute(runId, ending),
-  };
+  const finishRun: FinishRun = (runId, ending) => finishRunUseCase.execute(runId, ending);
   const startRun = new StartRunUseCase({
     runRepository,
     agentSessions,

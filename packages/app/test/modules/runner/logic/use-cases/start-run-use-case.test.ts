@@ -47,13 +47,11 @@ describe('StartRunUseCase', () => {
       recentRunSteps,
       identifiers: new SequentialIdentifiers(),
       clock,
-      finishRun: {
-        finish: (runId, ending) =>
-          new FinishRunUseCase({ runRepository, agentSessions, clock, events }).execute(
-            runId,
-            ending,
-          ),
-      },
+      finishRun: (runId, ending) =>
+        new FinishRunUseCase({ runRepository, agentSessions, clock, events }).execute(
+          runId,
+          ending,
+        ),
       tools,
       worktreesDirectory: '/worktrees',
       logger,
