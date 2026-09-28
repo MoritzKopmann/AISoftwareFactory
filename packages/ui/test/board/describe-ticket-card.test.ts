@@ -39,12 +39,15 @@ describe('describeTicketCard', () => {
     expect(card.blockerLabels).toEqual(['blocked by #2', 'blocked by x/y#3']);
   });
 
-  it('should show conflicting statuses as display names', () => {
+  it('should show conflicting statuses as lowercase names', () => {
     const card = describeTicketCard(
-      buildTicketResponse({ status: 'conflict', conflictingStatuses: ['plan', 'ready'] }),
+      buildTicketResponse({
+        status: 'conflict',
+        conflictingStatuses: ['plan', 'in-progress', 'in-review'],
+      }),
       'o/n',
     );
-    expect(card.conflictLabels).toEqual(['Plan', 'Ready']);
+    expect(card.conflictLabels).toEqual(['plan', 'in progress', 'in review']);
   });
 
   it('should make one chip per closing pull request', () => {
@@ -52,6 +55,6 @@ describe('describeTicketCard', () => {
       buildTicketResponse({ closingPullRequests: [{ number: 7, url: 'u', state: 'OPEN' }] }),
       'o/n',
     );
-    expect(card.pullRequestChips).toEqual([{ label: 'PR #7', state: 'OPEN' }]);
+    expect(card.pullRequestChips).toEqual([{ label: 'PR #7' }]);
   });
 });
