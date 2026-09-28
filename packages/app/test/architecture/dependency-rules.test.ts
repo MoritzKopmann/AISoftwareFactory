@@ -232,4 +232,196 @@ describe('dependency-cruiser module rules', () => {
       expect(result.output).toContain('main-only-through-index-and-infra');
     });
   });
+
+  describe('domain-only-domain', () => {
+    it('should fail when domain imports ports', () => {
+      const result = cruise({
+        'modules/watcher/logic/domain/functions/diff.ts': "import '../../ports/store.js';\n",
+        'modules/watcher/logic/ports/store.ts': exported,
+      });
+
+      expect(result.passed).toBe(false);
+      expect(result.output).toContain('domain-only-domain');
+    });
+
+    it('should fail when domain imports shared', () => {
+      const result = cruise({
+        'modules/watcher/logic/domain/types/snapshot.ts':
+          "import type { Clock } from '../../../../../shared/clock.js';\nexport type Snapshot = Clock;\n",
+        'shared/clock.ts': 'export type Clock = number;\n',
+      });
+
+      expect(result.passed).toBe(false);
+      expect(result.output).toContain('domain-only-domain');
+    });
+  });
+
+  describe('domain-types-only-types', () => {
+    it('should fail when a domain type imports a constant', () => {
+      const result = cruise({
+        'modules/watcher/logic/domain/types/snapshot.ts': "import '../constants/labels.js';\n",
+        'modules/watcher/logic/domain/constants/labels.ts': exported,
+      });
+
+      expect(result.passed).toBe(false);
+      expect(result.output).toContain('domain-types-only-types');
+    });
+
+    it('should pass when a domain type imports another type', () => {
+      const result = cruise({
+        'modules/watcher/logic/domain/types/snapshot.ts': "import './ticket.js';\n",
+        'modules/watcher/logic/domain/types/ticket.ts': exported,
+      });
+
+      expect(result.passed).toBe(true);
+    });
+  });
+
+  describe('domain-constants-only-types', () => {
+    it('should fail when a domain constant imports a function', () => {
+      const result = cruise({
+        'modules/watcher/logic/domain/constants/labels.ts': "import '../functions/diff.js';\n",
+        'modules/watcher/logic/domain/functions/diff.ts': exported,
+      });
+
+      expect(result.passed).toBe(false);
+      expect(result.output).toContain('domain-constants-only-types');
+    });
+
+    it('should pass when a domain constant imports a type', () => {
+      const result = cruise({
+        'modules/watcher/logic/domain/constants/labels.ts': "import '../types/label.js';\n",
+        'modules/watcher/logic/domain/types/label.ts': exported,
+      });
+
+      expect(result.passed).toBe(true);
+    });
+  });
+
+  describe('domain functions', () => {
+    it('should fail when a domain function imports a use case', () => {
+      const result = cruise({
+        'modules/watcher/logic/domain/functions/diff.ts': "import '../../use-cases/poll.js';\n",
+        'modules/watcher/logic/use-cases/poll.ts': exported,
+      });
+
+      expect(result.passed).toBe(false);
+      expect(result.output).toContain('domain-only-domain');
+    });
+
+    it('should pass when a domain function imports a constant', () => {
+      const result = cruise({
+        'modules/watcher/logic/domain/functions/diff.ts': "import '../constants/labels.js';\n",
+        'modules/watcher/logic/domain/constants/labels.ts': exported,
+      });
+
+      expect(result.passed).toBe(true);
+    });
+  });
+
+  describe('domain-no-barrel', () => {
+    it('should fail when something imports a domain subfolder index', () => {
+      const result = cruise({
+        'modules/watcher/logic/use-cases/poll.ts': "import '../domain/types/index.js';\n",
+        'modules/watcher/logic/domain/types/index.ts': exported,
+      });
+
+      expect(result.passed).toBe(false);
+      expect(result.output).toContain('domain-no-barrel');
+    });
+  });
+
+  describe('logic-shared-types-only', () => {
+    it('should fail when logic imports a value from shared', () => {
+      const result = cruise({
+        'modules/watcher/logic/use-cases/poll.ts': "import '../../../../shared/clock.js';\n",
+        'shared/clock.ts': exported,
+      });
+
+      expect(result.passed).toBe(false);
+      expect(result.output).toContain('logic-shared-types-only');
+    });
+
+    it('should pass when logic imports a type from shared', () => {
+      const result = cruise({
+        'modules/watcher/logic/use-cases/poll.ts':
+          "import type { Clock } from '../../../../shared/clock.js';\nexport type Poll = Clock;\n",
+        'shared/clock.ts': 'export type Clock = number;\n',
+      });
+
+      expect(result.passed).toBe(true);
+    });
+  });
+
+  describe('use-cases-only-domain-ports-errors', () => {
+    it('should fail when a use case imports another use case', () => {
+      const result = cruise({
+        'modules/watcher/logic/use-cases/poll.ts': "import './refresh.js';\n",
+        'modules/watcher/logic/use-cases/refresh.ts': exported,
+      });
+
+      expect(result.passed).toBe(false);
+      expect(result.output).toContain('use-cases-only-domain-ports-errors');
+    });
+
+    it('should pass when a use case imports domain, ports and errors', () => {
+      const result = cruise({
+        'modules/watcher/logic/use-cases/poll.ts':
+          "import '../domain/types/snapshot.js';\nimport '../ports/store.js';\nimport '../errors/missing-error.js';\n",
+        'modules/watcher/logic/domain/types/snapshot.ts': exported,
+        'modules/watcher/logic/ports/store.ts': exported,
+        'modules/watcher/logic/errors/missing-error.ts': exported,
+      });
+
+      expect(result.passed).toBe(true);
+    });
+  });
+
+  describe('infra-logic-only-ports-domain-errors', () => {
+    it('should fail when infra imports a use case', () => {
+      const result = cruise({
+        'modules/watcher/infra/repositories/store.ts': "import '../../logic/use-cases/poll.js';\n",
+        'modules/watcher/logic/use-cases/poll.ts': exported,
+      });
+
+      expect(result.passed).toBe(false);
+      expect(result.output).toContain('infra-logic-only-ports-domain-errors');
+    });
+
+    it('should pass when infra imports ports, domain and errors', () => {
+      const result = cruise({
+        'modules/watcher/infra/repositories/store.ts':
+          "import '../../logic/ports/store.js';\nimport '../../logic/domain/types/snapshot.js';\nimport '../../logic/errors/missing-error.js';\n",
+        'modules/watcher/logic/ports/store.ts': exported,
+        'modules/watcher/logic/domain/types/snapshot.ts': exported,
+        'modules/watcher/logic/errors/missing-error.ts': exported,
+      });
+
+      expect(result.passed).toBe(true);
+    });
+  });
+
+  describe('api-logic-only-use-cases-domain-errors', () => {
+    it('should fail when an api adapter imports a port', () => {
+      const result = cruise({
+        'modules/watcher/api/routes/snapshots.ts': "import '../../logic/ports/store.js';\n",
+        'modules/watcher/logic/ports/store.ts': exported,
+      });
+
+      expect(result.passed).toBe(false);
+      expect(result.output).toContain('api-logic-only-use-cases-domain-errors');
+    });
+
+    it('should pass when an api adapter imports a use case, a domain type and an error', () => {
+      const result = cruise({
+        'modules/watcher/api/routes/snapshots.ts':
+          "import '../../logic/use-cases/poll.js';\nimport '../../logic/domain/types/snapshot.js';\nimport '../../logic/errors/missing-error.js';\n",
+        'modules/watcher/logic/use-cases/poll.ts': exported,
+        'modules/watcher/logic/domain/types/snapshot.ts': exported,
+        'modules/watcher/logic/errors/missing-error.ts': exported,
+      });
+
+      expect(result.passed).toBe(true);
+    });
+  });
 });
