@@ -17,6 +17,26 @@ describe('parseAppRoute', () => {
     });
   });
 
+  it('should return the ticket route when the hash is #/projects/owner/name/tickets/12', () => {
+    expect(parseAppRoute('#/projects/o/n/tickets/12')).toEqual({
+      kind: 'ticket',
+      id: 'o/n',
+      number: 12,
+    });
+  });
+
+  it('should return the project route when the hash is #/projects/o/tickets', () => {
+    expect(parseAppRoute('#/projects/o/tickets')).toEqual({ kind: 'project', id: 'o/tickets' });
+  });
+
+  it('should return home when the ticket number is 0', () => {
+    expect(parseAppRoute('#/projects/o/n/tickets/0')).toEqual({ kind: 'home' });
+  });
+
+  it('should return home when the ticket number is not a number', () => {
+    expect(parseAppRoute('#/projects/o/n/tickets/abc')).toEqual({ kind: 'home' });
+  });
+
   it('should return home when the hash is an unrelated route', () => {
     expect(parseAppRoute('#/tickets/5')).toEqual({ kind: 'home' });
   });
