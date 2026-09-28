@@ -33,7 +33,10 @@ packages/
 │   │           │   ├── subscriptions/← bus subscriptions, one per event handled
 │   │           │   └── tools/        ← MCP tool handlers, one per tool
 │   │           ├── logic/            ← pure TS, no I/O
-│   │           │   ├── domain/       ← immutable domain types and pure domain functions
+│   │           │   ├── domain/
+│   │           │   │   ├── types/    ← immutable domain types
+│   │           │   │   ├── functions/← pure functions over domain types
+│   │           │   │   └── constants/← fixed domain data, one canonical value per file
 │   │           │   ├── use-cases/    ← one use case per file
 │   │           │   ├── ports/        ← interfaces logic needs: repositories, integrations, clock
 │   │           │   └── errors/       ← domain errors, one per file
@@ -71,8 +74,9 @@ Commit scopes: a module's name for changes under its root. Outside module roots:
 
 | Type | Form | Location | Example |
 |---|---|---|---|
-| Domain type | `type` with `readonly` fields | `logic/domain/` | `Run`, `TicketSnapshot` |
-| Domain function | pure function over domain types | `logic/domain/` | `diffSnapshots` |
+| Domain type | `type` with `readonly` fields | `logic/domain/types/` | `Run`, `TicketSnapshot` |
+| Domain function | pure function over domain types | `logic/domain/functions/` | `diffSnapshots` |
+| Domain constant | `const` typed by a readonly domain type | `logic/domain/constants/` | `projectContract`, `aisfLabels` |
 | Use case | class, constructed with its ports, one public method `execute` | `logic/use-cases/` | `StartRunUseCase` |
 | Repository port | `interface` | `logic/ports/` | `RunRepository` |
 | Integration port | `interface` | `logic/ports/` | `GitHubIntegration`, `Clock` |
@@ -89,8 +93,9 @@ Commit scopes: a module's name for changes under its root. Outside module roots:
 
 | I need to… | Build |
 |---|---|
-| Model a thing the module reasons about | Domain type in `logic/domain/` |
-| Compute something from domain data, no I/O | Domain function in `logic/domain/` |
+| Model a thing the module reasons about | Domain type in `logic/domain/types/` |
+| Compute something from domain data, no I/O | Domain function in `logic/domain/functions/` |
+| Encode fixed domain knowledge (a canonical list or spec) | Domain constant in `logic/domain/constants/` |
 | Add an operation the outside world triggers | Use case in `logic/use-cases/`, called from an `api/` adapter |
 | Persist data | Repository port in `logic/ports/`, impl in `infra/repositories/`, plus a migration |
 | Call GitHub, the SDK, the file system or a process | Integration port in `logic/ports/`, impl in `infra/integrations/` |
@@ -141,6 +146,8 @@ issues.map((issue) => issue.number);
 
 - **Must:** `logic/` imports only `logic/` and `shared/`'s types. Never `api/`, `infra/`, Node I/O, `node:sqlite`, Hono, the Agent SDK or `gh`.
 - **Must:** inside `logic/`, `domain/` imports nothing but `domain/`. `use-cases/` import `domain/`, `ports/` and `errors/`.
+- **Must:** inside `domain/`, `types/` imports only `types/`, `constants/` imports only `types/`, and `functions/` may import `types/`, `constants/` and `functions/`.
+- **Must:** no barrel `index.ts` in a `domain/` subfolder.
 - **Must:** `api/` calls use cases only. It never imports `infra/` or a port implementation.
 - **Must:** `infra/` imports only `ports/`, `domain/` and `errors/` from `logic/`.
 
@@ -196,7 +203,10 @@ interface RunRepository {
 **Rule:** a domain value never changes. A change produces a new value.
 
 - **Must:** `readonly` fields and `ReadonlyArray`/`ReadonlyMap` collections.
-- **Must:** no classes with mutable state in `domain/`. Use plain types and pure functions.
+- **Must:** no classes with mutable state in `domain/`. Use plain types, constants and pure functions.
+- **Must:** a constant uses `readonly` fields and `ReadonlyArray`/`ReadonlyMap` types.
+- **Must:** a type lives in its constant's file while that constant is the type's only production instance. Use as a parameter or in tests doesn't move it. Once a second production instance exists, the type moves to `types/`.
+- **Must:** a constant private to one function stays in that function's file. `constants/` holds canonical domain data used by more than one file.
 
 ### Truth and persistence
 

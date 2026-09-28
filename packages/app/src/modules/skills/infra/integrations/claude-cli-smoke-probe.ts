@@ -1,6 +1,6 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { SmokeProbeReport } from '../../logic/domain/smoke-probe-report.js';
+import type { SmokeProbeReport } from '../../logic/domain/types/smoke-probe-report.js';
 import { SkillsSetupError } from '../../logic/errors/skills-setup-error.js';
 import type { SmokeProbe } from '../../logic/ports/smoke-probe.js';
 import { runClaude } from './run-claude.js';

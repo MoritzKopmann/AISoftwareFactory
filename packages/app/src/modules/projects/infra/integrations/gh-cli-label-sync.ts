@@ -1,6 +1,6 @@
 import { runProcess } from '../../../../shared/process/run-process.js';
-import { aisfLabels } from '../../logic/domain/aisf-labels.js';
-import { findMissingLabels } from '../../logic/domain/find-missing-labels.js';
+import { aisfLabels } from '../../logic/domain/constants/aisf-labels.js';
+import { findMissingLabels } from '../../logic/domain/functions/find-missing-labels.js';
 import { GitHubCliError } from '../../logic/errors/github-cli-error.js';
 import type { LabelSync } from '../../logic/ports/label-sync.js';
 import type { RepositoryReference } from '../../logic/ports/repository-resolver.js';

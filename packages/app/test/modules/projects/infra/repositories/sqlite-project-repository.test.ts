@@ -8,7 +8,7 @@ import { openDatabase } from '../../../../../src/shared/db/open-database.js';
 import { runMigrations } from '../../../../../src/shared/db/run-migrations.js';
 import { ProjectAlreadyAddedError } from '../../../../../src/modules/projects/logic/errors/project-already-added-error.js';
 import { SqliteProjectRepository } from '../../../../../src/modules/projects/infra/repositories/sqlite-project-repository.js';
-import type { Project } from '../../../../../src/modules/projects/logic/domain/project.js';
+import type { Project } from '../../../../../src/modules/projects/logic/domain/types/project.js';
 
 describe('SqliteProjectRepository', () => {
   let homeDirectory: string;

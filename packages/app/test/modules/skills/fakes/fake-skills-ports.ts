@@ -1,4 +1,4 @@
-import type { SmokeProbeReport } from '../../../../src/modules/skills/logic/domain/smoke-probe-report.js';
+import type { SmokeProbeReport } from '../../../../src/modules/skills/logic/domain/types/smoke-probe-report.js';
 import type { LocalPluginInstaller } from '../../../../src/modules/skills/logic/ports/local-plugin-installer.js';
 import type { MarketplaceRegistry } from '../../../../src/modules/skills/logic/ports/marketplace-registry.js';
 import type { PluginMirror } from '../../../../src/modules/skills/logic/ports/plugin-mirror.js';

@@ -1,5 +1,5 @@
-import type { ContractPreflightReport } from './contract-preflight-report.js';
-import type { ContractSlot, ProjectContract } from './project-contract.js';
+import type { ContractPreflightReport } from '../types/contract-preflight-report.js';
+import type { ContractSlot, ProjectContract } from '../constants/project-contract.js';
 
 const toolchainFencePattern = /```yaml aisf-toolchain\n([\s\S]*?)```/;
 const topLevelKeyPattern = /^([A-Za-z_][A-Za-z0-9_]*):/gm;

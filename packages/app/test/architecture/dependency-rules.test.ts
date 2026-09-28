@@ -64,9 +64,9 @@ describe('dependency-cruiser module rules', () => {
   describe('modules-only-through-index', () => {
     it('should fail when a module deep-imports another module', () => {
       const result = cruise({
-        'modules/scheduler/index.ts': "import '../watcher/logic/domain/snapshot.js';\n",
+        'modules/scheduler/index.ts': "import '../watcher/logic/domain/types/snapshot.js';\n",
         'modules/watcher/index.ts': exported,
-        'modules/watcher/logic/domain/snapshot.ts': exported,
+        'modules/watcher/logic/domain/types/snapshot.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -85,8 +85,9 @@ describe('dependency-cruiser module rules', () => {
     it('should pass when a module imports its own layers', () => {
       const result = cruise({
         'modules/watcher/index.ts': "import './api/routes/snapshots.js';\n",
-        'modules/watcher/api/routes/snapshots.ts': "import '../../logic/domain/snapshot.js';\n",
-        'modules/watcher/logic/domain/snapshot.ts': exported,
+        'modules/watcher/api/routes/snapshots.ts':
+          "import '../../logic/domain/types/snapshot.js';\n",
+        'modules/watcher/logic/domain/types/snapshot.ts': exported,
       });
 
       expect(result.passed).toBe(true);
@@ -96,9 +97,9 @@ describe('dependency-cruiser module rules', () => {
   describe('outside-only-through-index', () => {
     it('should fail when shared code deep-imports a module', () => {
       const result = cruise({
-        'shared/helper.ts': "import '../modules/watcher/logic/domain/snapshot.js';\n",
+        'shared/helper.ts': "import '../modules/watcher/logic/domain/types/snapshot.js';\n",
         'modules/watcher/index.ts': exported,
-        'modules/watcher/logic/domain/snapshot.ts': exported,
+        'modules/watcher/logic/domain/types/snapshot.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -141,9 +142,9 @@ describe('dependency-cruiser module rules', () => {
     it('should fail when logic deep-imports another module', () => {
       const result = cruise({
         'modules/scheduler/logic/use-cases/start.ts':
-          "import '../../../watcher/logic/domain/snapshot.js';\n",
+          "import '../../../watcher/logic/domain/types/snapshot.js';\n",
         'modules/watcher/index.ts': exported,
-        'modules/watcher/logic/domain/snapshot.ts': exported,
+        'modules/watcher/logic/domain/types/snapshot.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -223,8 +224,8 @@ describe('dependency-cruiser module rules', () => {
 
     it('should fail when main imports module logic', () => {
       const result = cruise({
-        'main.ts': "import './modules/watcher/logic/domain/snapshot.js';\n",
-        'modules/watcher/logic/domain/snapshot.ts': exported,
+        'main.ts': "import './modules/watcher/logic/domain/types/snapshot.js';\n",
+        'modules/watcher/logic/domain/types/snapshot.ts': exported,
       });
 
       expect(result.passed).toBe(false);

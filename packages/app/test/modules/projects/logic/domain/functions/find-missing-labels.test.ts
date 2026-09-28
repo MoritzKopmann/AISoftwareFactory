@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { AisfLabel } from '../../../../../src/modules/projects/logic/domain/aisf-labels.js';
-import { findMissingLabels } from '../../../../../src/modules/projects/logic/domain/find-missing-labels.js';
+import type { AisfLabel } from '../../../../../../src/modules/projects/logic/domain/constants/aisf-labels.js';
+import { findMissingLabels } from '../../../../../../src/modules/projects/logic/domain/functions/find-missing-labels.js';
 
 const readyLabel: AisfLabel = {
   name: 'status: ready',

@@ -1,5 +1,5 @@
-import { evaluateSmokeProbe } from '../domain/evaluate-smoke-probe.js';
-import type { SmokeTestResult } from '../domain/skills-status.js';
+import { evaluateSmokeProbe } from '../domain/functions/evaluate-smoke-probe.js';
+import type { SmokeTestResult } from '../domain/types/skills-status.js';
 import { SkillsSetupError } from '../errors/skills-setup-error.js';
 import type { MarketplaceRegistry } from '../ports/marketplace-registry.js';
 import type { PluginMirror } from '../ports/plugin-mirror.js';
