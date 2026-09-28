@@ -13,8 +13,9 @@ export async function requestGitHub(
   dependencies: RequestGitHubDependencies,
   url: string,
   headers: Readonly<Record<string, string>> = {},
+  body?: string,
 ): Promise<Response> {
-  const response = await sendWithTokenRetry(dependencies, url, headers);
+  const response = await sendWithTokenRetry(dependencies, url, headers, body);
   throwIfRateLimited(response);
   if (response.ok && url.endsWith('/graphql')) {
     await throwIfGraphQlRateLimited(response.clone());
@@ -29,13 +30,14 @@ async function sendWithTokenRetry(
   dependencies: RequestGitHubDependencies,
   url: string,
   headers: Readonly<Record<string, string>>,
+  body: string | undefined,
 ): Promise<Response> {
-  const response = await send(dependencies, url, headers);
+  const response = await send(dependencies, url, headers, body);
   if (response.status !== 401) {
     return response;
   }
   dependencies.token.invalidate();
-  const retriedResponse = await send(dependencies, url, headers);
+  const retriedResponse = await send(dependencies, url, headers, body);
   if (retriedResponse.status === 401) {
     throw new GitHubAuthError('GitHub rejected the gh token: run gh auth login');
   }
@@ -46,11 +48,17 @@ async function send(
   dependencies: RequestGitHubDependencies,
   url: string,
   headers: Readonly<Record<string, string>>,
+  body: string | undefined,
 ): Promise<Response> {
   const token = await dependencies.token.read();
   try {
     return await dependencies.fetch(url, {
-      headers: { ...headers, authorization: `Bearer ${token}` },
+      ...(body === undefined ? {} : { method: 'POST', body }),
+      headers: {
+        ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+        ...headers,
+        authorization: `Bearer ${token}`,
+      },
       signal: AbortSignal.timeout(dependencies.timeoutMilliseconds),
     });
   } catch (error) {

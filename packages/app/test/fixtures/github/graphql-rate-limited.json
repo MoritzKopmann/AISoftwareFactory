@@ -1,0 +1,4 @@
+{
+  "errors": [{ "type": "RATE_LIMITED", "message": "API rate limit exceeded" }],
+  "data": { "rateLimit": { "resetAt": "2026-09-28T09:30:00Z" } }
+}

@@ -1,0 +1,49 @@
+{
+  "data": {
+    "rateLimit": { "resetAt": "2026-09-28T08:59:46Z" },
+    "repository": {
+      "issues": {
+        "pageInfo": { "hasNextPage": true, "endCursor": "cursor-after-page-1" },
+        "nodes": [
+          {
+            "number": 12,
+            "title": "Epic: Watch a project",
+            "url": "https://github.com/octo/hello/issues/12",
+            "updatedAt": "2026-09-27T09:47:23Z",
+            "labels": { "nodes": [{ "name": "status: planned" }, { "name": "type: enhancement" }] },
+            "parent": null,
+            "subIssues": { "nodes": [{ "number": 13 }, { "number": 14 }] },
+            "blockedBy": { "nodes": [] },
+            "closedByPullRequestsReferences": { "nodes": [] }
+          },
+          {
+            "number": 13,
+            "title": "Snapshot the tickets",
+            "url": "https://github.com/octo/hello/issues/13",
+            "updatedAt": "2026-09-28T08:15:02Z",
+            "labels": {
+              "nodes": [
+                { "name": "status: in-review" },
+                { "name": "hitl" },
+                { "name": "priority: high" }
+              ]
+            },
+            "parent": { "number": 12, "title": "Epic: Watch a project" },
+            "subIssues": { "nodes": [] },
+            "blockedBy": {
+              "nodes": [
+                { "number": 9, "state": "OPEN", "repository": { "nameWithOwner": "octo/hello" } },
+                { "number": 4, "state": "CLOSED", "repository": { "nameWithOwner": "octo/other" } }
+              ]
+            },
+            "closedByPullRequestsReferences": {
+              "nodes": [
+                { "number": 21, "url": "https://github.com/octo/hello/pull/21", "state": "OPEN" }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

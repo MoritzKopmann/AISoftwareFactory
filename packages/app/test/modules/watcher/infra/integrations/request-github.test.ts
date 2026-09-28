@@ -22,6 +22,25 @@ describe('requestGitHub', () => {
     expect(scriptedFetch.requests[0]?.signal).toBeInstanceOf(AbortSignal);
   });
 
+  it('should POST the body as JSON when a body is given', async () => {
+    const scriptedFetch = new ScriptedFetch([new Response('{}', { status: 200 })]);
+
+    await requestGitHub(
+      {
+        fetch: scriptedFetch.fetch,
+        token: new FakeGitHubToken(['token']),
+        timeoutMilliseconds: 1000,
+      },
+      'https://api.github.com/graphql',
+      {},
+      '{"query":"{ viewer { login } }"}',
+    );
+
+    expect(scriptedFetch.requests[0]?.method).toBe('POST');
+    expect(scriptedFetch.requests[0]?.body).toBe('{"query":"{ viewer { login } }"}');
+    expect(scriptedFetch.requests[0]?.headers.get('content-type')).toBe('application/json');
+  });
+
   it('should invalidate and re-read the token once when the first answer is a 401', async () => {
     const scriptedFetch = new ScriptedFetch([
       new Response('', { status: 401 }),
