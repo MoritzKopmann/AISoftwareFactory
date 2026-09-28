@@ -50,4 +50,24 @@ describe('loadConfig', () => {
 
     expect(config.port).toBe(4399);
   });
+
+  it('should default the watcher intervals to 30 seconds and 5 minutes when unset', () => {
+    const config = loadConfig({ environment: {}, userHomeDirectory: '/home/someone' });
+
+    expect(config.watcherPollIntervalMilliseconds).toBe(30_000);
+    expect(config.watcherSnapshotIntervalMilliseconds).toBe(300_000);
+  });
+
+  it('should use the watcher interval variables when they are set', () => {
+    const config = loadConfig({
+      environment: {
+        AISF_WATCHER_POLL_INTERVAL_MILLISECONDS: '1000',
+        AISF_WATCHER_SNAPSHOT_INTERVAL_MILLISECONDS: '2000',
+      },
+      userHomeDirectory: '/home/someone',
+    });
+
+    expect(config.watcherPollIntervalMilliseconds).toBe(1000);
+    expect(config.watcherSnapshotIntervalMilliseconds).toBe(2000);
+  });
 });

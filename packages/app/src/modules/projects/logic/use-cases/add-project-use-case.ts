@@ -2,7 +2,7 @@ import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
 import type { Project } from '../domain/types/project.js';
 import { PluginInstallFailedError } from '../errors/plugin-install-failed-error.js';
 import { ProjectAlreadyAddedError } from '../errors/project-already-added-error.js';
-import type { Clock } from '../ports/clock.js';
+import type { Clock } from '../../../../shared/clock/clock.js';
 import type { LabelSync } from '../ports/label-sync.js';
 import type { PluginInstaller } from '../ports/plugin-installer.js';
 import type { ProjectRepository } from '../ports/project-repository.js';
