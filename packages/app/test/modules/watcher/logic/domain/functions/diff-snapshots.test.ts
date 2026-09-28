@@ -87,4 +87,35 @@ describe('diffSnapshots', () => {
       removedTicketNumbers: [2],
     });
   });
+
+  it.each([
+    ['review decision', { reviewDecision: 'CHANGES_REQUESTED' }],
+    ['checks', { checks: 'failing' }],
+    ['head commit', { headCommit: 'b' }],
+  ] as const)(
+    'should name the ticket as changed when its closing pull request %s differs',
+    (_field, difference) => {
+      const approvedPullRequest = {
+        number: 5,
+        url: 'https://github.com/owner/name/pull/5',
+        state: 'OPEN',
+        reviewDecision: 'APPROVED',
+        checks: 'passing',
+        mergeable: 'mergeable',
+        canBeRebased: true,
+        headCommit: 'a',
+      } as const;
+      const previous = snapshotOf([
+        buildTicket({ number: 1, closingPullRequests: [approvedPullRequest] }),
+      ]);
+      const current = snapshotOf([
+        buildTicket({
+          number: 1,
+          closingPullRequests: [{ ...approvedPullRequest, ...difference }],
+        }),
+      ]);
+
+      expect(diffSnapshots(previous, current).changedTicketNumbers).toEqual([1]);
+    },
+  );
 });

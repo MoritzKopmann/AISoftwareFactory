@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { describeTicketCard } from '../../src/board/describe-ticket-card.js';
-import { buildTicketResponse } from './fixtures/ticket-response.js';
+import {
+  buildClosingPullRequestResponse,
+  buildTicketResponse,
+} from './fixtures/ticket-response.js';
 
 describe('describeTicketCard', () => {
   it('should describe the link, number, title and flags when the ticket is plain', () => {
@@ -52,7 +55,9 @@ describe('describeTicketCard', () => {
 
   it('should make one chip per closing pull request', () => {
     const card = describeTicketCard(
-      buildTicketResponse({ closingPullRequests: [{ number: 7, url: 'u', state: 'OPEN' }] }),
+      buildTicketResponse({
+        closingPullRequests: [buildClosingPullRequestResponse({ number: 7 })],
+      }),
       'o/n',
     );
     expect(card.pullRequestChips).toEqual([{ label: 'PR #7' }]);

@@ -1,5 +1,22 @@
 import type { TicketResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
 
+export type ClosingPullRequestResponse = TicketResponse['closingPullRequests'][number];
+
+export function buildClosingPullRequestResponse(
+  overrides: Partial<ClosingPullRequestResponse> & Pick<ClosingPullRequestResponse, 'number'>,
+): ClosingPullRequestResponse {
+  return {
+    url: `https://github.com/o/n/pull/${overrides.number}`,
+    state: 'OPEN',
+    reviewDecision: 'none',
+    checks: 'none',
+    mergeable: 'unknown',
+    canBeRebased: false,
+    headCommit: 'abc123',
+    ...overrides,
+  };
+}
+
 export function buildTicketResponse(overrides: Partial<TicketResponse> = {}): TicketResponse {
   return {
     number: 1,

@@ -1,4 +1,5 @@
 import { deriveTicketStatus } from '../../logic/domain/functions/derive-ticket-status.js';
+import type { ClosingPullRequest } from '../../logic/domain/types/closing-pull-request.js';
 import type { RepositoryReference } from '../../logic/domain/types/repository-reference.js';
 import type { Ticket } from '../../logic/domain/types/ticket.js';
 import type { TicketSnapshot } from '../../logic/domain/types/ticket-snapshot.js';
@@ -19,7 +20,18 @@ const ticketFields = `
   parent { number title }
   subIssues(first: 100) { nodes { number } }
   blockedBy(first: 20) { nodes { number state repository { nameWithOwner } } }
-  closedByPullRequestsReferences(first: 5, includeClosedPrs: true) { nodes { number url state } }
+  closedByPullRequestsReferences(first: 5, includeClosedPrs: true) {
+    nodes {
+      number
+      url
+      state
+      reviewDecision
+      mergeable
+      canBeRebased
+      headRefOid
+      commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
+    }
+  }
 `;
 
 const openTicketsQuery = `
@@ -81,6 +93,15 @@ type IssueNode = {
       readonly number: number;
       readonly url: string;
       readonly state: string;
+      readonly reviewDecision: string | null;
+      readonly mergeable: string;
+      readonly canBeRebased: boolean;
+      readonly headRefOid: string;
+      readonly commits: {
+        readonly nodes: ReadonlyArray<{
+          readonly commit: { readonly statusCheckRollup: { readonly state: string } | null };
+        }>;
+      };
     }>;
   };
 };
@@ -217,7 +238,46 @@ function toTicket(node: IssueNode, state: 'open' | 'closed'): Ticket {
       number: pullRequest.number,
       url: pullRequest.url,
       state: pullRequest.state,
+      reviewDecision: toReviewDecision(pullRequest.reviewDecision),
+      checks: toChecks(pullRequest.commits.nodes[0]?.commit.statusCheckRollup?.state),
+      mergeable: toMergeable(pullRequest.mergeable),
+      canBeRebased: pullRequest.canBeRebased,
+      headCommit: pullRequest.headRefOid,
     })),
     updatedAt: node.updatedAt,
   };
+}
+
+function toReviewDecision(reviewDecision: string | null): ClosingPullRequest['reviewDecision'] {
+  return reviewDecision === 'APPROVED' ||
+    reviewDecision === 'CHANGES_REQUESTED' ||
+    reviewDecision === 'REVIEW_REQUIRED'
+    ? reviewDecision
+    : 'none';
+}
+
+function toChecks(rollupState: string | undefined): ClosingPullRequest['checks'] {
+  switch (rollupState) {
+    case 'SUCCESS':
+      return 'passing';
+    case 'FAILURE':
+    case 'ERROR':
+      return 'failing';
+    case 'PENDING':
+    case 'EXPECTED':
+      return 'pending';
+    default:
+      return 'none';
+  }
+}
+
+function toMergeable(mergeable: string): ClosingPullRequest['mergeable'] {
+  switch (mergeable) {
+    case 'MERGEABLE':
+      return 'mergeable';
+    case 'CONFLICTING':
+      return 'conflicting';
+    default:
+      return 'unknown';
+  }
 }

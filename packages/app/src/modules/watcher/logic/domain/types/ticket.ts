@@ -1,3 +1,4 @@
+import type { ClosingPullRequest } from './closing-pull-request.js';
 import type { TicketStatus } from './ticket-status.js';
 
 export type Ticket = {
@@ -14,10 +15,6 @@ export type Ticket = {
     readonly number: number;
     readonly open: boolean;
   }>;
-  readonly closingPullRequests: ReadonlyArray<{
-    readonly number: number;
-    readonly url: string;
-    readonly state: string;
-  }>;
+  readonly closingPullRequests: ReadonlyArray<ClosingPullRequest>;
   readonly updatedAt: string;
 };
