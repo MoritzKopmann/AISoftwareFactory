@@ -1,0 +1,9 @@
+import type { SessionTool } from './session-tool.js';
+
+export type SessionSpec = {
+  readonly sessionId: string;
+  readonly worktreePath: string;
+  readonly prompt: string;
+  readonly model: string;
+  readonly tools: ReadonlyArray<SessionTool>;
+};

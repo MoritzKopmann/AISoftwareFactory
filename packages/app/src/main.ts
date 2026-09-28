@@ -15,11 +15,18 @@ import { EnvironmentCredentialSource } from './modules/skills/infra/integrations
 import { FileSystemPluginMirror } from './modules/skills/infra/integrations/file-system-plugin-mirror.js';
 import { FileSystemSlotReader } from './modules/skills/infra/integrations/file-system-slot-reader.js';
 import { createSkillsModule, type SkillsModule } from './modules/skills/index.js';
+import { ClaudeAgentSdkSessions } from './modules/runner/infra/integrations/claude-agent-sdk-sessions.js';
+import { GitCliWorktrees } from './modules/runner/infra/integrations/git-cli-worktrees.js';
+import { InMemoryRecentRunSteps } from './modules/runner/infra/integrations/in-memory-recent-run-steps.js';
+import { RandomUuidIdentifiers } from './modules/runner/infra/integrations/random-uuid-identifiers.js';
+import { SqliteRunRepository } from './modules/runner/infra/repositories/sqlite-run-repository.js';
+import { createRunnerModule, type RunnerModule } from './modules/runner/index.js';
 import { createUiModule, type UiModule } from './modules/ui/index.js';
 import { FetchGraphQLTicketSource } from './modules/watcher/infra/integrations/fetch-graphql-ticket-source.js';
 import { FetchIssueFeeds } from './modules/watcher/infra/integrations/fetch-issue-feeds.js';
 import { GhCliGitHubToken } from './modules/watcher/infra/integrations/gh-cli-github-token.js';
 import { createWatcherModule, type WatcherModule } from './modules/watcher/index.js';
+import { findOnPath } from './cli/find-on-path.js';
 import { isOnPath } from './cli/is-on-path.js';
 import { openBrowser } from './cli/open-browser.js';
 import { parseCliArguments } from './cli/parse-cli-arguments.js';
@@ -35,7 +42,7 @@ import { loadConfig } from './shared/config/load-config.js';
 import { migrations } from './shared/db/migrations.js';
 import { openDatabase } from './shared/db/open-database.js';
 import { runMigrations } from './shared/db/run-migrations.js';
-import { consoleLogSink, createLogger } from './shared/logger/create-logger.js';
+import { consoleLogSink, createLogger, type Logger } from './shared/logger/create-logger.js';
 
 function buildBridgeModule(kitDirectory: string): BridgeModule {
   return createBridgeModule({ kitDirectory });
@@ -103,6 +110,48 @@ function buildWatcherModule(
   });
 }
 
+function buildRunnerModule(
+  config: Config,
+  database: DatabaseSync,
+  events: EventPublisher,
+  projects: ProjectsModule,
+  watcher: WatcherModule,
+  claudeExecutablePath: string,
+  logger: Logger,
+): RunnerModule {
+  const clock = new SystemClock();
+  return createRunnerModule({
+    runRepository: new SqliteRunRepository(database),
+    agentSessions: new ClaudeAgentSdkSessions({
+      claudeExecutablePath,
+      pluginDirectory: config.pluginMirrorDirectory,
+      now: () => clock.now(),
+    }),
+    worktrees: new GitCliWorktrees(),
+    runTargets: {
+      find: async (projectId, ticketNumber) => {
+        const project = (await projects.list()).find(({ id }) => id === projectId);
+        const projectTicket = await watcher.ticket(projectId, ticketNumber);
+        if (project === undefined || projectTicket?.ticket === undefined) {
+          return undefined;
+        }
+        return {
+          checkoutPath: project.checkoutPath,
+          repositoryName: project.repository.name,
+          ticketTitle: projectTicket.ticket.title,
+        };
+      },
+    },
+    recentRunSteps: new InMemoryRecentRunSteps(),
+    identifiers: new RandomUuidIdentifiers(),
+    clock,
+    events,
+    worktreesDirectory: config.worktreesDirectory,
+    appTools: [],
+    logger,
+  });
+}
+
 function buildUiModule(
   projects: ProjectsModule,
   skills: SkillsModule,
@@ -133,7 +182,29 @@ const bridge = buildBridgeModule(kitDirectory);
 const skills = buildSkillsModule(config, pluginDirectory);
 const projects = buildProjectsModule(database, eventBus, skills);
 const watcher = buildWatcherModule(config, eventBus, projects);
+const runner = buildRunnerModule(
+  config,
+  database,
+  eventBus,
+  projects,
+  watcher,
+  findOnPath('claude') ?? 'claude',
+  logger,
+);
 const ui = buildUiModule(projects, skills, watcher);
+
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    runner.abortSessions();
+    process.exit(0);
+  });
+}
+
+try {
+  await runner.recover();
+} catch (error) {
+  logger.error(`Recovering interrupted runs failed: ${String(error)}`);
+}
 
 const runningServer = await startServer({
   app: createApp({

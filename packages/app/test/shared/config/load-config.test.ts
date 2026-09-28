@@ -36,6 +36,15 @@ describe('loadConfig', () => {
     expect(config.skillsProbeDirectory).toBe('/tmp/aisf-test/skills-probe');
   });
 
+  it('should put the worktrees directory in the home directory when loaded', () => {
+    const config = loadConfig({
+      environment: { AISF_HOME: '/tmp/aisf-test' },
+      userHomeDirectory: '/home/someone',
+    });
+
+    expect(config.worktreesDirectory).toBe('/tmp/aisf-test/worktrees');
+  });
+
   it('should default the port to 4317 when AISF_PORT is unset', () => {
     const config = loadConfig({ environment: {}, userHomeDirectory: '/home/someone' });
 
