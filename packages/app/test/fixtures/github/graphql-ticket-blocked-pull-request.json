@@ -1,0 +1,78 @@
+{
+  "data": {
+    "rateLimit": {
+      "resetAt": "2026-09-28T08:59:46Z"
+    },
+    "repository": {
+      "issueOrPullRequest": {
+        "__typename": "Issue",
+        "number": 8,
+        "title": "Conditional feed checks",
+        "url": "https://github.com/octo/hello/issues/8",
+        "state": "CLOSED",
+        "updatedAt": "2026-09-28T08:41:09Z",
+        "labels": {
+          "nodes": [
+            {
+              "name": "status: in-review"
+            }
+          ]
+        },
+        "parent": {
+          "number": 12,
+          "title": "Epic: Watch a project"
+        },
+        "subIssues": {
+          "nodes": []
+        },
+        "blockedBy": {
+          "nodes": []
+        },
+        "closedByPullRequestsReferences": {
+          "nodes": [
+            {
+              "number": 22,
+              "url": "https://github.com/octo/hello/pull/22",
+              "state": "OPEN",
+              "reviewDecision": "CHANGES_REQUESTED",
+              "mergeable": "CONFLICTING",
+              "canBeRebased": false,
+              "headRefOid": "1a2b3c4d5e6f",
+              "commits": {
+                "nodes": [
+                  {
+                    "commit": {
+                      "statusCheckRollup": {
+                        "state": "FAILURE"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "number": 23,
+              "url": "https://github.com/octo/hello/pull/23",
+              "state": "OPEN",
+              "reviewDecision": "REVIEW_REQUIRED",
+              "mergeable": "MERGEABLE",
+              "canBeRebased": false,
+              "headRefOid": "6f5e4d3c2b1a",
+              "commits": {
+                "nodes": [
+                  {
+                    "commit": {
+                      "statusCheckRollup": {
+                        "state": "PENDING"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

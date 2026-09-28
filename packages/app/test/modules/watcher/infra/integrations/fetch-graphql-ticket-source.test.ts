@@ -67,7 +67,16 @@ describe('FetchGraphQLTicketSource', () => {
           { repository: 'octo/other', number: 4, open: false },
         ],
         closingPullRequests: [
-          { number: 21, url: 'https://github.com/octo/hello/pull/21', state: 'OPEN' },
+          {
+            number: 21,
+            url: 'https://github.com/octo/hello/pull/21',
+            state: 'OPEN',
+            reviewDecision: 'APPROVED',
+            checks: 'passing',
+            mergeable: 'mergeable',
+            canBeRebased: true,
+            headCommit: '9f2c1e7a4b8d',
+          },
         ],
         updatedAt: '2026-09-28T08:15:02Z',
       });
@@ -125,7 +134,16 @@ describe('FetchGraphQLTicketSource', () => {
         'closed',
       ]);
       expect(snapshot.recentlyClosedTickets[0]?.closingPullRequests).toEqual([
-        { number: 20, url: 'https://github.com/octo/hello/pull/20', state: 'MERGED' },
+        {
+          number: 20,
+          url: 'https://github.com/octo/hello/pull/20',
+          state: 'MERGED',
+          reviewDecision: 'none',
+          checks: 'none',
+          mergeable: 'unknown',
+          canBeRebased: false,
+          headCommit: '0c4d5e6f7a8b',
+        },
       ]);
     });
 
@@ -159,6 +177,21 @@ describe('FetchGraphQLTicketSource', () => {
   });
 
   describe('ticket', () => {
+    it('should map a failing rollup, requested changes and a conflict when the pull request is blocked', async () => {
+      const scriptedFetch = new ScriptedFetch([answer('graphql-ticket-blocked-pull-request.json')]);
+
+      const ticket = await createSource(scriptedFetch).ticket(repository, 8);
+
+      expect(ticket?.closingPullRequests).toEqual([
+        expect.objectContaining({
+          reviewDecision: 'CHANGES_REQUESTED',
+          checks: 'failing',
+          mergeable: 'conflicting',
+        }),
+        expect.objectContaining({ reviewDecision: 'REVIEW_REQUIRED', checks: 'pending' }),
+      ]);
+    });
+
     it('should return the ticket with status closed when the number is a closed issue', async () => {
       const scriptedFetch = new ScriptedFetch([answer('graphql-ticket.json')]);
 

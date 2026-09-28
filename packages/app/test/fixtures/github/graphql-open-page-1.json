@@ -38,7 +38,18 @@
             },
             "closedByPullRequestsReferences": {
               "nodes": [
-                { "number": 21, "url": "https://github.com/octo/hello/pull/21", "state": "OPEN" }
+                {
+                  "number": 21,
+                  "url": "https://github.com/octo/hello/pull/21",
+                  "state": "OPEN",
+                  "reviewDecision": "APPROVED",
+                  "mergeable": "MERGEABLE",
+                  "canBeRebased": true,
+                  "headRefOid": "9f2c1e7a4b8d",
+                  "commits": {
+                    "nodes": [{ "commit": { "statusCheckRollup": { "state": "SUCCESS" } } }]
+                  }
+                }
               ]
             }
           }
