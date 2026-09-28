@@ -100,12 +100,12 @@ describe('describeBoard', () => {
     expect(description.rows.map((row) => row.key)).toEqual(['ready', 'idea']);
   });
 
-  it('should read "50 of 340", collapse it and note the truncation when Closed is truncated', () => {
+  it('should read "50 of 340", collapse it and flag the truncation when Closed is truncated', () => {
     const description = describeBoard(buildBoard([buildRow('closed', 50, 340)]), 'o/n', formatTime);
     const closedRow = description.rows[0];
     expect(closedRow?.countLabel).toBe('50 of 340');
     expect(closedRow?.collapsedByDefault).toBe(true);
-    expect(closedRow?.truncatedNote).toBe('Showing the 50 most recent of 340');
+    expect(closedRow?.truncated).toBe(true);
   });
 
   it('should collapse only the closed row by default', () => {
@@ -117,25 +117,19 @@ describe('describeBoard', () => {
     expect(description.rows.map((row) => row.collapsedByDefault)).toEqual([false, true]);
   });
 
-  it('should warn only when the conflict row has tickets', () => {
-    const withTickets = describeBoard(
-      buildBoard([buildRow('conflict', 1), buildRow('ready', 1)]),
+  it('should leave the fixed notes to the component when the conflict row has tickets', () => {
+    const description = describeBoard(
+      buildBoard([buildRow('conflict', 1), buildRow('closed', 50, 340)]),
       'o/n',
       formatTime,
     );
-    const withoutTickets = describeBoard(
-      buildBoard([buildRow('conflict', 0), buildRow('ready', 1)]),
-      'o/n',
-      formatTime,
-    );
-    expect(withTickets.rows[0]?.warning).toBe('These tickets carry conflicting status labels.');
-    expect(withTickets.rows[1]?.warning).toBeUndefined();
-    expect(withoutTickets.rows[0]?.warning).toBeUndefined();
+    expect(description.rows[0]).not.toHaveProperty('warning');
+    expect(description.rows[1]).not.toHaveProperty('truncatedNote');
   });
 
-  it('should show a plain count without a truncation note when nothing is cut', () => {
+  it('should show a plain count and no truncation when nothing is cut', () => {
     const description = describeBoard(buildBoard([buildRow('ready', 3)]), 'o/n', formatTime);
     expect(description.rows[0]?.countLabel).toBe('3');
-    expect(description.rows[0]?.truncatedNote).toBeUndefined();
+    expect(description.rows[0]?.truncated).toBe(false);
   });
 });

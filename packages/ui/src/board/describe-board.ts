@@ -12,8 +12,7 @@ export type BoardRowDescription = {
   readonly label: string;
   readonly countLabel: string;
   readonly collapsedByDefault: boolean;
-  readonly warning?: string;
-  readonly truncatedNote?: string;
+  readonly truncated: boolean;
   readonly tickets: ReadonlyArray<TicketResponse>;
 };
 
@@ -32,12 +31,7 @@ function describeRow(row: BoardRowResponse): BoardRowDescription {
     label: ticketStatusLabel(row.key),
     countLabel: truncated ? `${row.tickets.length} of ${row.totalCount}` : `${row.totalCount}`,
     collapsedByDefault: row.key === 'closed',
-    ...(row.key === 'conflict' && row.tickets.length > 0
-      ? { warning: 'These tickets carry conflicting status labels.' }
-      : {}),
-    ...(truncated
-      ? { truncatedNote: `Showing the ${row.tickets.length} most recent of ${row.totalCount}` }
-      : {}),
+    truncated,
     tickets: row.tickets,
   };
 }

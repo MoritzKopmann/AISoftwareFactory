@@ -379,3 +379,86 @@ a.ext::after {
   padding: 2px 10px;
   font-size: 12px;
 }
+
+.board {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.row {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.row-h {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.row-h .label {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.row-h .n {
+  font: 500 11px var(--font-mono);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.row-note {
+  font-size: var(--text-size-sm);
+}
+
+.none {
+  font-size: var(--text-size-sm);
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+details.row > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+details.row > summary::-webkit-details-marker {
+  display: none;
+}
+
+.chev {
+  font-family: var(--font-mono);
+  color: var(--muted);
+  display: inline-block;
+  transition: transform 0.15s;
+}
+
+details[open] > summary .chev {
+  transform: rotate(90deg);
+}
+
+.toggle-text {
+  font-size: var(--text-size-sm);
+  color: var(--muted);
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 2px;
+}
+
+summary:hover .toggle-text {
+  color: var(--text);
+  text-decoration-color: var(--accent);
+}
+
+details[open] .t-show,
+details:not([open]) .t-hide {
+  display: none;
+}
+
+.cards {
+  display: grid;
+  gap: var(--gap);
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
