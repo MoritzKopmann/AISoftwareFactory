@@ -1,16 +1,23 @@
 @font-face {
-  font-family: 'Atkinson Hyperlegible';
+  font-family: 'Atkinson Hyperlegible Next';
   font-weight: 400;
   font-style: normal;
   font-display: swap;
-  src: url('/aisf/fonts/atkinson-hyperlegible-latin-400-normal.woff2') format('woff2');
+  src: url('/aisf/fonts/atkinson-hyperlegible-next-latin-400-normal.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'Atkinson Hyperlegible';
+  font-family: 'Atkinson Hyperlegible Next';
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: url('/aisf/fonts/atkinson-hyperlegible-next-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible Next';
   font-weight: 700;
   font-style: normal;
   font-display: swap;
-  src: url('/aisf/fonts/atkinson-hyperlegible-latin-700-normal.woff2') format('woff2');
+  src: url('/aisf/fonts/atkinson-hyperlegible-next-latin-700-normal.woff2') format('woff2');
 }
 @font-face {
   font-family: 'JetBrains Mono';
@@ -39,20 +46,21 @@
   --bg: #e9eef2;
   --surface: #f8fafb;
   --surface-2: #dfe6ec;
+  --surface-sunken: #e1e8ed;
   --border: #a9b8c5;
   --border-strong: #6f8499;
   --text: #13243a;
   --muted: #4c6075;
-  --accent: #d05f1a;
+  --accent: #c45404;
   --accent-ink: #ffffff;
   --accent-soft: #f8e2d2;
-  --ok: #2b7a44;
-  --warn: #a2640b;
+  --ok: #257540;
+  --warn: #935902;
   --danger: #b8322f;
   --info: #2d5f93;
   --hitl: #6b47c2;
 
-  --font-ui: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --font-ui: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --font-display: var(--font-mono);
   --display-weight: 700;
@@ -64,13 +72,15 @@
   --label-size: 11px;
   --label-weight: 500;
 
-  --radius: 0;
-  --radius-sm: 0;
+  --radius: 4px;
+  --radius-sm: 2px;
   --radius-chip: 0;
   --radius-switch: 0;
   --space: 4px;
-  --pad: 14px;
-  --gap: 10px;
+  --pad: 16px;
+  --gap: 8px;
+  --text-size-sm: 13px;
+  --line-sm: 1.4;
   --text-size: 15px;
   --line: 1.45;
   --card-border: 1px solid var(--border-strong);
@@ -93,18 +103,19 @@
     --bg: #0d1924;
     --surface: #122130;
     --surface-2: #192b3d;
+    --surface-sunken: #0a141d;
     --border: #2e4760;
-    --border-strong: #4d6a86;
+    --border-strong: #587592;
     --text: #d8e4ee;
-    --muted: #8aa1b6;
+    --muted: #9ab2c7;
     --accent: #ff8a45;
     --accent-ink: #1c0d03;
     --accent-soft: #3b2515;
     --ok: #5cc07a;
     --warn: #e5ab4e;
-    --danger: #f07268;
-    --info: #6fa6db;
-    --hitl: #a98cf0;
+    --danger: #ff8f84;
+    --info: #7cb4ea;
+    --hitl: #baa0ff;
 
     color-scheme: dark;
   }
@@ -115,18 +126,19 @@
   --bg: #0d1924;
   --surface: #122130;
   --surface-2: #192b3d;
+  --surface-sunken: #0a141d;
   --border: #2e4760;
-  --border-strong: #4d6a86;
+  --border-strong: #587592;
   --text: #d8e4ee;
-  --muted: #8aa1b6;
+  --muted: #9ab2c7;
   --accent: #ff8a45;
   --accent-ink: #1c0d03;
   --accent-soft: #3b2515;
   --ok: #5cc07a;
   --warn: #e5ab4e;
-  --danger: #f07268;
-  --info: #6fa6db;
-  --hitl: #a98cf0;
+  --danger: #ff8f84;
+  --info: #7cb4ea;
+  --hitl: #baa0ff;
 
   color-scheme: dark;
 }
@@ -193,7 +205,7 @@ h2 {
 }
 
 h3 {
-  font-size: 14.5px;
+  font-size: 14px;
 }
 
 p {
@@ -201,5 +213,24 @@ p {
 }
 
 .muted {
+  color: var(--muted);
+}
+
+a {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 2px;
+}
+
+a:hover,
+a:focus-visible {
+  text-decoration-color: var(--accent);
+}
+
+small,
+.sm {
+  font-size: var(--text-size-sm);
+  line-height: var(--line-sm);
   color: var(--muted);
 }

@@ -32,6 +32,15 @@ describe('createKitRoutes', () => {
     expect(response.headers.get('content-type')).toContain('font/woff2');
   });
 
+  it('should serve the 600 weight of Atkinson Hyperlegible Next as woff2 when it is requested', async () => {
+    const response = await createTestApp().request(
+      '/aisf/fonts/atkinson-hyperlegible-next-latin-600-normal.woff2',
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('font/woff2');
+  });
+
   it('should answer 404 when the file is not part of the kit', async () => {
     const response = await createTestApp().request('/aisf/missing.css');
 
@@ -44,15 +53,16 @@ describe('kit.css', () => {
     '--bg': '#e9eef2',
     '--surface': '#f8fafb',
     '--surface-2': '#dfe6ec',
+    '--surface-sunken': '#e1e8ed',
     '--border': '#a9b8c5',
     '--border-strong': '#6f8499',
     '--text': '#13243a',
     '--muted': '#4c6075',
-    '--accent': '#d05f1a',
+    '--accent': '#c45404',
     '--accent-ink': '#ffffff',
     '--accent-soft': '#f8e2d2',
-    '--ok': '#2b7a44',
-    '--warn': '#a2640b',
+    '--ok': '#257540',
+    '--warn': '#935902',
     '--danger': '#b8322f',
     '--info': '#2d5f93',
     '--hitl': '#6b47c2',
@@ -61,18 +71,19 @@ describe('kit.css', () => {
     '--bg': '#0d1924',
     '--surface': '#122130',
     '--surface-2': '#192b3d',
+    '--surface-sunken': '#0a141d',
     '--border': '#2e4760',
-    '--border-strong': '#4d6a86',
+    '--border-strong': '#587592',
     '--text': '#d8e4ee',
-    '--muted': '#8aa1b6',
+    '--muted': '#9ab2c7',
     '--accent': '#ff8a45',
     '--accent-ink': '#1c0d03',
     '--accent-soft': '#3b2515',
     '--ok': '#5cc07a',
     '--warn': '#e5ab4e',
-    '--danger': '#f07268',
-    '--info': '#6fa6db',
-    '--hitl': '#a98cf0',
+    '--danger': '#ff8f84',
+    '--info': '#7cb4ea',
+    '--hitl': '#baa0ff',
   };
 
   function declarationsOf(block: string): ReadonlyMap<string, string> {
@@ -117,19 +128,28 @@ describe('kit.css', () => {
     expect(Object.fromEntries(declarations)).toMatchObject(darkPalette);
   });
 
-  it('should use zero radius, hairline borders and no shadows when the tokens are read', async () => {
+  it('should use small radii, square chips and switches, hairline borders and no shadows when the tokens are read', async () => {
     const declarations = declarationsOf(blockStartingWith(await readKitStylesheet(), ':root {'));
 
-    expect(declarations.get('--radius')).toBe('0');
+    expect(declarations.get('--radius')).toBe('4px');
+    expect(declarations.get('--radius-sm')).toBe('2px');
+    expect(declarations.get('--radius-chip')).toBe('0');
+    expect(declarations.get('--radius-switch')).toBe('0');
     expect(declarations.get('--space')).toBe('4px');
+    expect(declarations.get('--pad')).toBe('16px');
+    expect(declarations.get('--gap')).toBe('8px');
+    expect(declarations.get('--text-size-sm')).toBe('13px');
+    expect(declarations.get('--line-sm')).toBe('1.4');
     expect(declarations.get('--card-border')).toBe('1px solid var(--border-strong)');
     expect(declarations.get('--card-shadow')).toBe('none');
   });
 
-  it('should set body text in Atkinson Hyperlegible and headings in JetBrains Mono when the tokens are read', async () => {
+  it('should set body text in Atkinson Hyperlegible Next and headings in JetBrains Mono when the tokens are read', async () => {
     const declarations = declarationsOf(blockStartingWith(await readKitStylesheet(), ':root {'));
 
-    expect(declarations.get('--font-ui')).toContain("'Atkinson Hyperlegible'");
+    expect(declarations.get('--font-ui')).toBe(
+      "'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif",
+    );
     expect(declarations.get('--font-mono')).toContain("'JetBrains Mono'");
     expect(declarations.get('--font-display')).toBe('var(--font-mono)');
     expect(declarations.get('--display-transform')).toBe('uppercase');
