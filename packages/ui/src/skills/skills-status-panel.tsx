@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Banner } from '../shared/banner.js';
 import { describeSkillsStatus, type SkillsStatusResponse } from './describe-skills-status.js';
 
 const pollIntervalMilliseconds = 2000;
@@ -37,17 +38,22 @@ export function SkillsStatusPanel() {
   }, []);
 
   if (loadFailed) {
-    return <p role="alert">The skills status could not be loaded.</p>;
+    return <Banner tone="danger" message="The skills status could not be loaded." />;
   }
   if (status === undefined) {
-    return <p role="status">Loading the skills status…</p>;
+    return null;
   }
 
   const description = describeSkillsStatus(status);
+  if (description === undefined) {
+    return null;
+  }
   return (
-    <section role={status.state === 'failed' ? 'alert' : 'status'}>
-      <h2>{description.headline}</h2>
-      {description.detail !== undefined && <p>{description.detail}</p>}
-    </section>
+    <Banner
+      tone={description.tone}
+      message={description.message}
+      pulses={description.pulses}
+      {...(description.detail !== undefined && { detail: description.detail })}
+    />
   );
 }
