@@ -52,6 +52,28 @@ export class GhCliGitHubWrites implements GitHubWrites {
     await this.runGh(repository, ['issue', 'comment', String(ticketNumber), '--body', body]);
   }
 
+  async rebaseMerge(
+    repository: RepositoryReference,
+    pullRequestNumber: number,
+    headCommit: string,
+  ): Promise<void> {
+    try {
+      await this.runGh(repository, [
+        'pr',
+        'merge',
+        String(pullRequestNumber),
+        '--rebase',
+        '--match-head-commit',
+        headCommit,
+      ]);
+    } catch (error) {
+      if (error instanceof GitHubWriteFailedError && /already merged/i.test(error.message)) {
+        return;
+      }
+      throw error;
+    }
+  }
+
   private async readLiveTicket(
     repository: RepositoryReference,
     ticketNumber: number,

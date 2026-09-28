@@ -1,13 +1,16 @@
 import type { EventSubscriber } from '../../shared/bus/event-subscriber.js';
 import type { Logger } from '../../shared/logger/create-logger.js';
 import { subscribeToRunFinished } from './api/subscriptions/subscribe-to-run-finished.js';
+import { subscribeToSnapshotChanged } from './api/subscriptions/subscribe-to-snapshot-changed.js';
 import type { RunAvailability } from './logic/domain/types/run-availability.js';
 import { RunNotAvailableError } from './logic/errors/run-not-available-error.js';
 import type { GitHubWrites } from './logic/ports/github-writes.js';
 import type { ProjectLookup } from './logic/ports/project-lookup.js';
+import type { ReviewedTicketLookup } from './logic/ports/reviewed-ticket-lookup.js';
 import type { RunnerPort } from './logic/ports/runner-port.js';
 import type { RunsGate } from './logic/ports/runs-gate.js';
 import type { TicketLookup } from './logic/ports/ticket-lookup.js';
+import { MergeApprovedPullRequestsUseCase } from './logic/use-cases/merge-approved-pull-requests-use-case.js';
 import { ReadRunAvailabilityUseCase } from './logic/use-cases/read-run-availability-use-case.js';
 import { SettleFinishedRunUseCase } from './logic/use-cases/settle-finished-run-use-case.js';
 import { StartTicketRunUseCase } from './logic/use-cases/start-ticket-run-use-case.js';
@@ -23,6 +26,7 @@ export type SchedulerModuleDependencies = {
   readonly gitHubWrites: GitHubWrites;
   readonly runner: RunnerPort;
   readonly ticketLookup: TicketLookup;
+  readonly reviewedTicketLookup: ReviewedTicketLookup;
   readonly runsGate: RunsGate;
   readonly projectLookup: ProjectLookup;
   readonly subscriber: EventSubscriber;
@@ -36,8 +40,16 @@ export type SchedulerModule = {
 };
 
 export function createSchedulerModule(dependencies: SchedulerModuleDependencies): SchedulerModule {
-  const { gitHubWrites, runner, ticketLookup, runsGate, projectLookup, subscriber, logger } =
-    dependencies;
+  const {
+    gitHubWrites,
+    runner,
+    ticketLookup,
+    reviewedTicketLookup,
+    runsGate,
+    projectLookup,
+    subscriber,
+    logger,
+  } = dependencies;
 
   const readRunAvailability = new ReadRunAvailabilityUseCase({
     ticketLookup,
@@ -56,10 +68,18 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
     projectLookup,
     logger,
   });
+  const mergeApprovedPullRequests = new MergeApprovedPullRequestsUseCase({
+    gitHubWrites,
+    runner,
+    reviewedTicketLookup,
+    projectLookup,
+    logger,
+  });
 
   return {
     start: () => {
       subscribeToRunFinished(subscriber, settleFinishedRun, logger);
+      subscribeToSnapshotChanged(subscriber, mergeApprovedPullRequests, logger);
     },
     startRun: (projectId, ticketNumber) => startTicketRun.execute(projectId, ticketNumber),
     runAvailability: (projectId, ticketNumber) =>
