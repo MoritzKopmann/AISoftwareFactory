@@ -6,17 +6,23 @@ type ContractReportProps = {
 };
 
 export function ContractReport({ report }: ContractReportProps) {
+  if (report.passed) {
+    return null;
+  }
   const description = describeContractReport(report);
 
   return (
-    <section role={report.passed ? 'status' : 'alert'}>
-      <h3>{description.headline}</h3>
+    <section className="panel" role="alert">
+      <span>
+        <span className="shape s-warn" aria-hidden="true">
+          ▲
+        </span>{' '}
+        <b>{description.headline}</b>
+      </span>
       {description.missingItems.length > 0 && (
         <ul>
           {description.missingItems.map((item) => (
-            <li key={item} className="mono">
-              {item}
-            </li>
+            <li key={item}>{item}</li>
           ))}
         </ul>
       )}

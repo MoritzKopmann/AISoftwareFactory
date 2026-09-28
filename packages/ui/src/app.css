@@ -87,6 +87,54 @@ body {
   min-width: 0;
 }
 
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.page-head .grow {
+  flex: 1;
+}
+
+.page-head h1 {
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--font-ui);
+  font-size: 22px;
+}
+
+.updated {
+  font-size: var(--text-size-sm);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.panel {
+  display: grid;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: inset 4px 0 0 var(--warn);
+}
+
+.panel ul {
+  margin: 0;
+  padding-left: 18px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.empty {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding: 16px 0;
+}
+
 form label {
   display: block;
   margin-bottom: var(--space);

@@ -79,6 +79,7 @@ export function AppShell() {
       case 'project':
         return (
           <ProjectPage
+            key={route.id}
             id={route.id}
             project={projects.find((project) => project.id === route.id)}
           />

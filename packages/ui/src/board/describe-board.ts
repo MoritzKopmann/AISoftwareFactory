@@ -1,10 +1,11 @@
 import type {
   BoardRowResponse,
-  ProjectBoardResponse,
+  SyncStatusResponse,
   TicketResponse,
   TicketStatusResponse,
 } from '@aisf/app/api-schemas/tickets-schemas.js';
-import { describeSyncFailure } from './describe-sync-failure.js';
+import { describeSyncFailure, type SyncFailureDescription } from './describe-sync-failure.js';
+import type { BoardState } from './fold-board-outcome.js';
 import { ticketStatusLabel } from './ticket-status-labels.js';
 
 export type BoardRowDescription = {
@@ -17,10 +18,10 @@ export type BoardRowDescription = {
 };
 
 export type BoardDescription = {
-  readonly statusLine?: string;
-  readonly alert?: string;
-  readonly snapshotNote?: string;
+  readonly banner?: SyncFailureDescription;
+  readonly updatedAt?: string;
   readonly emptyMessage?: string;
+  readonly loading: boolean;
   readonly rows: ReadonlyArray<BoardRowDescription>;
 };
 
@@ -36,37 +37,55 @@ function describeRow(row: BoardRowResponse): BoardRowDescription {
   };
 }
 
-export function describeBoard(
-  response: ProjectBoardResponse,
+function describeBanner(
+  state: BoardState,
   projectId: string,
-  formatTime: (isoTime: string) => string,
-): BoardDescription {
-  const alert = describeSyncFailure(response.sync, formatTime);
-  const alertPart = alert === undefined ? {} : { alert };
-  const board = response.board;
-  if (board === undefined) {
-    return {
-      ...(response.sync.state === 'pending' ? { statusLine: 'Loading the board…' } : {}),
-      ...alertPart,
-      rows: [],
-    };
+  now: Date,
+): SyncFailureDescription | undefined {
+  switch (state.connection) {
+    case 'not-watched':
+      return {
+        tone: 'info',
+        message: `The watcher hasn't picked up ${projectId} yet. The board appears after its next poll.`,
+      };
+    case 'request-failed':
+      return { tone: 'warn', message: "Can't reach aisf. The board tries again every 5 s." };
+    case 'ok':
+      return state.response === undefined
+        ? undefined
+        : describeSyncFailure(state.response.sync, now);
   }
-  const snapshotNote =
-    response.sync.state === 'failed'
-      ? {
-          snapshotNote:
-            response.sync.snapshotTakenAt === undefined
-              ? 'Showing the last known board'
-              : `Showing the board from ${formatTime(response.sync.snapshotTakenAt)}`,
-        }
-      : {};
+}
+
+function readUpdatedAt(sync: SyncStatusResponse): string | undefined {
+  switch (sync.state) {
+    case 'ok':
+      return sync.checkedAt;
+    case 'failed':
+      return sync.snapshotTakenAt;
+    case 'pending':
+      return undefined;
+  }
+}
+
+export function describeBoard(state: BoardState, projectId: string, now: Date): BoardDescription {
+  const banner = describeBanner(state, projectId, now);
+  const bannerPart = banner === undefined ? {} : { banner };
+  const response = state.response;
+  const updatedAt = response === undefined ? undefined : readUpdatedAt(response.sync);
+  const updatedAtPart = updatedAt === undefined ? {} : { updatedAt };
+  const shared = { ...bannerPart, ...updatedAtPart };
+  const board = response?.board;
+  if (board === undefined) {
+    return { ...shared, loading: true, rows: [] };
+  }
   if (board.rows.every((row) => row.totalCount === 0)) {
     return {
-      ...alertPart,
-      ...snapshotNote,
-      emptyMessage: `No tickets in ${projectId} yet`,
+      ...shared,
+      emptyMessage: `No tickets in ${projectId} yet.`,
+      loading: false,
       rows: [],
     };
   }
-  return { ...alertPart, ...snapshotNote, rows: board.rows.map(describeRow) };
+  return { ...shared, loading: false, rows: board.rows.map(describeRow) };
 }
