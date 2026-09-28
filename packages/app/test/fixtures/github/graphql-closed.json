@@ -16,7 +16,16 @@
             "blockedBy": { "nodes": [] },
             "closedByPullRequestsReferences": {
               "nodes": [
-                { "number": 20, "url": "https://github.com/octo/hello/pull/20", "state": "MERGED" }
+                {
+                  "number": 20,
+                  "url": "https://github.com/octo/hello/pull/20",
+                  "state": "MERGED",
+                  "reviewDecision": null,
+                  "mergeable": "UNKNOWN",
+                  "canBeRebased": false,
+                  "headRefOid": "4d7e0c3",
+                  "commits": { "nodes": [{ "commit": { "statusCheckRollup": null } }] }
+                }
               ]
             }
           },

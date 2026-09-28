@@ -5,7 +5,10 @@ import {
   outcomeFromAnswer,
   type TicketPageOutcome,
 } from '../../src/tickets/describe-ticket-page.js';
-import { buildTicketResponse } from '../board/fixtures/ticket-response.js';
+import {
+  buildClosingPullRequestResponse,
+  buildTicketResponse,
+} from '../board/fixtures/ticket-response.js';
 
 const projectId = 'MoritzKopmann/postkarte';
 const now = Date.parse('2026-09-28T12:00:00Z');
@@ -106,8 +109,16 @@ describe('describeTicketPage', () => {
   it('should list each closing pull request with its url and lowercase state when there are some', () => {
     const ticket = buildTicketResponse({
       closingPullRequests: [
-        { number: 52, url: 'https://github.com/o/n/pull/52', state: 'OPEN' },
-        { number: 54, url: 'https://github.com/o/n/pull/54', state: 'MERGED' },
+        buildClosingPullRequestResponse({
+          number: 52,
+          url: 'https://github.com/o/n/pull/52',
+          state: 'OPEN',
+        }),
+        buildClosingPullRequestResponse({
+          number: 54,
+          url: 'https://github.com/o/n/pull/54',
+          state: 'MERGED',
+        }),
       ],
     });
 

@@ -31,7 +31,16 @@ export const ticketResponseSchema = z.object({
   subIssueNumbers: z.array(z.number()),
   blockedBy: z.array(z.object({ repository: z.string(), number: z.number(), open: z.boolean() })),
   closingPullRequests: z.array(
-    z.object({ number: z.number(), url: z.string(), state: z.string() }),
+    z.object({
+      number: z.number(),
+      url: z.string(),
+      state: z.string(),
+      reviewDecision: z.enum(['APPROVED', 'CHANGES_REQUESTED', 'REVIEW_REQUIRED', 'none']),
+      checks: z.enum(['passing', 'failing', 'pending', 'none']),
+      mergeable: z.enum(['mergeable', 'conflicting', 'unknown']),
+      canBeRebased: z.boolean(),
+      headCommit: z.string(),
+    }),
   ),
   updatedAt: z.string(),
 });

@@ -48,6 +48,28 @@ describe('diffSnapshots', () => {
     expect(diffSnapshots(previous, current).changedTicketNumbers).toEqual([1]);
   });
 
+  it('should name a ticket as changed when a closing pull request review or checks differ', () => {
+    const pullRequest = {
+      number: 5,
+      url: 'u',
+      state: 'OPEN',
+      reviewDecision: 'REVIEW_REQUIRED',
+      checks: 'pending',
+      mergeable: 'unknown',
+      canBeRebased: false,
+      headCommit: 'abc',
+    } as const;
+    const previous = snapshotOf([buildTicket({ number: 1, closingPullRequests: [pullRequest] })]);
+    const current = snapshotOf([
+      buildTicket({
+        number: 1,
+        closingPullRequests: [{ ...pullRequest, reviewDecision: 'APPROVED', checks: 'passing' }],
+      }),
+    ]);
+
+    expect(diffSnapshots(previous, current).changedTicketNumbers).toEqual([1]);
+  });
+
   it('should name a ticket as changed when a nested field differs', () => {
     const previous = snapshotOf([buildTicket({ number: 1 })]);
     const current = snapshotOf([

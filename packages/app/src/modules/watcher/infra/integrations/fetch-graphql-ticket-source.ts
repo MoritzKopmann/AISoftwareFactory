@@ -1,4 +1,10 @@
 import { deriveTicketStatus } from '../../logic/domain/functions/derive-ticket-status.js';
+import type {
+  ChecksState,
+  ClosingPullRequest,
+  Mergeability,
+  ReviewDecision,
+} from '../../logic/domain/types/closing-pull-request.js';
 import type { RepositoryReference } from '../../logic/domain/types/repository-reference.js';
 import type { Ticket } from '../../logic/domain/types/ticket.js';
 import type { TicketSnapshot } from '../../logic/domain/types/ticket-snapshot.js';
@@ -19,7 +25,10 @@ const ticketFields = `
   parent { number title }
   subIssues(first: 100) { nodes { number } }
   blockedBy(first: 20) { nodes { number state repository { nameWithOwner } } }
-  closedByPullRequestsReferences(first: 5, includeClosedPrs: true) { nodes { number url state } }
+  closedByPullRequestsReferences(first: 5, includeClosedPrs: true) { nodes {
+    number url state reviewDecision mergeable canBeRebased headRefOid
+    commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
+  } }
 `;
 
 const openTicketsQuery = `
@@ -61,6 +70,21 @@ const ticketQuery = `
   }
 `;
 
+type PullRequestNode = {
+  readonly number: number;
+  readonly url: string;
+  readonly state: string;
+  readonly reviewDecision: ReviewDecision | null;
+  readonly mergeable: 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN';
+  readonly canBeRebased: boolean;
+  readonly headRefOid: string;
+  readonly commits: {
+    readonly nodes: ReadonlyArray<{
+      readonly commit: { readonly statusCheckRollup: { readonly state: string } | null };
+    }>;
+  };
+};
+
 type IssueNode = {
   readonly number: number;
   readonly title: string;
@@ -77,11 +101,7 @@ type IssueNode = {
     }>;
   };
   readonly closedByPullRequestsReferences: {
-    readonly nodes: ReadonlyArray<{
-      readonly number: number;
-      readonly url: string;
-      readonly state: string;
-    }>;
+    readonly nodes: ReadonlyArray<PullRequestNode>;
   };
 };
 
@@ -213,11 +233,45 @@ function toTicket(node: IssueNode, state: 'open' | 'closed'): Ticket {
       number: blocker.number,
       open: blocker.state === 'OPEN',
     })),
-    closingPullRequests: node.closedByPullRequestsReferences.nodes.map((pullRequest) => ({
-      number: pullRequest.number,
-      url: pullRequest.url,
-      state: pullRequest.state,
-    })),
+    closingPullRequests: node.closedByPullRequestsReferences.nodes.map(toClosingPullRequest),
     updatedAt: node.updatedAt,
   };
+}
+
+function toClosingPullRequest(node: PullRequestNode): ClosingPullRequest {
+  return {
+    number: node.number,
+    url: node.url,
+    state: node.state,
+    reviewDecision: node.reviewDecision ?? 'none',
+    checks: toChecksState(node.commits.nodes[0]?.commit.statusCheckRollup?.state),
+    mergeable: toMergeability(node.mergeable),
+    canBeRebased: node.canBeRebased,
+    headCommit: node.headRefOid,
+  };
+}
+
+function toChecksState(rollupState: string | undefined): ChecksState {
+  switch (rollupState) {
+    case undefined:
+      return 'none';
+    case 'SUCCESS':
+      return 'passing';
+    case 'FAILURE':
+    case 'ERROR':
+      return 'failing';
+    default:
+      return 'pending';
+  }
+}
+
+function toMergeability(mergeable: PullRequestNode['mergeable']): Mergeability {
+  switch (mergeable) {
+    case 'MERGEABLE':
+      return 'mergeable';
+    case 'CONFLICTING':
+      return 'conflicting';
+    default:
+      return 'unknown';
+  }
 }

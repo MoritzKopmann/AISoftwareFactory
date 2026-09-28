@@ -67,7 +67,16 @@ describe('FetchGraphQLTicketSource', () => {
           { repository: 'octo/other', number: 4, open: false },
         ],
         closingPullRequests: [
-          { number: 21, url: 'https://github.com/octo/hello/pull/21', state: 'OPEN' },
+          {
+            number: 21,
+            url: 'https://github.com/octo/hello/pull/21',
+            state: 'OPEN',
+            reviewDecision: 'APPROVED',
+            checks: 'passing',
+            mergeable: 'mergeable',
+            canBeRebased: true,
+            headCommit: '9f2c1ab',
+          },
         ],
         updatedAt: '2026-09-28T08:15:02Z',
       });
@@ -125,8 +134,71 @@ describe('FetchGraphQLTicketSource', () => {
         'closed',
       ]);
       expect(snapshot.recentlyClosedTickets[0]?.closingPullRequests).toEqual([
-        { number: 20, url: 'https://github.com/octo/hello/pull/20', state: 'MERGED' },
+        {
+          number: 20,
+          url: 'https://github.com/octo/hello/pull/20',
+          state: 'MERGED',
+          reviewDecision: 'none',
+          checks: 'none',
+          mergeable: 'unknown',
+          canBeRebased: false,
+          headCommit: '4d7e0c3',
+        },
       ]);
+    });
+
+    it('should map each rollup state to a checks value when the head commit has one', async () => {
+      const rollupStates = ['SUCCESS', 'FAILURE', 'ERROR', 'PENDING', 'EXPECTED'];
+      const pullRequests = rollupStates.map((state, index) => ({
+        number: index + 1,
+        url: 'u',
+        state: 'OPEN',
+        reviewDecision: 'CHANGES_REQUESTED',
+        mergeable: 'CONFLICTING',
+        canBeRebased: false,
+        headRefOid: 'abc',
+        commits: { nodes: [{ commit: { statusCheckRollup: { state } } }] },
+      }));
+      const scriptedFetch = new ScriptedFetch([
+        new Response(
+          JSON.stringify({
+            data: {
+              repository: {
+                issues: {
+                  pageInfo: { hasNextPage: false, endCursor: null },
+                  nodes: [
+                    {
+                      number: 1,
+                      title: 't',
+                      url: 'u',
+                      updatedAt: 'x',
+                      labels: { nodes: [] },
+                      parent: null,
+                      subIssues: { nodes: [] },
+                      blockedBy: { nodes: [] },
+                      closedByPullRequestsReferences: { nodes: pullRequests },
+                    },
+                  ],
+                },
+              },
+            },
+          }),
+          { status: 200 },
+        ),
+        answer('graphql-closed.json'),
+      ]);
+
+      const snapshot = await createSource(scriptedFetch).snapshot(repository);
+
+      const closingPullRequests = snapshot.openTickets[0]?.closingPullRequests ?? [];
+      const [firstPullRequest] = closingPullRequests;
+      expect(
+        snapshot.openTickets[0]?.closingPullRequests.map((pullRequest) => pullRequest.checks),
+      ).toEqual(['passing', 'failing', 'failing', 'pending', 'pending']);
+      expect(firstPullRequest).toMatchObject({
+        reviewDecision: 'CHANGES_REQUESTED',
+        mergeable: 'conflicting',
+      });
     });
 
     it('should throw GitHubRateLimitedError with retryAt from resetAt when GraphQL reports RATE_LIMITED', async () => {
