@@ -11,6 +11,7 @@ import { createProjectsModule, type ProjectsModule } from './modules/projects/in
 import { ClaudeCliLocalPluginInstaller } from './modules/skills/infra/integrations/claude-cli-local-plugin-installer.js';
 import { ClaudeCliMarketplaceRegistry } from './modules/skills/infra/integrations/claude-cli-marketplace-registry.js';
 import { ClaudeCliSmokeProbe } from './modules/skills/infra/integrations/claude-cli-smoke-probe.js';
+import { EnvironmentCredentialSource } from './modules/skills/infra/integrations/environment-credential-source.js';
 import { FileSystemPluginMirror } from './modules/skills/infra/integrations/file-system-plugin-mirror.js';
 import { FileSystemSlotReader } from './modules/skills/infra/integrations/file-system-slot-reader.js';
 import { createSkillsModule, type SkillsModule } from './modules/skills/index.js';
@@ -70,6 +71,10 @@ function buildSkillsModule(config: Config, pluginDirectory: string): SkillsModul
     mirrorDirectory: config.pluginMirrorDirectory,
     slotReader: new FileSystemSlotReader(),
     localPluginInstaller: new ClaudeCliLocalPluginInstaller(),
+    credentialSource: new EnvironmentCredentialSource({
+      environment: process.env,
+      projectDirectory: process.cwd(),
+    }),
   });
 }
 

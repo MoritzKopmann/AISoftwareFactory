@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createSkillsModule } from '../../../src/modules/skills/index.js';
 import { SkillsSetupError } from '../../../src/modules/skills/logic/errors/skills-setup-error.js';
 import {
+  FakeCredentialSource,
   FakeLocalPluginInstaller,
   FakeMarketplaceRegistry,
   FakePluginMirror,
@@ -15,6 +16,7 @@ function createSubject() {
   const smokeProbe = new FakeSmokeProbe();
   const slotReader = new FakeSlotReader();
   const localPluginInstaller = new FakeLocalPluginInstaller();
+  const credentialSource = new FakeCredentialSource();
   const skills = createSkillsModule({
     pluginMirror: new FakePluginMirror(),
     marketplaceRegistry: new FakeMarketplaceRegistry(mirrorDirectory),
@@ -22,8 +24,9 @@ function createSubject() {
     mirrorDirectory,
     slotReader,
     localPluginInstaller,
+    credentialSource,
   });
-  return { skills, smokeProbe, slotReader, localPluginInstaller };
+  return { skills, smokeProbe, slotReader, localPluginInstaller, credentialSource };
 }
 
 describe('createSkillsModule', () => {
@@ -52,6 +55,33 @@ describe('createSkillsModule', () => {
       await skills.start();
 
       expect(skills.runsBlocked()).toEqual({ blocked: true, reason: 'claude exited with code 1' });
+    });
+
+    it('should block runs naming the variable when a non-subscription credential is set', async () => {
+      const { skills, credentialSource } = createSubject();
+      credentialSource.snapshot = {
+        setEnvironmentVariables: ['ANTHROPIC_API_KEY'],
+        apiKeyHelperFiles: [],
+      };
+
+      await skills.start();
+
+      expect(skills.runsBlocked()).toEqual({
+        blocked: true,
+        reason: 'Runs would bill ANTHROPIC_API_KEY, not your Claude login. Unset it to run.',
+      });
+    });
+
+    it('should not block runs when only CLAUDE_CODE_OAUTH_TOKEN is set', async () => {
+      const { skills, credentialSource } = createSubject();
+      credentialSource.snapshot = {
+        setEnvironmentVariables: ['CLAUDE_CODE_OAUTH_TOKEN'],
+        apiKeyHelperFiles: [],
+      };
+
+      await skills.start();
+
+      expect(skills.runsBlocked()).toEqual({ blocked: false });
     });
   });
 
@@ -113,6 +143,7 @@ describe('createSkillsModule', () => {
         mirrorDirectory,
         slotReader: new FakeSlotReader(),
         localPluginInstaller,
+        credentialSource: new FakeCredentialSource(),
       });
 
       const startPromise = blockedSkills.start();
