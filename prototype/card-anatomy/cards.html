@@ -1,0 +1,562 @@
+<title>aisf Card Prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  PROTOTYPE, throwaway. Answers "Prototype the card and list anatomy, links and collapsing" (#111)
+  on the map "Map: app-wide UI direction within Drafting" (#105).
+  Card variants: #a stacked, #b header line, #c single line. Switch with the bottom bar or the hash.
+  Other axes on the bar: row overflow, link model, list style, empty rows, scenario, simulated poll.
+  Tokens are kit.css with the #108 diff applied. Status marks follow #109. Shell is #110's sidebar.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Drafting, light, with the #108 diff. */
+:root {
+  --bg: #e9eef2; --surface: #f8fafb; --surface-2: #dfe6ec;
+  --border: #a9b8c5; --border-strong: #6f8499;
+  --text: #13243a; --muted: #4c6075;
+  --accent: #c45404; --accent-ink: #ffffff; --accent-soft: #f8e2d2;
+  --ok: #257540; --warn: #935902; --danger: #b8322f; --info: #2d5f93; --hitl: #6b47c2;
+  --font-ui: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --label-spacing: 0.08em;
+  --radius: 4px;
+  --pad: 16px; --gap: 8px;
+  --text-size: 15px; --text-size-sm: 13px;
+  --gutter: 24px;
+  --card-pad: 8px 12px; --card-min: 40px; --row-gap: 12px;
+  --proto: #7a2e8f;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0d1924; --surface: #122130; --surface-2: #192b3d;
+    --border: #2e4760; --border-strong: #587592;
+    --text: #d8e4ee; --muted: #9ab2c7;
+    --accent: #ff8a45; --accent-ink: #1c0d03; --accent-soft: #3b2515;
+    --ok: #5cc07a; --warn: #e5ab4e; --danger: #ff8f84; --info: #7cb4ea; --hitl: #baa0ff;
+    --proto: #e0a3f0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --bg: #0d1924; --surface: #122130; --surface-2: #192b3d;
+  --border: #2e4760; --border-strong: #587592;
+  --text: #d8e4ee; --muted: #9ab2c7;
+  --accent: #ff8a45; --accent-ink: #1c0d03; --accent-soft: #3b2515;
+  --ok: #5cc07a; --warn: #e5ab4e; --danger: #ff8f84; --info: #7cb4ea; --hitl: #baa0ff;
+  --proto: #e0a3f0;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: var(--text-size) / 1.45 var(--font-ui);
+  padding-bottom: 140px;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+h1, h2, h3 { margin: 0; font-family: var(--font-mono); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; text-wrap: balance; }
+h1 { font-size: 22px; } h2 { font-size: 16px; } h3 { font-size: 14px; }
+p { margin: 0; }
+.sm { font-size: var(--text-size-sm); line-height: 1.4; color: var(--muted); }
+.mono { font-family: var(--font-mono); }
+.label { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: var(--label-spacing); font-size: 11px; font-weight: 500; color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+a { color: var(--text); text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 2px; }
+a:hover, a:focus-visible { text-decoration-color: var(--accent); }
+a.ext::after { content: ' ↗'; font-family: var(--font-mono); font-size: 0.85em; color: var(--muted); }
+button { font: inherit; color: inherit; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 32px;
+  padding: 6px 12px; font-size: 13px; font-weight: 600;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius);
+  color: var(--text); cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.btn:hover { border-color: var(--text); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.quiet { background: transparent; border-color: transparent; color: var(--muted); padding-inline: 4px; min-height: 28px; }
+.btn.quiet:hover { color: var(--text); border-color: transparent; text-decoration: underline; text-decoration-color: var(--accent); }
+
+/* Status marks (#109) */
+.shape { display: inline-block; width: 1em; text-align: center; font-family: var(--font-mono); }
+.s-neutral { color: var(--muted); } .s-flow { color: var(--info); } .s-done { color: var(--ok); }
+.s-warn { color: var(--warn); } .s-danger { color: var(--danger); }
+.pulse { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 0 6px; line-height: 18px;
+  font: 500 11px var(--font-mono); text-transform: uppercase; letter-spacing: var(--label-spacing);
+  border: 1px solid var(--border-strong); color: var(--text); white-space: nowrap; text-decoration: none;
+}
+a.chip:hover { border-color: var(--text); }
+.chip.hitl { border-color: var(--hitl); }
+.chip.danger { border-color: var(--danger); }
+.chip.flow { border-color: var(--info); }
+.chip.done { border-color: var(--ok); }
+.chip.warn { border-color: var(--warn); }
+.chip.neutral { border-color: var(--muted); }
+.count {
+  display: inline-block; min-width: 18px; padding: 0 4px; line-height: 16px; text-align: center;
+  font: 700 11px var(--font-mono); font-variant-numeric: tabular-nums;
+  border: 1px solid var(--hitl); color: var(--text);
+}
+.count.danger { border-color: var(--danger); }
+
+/* Shell (#110 variant B, static) */
+.wrap { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
+.rail {
+  position: sticky; top: 0; align-self: start; height: 100vh;
+  display: flex; flex-direction: column; gap: 16px; padding: 12px 8px;
+  background: var(--surface); border-right: 1px solid var(--border-strong);
+}
+.brand { font: 700 14px var(--font-mono); letter-spacing: .04em; padding: 4px 8px; }
+.nav { display: grid; gap: 2px; }
+.item {
+  display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius);
+  color: var(--muted); background: none; border: 0; cursor: pointer; text-align: left; width: 100%; font-size: 14px;
+}
+.item:hover { color: var(--text); background: var(--surface-2); }
+.item[aria-current='page'] { color: var(--text); background: var(--surface-2); box-shadow: inset 2px 0 0 var(--accent); }
+.item .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item.mono { font-family: var(--font-mono); font-size: 13px; }
+.sec { padding: 0 8px 4px; }
+.foot { margin-top: auto; border-top: 1px solid var(--border); padding-top: 8px; }
+.main { min-width: 0; }
+/* Small screens are out of scope (#110); this only keeps the preview usable on a phone. */
+@media (max-width: 760px) {
+  :root { --gutter: 16px; }
+  .wrap { grid-template-columns: 1fr; }
+  .rail { position: static; height: auto; flex-direction: row; flex-wrap: wrap; gap: 8px; border-right: 0; border-bottom: 1px solid var(--border-strong); }
+  .nav { display: flex; flex-wrap: wrap; }
+  .item { width: auto; }
+  .sec { display: none; }
+  .foot { margin-top: 0; border-top: 0; padding-top: 0; display: flex; }
+  .lrow.need, .lrow.bug, .lrow.run { grid-template-columns: auto minmax(0, 1fr); }
+  .lrow .act { grid-row: auto; grid-column: 2; justify-self: start; }
+}
+.page { padding: var(--pad) var(--gutter) 0; display: grid; gap: calc(var(--pad) * 1.5); min-width: 0; }
+.page-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.page-head .grow { flex: 1; }
+.page-head h1 { text-transform: none; letter-spacing: 0; font-family: var(--font-ui); font-size: 22px; }
+
+/* ---------- Board rows ---------- */
+.board { display: grid; gap: var(--row-gap); min-width: 0; }
+.row { display: grid; gap: 6px; min-width: 0; }
+.row-h { display: flex; align-items: baseline; gap: 6px; }
+.row-h .label { color: var(--text); font-weight: 700; }
+.row-h .n { font: 500 11px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.row-note { font-size: var(--text-size-sm); color: var(--muted); }
+.row-note.warn { color: var(--text); }
+.none { font-size: var(--text-size-sm); color: var(--muted); margin-left: 4px; }
+details.row > summary { cursor: pointer; list-style: none; }
+details.row > summary::-webkit-details-marker { display: none; }
+.chev { font-family: var(--font-mono); color: var(--muted); display: inline-block; transition: transform .15s; }
+details[open] > summary .chev { transform: rotate(90deg); }
+.toggle-text { font-size: var(--text-size-sm); color: var(--muted); text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 2px; }
+summary:hover .toggle-text { color: var(--text); text-decoration-color: var(--accent); }
+.folded { font-size: var(--text-size-sm); color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.folded .label { font-size: 11px; }
+
+/* Overflow: strip | wrap | more */
+:root[data-overflow='strip'] .cards {
+  display: flex; gap: var(--gap); overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+}
+:root[data-overflow='strip'] .card { flex: 0 0 280px; scroll-snap-align: start; }
+:root[data-overflow='strip'][data-card='c'] .card { flex-basis: 340px; }
+:root:not([data-overflow='strip']) .cards { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+:root:not([data-overflow='strip'])[data-card='c'] .cards { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+.more { justify-self: start; }
+
+/* ---------- Cards ---------- */
+.card {
+  position: relative; display: grid; gap: 2px; align-content: start; min-height: var(--card-min); min-width: 0;
+  padding: var(--card-pad); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius);
+  text-decoration: none; color: var(--text);
+}
+.card:hover, .card:focus-within { border-color: var(--text); }
+.card .num-id { font: 500 12px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.card .title { line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card .parent { font-size: var(--text-size-sm); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card .meta { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: var(--text-size-sm); color: var(--muted); }
+.card .meta .chip { font-size: 11px; }
+/* A: stacked */
+.card.a .title .num-id { margin-right: 6px; }
+.card.a .meta { margin-top: 4px; }
+/* B: header line */
+.card.b .head { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: var(--text-size-sm); color: var(--muted); }
+.card.b .head .parent { flex: 1; }
+.card.b .title { font-weight: 600; }
+.card.b .meta { margin-top: 2px; }
+/* C: single line */
+.card.c { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; align-content: center; }
+.card.c .title { -webkit-line-clamp: 1; }
+.card.c .title .num-id { margin-right: 6px; }
+.card.c .meta { flex-wrap: nowrap; }
+/* Stretched link model: the title link covers the card, inner links sit above it. */
+.card .stretch { color: inherit; text-decoration: none; }
+.card .stretch::after { content: ''; position: absolute; inset: 0; border-radius: var(--radius); }
+.card .stretch:focus-visible { outline: none; }
+.card:has(.stretch:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card .meta a { position: relative; z-index: 1; }
+.card .meta a:not(.chip) { color: var(--muted); }
+.card .meta a:not(.chip):hover { color: var(--text); }
+
+/* ---------- Lists ---------- */
+.lists { display: grid; gap: calc(var(--pad) * 2); max-width: 1100px; }
+.list-sec { display: grid; gap: 8px; }
+.list-sec > header { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.lrow {
+  position: relative; display: grid; gap: 2px 12px; align-items: center; min-height: var(--card-min);
+  padding: var(--card-pad); background: var(--surface); text-decoration: none; color: var(--text);
+}
+.lrow .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lrow .sub { font-size: var(--text-size-sm); color: var(--muted); grid-column: 2; min-width: 0; }
+.lrow .act { grid-row: 1 / span 2; grid-column: 3; justify-self: end; }
+.lrow.need { grid-template-columns: 112px minmax(0, 1fr) auto; }
+.lrow.bug { grid-template-columns: 112px minmax(0, 1fr) auto; }
+.lrow.run { grid-template-columns: 112px minmax(0, 1fr) auto; }
+.lrow .aside { font: 12px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.lrow .stretch { color: inherit; text-decoration: none; }
+.lrow .stretch::after { content: ''; position: absolute; inset: 0; }
+.lrow .stretch:focus-visible { outline: none; }
+.lrow:has(.stretch:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+.lrow .act, .lrow .sub a { position: relative; z-index: 1; }
+/* boxed */
+:root[data-list='boxed'] .rows { display: grid; gap: 6px; }
+:root[data-list='boxed'] .lrow { border: 1px solid var(--border-strong); border-radius: var(--radius); }
+:root[data-list='boxed'] .lrow:hover { border-color: var(--text); }
+/* divided */
+:root[data-list='divided'] .rows { display: grid; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+:root[data-list='divided'] .lrow { border-top: 1px solid var(--border); }
+:root[data-list='divided'] .lrow:first-child { border-top: 0; }
+:root[data-list='divided'] .lrow:hover { background: var(--surface-2); }
+.group-h { font: 700 11px var(--font-mono); text-transform: uppercase; letter-spacing: var(--label-spacing); color: var(--text); padding: 8px 12px 4px; }
+:root[data-list='boxed'] .group-h { padding: 4px 0 0; }
+:root[data-list='divided'] .group-h { background: var(--bg); border-top: 1px solid var(--border); }
+:root[data-list='divided'] .group-h:first-child { border-top: 0; }
+
+/* ---------- Link specimens ---------- */
+.spec { display: grid; gap: 12px; max-width: 880px; }
+.spec table { border-collapse: collapse; width: 100%; background: var(--surface); border: 1px solid var(--border-strong); }
+.spec th, .spec td { text-align: left; padding: 8px 12px; border-top: 1px solid var(--border); vertical-align: top; }
+.spec th { font: 500 11px var(--font-mono); text-transform: uppercase; letter-spacing: var(--label-spacing); color: var(--muted); border-top: 0; }
+
+/* ---------- Prototype bar (not part of any design) ---------- */
+.proto {
+  position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 50;
+  display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center;
+  padding: 6px 10px; background: var(--bg); border: 2px dashed var(--proto); border-radius: 6px;
+  font: 12px var(--font-mono); box-shadow: 0 4px 16px rgb(0 0 0 / 0.2);
+}
+.proto b { color: var(--proto); letter-spacing: .08em; }
+.proto .grp { display: inline-flex; gap: 2px; align-items: center; }
+.proto .grp > span { color: var(--muted); margin-right: 4px; }
+.proto button { padding: 2px 8px; border: 1px solid var(--border-strong); background: var(--surface); border-radius: 3px; cursor: pointer; font: inherit; color: var(--text); }
+.proto button[aria-pressed='true'] { background: var(--proto); border-color: var(--proto); color: var(--bg); }
+.proto .state { flex-basis: 100%; color: var(--muted); font-size: 11px; }
+.proto .state i { color: var(--proto); font-style: normal; }
+</style>
+
+<div id="app"></div>
+<div class="proto" id="proto" role="region" aria-label="Prototype controls"></div>
+
+<script>
+(() => {
+  // ---------- Example data ----------
+  const STATUSES = [
+    ['idea', 'Idea', 'neutral', '○'], ['backlog', 'Backlog', 'neutral', '○'],
+    ['plan', 'Plan', 'flow', '●'], ['planned', 'Planned', 'flow', '●'], ['ready', 'Ready', 'flow', '●'],
+    ['in-progress', 'In progress', 'flow', '●'], ['in-review', 'In review', 'flow', '●'],
+    ['stuck', 'Stuck', 'danger', '■'], ['conflict', 'Conflict', 'warn', '▲'], ['closed', 'Closed', 'done', '✓'],
+  ];
+  const REPO = 'MoritzKopmann/postkarte';
+  const BASE = [
+    [41, 'idea', 'Share a postcard as a link'], [50, 'idea', 'Handwriting font for the greeting'],
+    [38, 'backlog', 'Import recipients from the address book'], [42, 'backlog', 'Remember the last used stamp'],
+    [44, 'plan', 'Offline drafts survive an app restart', { hitl: true }],
+    [40, 'planned', 'Card editor v2'], [39, 'planned', 'Small-screen polish'],
+    [45, 'ready', 'Stamp picker: recent stamps row', { parent: 'Card editor v2' }],
+    [48, 'ready', 'Font size slider that remembers the last size per card and per recipient', { parent: 'Card editor v2', blocked: ['#45'] }],
+    [51, 'ready', 'Landscape layout for the envelope', { parent: 'Small-screen polish', blocked: ['#46', 'kopmann/print-kit#12'] }],
+    [49, 'in-progress', 'Font picker with preview', { parent: 'Card editor v2', hitl: true }],
+    [47, 'in-progress', 'Print-ready PDF export', { pr: [53] }],
+    [46, 'in-review', 'Fix clipped greeting on small screens', { parent: 'Small-screen polish', pr: [52, 54] }],
+    [43, 'stuck', 'Move the image cache to drift', { parent: 'Card editor v2', pr: [55] }],
+    [52, 'conflict', 'Address autocomplete', { clash: 'plan · ready', hitl: true }],
+    [37, 'closed', 'Stamp picker grid'], [36, 'closed', 'Envelope flip animation'], [35, 'closed', 'Greeting text field'],
+  ];
+  const FILL = ['Recipient list sorts by last sent', 'Retry a failed upload', 'Stamp price table for 2027', 'Dark envelope texture',
+    'Undo for text edits', 'Crash when the photo is a HEIC', 'Card preview at print size', 'Shareable draft links expire after 7 days',
+    'Rotate a photo in place', 'Sticker layer', 'Accessibility labels on the stamp grid', 'Paste an image from the clipboard'];
+  function tickets() {
+    if (S.scenario === 'empty') return BASE.filter((t) => ['idea', 'ready', 'closed'].includes(t[1]));
+    if (S.scenario !== 'many') return BASE;
+    const extra = [];
+    for (let i = 0; i < 21; i++) extra.push([60 + i, 'ready', FILL[i % FILL.length], i % 3 === 0 ? { parent: 'Card editor v2' } : i % 5 === 1 ? { blocked: ['#' + (60 + i - 1)] } : {}]);
+    for (let i = 0; i < 47; i++) extra.push([200 - i, 'closed', FILL[(i + 5) % FILL.length]]);
+    return [...BASE, ...extra];
+  }
+  // Simulated poll: #47 moves between In progress and In review.
+  const moved = () => S.poll % 2 === 1;
+  const statusOf = (t) => (t[0] === 47 && moved() ? 'in-review' : t[1]);
+
+  const NEEDS = [
+    { p: 'postkarte', n: 43, t: 'Move the image cache to drift', why: 'stuck', text: 'Stuck after 3 attempts. Decide how to continue.', act: 'Decide', age: '2 h' },
+    { p: 'postkarte', n: 44, t: 'Offline drafts survive an app restart', why: 'hitl', text: 'Planning session waits for round 2 of 3.', act: 'Answer', age: '25 min' },
+    { p: 'postkarte', n: 49, t: 'Font picker with preview', why: 'hitl', text: 'Asked a question 12 min ago.', act: 'Answer', age: '12 min' },
+    { p: 'postkarte', n: 46, t: 'Fix clipped greeting on small screens', why: 'review', text: 'PR #52 is ready for your review.', act: 'Review PR', age: '4 h', pr: 52 },
+    { p: 'AISoftwareFactory', n: 111, t: 'Prototype the card and list anatomy, links and collapsing', why: 'hitl', text: 'Prototype session waits for you.', act: 'Answer', age: 'now' },
+  ];
+  const BUGS = [
+    { text: 'Greeting still clips when the font size is above 28 px.', pr: 52, n: 46, t: 'Fix clipped greeting on small screens', age: '4 h' },
+    { text: 'PDF export ignores the bleed margin on A6.', pr: 53, n: 47, t: 'Print-ready PDF export', age: '1 d' },
+    { text: 'No test for a recipient without a postcode.', pr: 33, n: 30, t: 'Recipient form validation', age: '6 d', filed: 58 },
+  ];
+  const RUNS = [
+    { st: 'running', skill: 'implement-ticket', n: 49, t: 'Font picker with preview', at: '09:41', dur: '14 min' },
+    { st: 'waiting', skill: 'plan-ticket', n: 44, t: 'Offline drafts survive an app restart', at: '09:12', dur: '32 min' },
+    { st: 'failed', skill: 'implement-ticket', n: 43, t: 'Move the image cache to drift', at: '08:02', dur: '51 min', why: 'Tests still red after 3 attempts' },
+    { st: 'done', skill: 'implement-ticket', n: 46, t: 'Fix clipped greeting on small screens', at: 'Yesterday 17:20', dur: '38 min' },
+  ];
+
+  // ---------- Prototype state ----------
+  const readHash = () => (/^#([abc])$/.exec(location.hash) || [])[1];
+  const S = {
+    card: readHash() || 'a', overflow: 'strip', links: 'one', list: 'divided', empty: 'inline',
+    theme: 'auto', scenario: 'normal', page: 'board', polling: true, poll: 0,
+    open: new Set(), expanded: new Set(), last: '—',
+  };
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const gh = (path) => `https://github.com/${REPO}/${path}`;
+  const inApp = (n) => `#/projects/${REPO}/tickets/${n}`;
+  const blockerHref = (b) => b.startsWith('#') ? inApp(b.slice(1)) : `https://github.com/${b.replace('#', '/issues/')}`;
+
+  // ---------- Card ----------
+  // Meta pieces render as spans (link model "one") or real links (link model "stretched").
+  function metaParts(o) {
+    const real = S.links === 'stretched';
+    const parts = [];
+    if (o.clash) parts.push(`<span>${esc(o.clash)}</span>`);
+    if (o.hitl && S.card !== 'b') parts.push('<span class="chip hitl">HITL</span>');
+    for (const b of o.blocked || []) {
+      const ext = !b.startsWith('#');
+      parts.push(real ? `<a href="${blockerHref(b)}" class="${ext ? 'ext' : ''}" ${ext ? 'target="_blank" rel="noopener"' : ''} data-link>blocked by ${esc(b)}</a>` : `<span>blocked by ${esc(b)}</span>`);
+    }
+    for (const pr of o.pr || []) {
+      parts.push(real ? `<a class="chip" href="${gh('pull/' + pr)}" target="_blank" rel="noopener" data-link>PR #${pr} ↗</a>` : `<span class="chip">PR #${pr}</span>`);
+    }
+    return parts.join('');
+  }
+  function card(t) {
+    const [n, , title, o = {}] = t;
+    const real = S.links === 'stretched';
+    const tip = o.parent ? ` title="${esc(o.parent)}"` : '';
+    const titleText = S.links === 'stretched'
+      ? `<a class="stretch" href="${inApp(n)}" data-link>${esc(title)}</a>` : esc(title);
+    const meta = metaParts(o);
+    let inner;
+    if (S.card === 'a') {
+      inner = `<span class="title"><span class="num-id">#${n}</span>${titleText}</span>
+        ${o.parent ? `<span class="parent">↳ ${esc(o.parent)}</span>` : ''}
+        ${meta ? `<span class="meta">${meta}</span>` : ''}`;
+    } else if (S.card === 'b') {
+      inner = `<span class="head"><span class="num-id">#${n}</span>${o.parent ? `<span class="parent">· ${esc(o.parent)}</span>` : '<span class="parent"></span>'}${o.hitl ? '<span class="chip hitl">HITL</span>' : ''}</span>
+        <span class="title">${titleText}</span>
+        ${meta ? `<span class="meta">${meta}</span>` : ''}`;
+    } else {
+      inner = `<span class="title"><span class="num-id">#${n}</span>${titleText}</span>${meta ? `<span class="meta">${meta}</span>` : ''}`;
+    }
+    const cls = `card ${S.card}`;
+    return real
+      ? `<article class="${cls}"${S.card === 'c' ? tip : ''}>${inner}</article>`
+      : `<a class="${cls}" href="${inApp(n)}" data-link${S.card === 'c' ? tip : ''}>${inner}</a>`;
+  }
+
+  // ---------- Board ----------
+  const MORE_LIMIT = 8;
+  function cardsOf(key, items) {
+    let shown = items;
+    let more = '';
+    if (S.overflow === 'more' && items.length > MORE_LIMIT) {
+      const open = S.expanded.has(key);
+      if (!open) shown = items.slice(0, MORE_LIMIT);
+      more = `<button class="btn quiet more" data-expand="${key}">${open ? 'Show fewer' : `Show ${items.length - MORE_LIMIT} more`}</button>`;
+    }
+    return `<div class="cards" data-strip="${key}">${shown.map(card).join('')}</div>${more}`;
+  }
+  function board() {
+    const ts = tickets();
+    const closedTotal = S.scenario === 'many' ? 214 : 3;
+    const empties = [];
+    const rows = STATUSES.map(([s, label, fam, shape]) => {
+      const items = ts.filter((t) => statusOf(t) === s);
+      const pulse = s === 'in-progress' ? ' pulse' : '';
+      const mark = `<span class="shape s-${fam}${pulse}" aria-hidden="true">${shape}</span>`;
+      const count = s === 'closed' && closedTotal > items.length ? `${items.length} of ${closedTotal}` : items.length;
+      const head = `${mark}<span class="label">${label}</span><span class="n">${count}</span>`;
+      if (s === 'closed') {
+        const open = S.open.has('closed');
+        return `<details class="row" data-key="closed" ${open ? 'open' : ''}><summary class="row-h"><span class="chev" aria-hidden="true">›</span>${head}<span class="toggle-text">${open ? 'Hide closed' : 'Show closed'}</span></summary>
+          ${open ? cardsOf('closed', items) + (closedTotal > items.length ? `<p class="row-note">The newest ${items.length}. <a class="ext" href="${gh('issues?q=is%3Aclosed')}" target="_blank" rel="noopener" data-link>All closed on GitHub</a></p>` : '') : ''}</details>`;
+      }
+      if (!items.length) {
+        if (S.empty === 'folded') { empties.push(`${mark}<span class="label">${label}</span>`); return ''; }
+        return `<section class="row"><div class="row-h">${head}<span class="none">None</span></div></section>`;
+      }
+      const note = s === 'conflict' ? `<p class="row-note warn">These tickets carry more than one <span class="mono">status:</span> label. Keep one on GitHub.</p>` : '';
+      return `<section class="row"><div class="row-h">${head}</div>${note}${cardsOf(s, items)}</section>`;
+    });
+    const closedRow = rows.pop();
+    const folded = empties.length ? `<p class="folded"><span>No tickets in</span>${empties.join('<span aria-hidden="true">·</span>')}</p>` : '';
+    return `<div class="page-head"><h1>postkarte</h1><span class="sm mono">MoritzKopmann · ~/Software/postkarte</span><span class="grow"></span><button class="btn primary" type="button">+ New idea</button></div>
+      <div class="board">${rows.join('')}${folded}${closedRow}</div>`;
+  }
+
+  // ---------- Lists ----------
+  const REASON = {
+    stuck: '<span class="chip danger"><span class="shape s-danger" aria-hidden="true">■</span>Stuck</span>',
+    hitl: '<span class="chip hitl">HITL</span>',
+    review: '<span class="chip flow"><span class="shape s-flow" aria-hidden="true">●</span>In review</span>',
+  };
+  const RUN = {
+    running: '<span class="chip flow"><span class="shape s-flow pulse" aria-hidden="true">●</span>Running</span>',
+    waiting: '<span class="chip hitl">Waits for you</span>',
+    failed: '<span class="chip danger"><span class="shape s-danger" aria-hidden="true">■</span>Failed</span>',
+    done: '<span class="chip done"><span class="shape s-done" aria-hidden="true">✓</span>Done</span>',
+  };
+  // A row is one link ("one") or a stretched title link with its own action ("stretched").
+  function lrow(kind, lead, title, href, sub, action, aside) {
+    const real = S.links === 'stretched';
+    const t = real ? `<a class="stretch" href="${href}" data-link>${title}</a>` : title;
+    const act = action ? (real ? action.real : `<span class="btn act">${action.label}</span>`) : '';
+    const tail = `<span class="act" style="display:flex;gap:12px;align-items:center">${aside ? `<span class="aside">${aside}</span>` : ''}${act}</span>`;
+    const body = `${lead}<span class="t">${t}</span>${tail}<span class="sub">${sub}</span>`;
+    return real ? `<div class="lrow ${kind}">${body}</div>` : `<a class="lrow ${kind}" href="${href}" data-link>${body}</a>`;
+  }
+  function limited(key, rows, limit) {
+    if (rows.length <= limit) return rows.join('');
+    const open = S.expanded.has(key);
+    return (open ? rows : rows.slice(0, limit)).join('') + '';
+  }
+  function moreBtn(key, total, limit) {
+    if (total <= limit) return '';
+    return `<button class="btn quiet more" data-expand="${key}">${S.expanded.has(key) ? 'Show fewer' : `Show ${total - limit} more`}</button>`;
+  }
+  function lists() {
+    const real = S.links === 'stretched';
+    const needGroups = [...new Set(NEEDS.map((n) => n.p))].map((p) => `<div class="group-h">${esc(p)} · ${NEEDS.filter((n) => n.p === p).length}</div>` +
+      NEEDS.filter((n) => n.p === p).map((n) => lrow('need', REASON[n.why], `<span class="num-id sm mono">#${n.n}</span> ${esc(n.t)}`, n.why === 'review' ? gh('pull/' + n.pr) : `#/sessions/${n.n}`,
+        esc(n.text), { label: n.act, real: `<a class="btn act" href="${n.why === 'review' ? gh('pull/' + n.pr) : '#/sessions/' + n.n}" ${n.why === 'review' ? 'target="_blank" rel="noopener"' : ''} data-link>${n.act}${n.why === 'review' ? ' ↗' : ''}</a>` }, n.age)).join('')).join('');
+    let bugs = BUGS;
+    if (S.scenario === 'many') for (let i = 0; i < 27; i++) bugs = [...bugs, { text: FILL[i % FILL.length] + ' is not covered by a test.', pr: 70 + i, n: 60 + i, t: FILL[(i + 3) % FILL.length], age: (i + 2) + ' d' }];
+    const bugRows = bugs.map((b) => lrow('bug',
+      b.filed ? `<span class="chip done"><span class="shape s-done" aria-hidden="true">✓</span>Filed</span>` : '<span class="chip neutral"><span class="shape s-neutral" aria-hidden="true">○</span>Open</span>',
+      esc(b.text), gh('pull/' + b.pr),
+      real ? `From <a class="ext" href="${gh('pull/' + b.pr)}" target="_blank" rel="noopener" data-link>PR #${b.pr}</a> on <a href="${inApp(b.n)}" data-link>#${b.n} ${esc(b.t)}</a>${b.filed ? ` · filed as <a href="${inApp(b.filed)}" data-link>#${b.filed}</a>` : ''}`
+        : `From PR #${b.pr} on #${b.n} ${esc(b.t)}${b.filed ? ` · filed as #${b.filed}` : ''}`,
+      b.filed ? null : { label: 'File ticket', real: '<button class="btn act" type="button" data-noop>File ticket</button>' }, b.age));
+    const runRows = RUNS.map((r) => lrow('run', RUN[r.st], `<span class="mono" style="font-size:13px">${r.skill}</span> <span class="sm mono">#${r.n}</span> ${esc(r.t)}`, `#/runs/${r.n}`,
+      r.why ? `<span style="color:var(--text)">${esc(r.why)}.</span> Started ${r.at}` : `Started ${r.at}`, null, r.dur));
+    return `<div class="page-head"><h1>List rows</h1><span class="sm">Specimens: the content of each view is designed later. This settles the row.</span></div>
+      <div class="lists">
+        <section class="list-sec"><header><h2>Needs you</h2><span class="sm num">${NEEDS.length} across 2 projects, stuck first</span></header><div class="rows">${needGroups}</div></section>
+        <section class="list-sec"><header><h2>Known bugs</h2><span class="sm num">${bugs.length} from PR bodies</span></header><div class="rows">${limited('bugs', bugRows, 10)}</div>${moreBtn('bugs', bugRows.length, 10)}</section>
+        <section class="list-sec"><header><h2>Runs</h2><span class="sm">Newest first</span></header><div class="rows">${runRows.join('')}</div></section>
+      </div>`;
+  }
+
+  // ---------- Link rules (specimen of the proposal) ----------
+  function links() {
+    return `<div class="page-head"><h1>Links and collapsing</h1><span class="sm">The proposal, as specimens. Click any link: the bar shows what would happen.</span></div>
+      <div class="spec">
+        <table>
+          <tr><th>Kind</th><th>Specimen</th><th>Behaviour</th></tr>
+          <tr><td>In-app</td><td><a href="${inApp(45)}" data-link>#45 Stamp picker: recent stamps row</a></td><td class="sm">Same tab. A real <span class="mono">href</span>, so Ctrl-click and middle-click open a new tab.</td></tr>
+          <tr><td>GitHub</td><td><a class="ext" href="${gh('issues/45')}" target="_blank" rel="noopener" data-link>Open on GitHub</a></td><td class="sm">New tab, marked ↗. aisf stays open where you were.</td></tr>
+          <tr><td>Other repo</td><td><a class="ext" href="https://github.com/kopmann/print-kit/issues/12" target="_blank" rel="noopener" data-link>kopmann/print-kit#12</a></td><td class="sm">Not watched by aisf, so it goes to GitHub like any external link.</td></tr>
+          <tr><td>Card</td><td>${card(BASE[9])}</td><td class="sm">Toggle <b>links</b> on the bar: one link with span chips (#68), or a title link stretched over the card with real inner links.</td></tr>
+          <tr><td>Section</td><td><details ${S.open.has('spec') ? 'open' : ''} data-key="spec"><summary style="cursor:pointer;list-style:none"><span class="chev" aria-hidden="true">›</span> <span class="toggle-text">Show 3 closed</span></summary><p class="sm" style="padding:6px 0 0 16px">Native <span class="mono">&lt;details&gt;</span>. The open state survives polls (watch the poll counter).</p></details></td><td class="sm">Chevron plus text, never a bare icon. Remembered per page while it stays open; a reload collapses it again.</td></tr>
+          <tr><td>Long list</td><td><button class="btn quiet" type="button" data-noop>Show 27 more</button></td><td class="sm">A text button with the count, below the list. Used where a list is capped.</td></tr>
+        </table>
+      </div>`;
+  }
+
+  // ---------- Render ----------
+  function seg(key, label, options) {
+    return `<span class="grp"><span>${label}</span>${options.map(([v, t]) => `<button data-set="${key}" data-val="${v}" aria-pressed="${String(S[key]) === v}">${t}</button>`).join('')}</span>`;
+  }
+  function renderProto() {
+    $('#proto').innerHTML = `<b>PROTOTYPE</b>
+      ${seg('page', 'page', [['board', 'board'], ['lists', 'lists'], ['links', 'links']])}
+      ${seg('card', 'card', [['a', 'A stacked'], ['b', 'B header'], ['c', 'C one line']])}
+      ${seg('overflow', 'rows', [['strip', 'strip'], ['wrap', 'wrap'], ['more', 'show more']])}
+      ${seg('links', 'links', [['one', 'one link'], ['stretched', 'stretched']])}
+      ${seg('list', 'list', [['divided', 'divided'], ['boxed', 'boxed']])}
+      ${seg('empty', 'empty rows', [['inline', 'inline'], ['folded', 'folded']])}
+      ${seg('scenario', 'data', [['normal', 'normal'], ['many', 'too much'], ['empty', 'sparse']])}
+      ${seg('theme', 'theme', [['auto', 'auto'], ['light', 'light'], ['dark', 'dark']])}
+      ${seg('polling', 'poll', [['true', 'on'], ['false', 'off']])}
+      <span class="state">state: card=${S.card} rows=${S.overflow} links=${S.links} list=${S.list} empty=${S.empty} data=${S.scenario} page=${S.page} polls=${S.poll} open=[${[...S.open].join(',')}] expanded=[${[...S.expanded].join(',')}] · last click: <i>${esc(S.last)}</i></span>`;
+  }
+  function render() {
+    const root = document.documentElement;
+    if (S.theme === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', S.theme);
+    Object.assign(root.dataset, { card: S.card, overflow: S.overflow, list: S.list });
+    // Keep sideways scroll positions across re-renders, as keyed React rows would.
+    const scroll = {};
+    document.querySelectorAll('[data-strip]').forEach((el) => { scroll[el.dataset.strip] = el.scrollLeft; });
+    const body = S.page === 'board' ? board() : S.page === 'lists' ? lists() : links();
+    const nav = (page, label, badge) => `<button class="item" data-set="page" data-val="${page}" aria-current="${S.page === page ? 'page' : 'false'}"><span class="grow">${label}</span>${badge || ''}</button>`;
+    $('#app').innerHTML = `<div class="wrap">
+      <aside class="rail" aria-label="Navigation">
+        <div class="brand">aisf</div>
+        <nav class="nav">${nav('lists', 'Needs you', '<span class="count danger">5</span>')}</nav>
+        <nav class="nav" aria-label="Projects"><div class="sec label">Projects</div>
+          ${nav('board', '<span class="mono" style="font-size:13px">postkarte</span>', '<span class="count danger">4</span>')}
+          <button class="item mono" data-noop><span class="grow">AISoftwareFactory</span><span class="count">1</span></button>
+          <button class="item" data-noop><span class="grow">+ Add project</span></button></nav>
+        <div class="foot">${nav('links', 'Link rules')}<button class="item" data-noop><span class="grow">Settings</span></button></div>
+      </aside>
+      <div class="main"><main class="page">${body}</main></div></div>`;
+    document.querySelectorAll('[data-strip]').forEach((el) => { if (scroll[el.dataset.strip]) el.scrollLeft = scroll[el.dataset.strip]; });
+    renderProto();
+  }
+
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-set],[data-expand],[data-link],[data-noop]');
+    if (!t) return;
+    if (t.matches('[data-link]')) {
+      e.preventDefault();
+      const href = t.getAttribute('href');
+      S.last = `${t.target === '_blank' ? 'NEW TAB' : 'same tab'} → ${href}`;
+      renderProto();
+      return;
+    }
+    e.preventDefault();
+    if (t.dataset.expand) { const k = t.dataset.expand; S.expanded.has(k) ? S.expanded.delete(k) : S.expanded.add(k); }
+    else if (t.dataset.set) {
+      const v = t.dataset.val;
+      S[t.dataset.set] = v === 'true' ? true : v === 'false' ? false : v;
+      if (t.dataset.set === 'card') history.replaceState(null, '', '#' + S.card);
+    }
+    render();
+  });
+  // <details> open state lives in S so the simulated poll re-render keeps it (React would keep the DOM node).
+  document.addEventListener('toggle', (e) => {
+    const k = e.target.dataset && e.target.dataset.key;
+    if (!k) return;
+    const was = S.open.has(k);
+    if (e.target.open === was) return;
+    e.target.open ? S.open.add(k) : S.open.delete(k);
+    render();
+  }, true);
+  addEventListener('hashchange', () => { const v = readHash(); if (v) { S.card = v; render(); } });
+  setInterval(() => { if (S.polling) { S.poll++; render(); } }, 5000);
+  render();
+})();
+</script>
