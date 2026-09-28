@@ -3,6 +3,7 @@ import { subscribeToProjectAdded } from './api/subscriptions/subscribe-to-projec
 import { buildProjectBoard } from './logic/domain/functions/build-project-board.js';
 import { failWatch } from './logic/domain/functions/fail-watch.js';
 import type { ProjectBoard } from './logic/domain/types/project-board.js';
+import type { ProjectTicket } from './logic/domain/types/project-ticket.js';
 import type { RepositoryReference } from './logic/domain/types/repository-reference.js';
 import type { RepositoryWatch } from './logic/domain/types/repository-watch.js';
 import type { RegisteredRepositories } from './logic/ports/registered-repositories.js';
@@ -10,10 +11,12 @@ import {
   PollRepositoriesUseCase,
   type PollRepositoriesDependencies,
 } from './logic/use-cases/poll-repositories-use-case.js';
+import { ReadTicketUseCase } from './logic/use-cases/read-ticket-use-case.js';
 
 export type { BoardRow } from './logic/domain/types/board-row.js';
 export type { BoardView } from './logic/domain/types/board-view.js';
 export type { ProjectBoard } from './logic/domain/types/project-board.js';
+export type { ProjectTicket } from './logic/domain/types/project-ticket.js';
 export type { SnapshotDiff } from './logic/domain/types/snapshot-diff.js';
 export type { SyncFailureCause, SyncStatus } from './logic/domain/types/sync-status.js';
 export type { Ticket } from './logic/domain/types/ticket.js';
@@ -34,10 +37,12 @@ export type WatcherModule = {
   readonly start: () => Promise<void>;
   readonly stop: () => void;
   readonly board: (projectId: string) => ProjectBoard | undefined;
+  readonly ticket: (projectId: string, number: number) => Promise<ProjectTicket | undefined>;
 };
 
 export function createWatcherModule(dependencies: WatcherModuleDependencies): WatcherModule {
   const pollRepositories = new PollRepositoriesUseCase(dependencies);
+  const readTicket = new ReadTicketUseCase(dependencies);
   const watchesByProjectId = new Map<string, RepositoryWatch>();
   let nextPassTimer: ReturnType<typeof setTimeout> | undefined;
   let unsubscribe: (() => void) | undefined;
@@ -117,6 +122,10 @@ export function createWatcherModule(dependencies: WatcherModuleDependencies): Wa
     board: (projectId) => {
       const watch = watchesByProjectId.get(projectId);
       return watch === undefined ? undefined : buildProjectBoard(watch);
+    },
+    ticket: async (projectId, number) => {
+      const watch = watchesByProjectId.get(projectId);
+      return watch === undefined ? undefined : readTicket.execute(watch, number);
     },
   };
 }

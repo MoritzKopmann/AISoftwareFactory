@@ -52,6 +52,7 @@ export class FakeTicketSource implements TicketSource {
   readonly snapshotRequests: RepositoryReference[] = [];
   readonly ticketRequests: Array<{ repository: RepositoryReference; number: number }> = [];
   failure: Error | undefined;
+  ticketFailure: Error | undefined;
   readonly failuresByRepositoryName = new Map<string, Error>();
   release: Promise<void> | undefined;
 
@@ -72,6 +73,9 @@ export class FakeTicketSource implements TicketSource {
 
   async ticket(repository: RepositoryReference, number: number): Promise<Ticket | undefined> {
     this.ticketRequests.push({ repository, number });
+    if (this.ticketFailure !== undefined) {
+      throw this.ticketFailure;
+    }
     return this.ticketsByNumber.get(number);
   }
 }
