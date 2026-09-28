@@ -109,6 +109,23 @@ describe('SqliteRunRepository', () => {
     });
   });
 
+  describe('findLatest', () => {
+    it('should return the most recently started run of the ticket when it has several', async () => {
+      await repository.insert(buildRun({ startedAt: '2026-09-29T09:00:00.000Z' }));
+      await repository.recordEnding('run-1', { kind: 'stopped' }, '2026-09-29T09:30:00.000Z');
+      await repository.insert(buildRun({ id: 'run-2', startedAt: '2026-09-29T10:00:00.000Z' }));
+      await repository.insert(
+        buildRun({ id: 'run-3', ticketNumber: 12, projectId: 'moritz/other' }),
+      );
+
+      expect(await repository.findLatest('moritz/aisf', 137)).toMatchObject({ id: 'run-2' });
+    });
+
+    it('should return undefined when the ticket has no run', async () => {
+      expect(await repository.findLatest('moritz/aisf', 137)).toBeUndefined();
+    });
+  });
+
   describe('listByState', () => {
     it('should return only the runs in that state', async () => {
       await repository.insert(buildRun());

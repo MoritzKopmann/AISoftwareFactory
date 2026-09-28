@@ -36,6 +36,12 @@ export class FakeRunRepository implements RunRepository {
     );
   }
 
+  async findLatest(projectId: string, ticketNumber: number): Promise<Run | undefined> {
+    return [...this.runs.values()]
+      .filter((run) => run.projectId === projectId && run.ticketNumber === ticketNumber)
+      .sort((first, second) => second.startedAt.localeCompare(first.startedAt))[0];
+  }
+
   async listByState(state: Run['state']): Promise<ReadonlyArray<Run>> {
     return [...this.runs.values()].filter((run) => run.state === state);
   }

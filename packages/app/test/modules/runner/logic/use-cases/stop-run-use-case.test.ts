@@ -22,7 +22,10 @@ describe('StopRunUseCase', () => {
       clock: new FakeClock('2026-09-29T11:00:00.000Z'),
       events,
     });
-    stopRun = new StopRunUseCase({ runRepository, finishRun });
+    stopRun = new StopRunUseCase({
+      runRepository,
+      finishRun: { finish: (runId, ending) => finishRun.execute(runId, ending) },
+    });
   });
 
   it('should end the run as stopped and stop its session when the run is running', async () => {

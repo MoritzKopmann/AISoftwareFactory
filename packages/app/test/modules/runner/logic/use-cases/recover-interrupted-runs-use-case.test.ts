@@ -13,14 +13,15 @@ describe('RecoverInterruptedRunsUseCase', () => {
   beforeEach(() => {
     runRepository = new FakeRunRepository();
     events = new FakeEventPublisher();
+    const finishRun = new FinishRunUseCase({
+      runRepository,
+      agentSessions: new FakeAgentSessions(),
+      clock: new FakeClock('2026-09-29T12:00:00.000Z'),
+      events,
+    });
     recoverInterruptedRuns = new RecoverInterruptedRunsUseCase({
       runRepository,
-      finishRun: new FinishRunUseCase({
-        runRepository,
-        agentSessions: new FakeAgentSessions(),
-        clock: new FakeClock('2026-09-29T12:00:00.000Z'),
-        events,
-      }),
+      finishRun: { finish: (runId, ending) => finishRun.execute(runId, ending) },
       events,
     });
   });

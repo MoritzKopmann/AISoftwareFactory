@@ -5,6 +5,7 @@ export interface RunRepository {
   insert(run: Run): Promise<void>;
   findById(runId: string): Promise<Run | undefined>;
   findActive(projectId: string): Promise<Run | undefined>;
+  findLatest(projectId: string, ticketNumber: number): Promise<Run | undefined>;
   listByState(state: Run['state']): Promise<ReadonlyArray<Run>>;
   recordEnding(
     runId: string,

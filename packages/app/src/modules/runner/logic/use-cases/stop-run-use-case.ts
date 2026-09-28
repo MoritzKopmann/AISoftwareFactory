@@ -1,10 +1,10 @@
 import { RunNotActiveError } from '../errors/run-not-active-error.js';
 import type { RunRepository } from '../ports/run-repository.js';
-import type { FinishRunUseCase } from './finish-run-use-case.js';
+import type { RunFinisher } from '../ports/run-finisher.js';
 
 export type StopRunDependencies = {
   readonly runRepository: RunRepository;
-  readonly finishRun: FinishRunUseCase;
+  readonly finishRun: RunFinisher;
 };
 
 export class StopRunUseCase {
@@ -16,6 +16,6 @@ export class StopRunUseCase {
       throw new RunNotActiveError(`Run ${runId} is not running`);
     }
 
-    await this.dependencies.finishRun.execute(runId, { kind: 'stopped' });
+    await this.dependencies.finishRun.finish(runId, { kind: 'stopped' });
   }
 }

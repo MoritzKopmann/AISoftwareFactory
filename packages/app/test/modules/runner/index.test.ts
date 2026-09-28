@@ -131,6 +131,12 @@ describe('createRunnerModule', () => {
     expect((await runner.activeRun('moritz/aisf'))?.run).toEqual(run);
   });
 
+  it("should return the ticket's latest run when latestRun is asked", async () => {
+    const run = await runner.start(startRequest);
+
+    expect(await runner.latestRun('moritz/aisf', 137)).toEqual(run);
+  });
+
   it('should settle an ended run when settle is called', async () => {
     await runRepository.insert(buildRun({ state: 'ended', ending: { kind: 'finished' } }));
 
