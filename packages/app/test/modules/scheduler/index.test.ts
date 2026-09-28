@@ -4,16 +4,34 @@ import {
   RunNotAvailableError,
   type SchedulerModule,
 } from '../../../src/modules/scheduler/index.js';
+import type { ReviewedTicket } from '../../../src/modules/scheduler/logic/domain/types/reviewed-ticket.js';
 import type { AisfEventMap } from '../../../src/shared/bus/aisf-event-map.js';
 import { TypedEventBus } from '../../../src/shared/bus/typed-event-bus.js';
 import {
   FakeGitHubWrites,
   FakeProjectLookup,
+  FakeReviewedTicketLookup,
   FakeRunnerPort,
   FakeRunsGate,
   FakeTicketLookup,
   readyLeaf,
 } from './fakes/fake-scheduler-ports.js';
+
+const approvedTicket: ReviewedTicket = {
+  number: 140,
+  status: 'in-review',
+  closingPullRequests: [
+    {
+      number: 201,
+      state: 'OPEN',
+      reviewDecision: 'APPROVED',
+      checks: 'passing',
+      mergeable: 'mergeable',
+      canBeRebased: true,
+      headCommit: 'abc123',
+    },
+  ],
+};
 
 describe('createSchedulerModule', () => {
   let bus: TypedEventBus<AisfEventMap>;
@@ -29,6 +47,7 @@ describe('createSchedulerModule', () => {
       gitHubWrites,
       runner,
       ticketLookup: new FakeTicketLookup(readyLeaf),
+      reviewedTicketLookup: new FakeReviewedTicketLookup([approvedTicket]),
       runsGate: new FakeRunsGate(),
       projectLookup: new FakeProjectLookup(),
       subscriber: bus,
@@ -68,5 +87,23 @@ describe('createSchedulerModule', () => {
     bus.emit('run.finished', runFinished);
 
     await vi.waitFor(() => expect(runner.calls).toEqual(['settle run-1']));
+  });
+
+  it('should rebase-merge an approved pull request only after start has been called', async () => {
+    const snapshotChanged = {
+      projectId: 'moritz/aisf',
+      addedTicketNumbers: [],
+      changedTicketNumbers: [140],
+      removedTicketNumbers: [],
+    };
+
+    bus.emit('snapshot.changed', snapshotChanged);
+    await Promise.resolve();
+    expect(gitHubWrites.calls).toEqual([]);
+
+    scheduler.start();
+    bus.emit('snapshot.changed', snapshotChanged);
+
+    await vi.waitFor(() => expect(gitHubWrites.calls).toEqual(['rebaseMerge #201 abc123']));
   });
 });

@@ -10,6 +10,8 @@ import type {
   ProjectLookup,
   SchedulerProject,
 } from '../../../../src/modules/scheduler/logic/ports/project-lookup.js';
+import type { ReviewedTicket } from '../../../../src/modules/scheduler/logic/domain/types/reviewed-ticket.js';
+import type { ReviewedTicketLookup } from '../../../../src/modules/scheduler/logic/ports/reviewed-ticket-lookup.js';
 import type { RunnerPort } from '../../../../src/modules/scheduler/logic/ports/runner-port.js';
 import type { RunsGate } from '../../../../src/modules/scheduler/logic/ports/runs-gate.js';
 import type { TicketLookup } from '../../../../src/modules/scheduler/logic/ports/ticket-lookup.js';
@@ -29,6 +31,8 @@ export class FakeGitHubWrites implements GitHubWrites {
   readonly calls: string[] = [];
   liveStatus: TicketStatus = 'in-progress';
   swapOutcome: StatusSwapOutcome = { kind: 'swapped' };
+  mergeError: Error | undefined;
+  mergeGate: Promise<void> = Promise.resolve();
 
   async readStatus(): Promise<TicketStatus> {
     this.calls.push('readStatus');
@@ -54,6 +58,18 @@ export class FakeGitHubWrites implements GitHubWrites {
     body: string,
   ): Promise<void> {
     this.calls.push(`comment #${ticketNumber}: ${body}`);
+  }
+
+  async rebaseMerge(
+    _repository: RepositoryReference,
+    pullRequestNumber: number,
+    headCommit: string,
+  ): Promise<void> {
+    this.calls.push(`rebaseMerge #${pullRequestNumber} ${headCommit}`);
+    await this.mergeGate;
+    if (this.mergeError !== undefined) {
+      throw this.mergeError;
+    }
   }
 }
 
@@ -86,6 +102,14 @@ export class FakeTicketLookup implements TicketLookup {
 
   async find(): Promise<SchedulableTicket | undefined> {
     return this.ticket;
+  }
+}
+
+export class FakeReviewedTicketLookup implements ReviewedTicketLookup {
+  constructor(private readonly tickets: ReadonlyArray<ReviewedTicket>) {}
+
+  async list(): Promise<ReadonlyArray<ReviewedTicket>> {
+    return this.tickets;
   }
 }
 

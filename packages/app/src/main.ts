@@ -195,6 +195,9 @@ function buildSchedulerModule(
         };
       },
     },
+    reviewedTicketLookup: {
+      list: async (projectId) => watcher.openTickets(projectId),
+    },
     runsGate: { check: () => skills.runsBlocked() },
     projectLookup: {
       find: async (projectId) => {

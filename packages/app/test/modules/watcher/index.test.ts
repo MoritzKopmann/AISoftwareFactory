@@ -49,6 +49,26 @@ describe('createWatcherModule', () => {
     vi.useRealTimers();
   });
 
+  describe('openTickets', () => {
+    it('should list every open ticket of the snapshot when the project is watched', async () => {
+      const { watcher } = createSubject();
+
+      await watcher.start();
+      watcher.stop();
+
+      expect(watcher.openTickets('owner/name').map((ticket) => ticket.number)).toEqual([1, 2]);
+    });
+
+    it('should list nothing when the project is unknown', async () => {
+      const { watcher } = createSubject();
+
+      await watcher.start();
+      watcher.stop();
+
+      expect(watcher.openTickets('other/project')).toEqual([]);
+    });
+  });
+
   describe('start', () => {
     it('should take the first snapshot and show every ticket when a repository is registered', async () => {
       const { watcher, snapshotChanges } = createSubject();

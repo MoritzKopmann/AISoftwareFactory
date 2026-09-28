@@ -6,6 +6,7 @@ import type { ProjectBoard } from './logic/domain/types/project-board.js';
 import type { ProjectTicket } from './logic/domain/types/project-ticket.js';
 import type { RepositoryReference } from './logic/domain/types/repository-reference.js';
 import type { RepositoryWatch } from './logic/domain/types/repository-watch.js';
+import type { Ticket } from './logic/domain/types/ticket.js';
 import type { RegisteredRepositories } from './logic/ports/registered-repositories.js';
 import {
   PollRepositoriesUseCase,
@@ -37,6 +38,7 @@ export type WatcherModule = {
   readonly start: () => Promise<void>;
   readonly stop: () => void;
   readonly board: (projectId: string) => ProjectBoard | undefined;
+  readonly openTickets: (projectId: string) => ReadonlyArray<Ticket>;
   readonly ticket: (projectId: string, number: number) => Promise<ProjectTicket | undefined>;
 };
 
@@ -123,6 +125,7 @@ export function createWatcherModule(dependencies: WatcherModuleDependencies): Wa
       const watch = watchesByProjectId.get(projectId);
       return watch === undefined ? undefined : buildProjectBoard(watch);
     },
+    openTickets: (projectId) => watchesByProjectId.get(projectId)?.snapshot?.openTickets ?? [],
     ticket: async (projectId, number) => {
       const watch = watchesByProjectId.get(projectId);
       return watch === undefined ? undefined : readTicket.execute(watch, number);
