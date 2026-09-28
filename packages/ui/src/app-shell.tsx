@@ -5,6 +5,7 @@ import { parseAppRoute, type AppRoute } from './app-route.js';
 import { ProjectSidebar } from './projects/project-sidebar.js';
 import { AddProjectForm } from './projects/add-project-form.js';
 import { ProjectPage } from './projects/project-page.js';
+import { TicketPage } from './tickets/ticket-page.js';
 
 function readRoute(): AppRoute {
   return parseAppRoute(window.location.hash);
@@ -83,7 +84,9 @@ export function AppShell() {
           />
         );
       case 'ticket':
-        return null;
+        return (
+          <TicketPage key={`${route.id}#${route.number}`} id={route.id} number={route.number} />
+        );
     }
   };
 
