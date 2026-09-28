@@ -12,6 +12,7 @@ import { WorktreeSetupFailedError } from './logic/errors/worktree-setup-failed-e
 import type { AgentSessions } from './logic/ports/agent-sessions.js';
 import type { Identifiers } from './logic/ports/identifiers.js';
 import type { RecentRunSteps } from './logic/ports/recent-run-steps.js';
+import type { RunFinisher } from './logic/ports/run-finisher.js';
 import type { RunRepository } from './logic/ports/run-repository.js';
 import type { RunTargets } from './logic/ports/run-targets.js';
 import type { Worktrees } from './logic/ports/worktrees.js';
@@ -20,6 +21,7 @@ import {
   ReadActiveRunUseCase,
   type ActiveRun,
 } from './logic/use-cases/read-active-run-use-case.js';
+import { ReadLatestRunUseCase } from './logic/use-cases/read-latest-run-use-case.js';
 import { RecoverInterruptedRunsUseCase } from './logic/use-cases/recover-interrupted-runs-use-case.js';
 import { SettleRunUseCase } from './logic/use-cases/settle-run-use-case.js';
 import { StartRunUseCase, type StartRunRequest } from './logic/use-cases/start-run-use-case.js';
@@ -59,6 +61,7 @@ export type RunnerModule = {
   readonly start: (request: StartRunRequest) => Promise<Run>;
   readonly stop: (runId: string) => Promise<void>;
   readonly activeRun: (projectId: string) => Promise<ActiveRun | undefined>;
+  readonly latestRun: (projectId: string, ticketNumber: number) => Promise<Run | undefined>;
   readonly settle: (runId: string) => Promise<void>;
   readonly recover: () => Promise<void>;
   readonly abortSessions: () => void;
@@ -67,7 +70,10 @@ export type RunnerModule = {
 export function createRunnerModule(dependencies: RunnerModuleDependencies): RunnerModule {
   const { runRepository, agentSessions, recentRunSteps, clock, events } = dependencies;
 
-  const finishRun = new FinishRunUseCase({ runRepository, agentSessions, clock, events });
+  const finishRunUseCase = new FinishRunUseCase({ runRepository, agentSessions, clock, events });
+  const finishRun: RunFinisher = {
+    finish: (runId, ending) => finishRunUseCase.execute(runId, ending),
+  };
   const startRun = new StartRunUseCase({
     runRepository,
     agentSessions,
@@ -83,6 +89,7 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
   });
   const stopRun = new StopRunUseCase({ runRepository, finishRun });
   const readActiveRun = new ReadActiveRunUseCase({ runRepository, recentRunSteps });
+  const readLatestRun = new ReadLatestRunUseCase({ runRepository });
   const settleRun = new SettleRunUseCase({ runRepository, clock });
   const recoverInterruptedRuns = new RecoverInterruptedRunsUseCase({
     runRepository,
@@ -94,6 +101,7 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
     start: (request) => startRun.execute(request),
     stop: (runId) => stopRun.execute(runId),
     activeRun: (projectId) => readActiveRun.execute(projectId),
+    latestRun: (projectId, ticketNumber) => readLatestRun.execute(projectId, ticketNumber),
     settle: (runId) => settleRun.execute(runId),
     recover: () => recoverInterruptedRuns.execute(),
     abortSessions: () => agentSessions.stopAll(),

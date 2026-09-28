@@ -21,6 +21,8 @@ import { InMemoryRecentRunSteps } from './modules/runner/infra/integrations/in-m
 import { RandomUuidIdentifiers } from './modules/runner/infra/integrations/random-uuid-identifiers.js';
 import { SqliteRunRepository } from './modules/runner/infra/repositories/sqlite-run-repository.js';
 import { createRunnerModule, type RunnerModule } from './modules/runner/index.js';
+import { GhCliGitHubWrites } from './modules/scheduler/infra/integrations/gh-cli-github-writes.js';
+import { createSchedulerModule, type SchedulerModule } from './modules/scheduler/index.js';
 import { createUiModule, type UiModule } from './modules/ui/index.js';
 import { FetchGraphQLTicketSource } from './modules/watcher/infra/integrations/fetch-graphql-ticket-source.js';
 import { FetchIssueFeeds } from './modules/watcher/infra/integrations/fetch-issue-feeds.js';
@@ -152,6 +154,61 @@ function buildRunnerModule(
   });
 }
 
+function buildSchedulerModule(
+  events: EventSubscriber,
+  projects: ProjectsModule,
+  skills: SkillsModule,
+  watcher: WatcherModule,
+  runner: RunnerModule,
+  logger: Logger,
+): SchedulerModule {
+  return createSchedulerModule({
+    gitHubWrites: new GhCliGitHubWrites(),
+    runner: {
+      start: async ({ projectId, ticketNumber }) => {
+        await runner.start({ projectId, ticketNumber, stage: 'implement', mode: 'afk' });
+      },
+      activeRun: async (projectId) => {
+        const activeRun = await runner.activeRun(projectId);
+        return activeRun === undefined ? undefined : { ticketNumber: activeRun.run.ticketNumber };
+      },
+      lastRunEndedAt: async (projectId, ticketNumber) =>
+        (await runner.latestRun(projectId, ticketNumber))?.endedAt,
+      settle: (runId) => runner.settle(runId),
+    },
+    ticketLookup: {
+      find: async (projectId, ticketNumber) => {
+        const projectTicket = await watcher.ticket(projectId, ticketNumber);
+        const ticket = projectTicket?.ticket;
+        if (projectTicket === undefined || ticket === undefined) {
+          return undefined;
+        }
+        const snapshotTakenAt =
+          projectTicket.sync.state === 'pending' ? undefined : projectTicket.sync.snapshotTakenAt;
+        return {
+          number: ticket.number,
+          status: ticket.status,
+          hitl: ticket.hitl,
+          isLeaf: ticket.subIssueNumbers.length === 0,
+          hasOpenBlocker: ticket.blockedBy.some((blocker) => blocker.open),
+          ...(snapshotTakenAt === undefined ? {} : { snapshotTakenAt }),
+        };
+      },
+    },
+    runsGate: { check: () => skills.runsBlocked() },
+    projectLookup: {
+      find: async (projectId) => {
+        const project = (await projects.list()).find(({ id }) => id === projectId);
+        return project === undefined
+          ? undefined
+          : { repository: project.repository, onboarded: project.contract.passed };
+      },
+    },
+    subscriber: events,
+    logger,
+  });
+}
+
 function buildUiModule(
   projects: ProjectsModule,
   skills: SkillsModule,
@@ -191,6 +248,8 @@ const runner = buildRunnerModule(
   findOnPath('claude') ?? 'claude',
   logger,
 );
+const scheduler = buildSchedulerModule(eventBus, projects, skills, watcher, runner, logger);
+scheduler.start();
 const ui = buildUiModule(projects, skills, watcher);
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

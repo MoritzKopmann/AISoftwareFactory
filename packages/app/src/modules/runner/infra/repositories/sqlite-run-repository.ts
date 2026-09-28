@@ -169,6 +169,22 @@ export class SqliteRunRepository implements RunRepository {
     return row === undefined ? undefined : toRun(row);
   }
 
+  async findLatest(projectId: string, ticketNumber: number): Promise<Run | undefined> {
+    const row = this.database
+      .prepare(
+        `
+        ${selectRunColumns}
+        WHERE project_id = ?
+          AND ticket_number = ?
+        ORDER BY started_at DESC
+        LIMIT 1
+      `,
+      )
+      .get(projectId, ticketNumber) as unknown as RunRow | undefined;
+
+    return row === undefined ? undefined : toRun(row);
+  }
+
   async listByState(state: Run['state']): Promise<ReadonlyArray<Run>> {
     const rows = this.database
       .prepare(
