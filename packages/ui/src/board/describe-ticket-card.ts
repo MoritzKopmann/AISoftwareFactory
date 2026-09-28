@@ -9,7 +9,7 @@ export type TicketCardDescription = {
   readonly hitl: boolean;
   readonly blockerLabels: ReadonlyArray<string>;
   readonly conflictLabels: ReadonlyArray<string>;
-  readonly pullRequestChips: ReadonlyArray<{ readonly label: string; readonly state: string }>;
+  readonly pullRequestChips: ReadonlyArray<{ readonly label: string }>;
 };
 
 export function describeTicketCard(
@@ -30,10 +30,11 @@ export function describeTicketCard(
     ...(ticket.parent === undefined ? {} : { parentTitle: ticket.parent.title }),
     hitl: ticket.hitl,
     blockerLabels,
-    conflictLabels: ticket.conflictingStatuses.map(ticketStatusLabel),
+    conflictLabels: ticket.conflictingStatuses.map((status) =>
+      ticketStatusLabel(status).toLowerCase(),
+    ),
     pullRequestChips: ticket.closingPullRequests.map((pullRequest) => ({
       label: `PR #${pullRequest.number}`,
-      state: pullRequest.state,
     })),
   };
 }
