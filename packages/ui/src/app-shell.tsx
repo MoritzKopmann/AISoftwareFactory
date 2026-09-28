@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ProjectResponse } from '@aisf/app/api-schemas/projects-schemas.js';
 import { SkillsStatusPanel } from './skills/skills-status-panel.js';
 import { parseAppRoute, type AppRoute } from './app-route.js';
-import { ProjectTabs } from './projects/project-tabs.js';
+import { ProjectSidebar } from './projects/project-sidebar.js';
 import { AddProjectForm } from './projects/add-project-form.js';
 import { ProjectPage } from './projects/project-page.js';
 
@@ -55,34 +55,59 @@ export function AppShell() {
     window.location.hash = `#/projects/${project.id}`;
   };
 
-  return (
-    <>
-      <header>
-        <h1>aisf</h1>
-        <SkillsStatusPanel />
-      </header>
-      {projects !== undefined && (
-        <ProjectTabs
-          projects={projects}
-          currentProjectId={route.kind === 'project' ? route.id : undefined}
-          addProjectActive={route.kind === 'add-project'}
-        />
-      )}
-      <main>
-        {loadFailed && <p role="alert">Projects could not be loaded.</p>}
-        {!loadFailed && projects === undefined && <p role="status">Loading projects…</p>}
-        {!loadFailed &&
-          projects !== undefined &&
-          route.kind === 'home' &&
-          projects.length === 0 && <p>No projects yet. Add a checkout with +.</p>}
-        {route.kind === 'add-project' && <AddProjectForm onAdded={handleAdded} />}
-        {route.kind === 'project' && (
+  const renderPage = () => {
+    if (loadFailed) {
+      return <PageMessage role="alert">Projects could not be loaded.</PageMessage>;
+    }
+    if (projects === undefined) {
+      return <PageMessage role="status">Loading projects…</PageMessage>;
+    }
+    switch (route.kind) {
+      case 'home':
+        return (
+          <main className="page">
+            {projects.length === 0 && <p>No projects yet. Add a checkout with +.</p>}
+          </main>
+        );
+      case 'add-project':
+        return (
+          <main className="page">
+            <AddProjectForm onAdded={handleAdded} />
+          </main>
+        );
+      case 'project':
+        return (
           <ProjectPage
             id={route.id}
-            project={projects?.find((project) => project.id === route.id)}
+            project={projects.find((project) => project.id === route.id)}
           />
-        )}
-      </main>
-    </>
+        );
+      case 'ticket':
+        return null;
+    }
+  };
+
+  return (
+    <div className="shell">
+      <ProjectSidebar projects={projects} route={route} />
+      <div className="main">
+        <SkillsStatusPanel />
+        {renderPage()}
+      </div>
+    </div>
+  );
+}
+
+function PageMessage({
+  role,
+  children,
+}: {
+  readonly role: 'alert' | 'status';
+  readonly children: string;
+}) {
+  return (
+    <main className="page">
+      <p role={role}>{children}</p>
+    </main>
   );
 }

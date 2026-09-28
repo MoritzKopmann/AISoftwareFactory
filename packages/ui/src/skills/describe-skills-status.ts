@@ -3,19 +3,31 @@ export type SkillsStatusResponse =
   | { readonly state: 'passed' }
   | { readonly state: 'failed'; readonly reason: string };
 
-export type SkillsStatusDescription = {
-  readonly headline: string;
+export type SkillsBannerDescription = {
+  readonly tone: 'info' | 'danger';
+  readonly message: string;
   readonly detail?: string;
-  readonly blocked: boolean;
+  readonly pulses: boolean;
 };
 
-export function describeSkillsStatus(status: SkillsStatusResponse): SkillsStatusDescription {
+export function describeSkillsStatus(
+  status: SkillsStatusResponse,
+): SkillsBannerDescription | undefined {
   switch (status.state) {
     case 'passed':
-      return { headline: 'Skills smoke test passed', blocked: false };
+      return undefined;
     case 'failed':
-      return { headline: 'Runs are blocked', detail: status.reason, blocked: true };
+      return {
+        tone: 'danger',
+        message: 'Runs are blocked.',
+        detail: status.reason,
+        pulses: false,
+      };
     case 'pending':
-      return { headline: 'Skills smoke test is running', blocked: true };
+      return {
+        tone: 'info',
+        message: 'Checking the skills. Runs start once the smoke test passes.',
+        pulses: true,
+      };
   }
 }

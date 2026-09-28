@@ -8,14 +8,18 @@ type ProjectPageProps = {
 
 export function ProjectPage({ id, project }: ProjectPageProps) {
   if (project === undefined) {
-    return <p role="alert">No project {id} is registered.</p>;
+    return (
+      <main className="page">
+        <p role="alert">No project {id} is registered.</p>
+      </main>
+    );
   }
 
   return (
-    <section>
+    <main className="page">
       <h2 className="mono">{project.id}</h2>
       <p className="mono muted">{project.checkoutPath}</p>
       <ContractReport report={project.contract} />
-    </section>
+    </main>
   );
 }
