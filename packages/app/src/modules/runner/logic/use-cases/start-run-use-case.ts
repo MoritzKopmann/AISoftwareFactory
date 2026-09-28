@@ -17,7 +17,7 @@ import type { RecentRunSteps } from '../ports/recent-run-steps.js';
 import type { RunRepository } from '../ports/run-repository.js';
 import type { RunTargets } from '../ports/run-targets.js';
 import type { Worktrees } from '../ports/worktrees.js';
-import type { RunFinisher } from '../ports/run-finisher.js';
+import type { FinishRun } from '../domain/types/finish-run.js';
 
 export type StartRunRequest = {
   readonly projectId: string;
@@ -34,7 +34,7 @@ export type StartRunDependencies = {
   readonly recentRunSteps: RecentRunSteps;
   readonly identifiers: Identifiers;
   readonly clock: Clock;
-  readonly finishRun: RunFinisher;
+  readonly finishRun: FinishRun;
   readonly tools: ReadonlyArray<RunTool>;
   readonly worktreesDirectory: string;
   readonly logger: Logger;
@@ -79,7 +79,7 @@ export class StartRunUseCase {
         branchName: run.branchName,
       });
     } catch (error) {
-      await finishRun.finish(run.id, { kind: 'crashed', reason: describeError(error) });
+      await finishRun(run.id, { kind: 'crashed', reason: describeError(error) });
       throw error;
     }
 
@@ -110,7 +110,7 @@ export class StartRunUseCase {
       execute: async (input) => {
         const result = await tool.execute(input, runContext);
         if (result.ending !== undefined) {
-          await this.dependencies.finishRun.finish(runContext.runId, result.ending);
+          await this.dependencies.finishRun(runContext.runId, result.ending);
         }
         return result.text;
       },
@@ -126,27 +126,27 @@ export class StartRunUseCase {
             recentRunSteps.append(run.id, event.step);
             break;
           case 'completed':
-            await finishRun.finish(run.id, { kind: 'finished' });
+            await finishRun(run.id, { kind: 'finished' });
             break;
           case 'permission-needed':
-            await finishRun.finish(run.id, {
+            await finishRun(run.id, {
               kind: 'permission-needed',
               toolName: event.toolName,
               toolInput: event.toolInput,
             });
             break;
           case 'usage-limit':
-            await finishRun.finish(run.id, { kind: 'usage-limit', reason: event.reason });
+            await finishRun(run.id, { kind: 'usage-limit', reason: event.reason });
             break;
           case 'crashed':
-            await finishRun.finish(run.id, { kind: 'crashed', reason: event.reason });
+            await finishRun(run.id, { kind: 'crashed', reason: event.reason });
             break;
         }
       }
     } catch (error) {
       // A session that throws must still end its run.
       this.reportFailure(run, error);
-      await finishRun.finish(run.id, { kind: 'crashed', reason: describeError(error) });
+      await finishRun(run.id, { kind: 'crashed', reason: describeError(error) });
     }
   }
 

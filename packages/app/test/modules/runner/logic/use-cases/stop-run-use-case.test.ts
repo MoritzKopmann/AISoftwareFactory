@@ -24,7 +24,7 @@ describe('StopRunUseCase', () => {
     });
     stopRun = new StopRunUseCase({
       runRepository,
-      finishRun: { finish: (runId, ending) => finishRun.execute(runId, ending) },
+      finishRun: (runId, ending) => finishRun.execute(runId, ending),
     });
   });
 
