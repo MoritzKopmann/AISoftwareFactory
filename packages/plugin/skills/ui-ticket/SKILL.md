@@ -16,11 +16,11 @@ component, each precise enough to build from and carrying its own mock page. Bui
 
 **The design is the spec.** `aisf:create-ticket` settles _what_ and `aisf:plan-ticket` settles
 _how_. The mockup has already settled both for everything visual, so this skill does not
-interview. What it cannot read off the design (data nothing exposes, an interaction with no
-receiver) becomes its own backlog ticket rather than a guess.
+interview. The one thing it asks the human is what to do about UI the app can't back yet
+(step 5): it flags each such piece and never guesses.
 
-It runs one-shot and confirms nothing mid-flight, so the checks in step 7 are what stand
-between a bad split and many bad tickets.
+Apart from that decision it runs one-shot, so the checks in step 7 are what stand between a
+bad split and many bad tickets.
 
 `gh` infers the repository from the current checkout. Never pass `-R`. Every issue write goes
 through `aisf:github-issue`: native `--parent` and `--blocked-by`, never `Depends on` or
@@ -74,7 +74,7 @@ describing it:
 - **Add or replace**: name the component it replaces and what gets deleted. A replacement
   ticket that only says what to add leaves the old one alive beside the new one.
 - **What already exists**: the view model, API route or state it plugs into, and whether the
-  data it renders is exposed at all. A gap is a step 5 ticket, not an assumption.
+  data it renders is exposed at all. Anything missing is flagged in step 5, not assumed.
 
 Prefer reduction to addition: a component an existing one covers with one parameter is a
 modification, not a new file.
@@ -112,15 +112,26 @@ as a table below it. Lift the markup from the design verbatim instead of rebuild
 the dark column swap in the `kit.css` dark values. Publish it with the `Artifact` tool, titled
 after the component, and put its URL in the ticket.
 
-## 5. Functional gaps
+## 5. Flag UI that needs new features
 
-Anything the component needs that is not pixels: data nothing exposes, an interaction with no
-receiver, new persistence, a navigation target that doesn't exist.
+Anything the design shows that the app can't back today: data nothing exposes, an interaction
+with no receiver, new persistence, a navigation target that doesn't exist, a whole feature.
+List every such piece with the component it belongs to and what is missing.
 
-Each gap is its own ticket: `status: backlog`, `type: enhancement`, **standalone, not a
-sub-issue of the design parent**. The component that needs it is created blocked by it
-(`--blocked-by`), so it isn't picked up early. Post gap tickets **before** the components, so
-their numbers exist.
+**Ask the human, one flagged piece at a time, with a recommendation.** Three choices:
+
+- **Scrap**: drop that part of the UI. It leaves the component ticket, the mock and the
+  acceptance criteria, and the parent's out-of-scope list names it.
+- **Update**: change the UI so it needs nothing new (a static label instead of a live count, no
+  control instead of a dead one). Say what replaces it and update the component's description
+  and mock to match.
+- **Blocking ticket**: file the feature first. It is its own ticket: `status: backlog`,
+  `type: enhancement`, **standalone, not a sub-issue of the design parent**, holding what the
+  UI needs from it. The component is created blocked by it (`--blocked-by`), so it isn't picked
+  up early. Post these tickets **before** the components, so their numbers exist.
+
+Several pieces needing one feature share one blocking ticket. Take no action for a piece until
+the human has chosen. Record every choice in the parent's body.
 
 ## 6. The verification leaf
 
@@ -138,7 +149,7 @@ each component is checked alone and nothing checks the assembled page against th
 ## 7. Write to GitHub
 
 Through `aisf:github-issue`, in this order, each step needs the numbers from the last: **parent
-→ gap tickets → components in dependency order → verification leaf.**
+→ blocking tickets → components in dependency order → verification leaf.**
 
 - **Parent**: the design doc, a screen-by-screen overview, the component list with numbers,
   what is out of scope. Labels: `type: enhancement`, `priority:` (inherited, else `medium`),
@@ -157,7 +168,7 @@ ticket: go back and fix it.
   sub-issue. In none is dropped work. In two is a merge conflict waiting.
 - **Buildable alone.** Read each sub-issue as someone with no memory of the design.
 - **No invented numbers.** Every px, hex and weight traces to the source.
-- **Gaps are gaps.** A component that quietly assumes an endpoint exists fails at
+- **Gaps are flagged.** A component that quietly assumes an endpoint exists fails at
   implementation time, with the cost already sunk.
 
 After posting, confirm the parent's count matches:
