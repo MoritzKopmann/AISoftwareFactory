@@ -1,0 +1,23 @@
+{
+  "data": {
+    "rateLimit": { "resetAt": "2026-09-28T08:59:46Z" },
+    "repository": {
+      "issues": {
+        "pageInfo": { "hasNextPage": false, "endCursor": "cursor-after-page-2" },
+        "nodes": [
+          {
+            "number": 14,
+            "title": "Show the board",
+            "url": "https://github.com/octo/hello/issues/14",
+            "updatedAt": "2026-09-26T12:00:00Z",
+            "labels": { "nodes": [{ "name": "status: ready" }, { "name": "status: stuck" }] },
+            "parent": { "number": 12, "title": "Epic: Watch a project" },
+            "subIssues": { "nodes": [] },
+            "blockedBy": { "nodes": [] },
+            "closedByPullRequestsReferences": { "nodes": [] }
+          }
+        ]
+      }
+    }
+  }
+}
