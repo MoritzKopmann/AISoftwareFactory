@@ -24,12 +24,13 @@ packages/
 ├── app/                              ← the server and CLI (@aisf/app)
 │   ├── src/
 │   │   ├── main.ts                   ← composition root
-│   │   ├── shared/                   ← typed event bus, clock, db (connection + migrations), config, logger, process
+│   │   ├── shared/                   ← typed event bus, clock, db (connection + migrations), config, logger, process, http
 │   │   └── modules/
 │   │       └── <name>/               ← module root
 │   │           ├── index.ts          ← the module's only public surface
 │   │           ├── api/              ← inbound adapters
 │   │           │   ├── routes/       ← Hono routes, one file per resource
+│   │           │   ├── schemas/      ← zod request/response schemas, shared with packages/ui
 │   │           │   ├── subscriptions/← bus subscriptions, one per event handled
 │   │           │   └── tools/        ← MCP tool handlers, one per tool
 │   │           ├── logic/            ← pure TS, no I/O
@@ -78,7 +79,7 @@ packages/
 | Repository port | `interface` | `logic/ports/` | `RunRepository` |
 | Integration port | `interface` | `logic/ports/` | `GitHubIntegration`, `TicketSource` |
 | Domain error | class `extends Error` | `logic/errors/` | `WorktreeMissingError` |
-| API schema | zod schema and its inferred type, one file per resource | `modules/ui/api/schemas/` | `projects-schemas.ts` |
+| API schema | zod schema and its inferred type, one file per resource; `packages/ui` imports it through an `exports` entry `./api-schemas/<resource>-schemas.js` in `packages/app/package.json` | `<module>/api/schemas/` | `projects-schemas.ts` |
 | Route | function returning a Hono app | `api/routes/` | `createRunRoutes` |
 | Subscription | function registering one bus handler | `api/subscriptions/` | `subscribeToSnapshotChanged` |
 | MCP tool handler | function returning the tool definition | `api/tools/` | `createShowArtifactTool` |
@@ -96,7 +97,7 @@ packages/
 | Add an operation the outside world triggers | Use case in `logic/use-cases/`, called from an `api/` adapter |
 | Persist data | Repository port in `logic/ports/`, impl in `infra/repositories/`, plus a migration |
 | Call GitHub, the SDK, the file system or a process | Integration port in `logic/ports/`, impl in `infra/integrations/` |
-| Expose an HTTP endpoint or SSE stream | Route in `api/routes/` |
+| Expose an HTTP endpoint or SSE stream | Route in `api/routes/`. The SPA's data endpoints are ordinary `api/routes` of the module that owns the data; there is no `ui` module. |
 | React to another module's announcement | Subscription in `api/subscriptions/` |
 | Give sessions a new tool | MCP tool handler in `api/tools/` |
 | Let another module ask this one something | A method on the public interface in `index.ts`, backed by a use case |
@@ -165,7 +166,7 @@ issues.map((issue) => issue.number);
 - **Must:** `main.ts` constructs every module's infra adapters and passes them to that module's factory. It is the only file outside a module that may import that module's `infra/`.
 - **Must:** each module's wiring is a `build<Name>Module(...)` function local to `main.ts` — it constructs that module's infra adapters and calls its `create<Name>Module` factory, returning the module's public interface. `main.ts`'s top level is then a flat list of `const <name> = build<Name>Module(...)` calls, in start-up order. This keeps every module's construction still in `main.ts` (the rule above still holds) while keeping the top level readable as the module count grows.
 - **Must:** everything under `~/.aisf` is reached through `shared/config`, whose home is overridable, so tests use a temp dir.
-- **Must:** `shared/` holds cross-cutting infrastructure (bus, clock, db, config, logger, process). It may also hold a domain concept that no single module owns (`TicketStatus`, with its label-to-status function). Other domain logic never goes there.
+- **Must:** `shared/` holds cross-cutting infrastructure (bus, clock, db, config, logger, process, http). It may also hold a domain concept that no single module owns (`TicketStatus`, with its label-to-status function). Other domain logic never goes there.
 
 ### Deep modules
 
@@ -279,7 +280,7 @@ Confirm-page lanes, left to right: **UI** · **api** · **logic** · **infra** �
 - **A new module** needs its `index.ts` factory and a `build<Name>Module` function in `main.ts`.
 - **A new table** needs a migration in `shared/db`. Never edit an applied migration.
 - **A new bus event** needs its type added to the bus's event map in `shared/`, or subscribers don't type-check.
-- **A new API route** needs its Zod schema shared with `packages/ui`, so the SPA and server agree.
+- **A new API route** needs its Zod schema shared with `packages/ui`, so the SPA and server agree: put it in the module's `api/schemas/` and add its `./api-schemas/<resource>-schemas.js` entry to `exports` in `packages/app/package.json`.
 - **A new app MCP tool** (`aisf_*`) needs registering in the in-process MCP server that `runner` hands to each `query()`, and allowing in the session's tool permissions.
 - **A new config key** goes through `shared/config`, so tests can override `~/.aisf`.
 - **Changes under `packages/plugin`** reach sessions only after the `skills` module mirrors the plugin into `~/.aisf/plugins/aisf/` (on app start). Hand-run sessions use the marketplace path.

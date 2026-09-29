@@ -5,7 +5,7 @@ import {
   type Finding,
 } from '../../../findings/index.js';
 import { findingIdParameterSchema } from '../schemas/findings-schemas.js';
-import { ticketNumberParameterSchema } from '../schemas/tickets-schemas.js';
+import { ticketNumberParameterSchema } from '../../../../shared/http/ticket-number-parameter-schema.js';
 
 export type FindingsPort = {
   readonly list: (projectId: string, ticketNumber?: number) => Promise<ReadonlyArray<Finding>>;

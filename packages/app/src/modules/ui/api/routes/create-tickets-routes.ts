@@ -1,6 +1,6 @@
 import { Hono, type Context } from 'hono';
 import type { ProjectBoard, ProjectTicket } from '../../../watcher/index.js';
-import { ticketNumberParameterSchema } from '../schemas/tickets-schemas.js';
+import { ticketNumberParameterSchema } from '../../../../shared/http/ticket-number-parameter-schema.js';
 import type { RunsPort } from './create-run-routes.js';
 
 export type WatcherPort = {

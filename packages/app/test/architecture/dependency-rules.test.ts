@@ -174,8 +174,30 @@ describe('dependency-cruiser module rules', () => {
   describe('ui-only-api-schemas-from-app', () => {
     it('should fail when packages/ui imports something other than an api schema from packages/app', () => {
       const result = cruiseAcrossPackages({
-        'packages/ui/src/main.ts': "import '../../app/src/modules/ui/index.js';\n",
-        'packages/app/src/modules/ui/index.ts': exported,
+        'packages/ui/src/main.ts': "import '../../app/src/modules/watcher/index.js';\n",
+        'packages/app/src/modules/watcher/index.ts': exported,
+      });
+
+      expect(result.passed).toBe(false);
+      expect(result.output).toContain('ui-only-api-schemas-from-app');
+    });
+
+    it('should fail when packages/ui imports a route file of a module', () => {
+      const result = cruiseAcrossPackages({
+        'packages/ui/src/main.ts':
+          "import '../../app/src/modules/watcher/api/routes/create-snapshot-routes.js';\n",
+        'packages/app/src/modules/watcher/api/routes/create-snapshot-routes.ts': exported,
+      });
+
+      expect(result.passed).toBe(false);
+      expect(result.output).toContain('ui-only-api-schemas-from-app');
+    });
+
+    it('should fail when packages/ui imports a use case of a module', () => {
+      const result = cruiseAcrossPackages({
+        'packages/ui/src/main.ts':
+          "import '../../app/src/modules/watcher/logic/use-cases/poll-use-case.js';\n",
+        'packages/app/src/modules/watcher/logic/use-cases/poll-use-case.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -185,8 +207,8 @@ describe('dependency-cruiser module rules', () => {
     it('should pass when packages/ui imports an api schema from packages/app', () => {
       const result = cruiseAcrossPackages({
         'packages/ui/src/main.ts':
-          "import '../../app/src/modules/ui/api/schemas/projects-schemas.js';\n",
-        'packages/app/src/modules/ui/api/schemas/projects-schemas.ts': exported,
+          "import '../../app/src/modules/watcher/api/schemas/projects-schemas.js';\n",
+        'packages/app/src/modules/watcher/api/schemas/projects-schemas.ts': exported,
       });
 
       expect(result.passed).toBe(true);

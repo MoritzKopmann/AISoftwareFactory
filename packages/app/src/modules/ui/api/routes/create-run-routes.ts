@@ -11,7 +11,7 @@ import {
   type StartedRun,
 } from '../../../scheduler/index.js';
 import type { TicketRunResponse } from '../schemas/runs-schemas.js';
-import { ticketNumberParameterSchema } from '../schemas/tickets-schemas.js';
+import { ticketNumberParameterSchema } from '../../../../shared/http/ticket-number-parameter-schema.js';
 
 export type RunsPort = {
   readonly availability: (projectId: string, ticketNumber: number) => Promise<RunAvailability>;

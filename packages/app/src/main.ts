@@ -315,7 +315,7 @@ const runningServer = await startServer({
   app: createApp({
     staticDirectory,
     kitRoutes: bridge.kitRoutes,
-    uiRoutes: ui.routes,
+    apiRoutes: [ui.routes],
   }),
   port: config.port,
 });

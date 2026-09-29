@@ -122,7 +122,7 @@ module.exports = {
       from: { path: '^packages/ui/' },
       to: {
         path: '^packages/app/',
-        pathNot: '^packages/app/src/modules/ui/api/schemas/',
+        pathNot: '^packages/app/src/modules/[^/]+/api/schemas/',
       },
     },
     {
