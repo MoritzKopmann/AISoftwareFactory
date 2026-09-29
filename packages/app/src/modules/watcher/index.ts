@@ -22,7 +22,6 @@ export type { SnapshotDiff } from './logic/domain/types/snapshot-diff.js';
 export type { SyncFailureCause, SyncStatus } from './logic/domain/types/sync-status.js';
 export type { Ticket } from './logic/domain/types/ticket.js';
 export type { TicketSnapshot } from './logic/domain/types/ticket-snapshot.js';
-export type { TicketStatus } from './logic/domain/types/ticket-status.js';
 export type {
   RegisteredRepositories,
   RegisteredRepository,

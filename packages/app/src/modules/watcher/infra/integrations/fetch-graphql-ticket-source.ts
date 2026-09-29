@@ -1,4 +1,4 @@
-import { deriveTicketStatus } from '../../logic/domain/functions/derive-ticket-status.js';
+import { deriveTicketStatus } from '../../../../shared/ticket-status/derive-ticket-status.js';
 import type { ClosingPullRequest } from '../../logic/domain/types/closing-pull-request.js';
 import type { RepositoryReference } from '../../logic/domain/types/repository-reference.js';
 import type { Ticket } from '../../logic/domain/types/ticket.js';

@@ -1,4 +1,4 @@
-import type { TicketStatus } from './ticket-status.js';
+import type { TicketStatus } from '../../../../../shared/ticket-status/ticket-status.js';
 
 export type RunEndTransition =
   | { readonly kind: 'none' }

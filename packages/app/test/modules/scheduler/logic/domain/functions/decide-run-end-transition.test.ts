@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { decideRunEndTransition } from '../../../../../../src/modules/scheduler/logic/domain/functions/decide-run-end-transition.js';
 import type { RunEnding } from '../../../../../../src/modules/scheduler/logic/domain/types/run-ending.js';
-import type { TicketStatus } from '../../../../../../src/modules/scheduler/logic/domain/types/ticket-status.js';
+import type { TicketStatus } from '../../../../../../src/shared/ticket-status/ticket-status.js';
 
 describe('decideRunEndTransition', () => {
   it.each<TicketStatus>(['ready', 'in-progress'])(

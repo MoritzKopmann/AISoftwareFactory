@@ -1,5 +1,5 @@
 import type { RepositoryReference } from '../domain/types/repository-reference.js';
-import type { TicketStatus } from '../domain/types/ticket-status.js';
+import type { TicketStatus } from '../../../../shared/ticket-status/ticket-status.js';
 
 export type StatusSwapOutcome =
   | { readonly kind: 'swapped' }

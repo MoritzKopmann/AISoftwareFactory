@@ -1,6 +1,6 @@
-import { ticketStatusOrder } from '../constants/ticket-status-order.js';
-import type { DerivedTicketStatus } from '../types/derived-ticket-status.js';
-import type { TicketStatus } from '../types/ticket-status.js';
+import { ticketStatusOrder } from './ticket-status-order.js';
+import type { DerivedTicketStatus } from './derived-ticket-status.js';
+import type { TicketStatus } from './ticket-status.js';
 
 const statusLabelPrefix = 'status: ';
 

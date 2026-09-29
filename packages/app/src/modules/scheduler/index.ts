@@ -32,7 +32,6 @@ export type { RunAvailability } from './logic/domain/types/run-availability.js';
 export type { StartedRun } from './logic/domain/types/started-run.js';
 export type { RunsBlocked } from './logic/domain/types/runs-blocked.js';
 export type { SchedulableTicket } from './logic/domain/types/schedulable-ticket.js';
-export type { TicketStatus } from './logic/domain/types/ticket-status.js';
 export type { SchedulerProject } from './logic/ports/project-lookup.js';
 export { FindingNotFoundError, FindingNotOpenError, RunNotAvailableError };
 

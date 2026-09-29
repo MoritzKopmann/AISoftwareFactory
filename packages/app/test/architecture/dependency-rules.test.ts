@@ -254,6 +254,16 @@ describe('dependency-cruiser module rules', () => {
       expect(result.passed).toBe(false);
       expect(result.output).toContain('domain-only-domain');
     });
+
+    it('should pass when domain imports the shared ticket status', () => {
+      const result = cruise({
+        'modules/watcher/logic/domain/functions/arrange.ts':
+          "import { ticketStatusOrder } from '../../../../../shared/ticket-status/ticket-status-order.js';\nexport const arranged = ticketStatusOrder;\n",
+        'shared/ticket-status/ticket-status-order.ts': 'export const ticketStatusOrder = [];\n',
+      });
+
+      expect(result.passed).toBe(true);
+    });
   });
 
   describe('domain-types-only-types', () => {
@@ -340,6 +350,16 @@ describe('dependency-cruiser module rules', () => {
 
       expect(result.passed).toBe(false);
       expect(result.output).toContain('logic-shared-types-only');
+    });
+
+    it('should pass when logic imports a value from the shared ticket status', () => {
+      const result = cruise({
+        'modules/watcher/logic/use-cases/poll.ts':
+          "import '../../../../shared/ticket-status/derive-ticket-status.js';\n",
+        'shared/ticket-status/derive-ticket-status.ts': exported,
+      });
+
+      expect(result.passed).toBe(true);
     });
 
     it('should pass when logic imports a type from shared', () => {
