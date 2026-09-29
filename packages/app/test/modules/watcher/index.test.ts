@@ -130,7 +130,7 @@ describe('createWatcherModule', () => {
       expect(ticketSource.snapshotRequests).toHaveLength(2);
     });
 
-    it('should never overlap passes when a pass takes longer than the poll interval', async () => {
+    it('should never overlap polls when a poll takes longer than the poll interval', async () => {
       const { watcher, issueFeeds, ticketSource } = createSubject();
       let finishSnapshot: () => void = () => undefined;
       ticketSource.release = new Promise((resolve) => {
@@ -147,7 +147,7 @@ describe('createWatcherModule', () => {
       expect(issueFeeds.requests).toHaveLength(1);
     });
 
-    it('should show failed/unexpected and keep polling when a pass throws an unknown error', async () => {
+    it('should show failed/unexpected and keep polling when a poll throws an unknown error', async () => {
       const { watcher, issueFeeds } = createSubject();
       issueFeeds.failure = new TypeError('boom');
 
@@ -181,6 +181,32 @@ describe('createWatcherModule', () => {
       ]);
       expect(watcher.board('owner/other')?.sync.state).toBe('ok');
     });
+
+    it('should poll once more straight after the running poll when a project is added during it', async () => {
+      const { watcher, events, issueFeeds, ticketSource } = createSubject();
+      let finishSnapshot: () => void = () => undefined;
+      ticketSource.release = new Promise((resolve) => {
+        finishSnapshot = resolve;
+      });
+      const started = watcher.start();
+
+      events.emit('project.added', {
+        projectId: 'owner/other',
+        repository: { owner: 'owner', name: 'other' },
+        checkoutPath: '/checkout',
+      });
+      await vi.advanceTimersByTimeAsync(pollIntervalMilliseconds * 5);
+      expect(issueFeeds.requests).toHaveLength(1);
+      finishSnapshot();
+      await started;
+      const requestCountBeforeIntervalPoll = issueFeeds.requests.length;
+      await vi.advanceTimersByTimeAsync(pollIntervalMilliseconds);
+      watcher.stop();
+
+      // One feed request per repository: the first poll covers 1, the follow-up poll 2, the interval poll 2.
+      expect(requestCountBeforeIntervalPoll).toBe(3);
+      expect(issueFeeds.requests).toHaveLength(5);
+    });
   });
 
   describe('board', () => {
@@ -192,7 +218,7 @@ describe('createWatcherModule', () => {
       expect(watcher.board('owner/unknown')).toBeUndefined();
     });
 
-    it('should return a pending status without a board before the first pass settles', async () => {
+    it('should return a pending status without a board before the first poll settles', async () => {
       const { watcher, ticketSource } = createSubject();
       ticketSource.release = new Promise(() => undefined);
       void watcher.start();

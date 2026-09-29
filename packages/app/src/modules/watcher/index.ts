@@ -45,10 +45,10 @@ export function createWatcherModule(dependencies: WatcherModuleDependencies): Wa
   const pollRepositories = new PollRepositoriesUseCase(dependencies);
   const readTicket = new ReadTicketUseCase(dependencies);
   const watchesByProjectId = new Map<string, RepositoryWatch>();
-  let nextPassTimer: ReturnType<typeof setTimeout> | undefined;
+  let nextPollTimer: ReturnType<typeof setTimeout> | undefined;
   let unsubscribe: (() => void) | undefined;
-  let currentPasses: Promise<void> | undefined;
-  let passRequested = false;
+  let runningPolls: Promise<void> | undefined;
+  let pollRequested = false;
   let stopped = false;
 
   function watchRepository(projectId: string, repository: RepositoryReference): void {
@@ -58,7 +58,7 @@ export function createWatcherModule(dependencies: WatcherModuleDependencies): Wa
   }
 
   // The timer callback must never reject, or an unhandled rejection ends the process.
-  async function runPass(): Promise<void> {
+  async function runPoll(): Promise<void> {
     try {
       const polledWatches = await pollRepositories.execute([...watchesByProjectId.values()]);
       for (const watch of polledWatches) {
@@ -76,31 +76,31 @@ export function createWatcherModule(dependencies: WatcherModuleDependencies): Wa
     }
   }
 
-  function scheduleNextPass(): void {
+  function scheduleNextPoll(): void {
     if (stopped) {
       return;
     }
-    nextPassTimer = setTimeout(() => {
-      void requestPass();
+    nextPollTimer = setTimeout(() => {
+      void requestPoll();
     }, dependencies.pollIntervalMilliseconds);
-    nextPassTimer.unref();
+    nextPollTimer.unref();
   }
 
-  function requestPass(): Promise<void> {
-    if (currentPasses !== undefined) {
-      passRequested = true;
-      return currentPasses;
+  function requestPoll(): Promise<void> {
+    if (runningPolls !== undefined) {
+      pollRequested = true;
+      return runningPolls;
     }
-    clearTimeout(nextPassTimer);
-    currentPasses = (async () => {
+    clearTimeout(nextPollTimer);
+    runningPolls = (async () => {
       do {
-        passRequested = false;
-        await runPass();
-      } while (passRequested && !stopped);
-      currentPasses = undefined;
-      scheduleNextPass();
+        pollRequested = false;
+        await runPoll();
+      } while (pollRequested && !stopped);
+      runningPolls = undefined;
+      scheduleNextPoll();
     })();
-    return currentPasses;
+    return runningPolls;
   }
 
   return {
@@ -108,16 +108,16 @@ export function createWatcherModule(dependencies: WatcherModuleDependencies): Wa
       stopped = false;
       unsubscribe = subscribeToProjectAdded(dependencies.subscriber, (projectId, repository) => {
         watchRepository(projectId, repository);
-        void requestPass();
+        void requestPoll();
       });
       for (const { projectId, repository } of await dependencies.registeredRepositories.list()) {
         watchRepository(projectId, repository);
       }
-      await requestPass();
+      await requestPoll();
     },
     stop: () => {
       stopped = true;
-      clearTimeout(nextPassTimer);
+      clearTimeout(nextPollTimer);
       unsubscribe?.();
     },
     board: (projectId) => {

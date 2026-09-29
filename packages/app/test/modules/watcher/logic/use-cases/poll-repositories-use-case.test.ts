@@ -118,7 +118,7 @@ describe('PollRepositoriesUseCase', () => {
       expect(events.emittedEvents).toHaveLength(1);
     });
 
-    it('should snapshot again on the next pass when a snapshot failed after a feed changed', async () => {
+    it('should snapshot again on the next poll when a snapshot failed after a feed changed', async () => {
       const { useCase, issueFeeds, ticketSource, clock } = createSubject();
       issueFeeds.changed = true;
       ticketSource.failure = new GitHubRequestError('GitHub answered 502');
@@ -238,7 +238,7 @@ describe('PollRepositoriesUseCase', () => {
         });
       });
 
-      it('should snapshot on the first pass after the retry time', async () => {
+      it('should snapshot on the first poll after the retry time', async () => {
         const { useCase, watches, issueFeeds, ticketSource, clock } = await rateLimit();
         issueFeeds.failure = undefined;
         clock.setNow('2026-09-28T12:10:00.000Z');
