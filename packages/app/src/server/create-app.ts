@@ -5,16 +5,18 @@ import { relative } from 'node:path';
 export type AppOptions = {
   readonly staticDirectory: string;
   readonly kitRoutes: Hono;
-  readonly uiRoutes: Hono;
+  readonly apiRoutes: ReadonlyArray<Hono>;
 };
 
 export function createApp(options: AppOptions): Hono {
   // serveStatic resolves its root relative to the working directory.
   const staticRoot = relative(process.cwd(), options.staticDirectory) || '.';
 
-  return new Hono()
+  const app = new Hono()
     .get('/health', (context) => context.json({ status: 'ok' }))
-    .route('/aisf', options.kitRoutes)
-    .route('/api', options.uiRoutes)
-    .use('*', serveStatic({ root: staticRoot }));
+    .route('/aisf', options.kitRoutes);
+  for (const routes of options.apiRoutes) {
+    app.route('/api', routes);
+  }
+  return app.use('*', serveStatic({ root: staticRoot }));
 }

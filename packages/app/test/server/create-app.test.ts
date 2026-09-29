@@ -21,7 +21,7 @@ describe('createApp', () => {
     const response = await createApp({
       staticDirectory,
       kitRoutes: new Hono(),
-      uiRoutes: new Hono(),
+      apiRoutes: [],
     }).request('/health');
 
     expect(response.status).toBe(200);
@@ -32,7 +32,7 @@ describe('createApp', () => {
     const response = await createApp({
       staticDirectory,
       kitRoutes: new Hono(),
-      uiRoutes: new Hono(),
+      apiRoutes: [],
     }).request('/');
 
     expect(response.status).toBe(200);
@@ -45,23 +45,25 @@ describe('createApp', () => {
     const response = await createApp({
       staticDirectory,
       kitRoutes,
-      uiRoutes: new Hono(),
+      apiRoutes: [],
     }).request('/aisf/kit.css');
 
     expect(await response.text()).toBe(':root {}');
   });
 
-  it('should serve the ui routes under /api when the app is running', async () => {
-    const uiRoutes = new Hono().get('/skills/status', (context) =>
+  it('should serve every api route list under /api when the app is running', async () => {
+    const skillsRoutes = new Hono().get('/skills/status', (context) =>
       context.json({ state: 'passed' }),
     );
+    const projectsRoutes = new Hono().get('/projects', (context) => context.json([]));
 
-    const response = await createApp({
+    const app = createApp({
       staticDirectory,
       kitRoutes: new Hono(),
-      uiRoutes,
-    }).request('/api/skills/status');
+      apiRoutes: [skillsRoutes, projectsRoutes],
+    });
 
-    expect(await response.json()).toEqual({ state: 'passed' });
+    expect(await (await app.request('/api/skills/status')).json()).toEqual({ state: 'passed' });
+    expect(await (await app.request('/api/projects')).json()).toEqual([]);
   });
 });
