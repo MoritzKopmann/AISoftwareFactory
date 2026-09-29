@@ -137,8 +137,10 @@ Then write the status with `aisf:github-issue` (guarded):
 A guard mismatch (the app or the human moved the ticket, e.g. to `stuck`) → stop, report
 the actual state, write nothing.
 
-**Rework with conflicts:** `git fetch origin && git merge origin/main`, resolve, and commit
-the merge. Never rebase or force-push: reviewed commits stay.
+**Rework with conflicts:** `git fetch origin && git rebase origin/main`, resolve each step,
+and re-run §5. Never merge `origin/main` into the branch: a merge commit makes the PR
+non-rebaseable, and the app rebase-merges. The rebase rewrites the branch, so §9 pushes it
+with `--force-with-lease`, and replies quote the new commit SHAs.
 
 ## 4. Implement
 
@@ -235,7 +237,8 @@ squash-merges them.
 
 ## 9. PR
 
-`git push -u origin HEAD`. Never push to the default branch, and never force-push.
+`git push -u origin HEAD`. After a rebase (§3) use `git push --force-with-lease` instead. Never
+push to the default branch, never force-push in any other case, and never use plain `--force`.
 
 `gh pr view --json url -q .url` succeeds → the PR already exists (a resumed run or rework).
 Reuse it, skip creation.
