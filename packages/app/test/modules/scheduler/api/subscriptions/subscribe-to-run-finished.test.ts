@@ -4,7 +4,7 @@ import { SettleFinishedRunUseCase } from '../../../../../src/modules/scheduler/l
 import type { AisfEventMap } from '../../../../../src/shared/bus/aisf-event-map.js';
 import { TypedEventBus } from '../../../../../src/shared/bus/typed-event-bus.js';
 import {
-  FakeGitHubWrites,
+  FakeTicketStatusWrites,
   FakeProjectLookup,
   FakeRunnerPort,
 } from '../../fakes/fake-scheduler-ports.js';
@@ -18,32 +18,32 @@ const runFinished: AisfEventMap['run.finished'] = {
 
 function buildSubject() {
   const bus = new TypedEventBus<AisfEventMap>();
-  const gitHubWrites = new FakeGitHubWrites();
+  const ticketStatusWrites = new FakeTicketStatusWrites();
   const runner = new FakeRunnerPort();
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
   const settleFinishedRun = new SettleFinishedRunUseCase({
-    gitHubWrites,
+    ticketStatusWrites,
     runner,
     projectLookup: new FakeProjectLookup(),
     logger,
   });
   const unsubscribe = subscribeToRunFinished(bus, settleFinishedRun, logger);
-  return { bus, gitHubWrites, runner, logger, unsubscribe };
+  return { bus, ticketStatusWrites, runner, logger, unsubscribe };
 }
 
 describe('subscribeToRunFinished', () => {
   it('should settle the run on GitHub and the runner when run.finished is emitted', async () => {
-    const { bus, gitHubWrites, runner } = buildSubject();
+    const { bus, ticketStatusWrites, runner } = buildSubject();
 
     bus.emit('run.finished', runFinished);
 
     await vi.waitFor(() => expect(runner.calls).toEqual(['settle run-1']));
-    expect(gitHubWrites.calls).toContain('comment #138: The run was stopped');
+    expect(ticketStatusWrites.calls).toContain('comment #138: The run was stopped');
   });
 
   it('should log the failure and not throw when settling fails', async () => {
-    const { bus, gitHubWrites, logger } = buildSubject();
-    gitHubWrites.readStatus = async () => {
+    const { bus, ticketStatusWrites, logger } = buildSubject();
+    ticketStatusWrites.readStatus = async () => {
       throw new Error('gh failed');
     };
 

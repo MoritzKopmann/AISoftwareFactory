@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ClosingPullRequest } from '../../../../../src/modules/scheduler/logic/domain/types/closing-pull-request.js';
 import type { ReviewedTicket } from '../../../../../src/modules/scheduler/logic/domain/types/reviewed-ticket.js';
-import { GitHubWriteFailedError } from '../../../../../src/modules/scheduler/logic/errors/github-write-failed-error.js';
+import { PullRequestMergeFailedError } from '../../../../../src/modules/scheduler/logic/errors/pull-request-merge-failed-error.js';
 import type { ProjectLookup } from '../../../../../src/modules/scheduler/logic/ports/project-lookup.js';
 import { MergeApprovedPullRequestsUseCase } from '../../../../../src/modules/scheduler/logic/use-cases/merge-approved-pull-requests-use-case.js';
 import {
-  FakeGitHubWrites,
+  FakePullRequestMerges,
   FakeProjectLookup,
   FakeReviewedTicketLookup,
   FakeRunnerPort,
@@ -31,26 +31,26 @@ function buildSubject(
   tickets: ReadonlyArray<ReviewedTicket> = [approvedTicket],
   projectLookup: ProjectLookup = new FakeProjectLookup(),
 ) {
-  const gitHubWrites = new FakeGitHubWrites();
+  const pullRequestMerges = new FakePullRequestMerges();
   const runner = new FakeRunnerPort();
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
   const useCase = new MergeApprovedPullRequestsUseCase({
-    gitHubWrites,
+    pullRequestMerges,
     runner,
     reviewedTicketLookup: new FakeReviewedTicketLookup(tickets),
     projectLookup,
     logger,
   });
-  return { useCase, gitHubWrites, runner, logger };
+  return { useCase, pullRequestMerges, runner, logger };
 }
 
 describe('MergeApprovedPullRequestsUseCase', () => {
   it('should rebase-merge the pull request pinned to its head commit when it is approved, green and rebaseable', async () => {
-    const { useCase, gitHubWrites } = buildSubject();
+    const { useCase, pullRequestMerges } = buildSubject();
 
     await useCase.execute('moritz/aisf');
 
-    expect(gitHubWrites.calls).toEqual(['rebaseMerge #201 abc123']);
+    expect(pullRequestMerges.calls).toEqual(['merge #201 abc123']);
   });
 
   it('should merge nothing when the pull request is not approved', async () => {
@@ -58,35 +58,35 @@ describe('MergeApprovedPullRequestsUseCase', () => {
       ...approvedTicket,
       closingPullRequests: [{ ...approvedPullRequest, reviewDecision: 'REVIEW_REQUIRED' }],
     };
-    const { useCase, gitHubWrites } = buildSubject([awaitingReview]);
+    const { useCase, pullRequestMerges } = buildSubject([awaitingReview]);
 
     await useCase.execute('moritz/aisf');
 
-    expect(gitHubWrites.calls).toEqual([]);
+    expect(pullRequestMerges.calls).toEqual([]);
   });
 
   it('should merge nothing when the ticket has an active run', async () => {
-    const { useCase, gitHubWrites, runner } = buildSubject();
+    const { useCase, pullRequestMerges, runner } = buildSubject();
     runner.activeTicketNumber = 140;
 
     await useCase.execute('moritz/aisf');
 
-    expect(gitHubWrites.calls).toEqual([]);
+    expect(pullRequestMerges.calls).toEqual([]);
   });
 
   it('should merge nothing when the project is unknown', async () => {
     const unknownProject: ProjectLookup = { find: async () => undefined };
-    const { useCase, gitHubWrites } = buildSubject([approvedTicket], unknownProject);
+    const { useCase, pullRequestMerges } = buildSubject([approvedTicket], unknownProject);
 
     await useCase.execute('moritz/aisf');
 
-    expect(gitHubWrites.calls).toEqual([]);
+    expect(pullRequestMerges.calls).toEqual([]);
   });
 
   it('should merge the pull request once when a second snapshot arrives during the merge', async () => {
-    const { useCase, gitHubWrites } = buildSubject();
+    const { useCase, pullRequestMerges } = buildSubject();
     let finishMerge: () => void = () => undefined;
-    gitHubWrites.mergeGate = new Promise((resolve) => {
+    pullRequestMerges.mergeGate = new Promise((resolve) => {
       finishMerge = resolve;
     });
 
@@ -95,18 +95,18 @@ describe('MergeApprovedPullRequestsUseCase', () => {
     finishMerge();
     await firstExecution;
 
-    expect(gitHubWrites.calls).toEqual(['rebaseMerge #201 abc123']);
+    expect(pullRequestMerges.calls).toEqual(['merge #201 abc123']);
   });
 
   it('should merge the pull request again when an earlier merge attempt failed', async () => {
-    const { useCase, gitHubWrites, logger } = buildSubject();
-    gitHubWrites.mergeError = new GitHubWriteFailedError('head moved');
+    const { useCase, pullRequestMerges, logger } = buildSubject();
+    pullRequestMerges.mergeError = new PullRequestMergeFailedError('head moved');
 
     await useCase.execute('moritz/aisf');
-    gitHubWrites.mergeError = undefined;
+    pullRequestMerges.mergeError = undefined;
     await useCase.execute('moritz/aisf');
 
-    expect(gitHubWrites.calls).toEqual(['rebaseMerge #201 abc123', 'rebaseMerge #201 abc123']);
+    expect(pullRequestMerges.calls).toEqual(['merge #201 abc123', 'merge #201 abc123']);
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('head moved'));
   });
 });

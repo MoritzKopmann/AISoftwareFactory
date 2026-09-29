@@ -5,7 +5,7 @@ import { MergeApprovedPullRequestsUseCase } from '../../../../../src/modules/sch
 import type { AisfEventMap } from '../../../../../src/shared/bus/aisf-event-map.js';
 import { TypedEventBus } from '../../../../../src/shared/bus/typed-event-bus.js';
 import {
-  FakeGitHubWrites,
+  FakePullRequestMerges,
   FakeProjectLookup,
   FakeReviewedTicketLookup,
   FakeRunnerPort,
@@ -36,31 +36,31 @@ const snapshotChanged: AisfEventMap['snapshot.changed'] = {
 
 function buildSubject() {
   const bus = new TypedEventBus<AisfEventMap>();
-  const gitHubWrites = new FakeGitHubWrites();
+  const pullRequestMerges = new FakePullRequestMerges();
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
   const mergeApprovedPullRequests = new MergeApprovedPullRequestsUseCase({
-    gitHubWrites,
+    pullRequestMerges,
     runner: new FakeRunnerPort(),
     reviewedTicketLookup: new FakeReviewedTicketLookup([approvedTicket]),
     projectLookup: new FakeProjectLookup(),
     logger,
   });
   const unsubscribe = subscribeToSnapshotChanged(bus, mergeApprovedPullRequests, logger);
-  return { bus, gitHubWrites, logger, unsubscribe };
+  return { bus, pullRequestMerges, logger, unsubscribe };
 }
 
 describe('subscribeToSnapshotChanged', () => {
   it('should rebase-merge the approved pull request when snapshot.changed is emitted', async () => {
-    const { bus, gitHubWrites } = buildSubject();
+    const { bus, pullRequestMerges } = buildSubject();
 
     bus.emit('snapshot.changed', snapshotChanged);
 
-    await vi.waitFor(() => expect(gitHubWrites.calls).toEqual(['rebaseMerge #201 abc123']));
+    await vi.waitFor(() => expect(pullRequestMerges.calls).toEqual(['merge #201 abc123']));
   });
 
   it('should log the failure and not throw when merging fails unexpectedly', async () => {
-    const { bus, gitHubWrites, logger } = buildSubject();
-    gitHubWrites.mergeError = new Error('boom');
+    const { bus, pullRequestMerges, logger } = buildSubject();
+    pullRequestMerges.mergeError = new Error('boom');
 
     expect(() => bus.emit('snapshot.changed', snapshotChanged)).not.toThrow();
 
@@ -70,12 +70,12 @@ describe('subscribeToSnapshotChanged', () => {
   });
 
   it('should stop merging when the returned unsubscribe is called', async () => {
-    const { bus, gitHubWrites, unsubscribe } = buildSubject();
+    const { bus, pullRequestMerges, unsubscribe } = buildSubject();
 
     unsubscribe();
     bus.emit('snapshot.changed', snapshotChanged);
     await Promise.resolve();
 
-    expect(gitHubWrites.calls).toEqual([]);
+    expect(pullRequestMerges.calls).toEqual([]);
   });
 });

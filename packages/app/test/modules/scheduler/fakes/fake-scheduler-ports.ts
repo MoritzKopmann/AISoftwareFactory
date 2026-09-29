@@ -2,10 +2,8 @@ import type { RepositoryReference } from '../../../../src/modules/scheduler/logi
 import type { RunsBlocked } from '../../../../src/modules/scheduler/logic/domain/types/runs-blocked.js';
 import type { SchedulableTicket } from '../../../../src/modules/scheduler/logic/domain/types/schedulable-ticket.js';
 import type { TicketStatus } from '../../../../src/shared/ticket-status/ticket-status.js';
-import type {
-  GitHubWrites,
-  StatusSwapOutcome,
-} from '../../../../src/modules/scheduler/logic/ports/github-writes.js';
+import type { PullRequestMerges } from '../../../../src/modules/scheduler/logic/ports/pull-request-merges.js';
+import type { TicketStatusWrites } from '../../../../src/modules/scheduler/logic/ports/ticket-status-writes.js';
 import type {
   ProjectLookup,
   SchedulerProject,
@@ -27,29 +25,22 @@ export const readyLeaf: SchedulableTicket = {
   snapshotTakenAt: '2026-09-29T10:00:00.000Z',
 };
 
-export class FakeGitHubWrites implements GitHubWrites {
+export class FakeTicketStatusWrites implements TicketStatusWrites {
   readonly calls: string[] = [];
   liveStatus: TicketStatus = 'in-progress';
-  swapOutcome: StatusSwapOutcome = { kind: 'swapped' };
-  mergeError: Error | undefined;
-  mergeGate: Promise<void> = Promise.resolve();
 
   async readStatus(): Promise<TicketStatus> {
     this.calls.push('readStatus');
     return this.liveStatus;
   }
 
-  async transitionStatus(
+  async setStatus(
     _repository: RepositoryReference,
     ticketNumber: number,
-    allowedFrom: ReadonlyArray<TicketStatus>,
     to: TicketStatus,
-  ): Promise<StatusSwapOutcome> {
-    this.calls.push(`transition #${ticketNumber} ${allowedFrom.join('|')} -> ${to}`);
-    if (this.swapOutcome.kind === 'swapped') {
-      this.liveStatus = to;
-    }
-    return this.swapOutcome;
+  ): Promise<void> {
+    this.calls.push(`setStatus #${ticketNumber} -> ${to}`);
+    this.liveStatus = to;
   }
 
   async comment(
@@ -59,13 +50,19 @@ export class FakeGitHubWrites implements GitHubWrites {
   ): Promise<void> {
     this.calls.push(`comment #${ticketNumber}: ${body}`);
   }
+}
 
-  async rebaseMerge(
+export class FakePullRequestMerges implements PullRequestMerges {
+  readonly calls: string[] = [];
+  mergeError: Error | undefined;
+  mergeGate: Promise<void> = Promise.resolve();
+
+  async merge(
     _repository: RepositoryReference,
     pullRequestNumber: number,
     headCommit: string,
   ): Promise<void> {
-    this.calls.push(`rebaseMerge #${pullRequestNumber} ${headCommit}`);
+    this.calls.push(`merge #${pullRequestNumber} ${headCommit}`);
     await this.mergeGate;
     if (this.mergeError !== undefined) {
       throw this.mergeError;

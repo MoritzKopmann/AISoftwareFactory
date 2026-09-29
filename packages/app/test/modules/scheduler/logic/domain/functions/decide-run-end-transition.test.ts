@@ -15,7 +15,6 @@ describe('decideRunEndTransition', () => {
 
       expect(decideRunEndTransition(ending, liveStatus)).toEqual({
         kind: 'transition',
-        allowedFrom: ['ready', 'in-progress'],
         to: 'stuck',
         comment: 'The run escalated (red): tests still fail',
       });
@@ -45,7 +44,6 @@ describe('decideRunEndTransition', () => {
 
     expect(decideRunEndTransition(ending, 'in-progress')).toEqual({
       kind: 'transition',
-      allowedFrom: ['in-progress'],
       to: 'ready',
     });
   });
@@ -61,7 +59,6 @@ describe('decideRunEndTransition', () => {
     (ending, comment) => {
       expect(decideRunEndTransition(ending, 'in-progress')).toEqual({
         kind: 'transition',
-        allowedFrom: ['ready', 'in-progress'],
         to: 'stuck',
         comment,
       });

@@ -24,7 +24,8 @@ import { InMemoryRecentRunSteps } from './modules/runner/infra/integrations/in-m
 import { RandomUuidIdentifiers } from './modules/runner/infra/integrations/random-uuid-identifiers.js';
 import { SqliteRunRepository } from './modules/runner/infra/repositories/sqlite-run-repository.js';
 import { createRunnerModule, type RunTool, type RunnerModule } from './modules/runner/index.js';
-import { GhCliGitHubWrites } from './modules/scheduler/infra/integrations/gh-cli-github-writes.js';
+import { GhCliPullRequestMerges } from './modules/scheduler/infra/integrations/gh-cli-pull-request-merges.js';
+import { GhCliTicketStatusWrites } from './modules/scheduler/infra/integrations/gh-cli-ticket-status-writes.js';
 import { createSchedulerModule, type SchedulerModule } from './modules/scheduler/index.js';
 import { createUiModule, type UiModule } from './modules/ui/index.js';
 import { FetchGraphQLTicketSource } from './modules/watcher/infra/integrations/fetch-graphql-ticket-source.js';
@@ -181,7 +182,8 @@ function buildSchedulerModule(
   logger: Logger,
 ): SchedulerModule {
   return createSchedulerModule({
-    gitHubWrites: new GhCliGitHubWrites(),
+    ticketStatusWrites: new GhCliTicketStatusWrites(),
+    pullRequestMerges: new GhCliPullRequestMerges(),
     runner: {
       start: async ({ projectId, ticketNumber }) => {
         const { id, startedAt } = await runner.start({
