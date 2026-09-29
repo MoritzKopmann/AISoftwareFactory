@@ -52,6 +52,25 @@ export class GhCliGitHubWrites implements GitHubWrites {
     await this.runGh(repository, ['issue', 'comment', String(ticketNumber), '--body', body]);
   }
 
+  async createIssue(
+    repository: RepositoryReference,
+    issue: { readonly title: string; readonly body: string },
+  ): Promise<number> {
+    const standardOutput = await this.runGh(repository, [
+      'issue',
+      'create',
+      '--title',
+      issue.title,
+      '--body',
+      issue.body,
+    ]);
+    const createdNumber = /\/issues\/(\d+)\s*$/.exec(standardOutput)?.[1];
+    if (createdNumber === undefined) {
+      throw new GitHubWriteFailedError('gh issue create did not print the new issue URL');
+    }
+    return Number(createdNumber);
+  }
+
   async rebaseMerge(
     repository: RepositoryReference,
     pullRequestNumber: number,

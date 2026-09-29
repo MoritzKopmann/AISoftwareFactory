@@ -19,6 +19,11 @@ function createSubject(status: SkillsStatus) {
       start: async () => notExpected('start'),
       stop: async () => notExpected('stop'),
     },
+    findings: {
+      listFindings: async () => [],
+      createTicketFromFinding: async () => notExpected('createTicketFromFinding'),
+      dismissFinding: async () => notExpected('dismissFinding'),
+    },
   });
 }
 
@@ -73,6 +78,15 @@ describe('createUiModule', () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ projectId: 'owner/name', sync: { state: 'pending' } });
+  });
+
+  it('should serve the findings under /projects/:owner/:name/findings', async () => {
+    const ui = createSubject({ state: 'pending' });
+
+    const response = await ui.routes.request('/projects/owner/name/findings');
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ findings: [] });
   });
 
   it('should serve a ticket run under /projects/:owner/:name/tickets/:number/run', async () => {

@@ -31,6 +31,9 @@ export class FakeGitHubWrites implements GitHubWrites {
   readonly calls: string[] = [];
   liveStatus: TicketStatus = 'in-progress';
   swapOutcome: StatusSwapOutcome = { kind: 'swapped' };
+  createdIssueNumber = 200;
+  createIssueError: Error | undefined;
+  readonly createdIssues: Array<{ readonly title: string; readonly body: string }> = [];
   mergeError: Error | undefined;
   mergeGate: Promise<void> = Promise.resolve();
 
@@ -58,6 +61,18 @@ export class FakeGitHubWrites implements GitHubWrites {
     body: string,
   ): Promise<void> {
     this.calls.push(`comment #${ticketNumber}: ${body}`);
+  }
+
+  async createIssue(
+    _repository: RepositoryReference,
+    issue: { readonly title: string; readonly body: string },
+  ): Promise<number> {
+    this.calls.push(`createIssue ${issue.title}`);
+    if (this.createIssueError !== undefined) {
+      throw this.createIssueError;
+    }
+    this.createdIssues.push(issue);
+    return this.createdIssueNumber;
   }
 
   async rebaseMerge(
