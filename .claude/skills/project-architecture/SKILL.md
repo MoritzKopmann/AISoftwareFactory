@@ -56,6 +56,15 @@ packages/
 
 **Module-root pattern:** `packages/app/src/modules/<name>/`.
 
+### When something is its own module
+
+**Rule:** a module owns its own table and its own domain, and serves one concern end to end.
+
+- **Must:** `index.ts` exports exactly one factory (plus its public interface and the types that interface uses).
+- **Must:** a module is named after its concern, never after its provider. Only `infra/` knows it is GitHub.
+- **Must:** infra stays inside the module that uses it. It moves to `shared/` only when a second module uses the same infra.
+- **Must not:** split out a module that would be an integration with almost no logic of its own.
+
 ## Class types
 
 **Rule:** every file has one type, one form, one location.
@@ -132,7 +141,7 @@ issues.map((issue) => issue.number);
 
 **Rule:** dependencies point inward: `api → logic ← infra`.
 
-- **Must:** `logic/` imports only `logic/` and `shared/`'s types. Never `api/`, `infra/`, Node I/O, `node:sqlite`, Hono, the Agent SDK or `gh`.
+- **Must:** `logic/` imports only `logic/` and `shared/`'s types and domain concepts. Never `api/`, `infra/`, Node I/O, `node:sqlite`, Hono, the Agent SDK or `gh`.
 - **Must:** inside `logic/`, `domain/` imports nothing but `domain/`. `use-cases/` import `domain/`, `ports/` and `errors/`.
 - **Must:** inside `domain/`, `types/` imports only `types/`, `constants/` imports only `types/`, and `functions/` may import `types/`, `constants/` and `functions/`.
 - **Must:** no barrel `index.ts` in a `domain/` subfolder.
@@ -156,7 +165,7 @@ issues.map((issue) => issue.number);
 - **Must:** `main.ts` constructs every module's infra adapters and passes them to that module's factory. It is the only file outside a module that may import that module's `infra/`.
 - **Must:** each module's wiring is a `build<Name>Module(...)` function local to `main.ts` — it constructs that module's infra adapters and calls its `create<Name>Module` factory, returning the module's public interface. `main.ts`'s top level is then a flat list of `const <name> = build<Name>Module(...)` calls, in start-up order. This keeps every module's construction still in `main.ts` (the rule above still holds) while keeping the top level readable as the module count grows.
 - **Must:** everything under `~/.aisf` is reached through `shared/config`, whose home is overridable, so tests use a temp dir.
-- **Must:** `shared/` holds only cross-cutting infrastructure (bus, clock, db, config, logger, process). Domain logic never goes there.
+- **Must:** `shared/` holds cross-cutting infrastructure (bus, clock, db, config, logger, process). It may also hold a domain concept that no single module owns (`TicketStatus`, with its label-to-status function). Other domain logic never goes there.
 
 ### Deep modules
 
@@ -245,6 +254,7 @@ if (response.status === 304) return previousPage;
 - **No central Store module.** No module owns another module's data.
 - **No import that reaches past another module's `index.ts`** (`modules/x/logic/…` from `modules/y`).
 - **No `new` of a concrete adapter outside `main.ts`.** No service locator, no global singletons.
+- **No app write to tickets or pull requests** outside the scheduler's settle and merge use cases and findings' create-ticket use case. Named exception: the create-only label sync in `projects`.
 - **No second process:** no daemon plus separate UI process, and no process per project.
 - **No persistence besides `aisf.db`:** no JSON state files, no native SQLite binding.
 - **Rejected stacks stay rejected:** htmx, Fastify, Svelte, Docker, a single binary.
@@ -266,7 +276,7 @@ Confirm-page lanes, left to right: **UI** · **api** · **logic** · **infra** �
 
 ## Easy-to-miss wiring
 
-- **A new module** needs its `index.ts` factory, a `build<Name>Module` function in `main.ts`, and a matching dependency-cruiser rule.
+- **A new module** needs its `index.ts` factory and a `build<Name>Module` function in `main.ts`.
 - **A new table** needs a migration in `shared/db`. Never edit an applied migration.
 - **A new bus event** needs its type added to the bus's event map in `shared/`, or subscribers don't type-check.
 - **A new API route** needs its Zod schema shared with `packages/ui`, so the SPA and server agree.
