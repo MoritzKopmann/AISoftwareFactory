@@ -58,12 +58,12 @@ packages/
 
 ### When something is its own module
 
-**Rule:** a module owns its own table and its own domain, and serves one concern end to end.
+**Rule:** a module serves one concern end to end, and either owns its own table and its own domain or owns core business logic (decisions the app makes) that no other module holds.
 
 - **Must:** `index.ts` exports exactly one factory (plus its public interface and the types that interface uses).
 - **Must:** a module is named after its concern, never after its provider. Only `infra/` knows it is GitHub.
 - **Must:** infra stays inside the module that uses it. It moves to `shared/` only when a second module uses the same infra.
-- **Must not:** split out a module that would be an integration with almost no logic of its own.
+- **Must not:** split out a module that would be an integration with almost no logic of its own, owning neither a table and domain nor core business logic.
 
 ## Class types
 
