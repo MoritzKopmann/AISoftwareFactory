@@ -1,8 +1,8 @@
-import type { Finding } from '../../../../src/modules/scheduler/logic/domain/types/finding.js';
+import type { Finding } from '../../../../src/modules/findings/logic/domain/types/finding.js';
 import type {
   FindingRepository,
   NewFinding,
-} from '../../../../src/modules/scheduler/logic/ports/finding-repository.js';
+} from '../../../../src/modules/findings/logic/ports/finding-repository.js';
 
 export class InMemoryFindingRepository implements FindingRepository {
   private findings: ReadonlyArray<Finding> = [];

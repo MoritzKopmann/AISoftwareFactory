@@ -20,9 +20,9 @@ function createSubject(status: SkillsStatus) {
       stop: async () => notExpected('stop'),
     },
     findings: {
-      listFindings: async () => [],
-      createTicketFromFinding: async () => notExpected('createTicketFromFinding'),
-      dismissFinding: async () => notExpected('dismissFinding'),
+      list: async () => [],
+      createTicket: async () => notExpected('createTicket'),
+      dismiss: async () => notExpected('dismiss'),
     },
   });
 }

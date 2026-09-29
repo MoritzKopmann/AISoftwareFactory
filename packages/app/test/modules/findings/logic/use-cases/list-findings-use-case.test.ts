@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { ListFindingsUseCase } from '../../../../../src/modules/scheduler/logic/use-cases/list-findings-use-case.js';
+import { ListFindingsUseCase } from '../../../../../src/modules/findings/logic/use-cases/list-findings-use-case.js';
 import { InMemoryFindingRepository } from '../../fakes/in-memory-finding-repository.js';
 
 const reportedAt = '2026-09-29T10:00:00.000Z';

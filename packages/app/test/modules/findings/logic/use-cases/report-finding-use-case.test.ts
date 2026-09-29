@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { ReportFindingUseCase } from '../../../../../src/modules/scheduler/logic/use-cases/report-finding-use-case.js';
+import { ReportFindingUseCase } from '../../../../../src/modules/findings/logic/use-cases/report-finding-use-case.js';
 import { InMemoryFindingRepository } from '../../fakes/in-memory-finding-repository.js';
 
 describe('ReportFindingUseCase', () => {

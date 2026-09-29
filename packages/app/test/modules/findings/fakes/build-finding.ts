@@ -1,4 +1,4 @@
-import type { Finding } from '../../../../src/modules/scheduler/logic/domain/types/finding.js';
+import type { Finding } from '../../../../src/modules/findings/logic/domain/types/finding.js';
 
 export function buildFinding(overrides: Partial<Finding> = {}): Finding {
   return {

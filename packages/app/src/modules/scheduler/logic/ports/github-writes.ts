@@ -14,10 +14,6 @@ export interface GitHubWrites {
     to: TicketStatus,
   ): Promise<StatusSwapOutcome>;
   comment(repository: RepositoryReference, ticketNumber: number, body: string): Promise<void>;
-  createIssue(
-    repository: RepositoryReference,
-    issue: { readonly title: string; readonly body: string },
-  ): Promise<number>;
   rebaseMerge(
     repository: RepositoryReference,
     pullRequestNumber: number,
