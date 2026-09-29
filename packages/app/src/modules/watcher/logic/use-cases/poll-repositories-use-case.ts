@@ -43,7 +43,7 @@ export class PollRepositoriesUseCase {
           );
         }
         // Never-crash boundary per repository: an unknown error must not discard the
-        // repositories already polled in this pass or block the ones after it.
+        // repositories already polled so far or block the ones after it.
         polledWatches.push(this.failWatch(watch, this.describeFailure(error)));
       }
     }
