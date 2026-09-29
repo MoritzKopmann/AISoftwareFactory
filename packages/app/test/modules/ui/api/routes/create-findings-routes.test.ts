@@ -9,20 +9,20 @@ import {
   FindingNotFoundError,
   FindingNotOpenError,
   type Finding,
-} from '../../../../../src/modules/scheduler/index.js';
-import { buildFinding } from '../../../scheduler/fakes/build-finding.js';
+} from '../../../../../src/modules/findings/index.js';
+import { buildFinding } from '../../../findings/fakes/build-finding.js';
 
 class FakeFindings implements FindingsPort {
   readonly calls: string[] = [];
   findings: ReadonlyArray<Finding> = [];
   error: Error | undefined;
 
-  async listFindings(projectId: string, ticketNumber?: number): Promise<ReadonlyArray<Finding>> {
+  async list(projectId: string, ticketNumber?: number): Promise<ReadonlyArray<Finding>> {
     this.calls.push(`list ${projectId} ${ticketNumber ?? 'all'}`);
     return this.findings;
   }
 
-  async createTicketFromFinding(projectId: string, findingId: number): Promise<Finding> {
+  async createTicket(projectId: string, findingId: number): Promise<Finding> {
     this.calls.push(`ticket ${projectId} ${findingId}`);
     if (this.error !== undefined) {
       throw this.error;
@@ -30,7 +30,7 @@ class FakeFindings implements FindingsPort {
     return buildFinding({ id: findingId, state: 'ticketed', createdTicketNumber: 207 });
   }
 
-  async dismissFinding(projectId: string, findingId: number): Promise<Finding> {
+  async dismiss(projectId: string, findingId: number): Promise<Finding> {
     this.calls.push(`dismiss ${projectId} ${findingId}`);
     if (this.error !== undefined) {
       throw this.error;

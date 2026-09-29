@@ -4,12 +4,12 @@ import type { Finding } from '../domain/types/finding.js';
 import { FindingNotFoundError } from '../errors/finding-not-found-error.js';
 import { FindingNotOpenError } from '../errors/finding-not-open-error.js';
 import type { FindingRepository } from '../ports/finding-repository.js';
-import type { GitHubWrites } from '../ports/github-writes.js';
+import type { TicketCreator } from '../ports/ticket-creator.js';
 import type { ProjectLookup } from '../ports/project-lookup.js';
 
 export type CreateTicketFromFindingDependencies = {
   readonly findingRepository: FindingRepository;
-  readonly gitHubWrites: GitHubWrites;
+  readonly ticketCreator: TicketCreator;
   readonly projectLookup: ProjectLookup;
   readonly clock: Clock;
 };
@@ -18,7 +18,7 @@ export class CreateTicketFromFindingUseCase {
   constructor(private readonly dependencies: CreateTicketFromFindingDependencies) {}
 
   async execute(projectId: string, findingId: number): Promise<Finding> {
-    const { findingRepository, gitHubWrites, projectLookup, clock } = this.dependencies;
+    const { findingRepository, ticketCreator, projectLookup, clock } = this.dependencies;
 
     const finding = await findingRepository.findById(findingId);
     if (finding?.projectId !== projectId) {
@@ -35,7 +35,7 @@ export class CreateTicketFromFindingUseCase {
 
     let createdTicketNumber: number;
     try {
-      createdTicketNumber = await gitHubWrites.createIssue(
+      createdTicketNumber = await ticketCreator.create(
         project.repository,
         describeFindingIssue(finding),
       );

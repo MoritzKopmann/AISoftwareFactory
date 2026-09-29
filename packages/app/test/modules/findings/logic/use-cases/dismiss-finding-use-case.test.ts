@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { FindingNotFoundError } from '../../../../../src/modules/scheduler/logic/errors/finding-not-found-error.js';
-import { FindingNotOpenError } from '../../../../../src/modules/scheduler/logic/errors/finding-not-open-error.js';
-import { DismissFindingUseCase } from '../../../../../src/modules/scheduler/logic/use-cases/dismiss-finding-use-case.js';
+import { FindingNotFoundError } from '../../../../../src/modules/findings/logic/errors/finding-not-found-error.js';
+import { FindingNotOpenError } from '../../../../../src/modules/findings/logic/errors/finding-not-open-error.js';
+import { DismissFindingUseCase } from '../../../../../src/modules/findings/logic/use-cases/dismiss-finding-use-case.js';
 import { InMemoryFindingRepository } from '../../fakes/in-memory-finding-repository.js';
 
 const newFinding = {

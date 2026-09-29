@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { GitHubWriteFailedError } from '../../../../../src/modules/scheduler/logic/errors/github-write-failed-error.js';
-import { FindingNotFoundError } from '../../../../../src/modules/scheduler/logic/errors/finding-not-found-error.js';
-import { FindingNotOpenError } from '../../../../../src/modules/scheduler/logic/errors/finding-not-open-error.js';
-import { CreateTicketFromFindingUseCase } from '../../../../../src/modules/scheduler/logic/use-cases/create-ticket-from-finding-use-case.js';
-import { FakeGitHubWrites, FakeProjectLookup } from '../../fakes/fake-scheduler-ports.js';
+import { TicketCreationFailedError } from '../../../../../src/modules/findings/logic/errors/ticket-creation-failed-error.js';
+import { FindingNotFoundError } from '../../../../../src/modules/findings/logic/errors/finding-not-found-error.js';
+import { FindingNotOpenError } from '../../../../../src/modules/findings/logic/errors/finding-not-open-error.js';
+import { CreateTicketFromFindingUseCase } from '../../../../../src/modules/findings/logic/use-cases/create-ticket-from-finding-use-case.js';
+import { FakeProjectLookup, FakeTicketCreator } from '../../fakes/fake-findings-ports.js';
 import { InMemoryFindingRepository } from '../../fakes/in-memory-finding-repository.js';
 
 const newFinding = {
@@ -18,15 +18,15 @@ const newFinding = {
 
 describe('CreateTicketFromFindingUseCase', () => {
   let findingRepository: InMemoryFindingRepository;
-  let gitHubWrites: FakeGitHubWrites;
+  let ticketCreator: FakeTicketCreator;
   let createTicketFromFinding: CreateTicketFromFindingUseCase;
 
   beforeEach(async () => {
     findingRepository = new InMemoryFindingRepository();
-    gitHubWrites = new FakeGitHubWrites();
+    ticketCreator = new FakeTicketCreator();
     createTicketFromFinding = new CreateTicketFromFindingUseCase({
       findingRepository,
-      gitHubWrites,
+      ticketCreator,
       projectLookup: new FakeProjectLookup(),
       clock: { now: () => '2026-09-29T11:00:00.000Z' },
     });
@@ -36,7 +36,7 @@ describe('CreateTicketFromFindingUseCase', () => {
   it('should create one bare idea from the finding when Create ticket is used', async () => {
     await createTicketFromFinding.execute('moritz/aisf', 1);
 
-    expect(gitHubWrites.createdIssues).toEqual([
+    expect(ticketCreator.createdTickets).toEqual([
       {
         title: 'Missing retry',
         body: 'Kind: gap\nLocation: `src/a.ts:12`\n\nFound while implementing #141',
@@ -45,7 +45,7 @@ describe('CreateTicketFromFindingUseCase', () => {
   });
 
   it('should record the new issue number and mark the finding ticketed when the issue is created', async () => {
-    gitHubWrites.createdIssueNumber = 207;
+    ticketCreator.createdNumber = 207;
 
     const ticketed = await createTicketFromFinding.execute('moritz/aisf', 1);
 
@@ -63,7 +63,7 @@ describe('CreateTicketFromFindingUseCase', () => {
       createTicketFromFinding.execute('moritz/aisf', 1),
     ]);
 
-    expect(gitHubWrites.createdIssues).toHaveLength(1);
+    expect(ticketCreator.createdTickets).toHaveLength(1);
     expect(outcomes.map(({ status }) => status).sort()).toEqual(['fulfilled', 'rejected']);
     const rejection = outcomes.find(({ status }) => status === 'rejected');
     expect(rejection).toMatchObject({ reason: expect.any(FindingNotOpenError) });
@@ -77,11 +77,11 @@ describe('CreateTicketFromFindingUseCase', () => {
     );
   });
 
-  it('should reopen the finding and rethrow when GitHub fails to create the issue', async () => {
-    gitHubWrites.createIssueError = new GitHubWriteFailedError('rate limited');
+  it('should reopen the finding and rethrow when the ticket creator fails', async () => {
+    ticketCreator.error = new TicketCreationFailedError('rate limited');
 
     await expect(createTicketFromFinding.execute('moritz/aisf', 1)).rejects.toThrow(
-      GitHubWriteFailedError,
+      TicketCreationFailedError,
     );
     expect((await findingRepository.findById(1))?.state).toBe('open');
   });
@@ -90,6 +90,6 @@ describe('CreateTicketFromFindingUseCase', () => {
     await expect(createTicketFromFinding.execute('moritz/other', 1)).rejects.toThrow(
       FindingNotFoundError,
     );
-    expect(gitHubWrites.createdIssues).toEqual([]);
+    expect(ticketCreator.createdTickets).toEqual([]);
   });
 });

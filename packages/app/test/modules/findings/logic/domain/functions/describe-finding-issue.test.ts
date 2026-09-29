@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { describeFindingIssue } from '../../../../../../src/modules/scheduler/logic/domain/functions/describe-finding-issue.js';
+import { describeFindingIssue } from '../../../../../../src/modules/findings/logic/domain/functions/describe-finding-issue.js';
 import { buildFinding } from '../../../fakes/build-finding.js';
 
 describe('describeFindingIssue', () => {

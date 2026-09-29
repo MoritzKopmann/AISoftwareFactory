@@ -3,6 +3,9 @@ import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import type { DatabaseSync } from 'node:sqlite';
 import { createBridgeModule, type BridgeModule } from './modules/bridge/index.js';
+import { GhCliTicketCreator } from './modules/findings/infra/integrations/gh-cli-ticket-creator.js';
+import { SqliteFindingRepository } from './modules/findings/infra/repositories/sqlite-finding-repository.js';
+import { createFindingsModule, type FindingsModule } from './modules/findings/index.js';
 import { GhCliLabelSync } from './modules/projects/infra/integrations/gh-cli-label-sync.js';
 import { GhCliRepositoryResolver } from './modules/projects/infra/integrations/gh-cli-repository-resolver.js';
 import { SystemClock } from './shared/clock/system-clock.js';
@@ -22,12 +25,7 @@ import { RandomUuidIdentifiers } from './modules/runner/infra/integrations/rando
 import { SqliteRunRepository } from './modules/runner/infra/repositories/sqlite-run-repository.js';
 import { createRunnerModule, type RunTool, type RunnerModule } from './modules/runner/index.js';
 import { GhCliGitHubWrites } from './modules/scheduler/infra/integrations/gh-cli-github-writes.js';
-import { SqliteFindingRepository } from './modules/scheduler/infra/repositories/sqlite-finding-repository.js';
-import {
-  createFindingReportingTool,
-  createSchedulerModule,
-  type SchedulerModule,
-} from './modules/scheduler/index.js';
+import { createSchedulerModule, type SchedulerModule } from './modules/scheduler/index.js';
 import { createUiModule, type UiModule } from './modules/ui/index.js';
 import { FetchGraphQLTicketSource } from './modules/watcher/infra/integrations/fetch-graphql-ticket-source.js';
 import { FetchIssueFeeds } from './modules/watcher/infra/integrations/fetch-issue-feeds.js';
@@ -117,6 +115,20 @@ function buildWatcherModule(
   });
 }
 
+function buildFindingsModule(database: DatabaseSync, projects: ProjectsModule): FindingsModule {
+  return createFindingsModule({
+    findingRepository: new SqliteFindingRepository(database),
+    ticketCreator: new GhCliTicketCreator(),
+    projectLookup: {
+      find: async (projectId) => {
+        const project = (await projects.list()).find(({ id }) => id === projectId);
+        return project === undefined ? undefined : { repository: project.repository };
+      },
+    },
+    clock: new SystemClock(),
+  });
+}
+
 function buildRunnerModule(
   config: Config,
   database: DatabaseSync,
@@ -161,7 +173,6 @@ function buildRunnerModule(
 }
 
 function buildSchedulerModule(
-  findingRepository: SqliteFindingRepository,
   events: EventSubscriber,
   projects: ProjectsModule,
   skills: SkillsModule,
@@ -220,8 +231,6 @@ function buildSchedulerModule(
           : { repository: project.repository, onboarded: project.contract.passed };
       },
     },
-    findingRepository,
-    clock: new SystemClock(),
     subscriber: events,
     logger,
   });
@@ -233,6 +242,7 @@ function buildUiModule(
   watcher: WatcherModule,
   runner: RunnerModule,
   scheduler: SchedulerModule,
+  findings: FindingsModule,
 ): UiModule {
   return createUiModule({
     projects,
@@ -245,7 +255,7 @@ function buildUiModule(
       start: (projectId, ticketNumber) => scheduler.startRun(projectId, ticketNumber),
       stop: (runId) => runner.stop(runId),
     },
-    findings: scheduler,
+    findings,
   });
 }
 
@@ -271,7 +281,7 @@ const bridge = buildBridgeModule(kitDirectory);
 const skills = buildSkillsModule(config, pluginDirectory);
 const projects = buildProjectsModule(database, eventBus, skills);
 const watcher = buildWatcherModule(config, eventBus, projects);
-const findingRepository = new SqliteFindingRepository(database);
+const findings = buildFindingsModule(database, projects);
 const runner = buildRunnerModule(
   config,
   database,
@@ -279,20 +289,12 @@ const runner = buildRunnerModule(
   projects,
   watcher,
   findOnPath('claude') ?? 'claude',
-  [createFindingReportingTool({ findingRepository, clock: new SystemClock() })],
+  findings.tools,
   logger,
 );
-const scheduler = buildSchedulerModule(
-  findingRepository,
-  eventBus,
-  projects,
-  skills,
-  watcher,
-  runner,
-  logger,
-);
+const scheduler = buildSchedulerModule(eventBus, projects, skills, watcher, runner, logger);
 scheduler.start();
-const ui = buildUiModule(projects, skills, watcher, runner, scheduler);
+const ui = buildUiModule(projects, skills, watcher, runner, scheduler, findings);
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
