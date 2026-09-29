@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  createFindingReportingTool,
   createSchedulerModule,
+  FindingNotOpenError,
   RunNotAvailableError,
   type SchedulerModule,
 } from '../../../src/modules/scheduler/index.js';
@@ -16,6 +18,15 @@ import {
   FakeTicketLookup,
   readyLeaf,
 } from './fakes/fake-scheduler-ports.js';
+import { InMemoryFindingRepository } from './fakes/in-memory-finding-repository.js';
+
+const clock = { now: () => '2026-09-29T10:00:00.000Z' };
+const runContext = {
+  runId: 'run-1',
+  projectId: 'moritz/aisf',
+  ticketNumber: 138,
+  worktreePath: '/worktrees/aisf/138',
+};
 
 const approvedTicket: ReviewedTicket = {
   number: 140,
@@ -37,12 +48,14 @@ describe('createSchedulerModule', () => {
   let bus: TypedEventBus<AisfEventMap>;
   let gitHubWrites: FakeGitHubWrites;
   let runner: FakeRunnerPort;
+  let findingRepository: InMemoryFindingRepository;
   let scheduler: SchedulerModule;
 
   beforeEach(() => {
     bus = new TypedEventBus<AisfEventMap>();
     gitHubWrites = new FakeGitHubWrites();
     runner = new FakeRunnerPort();
+    findingRepository = new InMemoryFindingRepository();
     scheduler = createSchedulerModule({
       gitHubWrites,
       runner,
@@ -50,6 +63,8 @@ describe('createSchedulerModule', () => {
       reviewedTicketLookup: new FakeReviewedTicketLookup([approvedTicket]),
       runsGate: new FakeRunsGate(),
       projectLookup: new FakeProjectLookup(),
+      findingRepository,
+      clock,
       subscriber: bus,
       logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
     });
@@ -112,5 +127,43 @@ describe('createSchedulerModule', () => {
     bus.emit('snapshot.changed', snapshotChanged);
 
     await vi.waitFor(() => expect(gitHubWrites.calls).toEqual(['rebaseMerge #201 abc123']));
+  });
+
+  describe('findings', () => {
+    beforeEach(async () => {
+      await createFindingReportingTool({ findingRepository, clock }).execute(
+        { kind: 'bug', location: 'src/a.ts:12', summary: 'Loop never ends' },
+        runContext,
+      );
+    });
+
+    it('should list a reported finding when listFindings is called for its ticket', async () => {
+      expect(await scheduler.listFindings('moritz/aisf', 138)).toMatchObject([
+        { id: 1, ticketNumber: 138, state: 'open' },
+      ]);
+    });
+
+    it('should create one bare idea and mark the finding ticketed when createTicketFromFinding is called', async () => {
+      gitHubWrites.createdIssueNumber = 210;
+
+      const finding = await scheduler.createTicketFromFinding('moritz/aisf', 1);
+
+      expect(finding).toMatchObject({ state: 'ticketed', createdTicketNumber: 210 });
+      expect(gitHubWrites.createdIssues).toHaveLength(1);
+    });
+
+    it('should throw FindingNotOpenError when createTicketFromFinding is called twice', async () => {
+      await scheduler.createTicketFromFinding('moritz/aisf', 1);
+
+      await expect(scheduler.createTicketFromFinding('moritz/aisf', 1)).rejects.toThrow(
+        FindingNotOpenError,
+      );
+    });
+
+    it('should keep the finding as dismissed when dismissFinding is called', async () => {
+      await scheduler.dismissFinding('moritz/aisf', 1);
+
+      expect(await scheduler.listFindings('moritz/aisf')).toMatchObject([{ state: 'dismissed' }]);
+    });
   });
 });

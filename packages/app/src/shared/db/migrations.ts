@@ -44,4 +44,25 @@ export const migrations: ReadonlyArray<Migration> = [
         WHERE state = 'running';
     `,
   },
+  {
+    version: 4,
+    name: 'create-findings',
+    sql: `
+      CREATE TABLE findings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id TEXT NOT NULL,
+        ticket_number INTEGER NOT NULL,
+        run_id TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        location TEXT NOT NULL,
+        summary TEXT NOT NULL,
+        state TEXT NOT NULL,
+        created_ticket_number INTEGER,
+        reported_at TEXT NOT NULL,
+        resolved_at TEXT
+      );
+      CREATE INDEX findings_by_project_and_ticket
+        ON findings (project_id, ticket_number);
+    `,
+  },
 ];

@@ -20,9 +20,14 @@ import { GitCliWorktrees } from './modules/runner/infra/integrations/git-cli-wor
 import { InMemoryRecentRunSteps } from './modules/runner/infra/integrations/in-memory-recent-run-steps.js';
 import { RandomUuidIdentifiers } from './modules/runner/infra/integrations/random-uuid-identifiers.js';
 import { SqliteRunRepository } from './modules/runner/infra/repositories/sqlite-run-repository.js';
-import { createRunnerModule, type RunnerModule } from './modules/runner/index.js';
+import { createRunnerModule, type RunTool, type RunnerModule } from './modules/runner/index.js';
 import { GhCliGitHubWrites } from './modules/scheduler/infra/integrations/gh-cli-github-writes.js';
-import { createSchedulerModule, type SchedulerModule } from './modules/scheduler/index.js';
+import { SqliteFindingRepository } from './modules/scheduler/infra/repositories/sqlite-finding-repository.js';
+import {
+  createFindingReportingTool,
+  createSchedulerModule,
+  type SchedulerModule,
+} from './modules/scheduler/index.js';
 import { createUiModule, type UiModule } from './modules/ui/index.js';
 import { FetchGraphQLTicketSource } from './modules/watcher/infra/integrations/fetch-graphql-ticket-source.js';
 import { FetchIssueFeeds } from './modules/watcher/infra/integrations/fetch-issue-feeds.js';
@@ -119,6 +124,7 @@ function buildRunnerModule(
   projects: ProjectsModule,
   watcher: WatcherModule,
   claudeExecutablePath: string,
+  appTools: ReadonlyArray<RunTool>,
   logger: Logger,
 ): RunnerModule {
   const clock = new SystemClock();
@@ -149,12 +155,13 @@ function buildRunnerModule(
     clock,
     events,
     worktreesDirectory: config.worktreesDirectory,
-    appTools: [],
+    appTools,
     logger,
   });
 }
 
 function buildSchedulerModule(
+  findingRepository: SqliteFindingRepository,
   events: EventSubscriber,
   projects: ProjectsModule,
   skills: SkillsModule,
@@ -213,6 +220,8 @@ function buildSchedulerModule(
           : { repository: project.repository, onboarded: project.contract.passed };
       },
     },
+    findingRepository,
+    clock: new SystemClock(),
     subscriber: events,
     logger,
   });
@@ -236,6 +245,7 @@ function buildUiModule(
       start: (projectId, ticketNumber) => scheduler.startRun(projectId, ticketNumber),
       stop: (runId) => runner.stop(runId),
     },
+    findings: scheduler,
   });
 }
 
@@ -261,6 +271,7 @@ const bridge = buildBridgeModule(kitDirectory);
 const skills = buildSkillsModule(config, pluginDirectory);
 const projects = buildProjectsModule(database, eventBus, skills);
 const watcher = buildWatcherModule(config, eventBus, projects);
+const findingRepository = new SqliteFindingRepository(database);
 const runner = buildRunnerModule(
   config,
   database,
@@ -268,9 +279,18 @@ const runner = buildRunnerModule(
   projects,
   watcher,
   findOnPath('claude') ?? 'claude',
+  [createFindingReportingTool({ findingRepository, clock: new SystemClock() })],
   logger,
 );
-const scheduler = buildSchedulerModule(eventBus, projects, skills, watcher, runner, logger);
+const scheduler = buildSchedulerModule(
+  findingRepository,
+  eventBus,
+  projects,
+  skills,
+  watcher,
+  runner,
+  logger,
+);
 scheduler.start();
 const ui = buildUiModule(projects, skills, watcher, runner, scheduler);
 
