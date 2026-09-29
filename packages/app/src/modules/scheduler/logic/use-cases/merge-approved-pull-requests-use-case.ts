@@ -1,13 +1,13 @@
 import type { Logger } from '../../../../shared/logger/create-logger.js';
 import { findMergeablePullRequests } from '../domain/functions/find-mergeable-pull-requests.js';
-import { GitHubWriteFailedError } from '../errors/github-write-failed-error.js';
-import type { GitHubWrites } from '../ports/github-writes.js';
+import { PullRequestMergeFailedError } from '../errors/pull-request-merge-failed-error.js';
 import type { ProjectLookup } from '../ports/project-lookup.js';
+import type { PullRequestMerges } from '../ports/pull-request-merges.js';
 import type { ReviewedTicketLookup } from '../ports/reviewed-ticket-lookup.js';
 import type { RunnerPort } from '../ports/runner-port.js';
 
 export type MergeApprovedPullRequestsDependencies = {
-  readonly gitHubWrites: GitHubWrites;
+  readonly pullRequestMerges: PullRequestMerges;
   readonly runner: RunnerPort;
   readonly reviewedTicketLookup: ReviewedTicketLookup;
   readonly projectLookup: ProjectLookup;
@@ -20,7 +20,8 @@ export class MergeApprovedPullRequestsUseCase {
   constructor(private readonly dependencies: MergeApprovedPullRequestsDependencies) {}
 
   async execute(projectId: string): Promise<void> {
-    const { gitHubWrites, runner, reviewedTicketLookup, projectLookup, logger } = this.dependencies;
+    const { pullRequestMerges, runner, reviewedTicketLookup, projectLookup, logger } =
+      this.dependencies;
 
     const project = await projectLookup.find(projectId);
     if (project === undefined) {
@@ -40,10 +41,10 @@ export class MergeApprovedPullRequestsUseCase {
       }
       this.pullRequestsBeingMerged.add(mergeKey);
       try {
-        await gitHubWrites.rebaseMerge(project.repository, pullRequestNumber, headCommit);
+        await pullRequestMerges.merge(project.repository, pullRequestNumber, headCommit);
         logger.info(`Rebase-merged PR #${pullRequestNumber} for #${ticketNumber}`);
       } catch (error) {
-        if (!(error instanceof GitHubWriteFailedError)) {
+        if (!(error instanceof PullRequestMergeFailedError)) {
           throw error;
         }
         logger.warn(

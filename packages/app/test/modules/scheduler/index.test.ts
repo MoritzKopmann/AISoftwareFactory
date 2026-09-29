@@ -8,12 +8,13 @@ import type { ReviewedTicket } from '../../../src/modules/scheduler/logic/domain
 import type { AisfEventMap } from '../../../src/shared/bus/aisf-event-map.js';
 import { TypedEventBus } from '../../../src/shared/bus/typed-event-bus.js';
 import {
-  FakeGitHubWrites,
   FakeProjectLookup,
+  FakePullRequestMerges,
   FakeReviewedTicketLookup,
   FakeRunnerPort,
   FakeRunsGate,
   FakeTicketLookup,
+  FakeTicketStatusWrites,
   readyLeaf,
 } from './fakes/fake-scheduler-ports.js';
 
@@ -35,16 +36,17 @@ const approvedTicket: ReviewedTicket = {
 
 describe('createSchedulerModule', () => {
   let bus: TypedEventBus<AisfEventMap>;
-  let gitHubWrites: FakeGitHubWrites;
+  let pullRequestMerges: FakePullRequestMerges;
   let runner: FakeRunnerPort;
   let scheduler: SchedulerModule;
 
   beforeEach(() => {
     bus = new TypedEventBus<AisfEventMap>();
-    gitHubWrites = new FakeGitHubWrites();
+    pullRequestMerges = new FakePullRequestMerges();
     runner = new FakeRunnerPort();
     scheduler = createSchedulerModule({
-      gitHubWrites,
+      ticketStatusWrites: new FakeTicketStatusWrites(),
+      pullRequestMerges,
       runner,
       ticketLookup: new FakeTicketLookup(readyLeaf),
       reviewedTicketLookup: new FakeReviewedTicketLookup([approvedTicket]),
@@ -106,11 +108,11 @@ describe('createSchedulerModule', () => {
 
     bus.emit('snapshot.changed', snapshotChanged);
     await Promise.resolve();
-    expect(gitHubWrites.calls).toEqual([]);
+    expect(pullRequestMerges.calls).toEqual([]);
 
     scheduler.start();
     bus.emit('snapshot.changed', snapshotChanged);
 
-    await vi.waitFor(() => expect(gitHubWrites.calls).toEqual(['rebaseMerge #201 abc123']));
+    await vi.waitFor(() => expect(pullRequestMerges.calls).toEqual(['merge #201 abc123']));
   });
 });

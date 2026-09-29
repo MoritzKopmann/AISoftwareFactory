@@ -5,12 +5,13 @@ import { subscribeToSnapshotChanged } from './api/subscriptions/subscribe-to-sna
 import type { RunAvailability } from './logic/domain/types/run-availability.js';
 import type { StartedRun } from './logic/domain/types/started-run.js';
 import { RunNotAvailableError } from './logic/errors/run-not-available-error.js';
-import type { GitHubWrites } from './logic/ports/github-writes.js';
 import type { ProjectLookup } from './logic/ports/project-lookup.js';
+import type { PullRequestMerges } from './logic/ports/pull-request-merges.js';
 import type { ReviewedTicketLookup } from './logic/ports/reviewed-ticket-lookup.js';
 import type { RunnerPort } from './logic/ports/runner-port.js';
 import type { RunsGate } from './logic/ports/runs-gate.js';
 import type { TicketLookup } from './logic/ports/ticket-lookup.js';
+import type { TicketStatusWrites } from './logic/ports/ticket-status-writes.js';
 import { MergeApprovedPullRequestsUseCase } from './logic/use-cases/merge-approved-pull-requests-use-case.js';
 import { ReadRunAvailabilityUseCase } from './logic/use-cases/read-run-availability-use-case.js';
 import { SettleFinishedRunUseCase } from './logic/use-cases/settle-finished-run-use-case.js';
@@ -24,7 +25,8 @@ export type { SchedulerProject } from './logic/ports/project-lookup.js';
 export { RunNotAvailableError };
 
 export type SchedulerModuleDependencies = {
-  readonly gitHubWrites: GitHubWrites;
+  readonly ticketStatusWrites: TicketStatusWrites;
+  readonly pullRequestMerges: PullRequestMerges;
   readonly runner: RunnerPort;
   readonly ticketLookup: TicketLookup;
   readonly reviewedTicketLookup: ReviewedTicketLookup;
@@ -42,7 +44,8 @@ export type SchedulerModule = {
 
 export function createSchedulerModule(dependencies: SchedulerModuleDependencies): SchedulerModule {
   const {
-    gitHubWrites,
+    ticketStatusWrites,
+    pullRequestMerges,
     runner,
     ticketLookup,
     reviewedTicketLookup,
@@ -64,13 +67,13 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
     runner,
   });
   const settleFinishedRun = new SettleFinishedRunUseCase({
-    gitHubWrites,
+    ticketStatusWrites,
     runner,
     projectLookup,
     logger,
   });
   const mergeApprovedPullRequests = new MergeApprovedPullRequestsUseCase({
-    gitHubWrites,
+    pullRequestMerges,
     runner,
     reviewedTicketLookup,
     projectLookup,

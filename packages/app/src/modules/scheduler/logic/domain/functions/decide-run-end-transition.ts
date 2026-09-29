@@ -9,16 +9,13 @@ export function decideRunEndTransition(
   liveStatus: TicketStatus,
 ): RunEndTransition {
   if (ending.kind === 'parked') {
-    return liveStatus === 'in-progress'
-      ? { kind: 'transition', allowedFrom: ['in-progress'], to: 'ready' }
-      : { kind: 'none' };
+    return liveStatus === 'in-progress' ? { kind: 'transition', to: 'ready' } : { kind: 'none' };
   }
   if (!runningStatuses.includes(liveStatus)) {
     return { kind: 'none' };
   }
   return {
     kind: 'transition',
-    allowedFrom: runningStatuses,
     to: 'stuck',
     comment: describeEnding(ending),
   };
