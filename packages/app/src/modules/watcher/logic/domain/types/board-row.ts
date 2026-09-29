@@ -1,5 +1,5 @@
 import type { Ticket } from './ticket.js';
-import type { TicketStatus } from './ticket-status.js';
+import type { TicketStatus } from '../../../../../shared/ticket-status/ticket-status.js';
 
 export type BoardRow = {
   readonly key: TicketStatus;

@@ -1,6 +1,6 @@
 import type { RunEndTransition } from '../types/run-end-transition.js';
 import type { RunEnding } from '../types/run-ending.js';
-import type { TicketStatus } from '../types/ticket-status.js';
+import type { TicketStatus } from '../../../../../shared/ticket-status/ticket-status.js';
 
 const runningStatuses: ReadonlyArray<TicketStatus> = ['ready', 'in-progress'];
 

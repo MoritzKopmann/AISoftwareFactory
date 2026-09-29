@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deriveTicketStatus } from '../../../../../../src/modules/watcher/logic/domain/functions/derive-ticket-status.js';
+import { deriveTicketStatus } from '../../../src/shared/ticket-status/derive-ticket-status.js';
 
 describe('deriveTicketStatus', () => {
   it('should be idea when an open issue has no status label', () => {

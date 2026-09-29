@@ -1,7 +1,7 @@
 import { runProcess } from '../../../../shared/process/run-process.js';
-import { deriveTicketStatus } from '../../logic/domain/functions/derive-ticket-status.js';
+import { deriveTicketStatus } from '../../../../shared/ticket-status/derive-ticket-status.js';
+import type { TicketStatus } from '../../../../shared/ticket-status/ticket-status.js';
 import type { RepositoryReference } from '../../logic/domain/types/repository-reference.js';
-import type { TicketStatus } from '../../logic/domain/types/ticket-status.js';
 import { GitHubWriteFailedError } from '../../logic/errors/github-write-failed-error.js';
 import type { GitHubWrites, StatusSwapOutcome } from '../../logic/ports/github-writes.js';
 
@@ -16,7 +16,7 @@ type LiveTicket = {
 export class GhCliGitHubWrites implements GitHubWrites {
   async readStatus(repository: RepositoryReference, ticketNumber: number): Promise<TicketStatus> {
     const liveTicket = await this.readLiveTicket(repository, ticketNumber);
-    return deriveTicketStatus(labelNamesOf(liveTicket), liveTicket.state === 'CLOSED');
+    return liveStatusOf(liveTicket);
   }
 
   async transitionStatus(
@@ -27,7 +27,7 @@ export class GhCliGitHubWrites implements GitHubWrites {
   ): Promise<StatusSwapOutcome> {
     const liveTicket = await this.readLiveTicket(repository, ticketNumber);
     const labelNames = labelNamesOf(liveTicket);
-    const liveStatus = deriveTicketStatus(labelNames, liveTicket.state === 'CLOSED');
+    const liveStatus = liveStatusOf(liveTicket);
     const statusLabels = labelNames.filter((name) => name.startsWith(statusLabelPrefix));
     if (!allowedFrom.includes(liveStatus)) {
       return { kind: 'mismatch', actualStatuses: statusLabels };
@@ -131,4 +131,11 @@ export class GhCliGitHubWrites implements GitHubWrites {
 
 function labelNamesOf(liveTicket: LiveTicket): ReadonlyArray<string> {
   return liveTicket.labels.map((label) => label.name);
+}
+
+function liveStatusOf(liveTicket: LiveTicket): TicketStatus {
+  return deriveTicketStatus({
+    state: liveTicket.state === 'CLOSED' ? 'closed' : 'open',
+    labelNames: labelNamesOf(liveTicket),
+  }).status;
 }

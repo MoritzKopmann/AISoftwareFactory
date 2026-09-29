@@ -1,5 +1,5 @@
 import type { ClosingPullRequest } from './closing-pull-request.js';
-import type { TicketStatus } from './ticket-status.js';
+import type { TicketStatus } from '../../../../../shared/ticket-status/ticket-status.js';
 
 export type Ticket = {
   readonly number: number;

@@ -1,7 +1,7 @@
 import type { RepositoryReference } from '../../../../src/modules/scheduler/logic/domain/types/repository-reference.js';
 import type { RunsBlocked } from '../../../../src/modules/scheduler/logic/domain/types/runs-blocked.js';
 import type { SchedulableTicket } from '../../../../src/modules/scheduler/logic/domain/types/schedulable-ticket.js';
-import type { TicketStatus } from '../../../../src/modules/scheduler/logic/domain/types/ticket-status.js';
+import type { TicketStatus } from '../../../../src/shared/ticket-status/ticket-status.js';
 import type {
   GitHubWrites,
   StatusSwapOutcome,

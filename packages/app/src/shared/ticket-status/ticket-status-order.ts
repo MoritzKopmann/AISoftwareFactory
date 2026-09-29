@@ -1,4 +1,4 @@
-import type { TicketStatus } from '../types/ticket-status.js';
+import type { TicketStatus } from './ticket-status.js';
 
 export const ticketStatusOrder: ReadonlyArray<TicketStatus> = [
   'idea',

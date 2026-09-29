@@ -1,4 +1,4 @@
-import { ticketStatusOrder } from '../constants/ticket-status-order.js';
+import { ticketStatusOrder } from '../../../../../shared/ticket-status/ticket-status-order.js';
 import type { BoardView } from '../types/board-view.js';
 import type { Ticket } from '../types/ticket.js';
 import type { TicketSnapshot } from '../types/ticket-snapshot.js';

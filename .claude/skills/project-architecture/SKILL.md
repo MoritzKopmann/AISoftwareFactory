@@ -142,8 +142,8 @@ issues.map((issue) => issue.number);
 **Rule:** dependencies point inward: `api → logic ← infra`.
 
 - **Must:** `logic/` imports only `logic/` and `shared/`'s types and domain concepts. Never `api/`, `infra/`, Node I/O, `node:sqlite`, Hono, the Agent SDK or `gh`.
-- **Must:** inside `logic/`, `domain/` imports nothing but `domain/`. `use-cases/` import `domain/`, `ports/` and `errors/`.
-- **Must:** inside `domain/`, `types/` imports only `types/`, `constants/` imports only `types/`, and `functions/` may import `types/`, `constants/` and `functions/`.
+- **Must:** inside `logic/`, `domain/` imports nothing but `domain/` and `shared/`'s domain concepts. `use-cases/` import `domain/`, `ports/` and `errors/`.
+- **Must:** inside `domain/`, `types/` imports only `types/`, `constants/` imports only `types/`, and `functions/` may import `types/`, `constants/` and `functions/`. Any of the three may also import `shared/`'s domain concepts.
 - **Must:** no barrel `index.ts` in a `domain/` subfolder.
 - **Must:** `api/` calls use cases only. It never imports `infra/` or a port implementation.
 - **Must:** `infra/` imports only `ports/`, `domain/` and `errors/` from `logic/`.

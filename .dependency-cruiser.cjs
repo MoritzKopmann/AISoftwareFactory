@@ -3,6 +3,7 @@ const moduleIndexFile = `${modulesRoot}/[^/]+/index\\.ts$`;
 const logicRoot = `${modulesRoot}/[^/]+/logic`;
 const domainRoot = `${logicRoot}/domain`;
 const sharedRoot = '^packages/app/src/shared/';
+const sharedDomainConcepts = '^packages/app/src/shared/ticket-status/';
 const mainFile = '^packages/app/src/main\\.ts$';
 
 /** @type {import('dependency-cruiser').IConfiguration} */
@@ -46,10 +47,14 @@ module.exports = {
     },
     {
       name: 'domain-only-domain',
-      comment: 'domain/ imports nothing but domain/: not ports/, use-cases/, errors/ or shared/.',
+      comment:
+        "domain/ imports nothing but domain/: not ports/, use-cases/, errors/ or shared/, except shared/'s domain concepts.",
       severity: 'error',
       from: { path: `${domainRoot}/` },
-      to: { path: [`${logicRoot}/(ports|use-cases|errors)/`, sharedRoot] },
+      to: {
+        path: [`${logicRoot}/(ports|use-cases|errors)/`, sharedRoot],
+        pathNot: sharedDomainConcepts,
+      },
     },
     {
       name: 'domain-types-only-types',
@@ -75,10 +80,10 @@ module.exports = {
     },
     {
       name: 'logic-shared-types-only',
-      comment: 'logic/ imports only types from shared/.',
+      comment: "logic/ imports only types from shared/, except shared/'s domain concepts.",
       severity: 'error',
       from: { path: `${logicRoot}/` },
-      to: { path: sharedRoot, dependencyTypesNot: ['type-only'] },
+      to: { path: sharedRoot, pathNot: sharedDomainConcepts, dependencyTypesNot: ['type-only'] },
     },
     {
       name: 'use-cases-only-domain-ports-errors',
