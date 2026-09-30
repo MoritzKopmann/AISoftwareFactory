@@ -15,7 +15,7 @@ const pollIntervalMilliseconds = 30_000;
 const snapshotIntervalMilliseconds = 300_000;
 const registered = { projectId: 'owner/name', repository: { owner: 'owner', name: 'name' } };
 
-function createSubject() {
+function createSubject(runningTicketNumber?: number) {
   const events = new TypedEventBus<AisfEventMap>();
   const issueFeeds = new FakeIssueFeeds();
   const ticketSource = new FakeTicketSource({
@@ -34,10 +34,29 @@ function createSubject() {
     events,
     subscriber: events,
     registeredRepositories: new FakeRegisteredRepositories([registered]),
+    activeRunLookup: { activeRunTicketNumber: async () => runningTicketNumber },
     pollIntervalMilliseconds,
     snapshotIntervalMilliseconds,
   });
   return { watcher, events, issueFeeds, ticketSource, clock, snapshotChanges };
+}
+
+type BoardBody = {
+  readonly sync: { readonly state: string };
+  readonly board?: {
+    readonly rows: ReadonlyArray<{
+      readonly key: string;
+      readonly tickets: ReadonlyArray<{ readonly number: number }>;
+    }>;
+  };
+};
+
+async function readBoard(
+  watcher: ReturnType<typeof createSubject>['watcher'],
+  projectId: string,
+): Promise<BoardBody | undefined> {
+  const response = await watcher.routes.request(`/projects/${projectId}/board`);
+  return response.status === 404 ? undefined : ((await response.json()) as BoardBody);
 }
 
 describe('createWatcherModule', () => {
@@ -47,6 +66,50 @@ describe('createWatcherModule', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  describe('routes', () => {
+    it('should serve the board under /projects/:owner/:name/board when the project is watched', async () => {
+      const { watcher } = createSubject();
+      await watcher.start();
+      watcher.stop();
+
+      const response = await watcher.routes.request('/projects/owner/name/board');
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({ projectId: 'owner/name' });
+    });
+
+    it('should name the running ticket on the board when the project has an active run', async () => {
+      const { watcher } = createSubject(139);
+      await watcher.start();
+      watcher.stop();
+
+      const response = await watcher.routes.request('/projects/owner/name/board');
+
+      expect(await response.json()).toMatchObject({ runningTicketNumber: 139 });
+    });
+
+    it('should leave runningTicketNumber out of the board when the project has no active run', async () => {
+      const { watcher } = createSubject();
+      await watcher.start();
+      watcher.stop();
+
+      const response = await watcher.routes.request('/projects/owner/name/board');
+
+      expect(await response.json()).not.toHaveProperty('runningTicketNumber');
+    });
+
+    it('should serve a ticket under /projects/:owner/:name/tickets/:number when it is in the snapshot', async () => {
+      const { watcher } = createSubject();
+      await watcher.start();
+      watcher.stop();
+
+      const response = await watcher.routes.request('/projects/owner/name/tickets/1');
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({ ticket: { number: 1 } });
+    });
   });
 
   describe('openTickets', () => {
@@ -84,7 +147,7 @@ describe('createWatcherModule', () => {
           removedTicketNumbers: [],
         },
       ]);
-      const projectBoard = watcher.board('owner/name');
+      const projectBoard = await readBoard(watcher, 'owner/name');
       expect(projectBoard?.sync.state).toBe('ok');
       expect(projectBoard?.board?.rows.find((row) => row.key === 'idea')?.tickets).toHaveLength(2);
     });
@@ -114,7 +177,9 @@ describe('createWatcherModule', () => {
       await vi.advanceTimersByTimeAsync(pollIntervalMilliseconds);
       watcher.stop();
 
-      const readyRow = watcher.board('owner/name')?.board?.rows.find((row) => row.key === 'ready');
+      const readyRow = (await readBoard(watcher, 'owner/name'))?.board?.rows.find(
+        (row) => row.key === 'ready',
+      );
       expect(readyRow?.tickets.map((ticket) => ticket.number)).toEqual([1]);
       expect(snapshotChanges.at(-1)?.changedTicketNumbers).toEqual([1]);
     });
@@ -152,13 +217,13 @@ describe('createWatcherModule', () => {
       issueFeeds.failure = new TypeError('boom');
 
       await watcher.start();
-      const failedSync = watcher.board('owner/name')?.sync;
+      const failedSync = (await readBoard(watcher, 'owner/name'))?.sync;
       issueFeeds.failure = undefined;
       await vi.advanceTimersByTimeAsync(pollIntervalMilliseconds);
       watcher.stop();
 
       expect(failedSync).toMatchObject({ state: 'failed', cause: 'unexpected', message: 'boom' });
-      expect(watcher.board('owner/name')?.sync.state).toBe('ok');
+      expect((await readBoard(watcher, 'owner/name'))?.sync.state).toBe('ok');
     });
   });
 
@@ -179,7 +244,7 @@ describe('createWatcherModule', () => {
         'name',
         'other',
       ]);
-      expect(watcher.board('owner/other')?.sync.state).toBe('ok');
+      expect((await readBoard(watcher, 'owner/other'))?.sync.state).toBe('ok');
     });
 
     it('should poll once more straight after the running poll when a project is added during it', async () => {
@@ -215,7 +280,7 @@ describe('createWatcherModule', () => {
       await watcher.start();
       watcher.stop();
 
-      expect(watcher.board('owner/unknown')).toBeUndefined();
+      expect(await readBoard(watcher, 'owner/unknown')).toBeUndefined();
     });
 
     it('should return a pending status without a board before the first poll settles', async () => {
@@ -225,7 +290,7 @@ describe('createWatcherModule', () => {
       await vi.advanceTimersByTimeAsync(0);
       watcher.stop();
 
-      expect(watcher.board('owner/name')).toEqual({
+      expect(await readBoard(watcher, 'owner/name')).toEqual({
         projectId: 'owner/name',
         sync: { state: 'pending' },
       });

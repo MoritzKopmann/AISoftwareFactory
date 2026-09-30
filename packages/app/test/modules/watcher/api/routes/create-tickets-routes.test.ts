@@ -1,23 +1,25 @@
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
-import { createTicketsRoutes } from '../../../../../src/modules/ui/api/routes/create-tickets-routes.js';
+import {
+  createTicketsRoutes,
+  type TicketsReads,
+} from '../../../../../src/modules/watcher/api/routes/create-tickets-routes.js';
 import {
   projectBoardResponseSchema,
   projectTicketResponseSchema,
-} from '../../../../../src/modules/ui/api/schemas/tickets-schemas.js';
-import type { RunsPort, WatcherPort } from '../../../../../src/modules/ui/index.js';
+} from '../../../../../src/modules/watcher/api/schemas/tickets-schemas.js';
 import type { ProjectBoard, ProjectTicket } from '../../../../../src/modules/watcher/index.js';
-import { buildTicket } from '../../../watcher/fakes/build-ticket.js';
+import { buildTicket } from '../../fakes/build-ticket.js';
 
 const checkedAt = '2026-09-28T12:00:00.000Z';
 const okSync = { state: 'ok', checkedAt, snapshotTakenAt: checkedAt } as const;
 
-class FakeWatcher implements WatcherPort {
+class FakeWatcher implements TicketsReads {
   readonly ticketRequests: Array<{ projectId: string; number: number }> = [];
   readonly boards = new Map<string, ProjectBoard>();
   readonly tickets = new Map<string, ProjectTicket>();
 
-  board(projectId: string): ProjectBoard | undefined {
+  async board(projectId: string): Promise<ProjectBoard | undefined> {
     return this.boards.get(projectId);
   }
 
@@ -27,14 +29,8 @@ class FakeWatcher implements WatcherPort {
   }
 }
 
-function createTestApp(
-  watcher: WatcherPort,
-  activeRun: Awaited<ReturnType<RunsPort['activeRun']>> = undefined,
-): Hono {
-  return new Hono().route(
-    '/projects',
-    createTicketsRoutes(watcher, { activeRun: async () => activeRun }),
-  );
+function createTestApp(watcher: TicketsReads): Hono {
+  return new Hono().route('/projects', createTicketsRoutes(watcher));
 }
 
 describe('createTicketsRoutes', () => {
@@ -101,41 +97,6 @@ describe('createTicketsRoutes', () => {
         message: 'GitHub rate limit reached until 12:10',
       });
       expect(body.board).toBeDefined();
-    });
-
-    it('should name the running ticket when the project has an active run', async () => {
-      const watcher = new FakeWatcher();
-      watcher.boards.set('owner/name', { projectId: 'owner/name', sync: { state: 'pending' } });
-      const activeRun = {
-        run: {
-          id: 'run-1',
-          projectId: 'owner/name',
-          ticketNumber: 139,
-          stage: 'implement',
-          mode: 'afk',
-          sessionId: 'session-1',
-          worktreePath: '/worktrees/name/139',
-          branchName: 'aisf/139-run-api',
-          state: 'running',
-          startedAt: checkedAt,
-        },
-        steps: [],
-      } as const;
-
-      const response = await createTestApp(watcher, activeRun).request(
-        '/projects/owner/name/board',
-      );
-
-      expect(projectBoardResponseSchema.parse(await response.json()).runningTicketNumber).toBe(139);
-    });
-
-    it('should leave runningTicketNumber out when the project has no active run', async () => {
-      const watcher = new FakeWatcher();
-      watcher.boards.set('owner/name', { projectId: 'owner/name', sync: { state: 'pending' } });
-
-      const response = await createTestApp(watcher).request('/projects/owner/name/board');
-
-      expect(await response.json()).not.toHaveProperty('runningTicketNumber');
     });
 
     it('should answer 404 with a message when the project is not watched', async () => {
