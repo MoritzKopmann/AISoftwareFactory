@@ -2,6 +2,7 @@ import type {
   ProjectTicketResponse,
   SyncStatusResponse,
   TicketResponse,
+  TicketStatusResponse,
 } from '@aisf/app/api-schemas/tickets-schemas.js';
 import { describeTicketStatusMark, type StatusMark } from '../board/describe-ticket-status-mark.js';
 import { ticketStatusLabel } from '../board/ticket-status-labels.js';
@@ -25,6 +26,7 @@ export type TicketPageDescription =
       readonly kind: 'loaded';
       readonly numberLabel: string;
       readonly title: string;
+      readonly status: TicketStatusResponse;
       readonly statusLabel: string;
       readonly statusMark: StatusMark;
       readonly url: string;
@@ -45,6 +47,7 @@ function describeLoadedTicket(ticket: TicketResponse, projectId: string): Ticket
     kind: 'loaded',
     numberLabel: `#${ticket.number}`,
     title: ticket.title,
+    status: ticket.status,
     statusLabel: ticketStatusLabel(ticket.status),
     statusMark: describeTicketStatusMark(ticket.status),
     url: ticket.url,

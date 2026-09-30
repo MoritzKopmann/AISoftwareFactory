@@ -5,6 +5,7 @@ import {
   type TicketPageDescription,
   type TicketPageOutcome,
 } from './describe-ticket-page.js';
+import { outcomeAfterRefresh } from './outcome-after-refresh.js';
 import { RunSection } from './run-section.js';
 
 type TicketPageProps = {
@@ -15,18 +16,28 @@ type TicketPageProps = {
 export function TicketPage({ id, number }: TicketPageProps) {
   const [outcome, setOutcome] = useState<TicketPageOutcome>({ kind: 'loading' });
 
-  const load = useCallback(async () => {
-    setOutcome({ kind: 'loading' });
+  const read = useCallback(async (): Promise<TicketPageOutcome> => {
     try {
       const response = await fetch(`/api/projects/${id}/tickets/${number}`);
-      setOutcome(await outcomeFromAnswer(response.status, () => response.json()));
+      return await outcomeFromAnswer(response.status, () => response.json());
     } catch (error) {
-      setOutcome({
+      return {
         kind: 'request-failed',
         message: error instanceof Error ? error.message : String(error),
-      });
+      };
     }
   }, [id, number]);
+
+  const load = useCallback(async () => {
+    setOutcome({ kind: 'loading' });
+    setOutcome(await read());
+  }, [read]);
+
+  const refresh = useCallback(() => {
+    void read().then((refreshed) => {
+      setOutcome((shown) => outcomeAfterRefresh(shown, refreshed));
+    });
+  }, [read]);
 
   useEffect(() => {
     void load();
@@ -38,6 +49,7 @@ export function TicketPage({ id, number }: TicketPageProps) {
       number={number}
       description={describeTicketPage(outcome, id, number, Date.now())}
       onRetry={() => void load()}
+      onTicketStale={refresh}
     />
   );
 }
@@ -47,9 +59,16 @@ type TicketPageViewProps = {
   readonly number: number;
   readonly description: TicketPageDescription;
   readonly onRetry: () => void;
+  readonly onTicketStale: () => void;
 };
 
-export function TicketPageView({ projectId, number, description, onRetry }: TicketPageViewProps) {
+export function TicketPageView({
+  projectId,
+  number,
+  description,
+  onRetry,
+  onTicketStale,
+}: TicketPageViewProps) {
   return (
     <main className="page" aria-busy={description.kind === 'loading' ? 'true' : undefined}>
       {description.kind === 'loading' && (
@@ -93,7 +112,12 @@ export function TicketPageView({ projectId, number, description, onRetry }: Tick
         </div>
       )}
       {description.kind === 'loaded' && (
-        <LoadedTicket projectId={projectId} number={number} description={description} />
+        <LoadedTicket
+          projectId={projectId}
+          number={number}
+          description={description}
+          onTicketStale={onTicketStale}
+        />
       )}
     </main>
   );
@@ -120,10 +144,12 @@ function LoadedTicket({
   projectId,
   number,
   description,
+  onTicketStale,
 }: {
   readonly projectId: string;
   readonly number: number;
   readonly description: Extract<TicketPageDescription, { kind: 'loaded' }>;
+  readonly onTicketStale: () => void;
 }) {
   const { statusMark, parent, pullRequests } = description;
   return (
@@ -148,7 +174,12 @@ function LoadedTicket({
           </a>
         </div>
       </div>
-      <RunSection projectId={projectId} number={number} />
+      <RunSection
+        projectId={projectId}
+        number={number}
+        ticketStatus={description.status}
+        onTicketStale={onTicketStale}
+      />
       <dl className="facts">
         {parent !== undefined && (
           <>
