@@ -1,5 +1,15 @@
 # Contributing
 
+## Set up a checkout or worktree
+
+The repo needs Node 22 (`.nvmrc`) and its own `node_modules`, and a fresh git worktree has neither. Run this in every new checkout or worktree:
+
+```sh
+scripts/setup.sh
+```
+
+It downloads Node 22 once into `~/.local/share/aisf-node/22` (shared by all worktrees, the system Node is untouched), then runs `npm ci` with it. Later runs only reinstall dependencies from the npm cache. To run other commands with that Node, prefix `PATH="$HOME/.local/share/aisf-node/22/bin:$PATH"`.
+
 ## Load the aisf plugin in hand-run sessions
 
 AISoftwareFactory builds itself with its own `aisf` plugin (`packages/plugin`). The package is also a local-directory marketplace named `aisf`. Run these two commands once per checkout, from the root of the main checkout (not a worktree):
