@@ -5,4 +5,5 @@ export type ProjectBoard = {
   readonly projectId: string;
   readonly sync: SyncStatus;
   readonly board?: BoardView;
+  readonly runningTicketNumber?: number;
 };

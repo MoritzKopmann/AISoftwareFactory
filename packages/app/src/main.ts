@@ -31,7 +31,11 @@ import { createUiModule, type UiModule } from './modules/ui/index.js';
 import { FetchGraphQLTicketSource } from './modules/watcher/infra/integrations/fetch-graphql-ticket-source.js';
 import { FetchIssueFeeds } from './modules/watcher/infra/integrations/fetch-issue-feeds.js';
 import { GhCliGitHubToken } from './modules/watcher/infra/integrations/gh-cli-github-token.js';
-import { createWatcherModule, type WatcherModule } from './modules/watcher/index.js';
+import {
+  createWatcherModule,
+  type ActiveRunLookup,
+  type WatcherModule,
+} from './modules/watcher/index.js';
 import { findOnPath } from './cli/find-on-path.js';
 import { isOnPath } from './cli/is-on-path.js';
 import { openBrowser } from './cli/open-browser.js';
@@ -95,6 +99,7 @@ function buildWatcherModule(
   config: Config,
   events: EventPublisher & EventSubscriber,
   projects: ProjectsModule,
+  activeRunLookup: ActiveRunLookup,
 ): WatcherModule {
   const token = new GhCliGitHubToken();
   return createWatcherModule({
@@ -111,6 +116,7 @@ function buildWatcherModule(
       list: async () =>
         (await projects.list()).map(({ id, repository }) => ({ projectId: id, repository })),
     },
+    activeRunLookup,
     pollIntervalMilliseconds: config.watcherPollIntervalMilliseconds,
     snapshotIntervalMilliseconds: config.watcherSnapshotIntervalMilliseconds,
   });
@@ -238,13 +244,8 @@ function buildSchedulerModule(
   });
 }
 
-function buildUiModule(
-  watcher: WatcherModule,
-  runner: RunnerModule,
-  scheduler: SchedulerModule,
-): UiModule {
+function buildUiModule(runner: RunnerModule, scheduler: SchedulerModule): UiModule {
   return createUiModule({
-    watcher,
     runs: {
       availability: (projectId, ticketNumber) => scheduler.runAvailability(projectId, ticketNumber),
       activeRun: (projectId) => runner.activeRun(projectId),
@@ -276,7 +277,10 @@ const eventBus = new TypedEventBus<AisfEventMap>();
 const bridge = buildBridgeModule(kitDirectory);
 const skills = buildSkillsModule(config, pluginDirectory);
 const projects = buildProjectsModule(database, eventBus, skills);
-const watcher = buildWatcherModule(config, eventBus, projects);
+// The watcher is built before the runner, which needs watcher.ticket, so the lookup binds late.
+const watcher = buildWatcherModule(config, eventBus, projects, {
+  activeRunTicketNumber: async (projectId) => (await runner.activeRun(projectId))?.run.ticketNumber,
+});
 const findings = buildFindingsModule(database, projects);
 const runner = buildRunnerModule(
   config,
@@ -290,7 +294,7 @@ const runner = buildRunnerModule(
 );
 const scheduler = buildSchedulerModule(eventBus, projects, skills, watcher, runner, logger);
 scheduler.start();
-const ui = buildUiModule(watcher, runner, scheduler);
+const ui = buildUiModule(runner, scheduler);
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
@@ -309,7 +313,7 @@ const runningServer = await startServer({
   app: createApp({
     staticDirectory,
     kitRoutes: bridge.kitRoutes,
-    apiRoutes: [projects.routes, skills.routes, findings.routes, ui.routes],
+    apiRoutes: [projects.routes, skills.routes, findings.routes, watcher.routes, ui.routes],
   }),
   port: config.port,
 });

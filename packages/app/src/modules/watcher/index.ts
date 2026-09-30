@@ -1,17 +1,19 @@
+import { Hono } from 'hono';
 import type { EventSubscriber } from '../../shared/bus/event-subscriber.js';
+import { createTicketsRoutes } from './api/routes/create-tickets-routes.js';
 import { subscribeToProjectAdded } from './api/subscriptions/subscribe-to-project-added.js';
-import { buildProjectBoard } from './logic/domain/functions/build-project-board.js';
 import { failWatch } from './logic/domain/functions/fail-watch.js';
-import type { ProjectBoard } from './logic/domain/types/project-board.js';
 import type { ProjectTicket } from './logic/domain/types/project-ticket.js';
 import type { RepositoryReference } from './logic/domain/types/repository-reference.js';
 import type { RepositoryWatch } from './logic/domain/types/repository-watch.js';
 import type { Ticket } from './logic/domain/types/ticket.js';
+import type { ActiveRunLookup } from './logic/ports/active-run-lookup.js';
 import type { RegisteredRepositories } from './logic/ports/registered-repositories.js';
 import {
   PollRepositoriesUseCase,
   type PollRepositoriesDependencies,
 } from './logic/use-cases/poll-repositories-use-case.js';
+import { ReadProjectBoardUseCase } from './logic/use-cases/read-project-board-use-case.js';
 import { ReadTicketUseCase } from './logic/use-cases/read-ticket-use-case.js';
 
 export type { BoardRow } from './logic/domain/types/board-row.js';
@@ -22,6 +24,7 @@ export type { SnapshotDiff } from './logic/domain/types/snapshot-diff.js';
 export type { SyncFailureCause, SyncStatus } from './logic/domain/types/sync-status.js';
 export type { Ticket } from './logic/domain/types/ticket.js';
 export type { TicketSnapshot } from './logic/domain/types/ticket-snapshot.js';
+export type { ActiveRunLookup } from './logic/ports/active-run-lookup.js';
 export type {
   RegisteredRepositories,
   RegisteredRepository,
@@ -30,13 +33,14 @@ export type {
 export type WatcherModuleDependencies = PollRepositoriesDependencies & {
   readonly subscriber: EventSubscriber;
   readonly registeredRepositories: RegisteredRepositories;
+  readonly activeRunLookup: ActiveRunLookup;
   readonly pollIntervalMilliseconds: number;
 };
 
 export type WatcherModule = {
   readonly start: () => Promise<void>;
   readonly stop: () => void;
-  readonly board: (projectId: string) => ProjectBoard | undefined;
+  readonly routes: Hono;
   readonly openTickets: (projectId: string) => ReadonlyArray<Ticket>;
   readonly ticket: (projectId: string, number: number) => Promise<ProjectTicket | undefined>;
 };
@@ -44,6 +48,7 @@ export type WatcherModule = {
 export function createWatcherModule(dependencies: WatcherModuleDependencies): WatcherModule {
   const pollRepositories = new PollRepositoriesUseCase(dependencies);
   const readTicket = new ReadTicketUseCase(dependencies);
+  const readProjectBoard = new ReadProjectBoardUseCase(dependencies);
   const watchesByProjectId = new Map<string, RepositoryWatch>();
   let nextPollTimer: ReturnType<typeof setTimeout> | undefined;
   let unsubscribe: (() => void) | undefined;
@@ -103,7 +108,19 @@ export function createWatcherModule(dependencies: WatcherModuleDependencies): Wa
     return runningPolls;
   }
 
+  const ticketReads = {
+    board: async (projectId: string) => {
+      const watch = watchesByProjectId.get(projectId);
+      return watch === undefined ? undefined : readProjectBoard.execute(watch);
+    },
+    ticket: async (projectId: string, number: number) => {
+      const watch = watchesByProjectId.get(projectId);
+      return watch === undefined ? undefined : readTicket.execute(watch, number);
+    },
+  };
+
   return {
+    routes: new Hono().route('/projects', createTicketsRoutes(ticketReads)),
     start: async () => {
       stopped = false;
       unsubscribe = subscribeToProjectAdded(dependencies.subscriber, (projectId, repository) => {
@@ -120,14 +137,7 @@ export function createWatcherModule(dependencies: WatcherModuleDependencies): Wa
       clearTimeout(nextPollTimer);
       unsubscribe?.();
     },
-    board: (projectId) => {
-      const watch = watchesByProjectId.get(projectId);
-      return watch === undefined ? undefined : buildProjectBoard(watch);
-    },
     openTickets: (projectId) => watchesByProjectId.get(projectId)?.snapshot?.openTickets ?? [],
-    ticket: async (projectId, number) => {
-      const watch = watchesByProjectId.get(projectId);
-      return watch === undefined ? undefined : readTicket.execute(watch, number);
-    },
+    ticket: ticketReads.ticket,
   };
 }
