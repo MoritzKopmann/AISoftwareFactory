@@ -23,10 +23,19 @@ import { GitCliWorktrees } from './modules/runner/infra/integrations/git-cli-wor
 import { InMemoryRecentRunSteps } from './modules/runner/infra/integrations/in-memory-recent-run-steps.js';
 import { RandomUuidIdentifiers } from './modules/runner/infra/integrations/random-uuid-identifiers.js';
 import { SqliteRunRepository } from './modules/runner/infra/repositories/sqlite-run-repository.js';
-import { createRunnerModule, type RunTool, type RunnerModule } from './modules/runner/index.js';
+import {
+  createRunnerModule,
+  RunAlreadyActiveError as RunnerRunAlreadyActiveError,
+  type RunTool,
+  type RunnerModule,
+} from './modules/runner/index.js';
 import { GhCliPullRequestMerges } from './modules/scheduler/infra/integrations/gh-cli-pull-request-merges.js';
 import { GhCliTicketStatusWrites } from './modules/scheduler/infra/integrations/gh-cli-ticket-status-writes.js';
-import { createSchedulerModule, type SchedulerModule } from './modules/scheduler/index.js';
+import {
+  createSchedulerModule,
+  RunAlreadyActiveError,
+  type SchedulerModule,
+} from './modules/scheduler/index.js';
 import { createUiModule, type UiModule } from './modules/ui/index.js';
 import { FetchGraphQLTicketSource } from './modules/watcher/infra/integrations/fetch-graphql-ticket-source.js';
 import { FetchIssueFeeds } from './modules/watcher/infra/integrations/fetch-issue-feeds.js';
@@ -192,20 +201,43 @@ function buildSchedulerModule(
     pullRequestMerges: new GhCliPullRequestMerges(),
     runner: {
       start: async ({ projectId, ticketNumber }) => {
-        const { id, startedAt } = await runner.start({
-          projectId,
-          ticketNumber,
-          stage: 'implement',
-          mode: 'afk',
-        });
-        return { id, startedAt };
+        try {
+          const { id, startedAt } = await runner.start({
+            projectId,
+            ticketNumber,
+            stage: 'implement',
+            mode: 'afk',
+          });
+          return { id, startedAt };
+        } catch (error) {
+          if (error instanceof RunnerRunAlreadyActiveError) {
+            throw new RunAlreadyActiveError(error.message);
+          }
+          throw error;
+        }
       },
       activeRun: async (projectId) => {
         const activeRun = await runner.activeRun(projectId);
-        return activeRun === undefined ? undefined : { ticketNumber: activeRun.run.ticketNumber };
+        return activeRun === undefined
+          ? undefined
+          : {
+              id: activeRun.run.id,
+              ticketNumber: activeRun.run.ticketNumber,
+              startedAt: activeRun.run.startedAt,
+              steps: activeRun.steps,
+            };
       },
-      lastRunEndedAt: async (projectId, ticketNumber) =>
-        (await runner.latestRun(projectId, ticketNumber))?.endedAt,
+      latestRun: async (projectId, ticketNumber) => {
+        const latestRun = await runner.latestRun(projectId, ticketNumber);
+        return latestRun === undefined
+          ? undefined
+          : {
+              id: latestRun.id,
+              startedAt: latestRun.startedAt,
+              ...(latestRun.endedAt === undefined ? {} : { endedAt: latestRun.endedAt }),
+              ...(latestRun.ending === undefined ? {} : { ending: latestRun.ending }),
+            };
+      },
       settle: (runId) => runner.settle(runId),
     },
     ticketLookup: {
@@ -244,15 +276,9 @@ function buildSchedulerModule(
   });
 }
 
-function buildUiModule(runner: RunnerModule, scheduler: SchedulerModule): UiModule {
+function buildUiModule(runner: RunnerModule): UiModule {
   return createUiModule({
-    runs: {
-      availability: (projectId, ticketNumber) => scheduler.runAvailability(projectId, ticketNumber),
-      activeRun: (projectId) => runner.activeRun(projectId),
-      latestRun: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber),
-      start: (projectId, ticketNumber) => scheduler.startRun(projectId, ticketNumber),
-      stop: (runId) => runner.stop(runId),
-    },
+    runs: { stop: (runId) => runner.stop(runId) },
   });
 }
 
@@ -294,7 +320,7 @@ const runner = buildRunnerModule(
 );
 const scheduler = buildSchedulerModule(eventBus, projects, skills, watcher, runner, logger);
 scheduler.start();
-const ui = buildUiModule(runner, scheduler);
+const ui = buildUiModule(runner);
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
@@ -313,7 +339,14 @@ const runningServer = await startServer({
   app: createApp({
     staticDirectory,
     kitRoutes: bridge.kitRoutes,
-    apiRoutes: [projects.routes, skills.routes, findings.routes, watcher.routes, ui.routes],
+    apiRoutes: [
+      projects.routes,
+      skills.routes,
+      findings.routes,
+      watcher.routes,
+      scheduler.routes,
+      ui.routes,
+    ],
   }),
   port: config.port,
 });

@@ -1,29 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { createUiModule } from '../../../src/modules/ui/index.js';
 
-function createSubject() {
-  return createUiModule({
-    runs: {
-      availability: async () => ({ kind: 'absent' }),
-      activeRun: async () => undefined,
-      latestRun: async () => undefined,
-      start: async () => notExpected('start'),
-      stop: async () => notExpected('stop'),
-    },
-  });
-}
-
-function notExpected(operation: string): never {
-  throw new Error(`${operation} was not expected to be called`);
-}
-
 describe('createUiModule', () => {
-  it('should serve a ticket run under /projects/:owner/:name/tickets/:number/run', async () => {
-    const ui = createSubject();
+  it('should serve the stop route under /runs/:runId/stop', async () => {
+    const stoppedRunIds: string[] = [];
+    const ui = createUiModule({
+      runs: {
+        stop: async (runId) => {
+          stoppedRunIds.push(runId);
+        },
+      },
+    });
 
-    const response = await ui.routes.request('/projects/owner/name/tickets/5/run');
+    const response = await ui.routes.request('/runs/run-1/stop', { method: 'POST' });
 
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ availability: { kind: 'absent' } });
+    expect(response.status).toBe(204);
+    expect(stoppedRunIds).toEqual(['run-1']);
   });
 });

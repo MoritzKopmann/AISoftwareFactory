@@ -18,13 +18,14 @@ export class ReadRunAvailabilityUseCase {
   async execute(projectId: string, ticketNumber: number): Promise<RunAvailability> {
     const { ticketLookup, runner, runsGate, projectLookup } = this.dependencies;
 
-    const [ticket, activeRun, lastRunEndedAt, project] = await Promise.all([
+    const [ticket, activeRun, latestRun, project] = await Promise.all([
       ticketLookup.find(projectId, ticketNumber),
       runner.activeRun(projectId),
-      runner.lastRunEndedAt(projectId, ticketNumber),
+      runner.latestRun(projectId, ticketNumber),
       projectLookup.find(projectId),
     ]);
 
+    const lastRunEndedAt = latestRun?.endedAt;
     return determineRunAvailability({
       ...(ticket === undefined ? {} : { ticket }),
       ...(activeRun === undefined ? {} : { activeRun }),

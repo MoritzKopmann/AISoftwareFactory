@@ -74,7 +74,12 @@ describe('ReadRunAvailabilityUseCase', () => {
 
   it("should be disabled when the snapshot predates the ticket's last run end", async () => {
     const runner = new FakeRunnerPort();
-    runner.lastEndedAt = '2026-09-29T10:05:00.000Z';
+    runner.latest = {
+      id: 'run-0',
+      startedAt: '2026-09-29T10:00:00.000Z',
+      endedAt: '2026-09-29T10:05:00.000Z',
+      ending: { kind: 'finished' },
+    };
 
     expect(await buildUseCase({ runner }).execute('moritz/aisf', 138)).toEqual({
       kind: 'disabled',
