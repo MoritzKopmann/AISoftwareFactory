@@ -80,7 +80,7 @@ An open issue with **no** `status:` label is an **idea**. Done is the closed sta
 | **in-progress** | `status: in-progress`                           | `aisf:implement-ticket` (`ready → in-progress`, and `in-review → in-progress` for rework)                                                 |
 | **in-review**   | `status: in-review`, plus a PR with `Closes #N` | `aisf:implement-ticket` (`in-progress → in-review`)                                                                                       |
 | **stuck**       | `status: stuck`, plus a comment with the reason | the app (`→ stuck` when a run gives up); by hand, the _Hand-run stuck_ operation                                                          |
-| _(closed)_      | closed state; leftover labels are ignored       | the app: it squash-merges an approved PR, and `Closes #N` closes the ticket; it also closes a `planned` parent when its last child closes |
+| _(closed)_      | closed state; leftover labels are ignored       | the app: it rebase-merges an approved PR, and `Closes #N` closes the ticket; it also closes a `planned` parent when its last child closes |
 
 - Never `backlog → in-progress` — plan first.
 - A `planned` parent is a tracking umbrella: it is never implemented and never closed by hand.
