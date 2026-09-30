@@ -7,7 +7,11 @@ import {
 
 describe('describeTicketCard', () => {
   it('should describe the link, number, title and flags when the ticket is plain', () => {
-    const card = describeTicketCard(buildTicketResponse({ number: 12, title: 'Plain' }), 'o/n');
+    const card = describeTicketCard(
+      buildTicketResponse({ number: 12, title: 'Plain' }),
+      'o/n',
+      undefined,
+    );
     expect(card).toEqual({
       href: '#/projects/o/n/tickets/12',
       numberLabel: '#12',
@@ -23,6 +27,7 @@ describe('describeTicketCard', () => {
     const card = describeTicketCard(
       buildTicketResponse({ hitl: true, parent: { number: 3, title: 'Epic' } }),
       'o/n',
+      undefined,
     );
     expect(card.parentTitle).toBe('Epic');
     expect(card.hitl).toBe(true);
@@ -38,6 +43,7 @@ describe('describeTicketCard', () => {
         ],
       }),
       'o/n',
+      undefined,
     );
     expect(card.blockerLabels).toEqual(['blocked by #2', 'blocked by x/y#3']);
   });
@@ -49,6 +55,7 @@ describe('describeTicketCard', () => {
         conflictingStatuses: ['plan', 'in-progress', 'in-review'],
       }),
       'o/n',
+      undefined,
     );
     expect(card.conflictLabels).toEqual(['plan', 'in progress', 'in review']);
   });
@@ -59,7 +66,40 @@ describe('describeTicketCard', () => {
         closingPullRequests: [buildClosingPullRequestResponse({ number: 7 })],
       }),
       'o/n',
+      undefined,
     );
     expect(card.pullRequestChips).toEqual([{ label: 'PR #7' }]);
+  });
+
+  it('should mark the card stuck when its status is stuck', () => {
+    const card = describeTicketCard(buildTicketResponse({ status: 'stuck' }), 'o/n', undefined);
+    expect(card.runMarker).toBe('stuck');
+  });
+
+  it('should mark the card running when its number is the running ticket', () => {
+    const card = describeTicketCard(
+      buildTicketResponse({ number: 56, status: 'in-progress' }),
+      'o/n',
+      56,
+    );
+    expect(card.runMarker).toBe('running');
+  });
+
+  it('should mark the card stuck when it is stuck and also the running ticket', () => {
+    const card = describeTicketCard(
+      buildTicketResponse({ number: 43, status: 'stuck' }),
+      'o/n',
+      43,
+    );
+    expect(card.runMarker).toBe('stuck');
+  });
+
+  it('should show no marker when the card is neither stuck nor the running ticket', () => {
+    const card = describeTicketCard(
+      buildTicketResponse({ number: 49, status: 'in-progress' }),
+      'o/n',
+      56,
+    );
+    expect(card.runMarker).toBeUndefined();
   });
 });

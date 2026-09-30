@@ -2,7 +2,7 @@ import type { TicketStatusResponse } from '@aisf/app/api-schemas/tickets-schemas
 import type { ReactNode } from 'react';
 import type { BoardRowDescription } from './describe-board.js';
 import { describeTicketCard } from './describe-ticket-card.js';
-import { describeTicketStatusMark } from './describe-ticket-status-mark.js';
+import { StatusShape } from './status-shape.js';
 import { TicketCard } from './ticket-card.js';
 import { ticketStatusLabel } from './ticket-status-labels.js';
 
@@ -29,15 +29,6 @@ const skeletonLineWidths: ReadonlyArray<ReadonlyArray<readonly [string, string]>
     ['60%', '35%'],
   ],
 ];
-
-function StatusShape({ status }: { status: TicketStatusResponse }) {
-  const mark = describeTicketStatusMark(status);
-  return (
-    <span className={`shape s-${mark.tone}${mark.pulses ? ' pulse' : ''}`} aria-hidden="true">
-      {mark.shape}
-    </span>
-  );
-}
 
 function ClosedSummary({
   status,
@@ -76,12 +67,23 @@ function ClosedNote({ projectId, truncated }: { projectId: string; truncated: bo
   );
 }
 
-function BoardRow({ row, projectId }: { row: BoardRowDescription; projectId: string }) {
+function BoardRow({
+  row,
+  projectId,
+  runningTicketNumber,
+}: {
+  row: BoardRowDescription;
+  projectId: string;
+  runningTicketNumber: number | undefined;
+}) {
   const isEmpty = row.tickets.length === 0;
   const cards = (
     <div className="cards">
       {row.tickets.map((ticket) => (
-        <TicketCard key={ticket.number} {...describeTicketCard(ticket, projectId)} />
+        <TicketCard
+          key={ticket.number}
+          {...describeTicketCard(ticket, projectId, runningTicketNumber)}
+        />
       ))}
     </div>
   );
@@ -121,14 +123,21 @@ function BoardRow({ row, projectId }: { row: BoardRowDescription; projectId: str
 export function Board({
   rows,
   projectId,
+  runningTicketNumber,
 }: {
   rows: ReadonlyArray<BoardRowDescription>;
   projectId: string;
+  runningTicketNumber: number | undefined;
 }) {
   return (
     <div className="board">
       {rows.map((row) => (
-        <BoardRow key={row.key} row={row} projectId={projectId} />
+        <BoardRow
+          key={row.key}
+          row={row}
+          projectId={projectId}
+          runningTicketNumber={runningTicketNumber}
+        />
       ))}
     </div>
   );

@@ -1,6 +1,8 @@
 import type { TicketResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
 import { ticketStatusLabel } from './ticket-status-labels.js';
 
+export type RunMarker = 'running' | 'stuck';
+
 export type TicketCardDescription = {
   readonly href: string;
   readonly numberLabel: string;
@@ -10,11 +12,26 @@ export type TicketCardDescription = {
   readonly blockerLabels: ReadonlyArray<string>;
   readonly conflictLabels: ReadonlyArray<string>;
   readonly pullRequestChips: ReadonlyArray<{ readonly label: string }>;
+  readonly runMarker?: RunMarker;
 };
+
+function describeRunMarker(
+  ticket: TicketResponse,
+  runningTicketNumber: number | undefined,
+): RunMarker | undefined {
+  if (ticket.status === 'stuck') {
+    return 'stuck';
+  }
+  if (ticket.number === runningTicketNumber) {
+    return 'running';
+  }
+  return undefined;
+}
 
 export function describeTicketCard(
   ticket: TicketResponse,
   projectId: string,
+  runningTicketNumber: number | undefined,
 ): TicketCardDescription {
   const blockerLabels = ticket.blockedBy
     .filter((blocker) => blocker.open)
@@ -23,6 +40,7 @@ export function describeTicketCard(
         ? `blocked by #${blocker.number}`
         : `blocked by ${blocker.repository}#${blocker.number}`,
     );
+  const runMarker = describeRunMarker(ticket, runningTicketNumber);
   return {
     href: `#/projects/${projectId}/tickets/${ticket.number}`,
     numberLabel: `#${ticket.number}`,
@@ -36,5 +54,6 @@ export function describeTicketCard(
     pullRequestChips: ticket.closingPullRequests.map((pullRequest) => ({
       label: `PR #${pullRequest.number}`,
     })),
+    ...(runMarker === undefined ? {} : { runMarker }),
   };
 }

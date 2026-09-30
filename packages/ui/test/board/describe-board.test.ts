@@ -196,4 +196,13 @@ describe('describeBoard', () => {
     expect(description.rows[0]?.countLabel).toBe('3');
     expect(description.rows[0]?.truncated).toBe(false);
   });
+
+  it('should pass the running ticket number through when the board has a live run', () => {
+    const description = describeBoard(
+      answered({ ...buildBoard([buildRow('in-progress', 2)]), runningTicketNumber: 2 }),
+      'o/n',
+      now,
+    );
+    expect(description.runningTicketNumber).toBe(2);
+  });
 });

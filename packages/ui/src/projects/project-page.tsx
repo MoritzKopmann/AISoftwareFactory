@@ -62,7 +62,13 @@ function RegisteredProjectPage({ project }: { readonly project: ProjectResponse 
                 </a>
               </div>
             )}
-            {board.rows.length > 0 && <Board rows={board.rows} projectId={project.id} />}
+            {board.rows.length > 0 && (
+              <Board
+                rows={board.rows}
+                projectId={project.id}
+                runningTicketNumber={board.runningTicketNumber}
+              />
+            )}
           </>
         )}
       </main>

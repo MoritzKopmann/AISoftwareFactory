@@ -23,6 +23,7 @@ export type BoardDescription = {
   readonly emptyMessage?: string;
   readonly loading: boolean;
   readonly rows: ReadonlyArray<BoardRowDescription>;
+  readonly runningTicketNumber?: number;
 };
 
 function describeRow(row: BoardRowResponse): BoardRowDescription {
@@ -87,5 +88,11 @@ export function describeBoard(state: BoardState, projectId: string, now: Date): 
       rows: [],
     };
   }
-  return { ...shared, loading: false, rows: board.rows.map(describeRow) };
+  const runningTicketNumber = response?.runningTicketNumber;
+  return {
+    ...shared,
+    loading: false,
+    rows: board.rows.map(describeRow),
+    ...(runningTicketNumber === undefined ? {} : { runningTicketNumber }),
+  };
 }
