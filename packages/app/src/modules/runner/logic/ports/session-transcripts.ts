@@ -1,5 +1,5 @@
-import type { RunStep } from '../domain/types/run-step.js';
+import type { SessionLogEntry } from '../domain/types/session-log-entry.js';
 
 export interface SessionTranscripts {
-  read(sessionId: string, worktreePath: string): Promise<ReadonlyArray<RunStep>>;
+  read(sessionId: string, worktreePath: string): Promise<ReadonlyArray<SessionLogEntry>>;
 }

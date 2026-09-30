@@ -7,6 +7,7 @@ import { createEscalateTool } from './api/tools/create-escalate-tool.js';
 import { createParkTool } from './api/tools/create-park-tool.js';
 import type { FinishRun } from './logic/domain/types/finish-run.js';
 import type { Run } from './logic/domain/types/run.js';
+import type { SessionLog } from './logic/domain/types/session-log.js';
 import type { RunTool } from './logic/domain/types/run-tool.js';
 import { RunAlreadyActiveError } from './logic/errors/run-already-active-error.js';
 import { RunNotActiveError } from './logic/errors/run-not-active-error.js';
@@ -17,6 +18,7 @@ import type { Identifiers } from './logic/ports/identifiers.js';
 import type { RecentRunSteps } from './logic/ports/recent-run-steps.js';
 import type { RunRepository } from './logic/ports/run-repository.js';
 import type { RunTargets } from './logic/ports/run-targets.js';
+import type { SessionTranscripts } from './logic/ports/session-transcripts.js';
 import type { Worktrees } from './logic/ports/worktrees.js';
 import { FinishRunUseCase } from './logic/use-cases/finish-run-use-case.js';
 import {
@@ -24,6 +26,7 @@ import {
   type ActiveRun,
 } from './logic/use-cases/read-active-run-use-case.js';
 import { ReadLatestRunUseCase } from './logic/use-cases/read-latest-run-use-case.js';
+import { ReadSessionLogUseCase } from './logic/use-cases/read-session-log-use-case.js';
 import { RecoverInterruptedRunsUseCase } from './logic/use-cases/recover-interrupted-runs-use-case.js';
 import { SettleRunUseCase } from './logic/use-cases/settle-run-use-case.js';
 import { StartRunUseCase, type StartRunRequest } from './logic/use-cases/start-run-use-case.js';
@@ -35,6 +38,7 @@ export type { RunEnding } from './logic/domain/types/run-ending.js';
 export type { RunMode } from './logic/domain/types/run-mode.js';
 export type { RunStage } from './logic/domain/types/run-stage.js';
 export type { RunStep } from './logic/domain/types/run-step.js';
+export type { SessionLog } from './logic/domain/types/session-log.js';
 export type { RunTool, RunToolResult } from './logic/domain/types/run-tool.js';
 export type { ActiveRun } from './logic/use-cases/read-active-run-use-case.js';
 export type { StartRunRequest } from './logic/use-cases/start-run-use-case.js';
@@ -51,6 +55,7 @@ export type RunnerModuleDependencies = {
   readonly worktrees: Worktrees;
   readonly runTargets: RunTargets;
   readonly recentRunSteps: RecentRunSteps;
+  readonly sessionTranscripts: SessionTranscripts;
   readonly identifiers: Identifiers;
   readonly clock: Clock;
   readonly events: EventPublisher;
@@ -65,6 +70,7 @@ export type RunnerModule = {
   readonly activeRun: (projectId: string) => Promise<ActiveRun | undefined>;
   readonly latestRun: (projectId: string, ticketNumber: number) => Promise<Run | undefined>;
   readonly settle: (runId: string) => Promise<void>;
+  readonly sessionLog: (runId: string) => Promise<SessionLog>;
   readonly recover: () => Promise<void>;
   readonly abortSessions: () => void;
 };
@@ -90,6 +96,10 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
   const stopRun = new StopRunUseCase({ runRepository, finishRun });
   const readActiveRun = new ReadActiveRunUseCase({ runRepository, recentRunSteps });
   const readLatestRun = new ReadLatestRunUseCase({ runRepository });
+  const readSessionLog = new ReadSessionLogUseCase({
+    runRepository,
+    sessionTranscripts: dependencies.sessionTranscripts,
+  });
   const settleRun = new SettleRunUseCase({ runRepository, clock });
   const recoverInterruptedRuns = new RecoverInterruptedRunsUseCase({
     runRepository,
@@ -103,6 +113,7 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
     activeRun: (projectId) => readActiveRun.execute(projectId),
     latestRun: (projectId, ticketNumber) => readLatestRun.execute(projectId, ticketNumber),
     settle: (runId) => settleRun.execute(runId),
+    sessionLog: (runId) => readSessionLog.execute(runId),
     recover: () => recoverInterruptedRuns.execute(),
     abortSessions: () => agentSessions.stopAll(),
   };

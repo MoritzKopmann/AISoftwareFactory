@@ -5,9 +5,11 @@ import {
   type TicketRuns,
 } from '../../../../../src/modules/scheduler/api/routes/create-run-routes.js';
 import {
+  sessionLogResponseSchema,
   startedRunResponseSchema,
   ticketRunResponseSchema,
 } from '../../../../../src/modules/scheduler/api/schemas/runs-schemas.js';
+import type { SessionLog } from '../../../../../src/modules/scheduler/logic/domain/types/session-log.js';
 import type { TicketRun } from '../../../../../src/modules/scheduler/logic/domain/types/ticket-run.js';
 import { RunAlreadyActiveError } from '../../../../../src/modules/scheduler/logic/errors/run-already-active-error.js';
 import { RunNotAvailableError } from '../../../../../src/modules/scheduler/logic/errors/run-not-available-error.js';
@@ -18,7 +20,13 @@ const endedAt = '2026-09-29T09:30:00.000Z';
 class FakeTicketRuns implements TicketRuns {
   ticketRun: TicketRun = { availability: { kind: 'available' } };
   startFailure: Error | undefined;
+  sessionLog: SessionLog = { kind: 'no-session' };
   readonly calls: string[] = [];
+
+  async readSessionLog(projectId: string, ticketNumber: number): Promise<SessionLog> {
+    this.calls.push(`sessionLog ${projectId} #${ticketNumber}`);
+    return this.sessionLog;
+  }
 
   async read(projectId: string, ticketNumber: number): Promise<TicketRun> {
     this.calls.push(`read ${projectId} #${ticketNumber}`);
@@ -119,6 +127,62 @@ describe('createRunRoutes', () => {
     it('should answer 400 when the ticket number is not a positive integer', async () => {
       const response = await createTestApp(new FakeTicketRuns()).request(
         '/projects/owner/name/tickets/abc/run',
+      );
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe('GET /projects/:owner/:name/tickets/:number/session-log', () => {
+    it('should answer the entries in order with the total when the ticket has a session', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.sessionLog = {
+        kind: 'found',
+        entries: [{ summary: 'Read: ticket' }, { summary: 'Bash: npm test' }],
+        total: 2,
+      };
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/139/session-log',
+      );
+
+      expect(response.status).toBe(200);
+      expect(sessionLogResponseSchema.parse(await response.json())).toEqual({
+        kind: 'found',
+        entries: [{ summary: 'Read: ticket' }, { summary: 'Bash: npm test' }],
+        total: 2,
+      });
+      expect(ticketRuns.calls).toEqual(['sessionLog owner/name #139']);
+    });
+
+    it('should answer no session when the ticket has no run', async () => {
+      const response = await createTestApp(new FakeTicketRuns()).request(
+        '/projects/owner/name/tickets/139/session-log',
+      );
+
+      expect(response.status).toBe(200);
+      expect(sessionLogResponseSchema.parse(await response.json())).toEqual({
+        kind: 'no-session',
+      });
+    });
+
+    it('should answer transcript not found when the transcript is gone', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.sessionLog = { kind: 'transcript-not-found' };
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/139/session-log',
+      );
+
+      expect(response.status).toBe(200);
+      expect(sessionLogResponseSchema.parse(await response.json())).toEqual({
+        kind: 'transcript-not-found',
+      });
+    });
+
+    it('should answer 400 when the ticket number is not a positive integer', async () => {
+      const response = await createTestApp(new FakeTicketRuns()).request(
+        '/projects/owner/name/tickets/abc/session-log',
       );
 
       expect(response.status).toBe(400);

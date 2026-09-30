@@ -14,6 +14,7 @@ import {
   FakeRecentRunSteps,
   FakeRunRepository,
   FakeRunTargets,
+  FakeSessionTranscripts,
   FakeWorktrees,
   SequentialIdentifiers,
 } from './fakes/fake-runner-ports.js';
@@ -21,6 +22,7 @@ import {
 describe('createRunnerModule', () => {
   let runRepository: FakeRunRepository;
   let agentSessions: FakeAgentSessions;
+  let sessionTranscripts: FakeSessionTranscripts;
   let events: FakeEventPublisher;
   let runner: RunnerModule;
 
@@ -40,6 +42,7 @@ describe('createRunnerModule', () => {
 
   beforeEach(() => {
     runRepository = new FakeRunRepository();
+    sessionTranscripts = new FakeSessionTranscripts();
     agentSessions = new FakeAgentSessions();
     events = new FakeEventPublisher();
     runner = createRunnerModule({
@@ -52,6 +55,7 @@ describe('createRunnerModule', () => {
         ticketTitle: 'The runner',
       }),
       recentRunSteps: new FakeRecentRunSteps(),
+      sessionTranscripts,
       identifiers: new SequentialIdentifiers(),
       clock: new FakeClock('2026-09-29T10:00:00.000Z'),
       events,
@@ -136,6 +140,17 @@ describe('createRunnerModule', () => {
     const run = await runner.start(startRequest);
 
     expect(await runner.latestRun('moritz/aisf', 137)).toEqual(run);
+  });
+
+  it("should return the run's transcript entries when sessionLog is asked", async () => {
+    await runRepository.insert(buildRun({ state: 'ended', ending: { kind: 'finished' } }));
+    sessionTranscripts.entries = [{ summary: 'Read: ticket' }];
+
+    expect(await runner.sessionLog('run-1')).toEqual({
+      kind: 'found',
+      entries: [{ summary: 'Read: ticket' }],
+      total: 1,
+    });
   });
 
   it('should settle an ended run when settle is called', async () => {
