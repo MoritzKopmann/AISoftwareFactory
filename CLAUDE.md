@@ -6,6 +6,6 @@ Write for fast reading. Short sentences. Simple words. Every word earns its plac
 
 Be sure of what you say. If unsure, resolve it — read the docs or ask. When presenting statements always mark them with what this statement is. [Opinion, Fact, Guess etc.] State how sure you are [Certain, Likely, Unsure]
 
-Never guess what to do if it is not defined enough. Rather ask. 
+Never guess what to do if it is not defined enough. Rather ask.
 
-Never make feature decisions without asking me unless they are a direct cause of previous decisions. 
+Never make feature decisions without asking me unless they are a direct cause of previous decisions.
