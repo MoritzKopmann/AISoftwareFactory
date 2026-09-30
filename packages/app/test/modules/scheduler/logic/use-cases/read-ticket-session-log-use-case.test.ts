@@ -6,7 +6,7 @@ describe('ReadTicketSessionLogUseCase', () => {
   it('should return the session log of the latest run when the ticket has run', async () => {
     const runner = new FakeRunnerPort();
     runner.latest = { id: 'run-2', startedAt: '2026-09-29T09:00:00.000Z' };
-    runner.sessionLog = {
+    runner.transcript = {
       kind: 'found',
       entries: [{ summary: 'Read: ticket' }],
       total: 1,
@@ -36,7 +36,7 @@ describe('ReadTicketSessionLogUseCase', () => {
   it('should return transcript not found when the runner cannot find the transcript', async () => {
     const runner = new FakeRunnerPort();
     runner.latest = { id: 'run-2', startedAt: '2026-09-29T09:00:00.000Z' };
-    runner.sessionLog = { kind: 'transcript-not-found' };
+    runner.transcript = { kind: 'transcript-not-found' };
 
     const sessionLog = await new ReadTicketSessionLogUseCase({ runner }).execute(
       'moritz/aisf',

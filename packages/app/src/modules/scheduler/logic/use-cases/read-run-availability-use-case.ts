@@ -28,7 +28,7 @@ export class ReadRunAvailabilityUseCase {
     const lastRunEndedAt = latestRun?.endedAt;
     return determineRunAvailability({
       ...(ticket === undefined ? {} : { ticket }),
-      ...(activeRun === undefined ? {} : { activeRun }),
+      ...(activeRun === undefined ? {} : { activeRun: activeRun.run }),
       ...(lastRunEndedAt === undefined ? {} : { lastRunEndedAt }),
       runsBlocked: runsGate.check(),
       projectOnboarded: project?.onboarded === true,

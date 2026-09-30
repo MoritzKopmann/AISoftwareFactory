@@ -15,6 +15,6 @@ export class ReadTicketSessionLogUseCase {
     if (latestRun === undefined) {
       return { kind: 'no-session' };
     }
-    return runner.readSessionLog(latestRun.id);
+    return runner.sessionLog(latestRun.id);
   }
 }
