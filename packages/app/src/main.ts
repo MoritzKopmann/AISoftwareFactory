@@ -239,16 +239,11 @@ function buildSchedulerModule(
 }
 
 function buildUiModule(
-  projects: ProjectsModule,
-  skills: SkillsModule,
   watcher: WatcherModule,
   runner: RunnerModule,
   scheduler: SchedulerModule,
-  findings: FindingsModule,
 ): UiModule {
   return createUiModule({
-    projects,
-    skills,
     watcher,
     runs: {
       availability: (projectId, ticketNumber) => scheduler.runAvailability(projectId, ticketNumber),
@@ -257,7 +252,6 @@ function buildUiModule(
       start: (projectId, ticketNumber) => scheduler.startRun(projectId, ticketNumber),
       stop: (runId) => runner.stop(runId),
     },
-    findings,
   });
 }
 
@@ -296,7 +290,7 @@ const runner = buildRunnerModule(
 );
 const scheduler = buildSchedulerModule(eventBus, projects, skills, watcher, runner, logger);
 scheduler.start();
-const ui = buildUiModule(projects, skills, watcher, runner, scheduler, findings);
+const ui = buildUiModule(watcher, runner, scheduler);
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
@@ -315,7 +309,7 @@ const runningServer = await startServer({
   app: createApp({
     staticDirectory,
     kitRoutes: bridge.kitRoutes,
-    apiRoutes: [ui.routes],
+    apiRoutes: [projects.routes, skills.routes, findings.routes, ui.routes],
   }),
   port: config.port,
 });

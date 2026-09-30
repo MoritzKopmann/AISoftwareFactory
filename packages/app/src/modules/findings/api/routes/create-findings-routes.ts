@@ -1,17 +1,12 @@
 import { Hono, type Context } from 'hono';
-import {
-  FindingNotFoundError,
-  FindingNotOpenError,
-  type Finding,
-} from '../../../findings/index.js';
-import { findingIdParameterSchema } from '../schemas/findings-schemas.js';
 import { ticketNumberParameterSchema } from '../../../../shared/http/ticket-number-parameter-schema.js';
-
-export type FindingsPort = {
-  readonly list: (projectId: string, ticketNumber?: number) => Promise<ReadonlyArray<Finding>>;
-  readonly createTicket: (projectId: string, findingId: number) => Promise<Finding>;
-  readonly dismiss: (projectId: string, findingId: number) => Promise<Finding>;
-};
+import type { Finding } from '../../logic/domain/types/finding.js';
+import { FindingNotFoundError } from '../../logic/errors/finding-not-found-error.js';
+import { FindingNotOpenError } from '../../logic/errors/finding-not-open-error.js';
+import type { CreateTicketFromFindingUseCase } from '../../logic/use-cases/create-ticket-from-finding-use-case.js';
+import type { DismissFindingUseCase } from '../../logic/use-cases/dismiss-finding-use-case.js';
+import type { ListFindingsUseCase } from '../../logic/use-cases/list-findings-use-case.js';
+import { findingIdParameterSchema } from '../schemas/findings-schemas.js';
 
 function readProjectId(context: Context): string {
   return `${context.req.param('owner')}/${context.req.param('name')}`;
@@ -39,7 +34,11 @@ async function answerWithFinding(
   }
 }
 
-export function createFindingsRoutes(findings: FindingsPort): Hono {
+export function createFindingsRoutes(
+  listFindings: ListFindingsUseCase,
+  createTicketFromFinding: CreateTicketFromFindingUseCase,
+  dismissFinding: DismissFindingUseCase,
+): Hono {
   return new Hono()
     .get('/:owner/:name/findings', async (context) => {
       const ticketQuery = context.req.query('ticket');
@@ -50,15 +49,17 @@ export function createFindingsRoutes(findings: FindingsPort): Hono {
       }
 
       return context.json({
-        findings: await findings.list(readProjectId(context), parsedTicket?.data),
+        findings: await listFindings.execute(readProjectId(context), parsedTicket?.data),
       });
     })
     .post('/:owner/:name/findings/:id/ticket', (context) =>
       answerWithFinding(context, (projectId, findingId) =>
-        findings.createTicket(projectId, findingId),
+        createTicketFromFinding.execute(projectId, findingId),
       ),
     )
     .post('/:owner/:name/findings/:id/dismiss', (context) =>
-      answerWithFinding(context, (projectId, findingId) => findings.dismiss(projectId, findingId)),
+      answerWithFinding(context, (projectId, findingId) =>
+        dismissFinding.execute(projectId, findingId),
+      ),
     );
 }
