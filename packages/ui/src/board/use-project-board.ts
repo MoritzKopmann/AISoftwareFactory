@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchBoardOutcome } from './fetch-board-outcome.js';
 import { foldBoardOutcome, initialBoardState, type BoardState } from './fold-board-outcome.js';
-import { pollBoard } from './poll-board.js';
+import { poll } from '../shared/poll.js';
 
 const pollIntervalMilliseconds = 5000;
 const clockIntervalMilliseconds = 60_000;
@@ -15,7 +15,7 @@ export function useProjectBoard(projectId: string): {
 
   useEffect(
     () =>
-      pollBoard(
+      poll(
         () => fetchBoardOutcome(projectId, (url) => fetch(url)),
         (outcome) => {
           setState((previous) => foldBoardOutcome(previous, outcome));
