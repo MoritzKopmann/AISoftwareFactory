@@ -1,22 +1,18 @@
 import { Hono } from 'hono';
-import {
-  CheckoutNotARepositoryError,
-  GitHubCliError,
-  PluginInstallFailedError,
-  ProjectAlreadyAddedError,
-  type Project,
-  type ProjectWithContract,
-} from '../../../projects/index.js';
+import { CheckoutNotARepositoryError } from '../../logic/errors/checkout-not-a-repository-error.js';
+import { GitHubCliError } from '../../logic/errors/github-cli-error.js';
+import { PluginInstallFailedError } from '../../logic/errors/plugin-install-failed-error.js';
+import { ProjectAlreadyAddedError } from '../../logic/errors/project-already-added-error.js';
+import type { AddProjectUseCase } from '../../logic/use-cases/add-project-use-case.js';
+import type { ListProjectsUseCase } from '../../logic/use-cases/list-projects-use-case.js';
 import { addProjectRequestSchema } from '../schemas/projects-schemas.js';
 
-export type ProjectsPort = {
-  readonly list: () => Promise<ReadonlyArray<ProjectWithContract>>;
-  readonly add: (checkoutPath: string) => Promise<Project>;
-};
-
-export function createProjectsRoutes(projects: ProjectsPort): Hono {
+export function createProjectsRoutes(
+  listProjects: ListProjectsUseCase,
+  addProject: AddProjectUseCase,
+): Hono {
   return new Hono()
-    .get('/', async (context) => context.json(await projects.list()))
+    .get('/', async (context) => context.json(await listProjects.execute()))
     .post('/', async (context) => {
       if (context.req.header('content-type') !== 'application/json') {
         return context.json({ message: 'Content-Type must be application/json' }, 415);
@@ -28,7 +24,7 @@ export function createProjectsRoutes(projects: ProjectsPort): Hono {
       }
 
       try {
-        const project = await projects.add(parsed.data.checkoutPath);
+        const project = await addProject.execute(parsed.data.checkoutPath);
         return context.json(project, 201);
       } catch (error) {
         if (error instanceof ProjectAlreadyAddedError) {

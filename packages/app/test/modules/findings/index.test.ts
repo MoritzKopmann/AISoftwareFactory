@@ -1,10 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import {
-  createFindingsModule,
-  FindingNotFoundError,
-  FindingNotOpenError,
-  type FindingsModule,
-} from '../../../src/modules/findings/index.js';
+import { createFindingsModule, type FindingsModule } from '../../../src/modules/findings/index.js';
 import { InMemoryFindingRepository } from './fakes/in-memory-finding-repository.js';
 import { FakeProjectLookup, FakeTicketCreator } from './fakes/fake-findings-ports.js';
 
@@ -37,40 +32,59 @@ describe('createFindingsModule', () => {
     expect(findings.tools.map(({ name }) => name)).toEqual(['aisf_report_finding']);
   });
 
-  it('should list a reported finding when list is called for its ticket', async () => {
-    expect(await findings.list('moritz/aisf', 138)).toMatchObject([
-      { id: 1, ticketNumber: 138, state: 'open' },
-    ]);
+  it('should serve a reported finding under /projects/:owner/:name/findings when the ticket is given', async () => {
+    const response = await findings.routes.request('/projects/moritz/aisf/findings?ticket=138');
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      findings: [{ id: 1, ticketNumber: 138, state: 'open' }],
+    });
   });
 
-  it('should create one bare issue and mark the finding ticketed when createTicket is called', async () => {
+  it('should create one bare issue and mark the finding ticketed when the ticket route is posted', async () => {
     ticketCreator.createdNumber = 210;
 
-    const finding = await findings.createTicket('moritz/aisf', 1);
+    const response = await findings.routes.request('/projects/moritz/aisf/findings/1/ticket', {
+      method: 'POST',
+    });
 
-    expect(finding).toMatchObject({ state: 'ticketed', createdTicketNumber: 210 });
+    expect(await response.json()).toMatchObject({ state: 'ticketed', createdTicketNumber: 210 });
     expect(ticketCreator.createdTickets).toHaveLength(1);
   });
 
-  it('should throw FindingNotOpenError when createTicket is called twice', async () => {
-    await findings.createTicket('moritz/aisf', 1);
+  it('should answer 409 when the ticket route is posted twice', async () => {
+    await findings.routes.request('/projects/moritz/aisf/findings/1/ticket', { method: 'POST' });
 
-    await expect(findings.createTicket('moritz/aisf', 1)).rejects.toThrow(FindingNotOpenError);
+    const response = await findings.routes.request('/projects/moritz/aisf/findings/1/ticket', {
+      method: 'POST',
+    });
+
+    expect(response.status).toBe(409);
   });
 
-  it('should throw FindingNotFoundError when createTicket is called for an unknown finding', async () => {
-    await expect(findings.createTicket('moritz/aisf', 99)).rejects.toThrow(FindingNotFoundError);
+  it('should answer 404 when the ticket route is posted for an unknown finding', async () => {
+    const response = await findings.routes.request('/projects/moritz/aisf/findings/99/ticket', {
+      method: 'POST',
+    });
+
+    expect(response.status).toBe(404);
   });
 
-  it('should keep the finding as dismissed when dismiss is called', async () => {
-    await findings.dismiss('moritz/aisf', 1);
+  it('should keep the finding as dismissed when the dismiss route is posted', async () => {
+    await findings.routes.request('/projects/moritz/aisf/findings/1/dismiss', { method: 'POST' });
 
-    expect(await findings.list('moritz/aisf')).toMatchObject([{ state: 'dismissed' }]);
+    const response = await findings.routes.request('/projects/moritz/aisf/findings');
+
+    expect(await response.json()).toMatchObject({ findings: [{ state: 'dismissed' }] });
   });
 
-  it('should throw FindingNotOpenError when dismiss is called for a dismissed finding', async () => {
-    await findings.dismiss('moritz/aisf', 1);
+  it('should answer 409 when the dismiss route is posted for a dismissed finding', async () => {
+    await findings.routes.request('/projects/moritz/aisf/findings/1/dismiss', { method: 'POST' });
 
-    await expect(findings.dismiss('moritz/aisf', 1)).rejects.toThrow(FindingNotOpenError);
+    const response = await findings.routes.request('/projects/moritz/aisf/findings/1/dismiss', {
+      method: 'POST',
+    });
+
+    expect(response.status).toBe(409);
   });
 });

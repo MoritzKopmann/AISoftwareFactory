@@ -86,18 +86,23 @@ describe('createSkillsModule', () => {
   });
 
   describe('status', () => {
-    it('should report pending when start-up has not finished', () => {
+    it('should serve pending under /skills/status when start-up has not finished', async () => {
       const { skills } = createSubject();
 
-      expect(skills.status()).toEqual({ state: 'pending' });
+      const response = await skills.routes.request('/skills/status');
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ state: 'pending' });
     });
 
-    it('should report the failure reason when the smoke test failed', async () => {
+    it('should serve the failure reason under /skills/status when the smoke test failed', async () => {
       const { skills, smokeProbe } = createSubject();
       smokeProbe.failure = new SkillsSetupError('claude exited with code 1');
       await skills.start();
 
-      expect(skills.status()).toEqual({
+      const response = await skills.routes.request('/skills/status');
+
+      expect(await response.json()).toEqual({
         state: 'failed',
         reason: 'claude exited with code 1',
       });

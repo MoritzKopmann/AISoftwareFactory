@@ -1,3 +1,5 @@
+import { Hono } from 'hono';
+import { createSkillsStatusRoutes } from './api/routes/create-skills-status-routes.js';
 import { determineRunsBlocked } from './logic/domain/functions/determine-runs-blocked.js';
 import type { ContractPreflightReport } from './logic/domain/types/contract-preflight-report.js';
 import type { PluginInstallOutcome } from './logic/domain/types/plugin-install-outcome.js';
@@ -31,7 +33,7 @@ export type SkillsModuleDependencies = StartSkillsDependencies &
 export type SkillsModule = {
   readonly start: () => Promise<void>;
   readonly runsBlocked: () => RunsBlocked;
-  readonly status: () => SkillsStatus;
+  readonly routes: Hono;
   readonly runContractPreflight: (checkoutPath: string) => Promise<ContractPreflightReport>;
   readonly installPluginLocally: (checkoutPath: string) => Promise<PluginInstallOutcome>;
 };
@@ -58,7 +60,10 @@ export function createSkillsModule(dependencies: SkillsModuleDependencies): Skil
       return startPromise;
     },
     runsBlocked: () => determineRunsBlocked(status, credentials),
-    status: () => status,
+    routes: new Hono().route(
+      '/skills',
+      createSkillsStatusRoutes(() => status),
+    ),
     runContractPreflight: (checkoutPath) => contractPreflight.execute(checkoutPath),
     installPluginLocally: async (checkoutPath) => {
       if (startPromise !== undefined) {

@@ -1,8 +1,5 @@
-import type { Project } from './logic/domain/types/project.js';
-import { CheckoutNotARepositoryError } from './logic/errors/checkout-not-a-repository-error.js';
-import { GitHubCliError } from './logic/errors/github-cli-error.js';
-import { PluginInstallFailedError } from './logic/errors/plugin-install-failed-error.js';
-import { ProjectAlreadyAddedError } from './logic/errors/project-already-added-error.js';
+import { Hono } from 'hono';
+import { createProjectsRoutes } from './api/routes/create-projects-routes.js';
 import type { ContractPreflight } from './logic/ports/contract-preflight.js';
 import {
   AddProjectUseCase,
@@ -16,19 +13,13 @@ import {
 export type { Project } from './logic/domain/types/project.js';
 export type { ContractPreflightReport } from './logic/domain/types/contract-preflight-report.js';
 export type { ProjectWithContract } from './logic/use-cases/list-projects-use-case.js';
-export {
-  CheckoutNotARepositoryError,
-  GitHubCliError,
-  PluginInstallFailedError,
-  ProjectAlreadyAddedError,
-};
 
 export type ProjectsModuleDependencies = AddProjectDependencies & {
   readonly contractPreflight: ContractPreflight;
 };
 
 export type ProjectsModule = {
-  readonly add: (checkoutPath: string) => Promise<Project>;
+  readonly routes: Hono;
   readonly list: () => Promise<ReadonlyArray<ProjectWithContract>>;
 };
 
@@ -40,7 +31,7 @@ export function createProjectsModule(dependencies: ProjectsModuleDependencies): 
   );
 
   return {
-    add: (checkoutPath) => addProject.execute(checkoutPath),
+    routes: new Hono().route('/projects', createProjectsRoutes(listProjects, addProject)),
     list: () => listProjects.execute(),
   };
 }

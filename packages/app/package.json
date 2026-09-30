@@ -7,10 +7,10 @@
     "node": ">=22"
   },
   "exports": {
-    "./api-schemas/projects-schemas.js": "./src/modules/ui/api/schemas/projects-schemas.ts",
+    "./api-schemas/projects-schemas.js": "./src/modules/projects/api/schemas/projects-schemas.ts",
     "./api-schemas/tickets-schemas.js": "./src/modules/ui/api/schemas/tickets-schemas.ts",
     "./api-schemas/runs-schemas.js": "./src/modules/ui/api/schemas/runs-schemas.ts",
-    "./api-schemas/findings-schemas.js": "./src/modules/ui/api/schemas/findings-schemas.ts",
+    "./api-schemas/findings-schemas.js": "./src/modules/findings/api/schemas/findings-schemas.ts",
     "./api-schemas/*.js": "./src/modules/ui/api/schemas/*.ts"
   },
   "scripts": {
