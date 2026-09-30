@@ -31,7 +31,7 @@ export class MergeApprovedPullRequestsUseCase {
     const activeRun = await runner.activeRun(projectId);
     const mergeablePullRequests = findMergeablePullRequests(
       tickets,
-      activeRun === undefined ? [] : [activeRun],
+      activeRun === undefined ? [] : [activeRun.run],
     );
 
     for (const { ticketNumber, pullRequestNumber, headCommit } of mergeablePullRequests) {

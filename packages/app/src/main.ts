@@ -205,13 +205,7 @@ function buildSchedulerModule(
     runner: {
       start: async ({ projectId, ticketNumber }) => {
         try {
-          const { id, startedAt } = await runner.start({
-            projectId,
-            ticketNumber,
-            stage: 'implement',
-            mode: 'afk',
-          });
-          return { id, startedAt };
+          return await runner.start({ projectId, ticketNumber, stage: 'implement', mode: 'afk' });
         } catch (error) {
           if (error instanceof RunnerRunAlreadyActiveError) {
             throw new RunAlreadyActiveError(error.message);
@@ -221,8 +215,7 @@ function buildSchedulerModule(
       },
       resume: async (runId, decision) => {
         try {
-          const { id, startedAt } = await runner.resume(runId, decision);
-          return { id, startedAt };
+          return await runner.resume(runId, decision);
         } catch (error) {
           if (error instanceof RunnerRunAlreadyActiveError) {
             throw new RunAlreadyActiveError(error.message);
@@ -233,43 +226,11 @@ function buildSchedulerModule(
           throw error;
         }
       },
-      findRun: async (runId) => {
-        const run = await runner.findRun(runId);
-        return run === undefined
-          ? undefined
-          : {
-              id: run.id,
-              projectId: run.projectId,
-              ticketNumber: run.ticketNumber,
-              startedAt: run.startedAt,
-              ...(run.endedAt === undefined ? {} : { endedAt: run.endedAt }),
-              ...(run.ending === undefined ? {} : { ending: run.ending }),
-            };
-      },
-      activeRun: async (projectId) => {
-        const activeRun = await runner.activeRun(projectId);
-        return activeRun === undefined
-          ? undefined
-          : {
-              id: activeRun.run.id,
-              ticketNumber: activeRun.run.ticketNumber,
-              startedAt: activeRun.run.startedAt,
-              steps: activeRun.steps,
-            };
-      },
-      latestRun: async (projectId, ticketNumber) => {
-        const latestRun = await runner.latestRun(projectId, ticketNumber);
-        return latestRun === undefined
-          ? undefined
-          : {
-              id: latestRun.id,
-              startedAt: latestRun.startedAt,
-              ...(latestRun.endedAt === undefined ? {} : { endedAt: latestRun.endedAt }),
-              ...(latestRun.ending === undefined ? {} : { ending: latestRun.ending }),
-            };
-      },
-      settle: (runId) => runner.settle(runId),
-      readSessionLog: (runId) => runner.sessionLog(runId),
+      findRun: runner.findRun,
+      activeRun: runner.activeRun,
+      latestRun: runner.latestRun,
+      settle: runner.settle,
+      sessionLog: runner.sessionLog,
     },
     ticketLookup: {
       find: async (projectId, ticketNumber) => {

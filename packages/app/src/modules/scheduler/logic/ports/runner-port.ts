@@ -15,5 +15,5 @@ export interface RunnerPort {
   activeRun(projectId: string): Promise<ActiveTicketRun | undefined>;
   latestRun(projectId: string, ticketNumber: number): Promise<LatestRun | undefined>;
   settle(runId: string): Promise<void>;
-  readSessionLog(runId: string): Promise<SessionLog>;
+  sessionLog(runId: string): Promise<SessionLog>;
 }

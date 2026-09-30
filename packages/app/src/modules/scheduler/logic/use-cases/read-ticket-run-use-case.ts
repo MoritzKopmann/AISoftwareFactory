@@ -24,11 +24,11 @@ export class ReadTicketRunUseCase {
 
     return {
       availability,
-      ...(activeRun?.ticketNumber === ticketNumber
+      ...(activeRun?.run.ticketNumber === ticketNumber
         ? {
             activeRun: {
-              id: activeRun.id,
-              startedAt: activeRun.startedAt,
+              id: activeRun.run.id,
+              startedAt: activeRun.run.startedAt,
               steps: activeRun.steps,
             },
           }

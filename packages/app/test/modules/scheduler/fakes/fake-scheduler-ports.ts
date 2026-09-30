@@ -81,7 +81,7 @@ export class FakeRunnerPort implements RunnerPort {
   activeTicketNumber: number | undefined;
   activeSteps: ReadonlyArray<RunStep> = [];
   latest: LatestRun | undefined;
-  sessionLog: SessionLog = { kind: 'no-session' };
+  transcript: SessionLog = { kind: 'no-session' };
   record: RunRecord | undefined;
   startFailure: Error | undefined;
   resumeFailure: Error | undefined;
@@ -117,9 +117,11 @@ export class FakeRunnerPort implements RunnerPort {
     return this.activeTicketNumber === undefined
       ? undefined
       : {
-          id: 'run-1',
-          ticketNumber: this.activeTicketNumber,
-          startedAt: '2026-09-29T09:00:00.000Z',
+          run: {
+            id: 'run-1',
+            ticketNumber: this.activeTicketNumber,
+            startedAt: '2026-09-29T09:00:00.000Z',
+          },
           steps: this.activeSteps,
         };
   }
@@ -132,9 +134,9 @@ export class FakeRunnerPort implements RunnerPort {
     this.calls.push(`settle ${runId}`);
   }
 
-  async readSessionLog(runId: string): Promise<SessionLog> {
+  async sessionLog(runId: string): Promise<SessionLog> {
     this.calls.push(`sessionLog ${runId}`);
-    return this.sessionLog;
+    return this.transcript;
   }
 }
 
