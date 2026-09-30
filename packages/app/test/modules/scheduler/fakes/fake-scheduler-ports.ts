@@ -10,6 +10,9 @@ import type {
 } from '../../../../src/modules/scheduler/logic/ports/project-lookup.js';
 import type { ReviewedTicket } from '../../../../src/modules/scheduler/logic/domain/types/reviewed-ticket.js';
 import type { ReviewedTicketLookup } from '../../../../src/modules/scheduler/logic/ports/reviewed-ticket-lookup.js';
+import type { ActiveTicketRun } from '../../../../src/modules/scheduler/logic/domain/types/active-ticket-run.js';
+import type { LatestRun } from '../../../../src/modules/scheduler/logic/domain/types/latest-run.js';
+import type { RunStep } from '../../../../src/modules/scheduler/logic/domain/types/run-step.js';
 import type { RunnerPort } from '../../../../src/modules/scheduler/logic/ports/runner-port.js';
 import type { RunsGate } from '../../../../src/modules/scheduler/logic/ports/runs-gate.js';
 import type { TicketLookup } from '../../../../src/modules/scheduler/logic/ports/ticket-lookup.js';
@@ -73,24 +76,34 @@ export class FakePullRequestMerges implements PullRequestMerges {
 export class FakeRunnerPort implements RunnerPort {
   readonly calls: string[] = [];
   activeTicketNumber: number | undefined;
-  lastEndedAt: string | undefined;
+  activeSteps: ReadonlyArray<RunStep> = [];
+  latest: LatestRun | undefined;
+  startFailure: Error | undefined;
 
   async start(request: {
     projectId: string;
     ticketNumber: number;
   }): Promise<{ readonly id: string; readonly startedAt: string }> {
     this.calls.push(`start ${request.projectId} #${request.ticketNumber}`);
+    if (this.startFailure !== undefined) {
+      throw this.startFailure;
+    }
     return { id: 'run-1', startedAt: '2026-09-29T09:00:00.000Z' };
   }
 
-  async activeRun(): Promise<{ readonly ticketNumber: number } | undefined> {
+  async activeRun(): Promise<ActiveTicketRun | undefined> {
     return this.activeTicketNumber === undefined
       ? undefined
-      : { ticketNumber: this.activeTicketNumber };
+      : {
+          id: 'run-1',
+          ticketNumber: this.activeTicketNumber,
+          startedAt: '2026-09-29T09:00:00.000Z',
+          steps: this.activeSteps,
+        };
   }
 
-  async lastRunEndedAt(): Promise<string | undefined> {
-    return this.lastEndedAt;
+  async latestRun(): Promise<LatestRun | undefined> {
+    return this.latest;
   }
 
   async settle(runId: string): Promise<void> {

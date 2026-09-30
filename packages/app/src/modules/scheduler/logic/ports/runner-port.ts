@@ -1,3 +1,5 @@
+import type { ActiveTicketRun } from '../domain/types/active-ticket-run.js';
+import type { LatestRun } from '../domain/types/latest-run.js';
 import type { StartedRun } from '../domain/types/started-run.js';
 
 export interface RunnerPort {
@@ -5,7 +7,7 @@ export interface RunnerPort {
     readonly projectId: string;
     readonly ticketNumber: number;
   }): Promise<StartedRun>;
-  activeRun(projectId: string): Promise<{ readonly ticketNumber: number } | undefined>;
-  lastRunEndedAt(projectId: string, ticketNumber: number): Promise<string | undefined>;
+  activeRun(projectId: string): Promise<ActiveTicketRun | undefined>;
+  latestRun(projectId: string, ticketNumber: number): Promise<LatestRun | undefined>;
   settle(runId: string): Promise<void>;
 }

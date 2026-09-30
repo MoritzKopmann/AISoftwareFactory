@@ -1,0 +1,180 @@
+import { Hono } from 'hono';
+import { describe, expect, it } from 'vitest';
+import {
+  createRunRoutes,
+  type TicketRuns,
+} from '../../../../../src/modules/scheduler/api/routes/create-run-routes.js';
+import {
+  startedRunResponseSchema,
+  ticketRunResponseSchema,
+} from '../../../../../src/modules/scheduler/api/schemas/runs-schemas.js';
+import type { TicketRun } from '../../../../../src/modules/scheduler/logic/domain/types/ticket-run.js';
+import { RunAlreadyActiveError } from '../../../../../src/modules/scheduler/logic/errors/run-already-active-error.js';
+import { RunNotAvailableError } from '../../../../../src/modules/scheduler/logic/errors/run-not-available-error.js';
+
+const startedAt = '2026-09-29T09:00:00.000Z';
+const endedAt = '2026-09-29T09:30:00.000Z';
+
+class FakeTicketRuns implements TicketRuns {
+  ticketRun: TicketRun = { availability: { kind: 'available' } };
+  startFailure: Error | undefined;
+  readonly calls: string[] = [];
+
+  async read(projectId: string, ticketNumber: number): Promise<TicketRun> {
+    this.calls.push(`read ${projectId} #${ticketNumber}`);
+    return this.ticketRun;
+  }
+
+  async start(projectId: string, ticketNumber: number) {
+    this.calls.push(`start ${projectId} #${ticketNumber}`);
+    if (this.startFailure !== undefined) {
+      throw this.startFailure;
+    }
+    return { id: 'run-1', startedAt };
+  }
+}
+
+function createTestApp(ticketRuns: TicketRuns): Hono {
+  return new Hono().route('/projects', createRunRoutes(ticketRuns));
+}
+
+describe('createRunRoutes', () => {
+  describe('GET /projects/:owner/:name/tickets/:number/run', () => {
+    it('should answer the availability alone when the ticket run has no runs', async () => {
+      const ticketRuns = new FakeTicketRuns();
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/139/run',
+      );
+
+      expect(response.status).toBe(200);
+      expect(ticketRunResponseSchema.parse(await response.json())).toEqual({
+        availability: { kind: 'available' },
+      });
+      expect(ticketRuns.calls).toEqual(['read owner/name #139']);
+    });
+
+    it('should answer the reason when the availability is disabled', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.ticketRun = {
+        availability: { kind: 'disabled', reason: '#42 is running' },
+      };
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/139/run',
+      );
+
+      expect(ticketRunResponseSchema.parse(await response.json()).availability).toEqual({
+        kind: 'disabled',
+        reason: '#42 is running',
+      });
+    });
+
+    it('should answer the active run with its steps when the ticket run has one', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.ticketRun = {
+        availability: { kind: 'disabled', reason: '#139 is running' },
+        activeRun: {
+          id: 'run-1',
+          startedAt,
+          steps: [{ at: '2026-09-29T09:01:00.000Z', summary: 'Read the ticket' }],
+        },
+      };
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/139/run',
+      );
+
+      expect(ticketRunResponseSchema.parse(await response.json()).activeRun).toEqual({
+        id: 'run-1',
+        startedAt,
+        steps: [{ at: '2026-09-29T09:01:00.000Z', summary: 'Read the ticket' }],
+      });
+    });
+
+    it('should answer the last run with its ending when the ticket run has one', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.ticketRun = {
+        availability: { kind: 'available' },
+        lastRun: {
+          id: 'run-1',
+          startedAt,
+          endedAt,
+          ending: { kind: 'escalated', escalation: 'spec', reason: 'AC 2 is unclear' },
+        },
+      };
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/139/run',
+      );
+
+      expect(ticketRunResponseSchema.parse(await response.json()).lastRun).toEqual({
+        id: 'run-1',
+        startedAt,
+        endedAt,
+        ending: { kind: 'escalated', escalation: 'spec', reason: 'AC 2 is unclear' },
+      });
+    });
+
+    it('should answer 400 when the ticket number is not a positive integer', async () => {
+      const response = await createTestApp(new FakeTicketRuns()).request(
+        '/projects/owner/name/tickets/abc/run',
+      );
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe('POST /projects/:owner/:name/tickets/:number/runs', () => {
+    it('should answer 201 with the started run when the run starts', async () => {
+      const ticketRuns = new FakeTicketRuns();
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/139/runs',
+        { method: 'POST' },
+      );
+
+      expect(response.status).toBe(201);
+      expect(startedRunResponseSchema.parse(await response.json())).toEqual({
+        id: 'run-1',
+        startedAt,
+      });
+      expect(ticketRuns.calls).toEqual(['start owner/name #139']);
+    });
+
+    it('should answer 409 with the reason when the ticket is not available', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.startFailure = new RunNotAvailableError('#42 is running');
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/139/runs',
+        { method: 'POST' },
+      );
+
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ message: '#42 is running' });
+    });
+
+    it('should answer 409 with the reason when another run is already active', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.startFailure = new RunAlreadyActiveError('A run is already active');
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/139/runs',
+        { method: 'POST' },
+      );
+
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ message: 'A run is already active' });
+    });
+
+    it('should answer 400 when the ticket number is not a positive integer', async () => {
+      const response = await createTestApp(new FakeTicketRuns()).request(
+        '/projects/owner/name/tickets/0/runs',
+        { method: 'POST' },
+      );
+
+      expect(response.status).toBe(400);
+    });
+  });
+});

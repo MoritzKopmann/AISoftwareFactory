@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createSchedulerModule,
-  RunNotAvailableError,
+  RunAlreadyActiveError,
   type SchedulerModule,
 } from '../../../src/modules/scheduler/index.js';
 import type { ReviewedTicket } from '../../../src/modules/scheduler/logic/domain/types/reviewed-ticket.js';
@@ -57,27 +57,54 @@ describe('createSchedulerModule', () => {
     });
   });
 
-  it('should report a ready leaf as available when runAvailability is asked', async () => {
-    expect(await scheduler.runAvailability('moritz/aisf', 138)).toEqual({ kind: 'available' });
+  it('should report a ready leaf as available when its run is read', async () => {
+    const response = await scheduler.routes.request('/projects/moritz/aisf/tickets/138/run');
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ availability: { kind: 'available' } });
   });
 
-  it('should start the run on the runner when startRun is called for an available ticket', async () => {
-    await scheduler.startRun('moritz/aisf', 138);
+  it('should report the active run of the ticket when its run is read', async () => {
+    runner.activeTicketNumber = 138;
 
-    expect(runner.calls).toEqual(['start moritz/aisf #138']);
-  });
+    const response = await scheduler.routes.request('/projects/moritz/aisf/tickets/138/run');
 
-  it('should return the started run when startRun is called for an available ticket', async () => {
-    expect(await scheduler.startRun('moritz/aisf', 138)).toEqual({
-      id: 'run-1',
-      startedAt: '2026-09-29T09:00:00.000Z',
+    expect(await response.json()).toEqual({
+      availability: { kind: 'disabled', reason: '#138 is running' },
+      activeRun: { id: 'run-1', startedAt: '2026-09-29T09:00:00.000Z', steps: [] },
     });
   });
 
-  it('should throw RunNotAvailableError when startRun is called while another run is active', async () => {
+  it('should start the run on the runner and answer 201 when an available ticket is posted', async () => {
+    const response = await scheduler.routes.request('/projects/moritz/aisf/tickets/138/runs', {
+      method: 'POST',
+    });
+
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ id: 'run-1', startedAt: '2026-09-29T09:00:00.000Z' });
+    expect(runner.calls).toEqual(['start moritz/aisf #138']);
+  });
+
+  it('should answer 409 when an available ticket is posted while another run is active', async () => {
     runner.activeTicketNumber = 42;
 
-    await expect(scheduler.startRun('moritz/aisf', 138)).rejects.toThrow(RunNotAvailableError);
+    const response = await scheduler.routes.request('/projects/moritz/aisf/tickets/138/runs', {
+      method: 'POST',
+    });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ message: '#42 is running' });
+  });
+
+  it('should answer 409 when the runner reports a run already active', async () => {
+    runner.startFailure = new RunAlreadyActiveError('A run is already active');
+
+    const response = await scheduler.routes.request('/projects/moritz/aisf/tickets/138/runs', {
+      method: 'POST',
+    });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ message: 'A run is already active' });
   });
 
   it('should settle a finished run only after start has been called', async () => {
