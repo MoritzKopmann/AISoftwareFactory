@@ -225,13 +225,16 @@ and reports what it applied, discarded, and any architecture breaches and bugs/g
 - Re-run `test` and `analyze`. Both must stay clean (§5's rules and attempt count apply).
 - **Architecture (must-fix)**: fix each, re-run §5, then run `aisf:review-simplicity`
   again. A fix that needs a judgement call → **escalate `spec`**.
-- **Bugs/gaps** it lists go in the PR body under `## Known bugs` (§9). Don't fix them here.
+- **Bugs/gaps**: don't fix them here.
+  - Reported through `aisf_report_finding` (AFK, where the tool is present): it returns only
+    a count. Keep the count for §9. Report nothing again.
+  - Returned as lines (a hand run): they go in the PR body under `## Known bugs` (§9).
 
 ## 8. Commit
 
 Invoke `aisf:commit`. The branch is `aisf/<n>-*`, so it adds `refs #<n>` itself, and it
 refreshes `project-index` when that slot exists. A PR may have several commits; the app
-squash-merges them.
+rebase-merges them, so each commit lands on the default branch as written.
 
 `<n>` is this leaf, never its parent. Wrong number in the trailer → amend before pushing.
 
@@ -254,7 +257,7 @@ gh pr create --base <default> --title "<type>(<scope>): <ticket title>" --body-f
 
 No `--head` (`gh` takes the current branch) and no `--draft`: the PR opens ready for review.
 The title is a conventional-commit subject, with `<type>` and `<scope>` as `aisf:commit`
-chose them, because the squash commit on the default branch takes it. Body:
+chose them. Body:
 
     ## Summary
     What changed and why. Two or three lines.
@@ -268,7 +271,9 @@ chose them, because the squash commit on the default branch takes it. Body:
     from `aisf:tdd` with the proof used. Omit the section if there are none.
 
     ## Known bugs
-    The bugs/gaps from §7. Omit the section if there are none.
+    Lines returned in §7: those lines. Findings reported through the tool: one line,
+    `Findings reported through the app: N`, and no per-finding lines. Omit the section if
+    there are none.
 
     Closes #<n>
 
@@ -311,5 +316,5 @@ branch, label `status: in-review`, and in rework every comment replied to and re
 re-requested. A line you cannot write is a step you have not finished: go back and finish it.
 Then stop.
 
-**Never merge.** When a human approves the PR, the app squash-merges it and `Closes #<n>`
+**Never merge.** When a human approves the PR, the app rebase-merges it and `Closes #<n>`
 closes the ticket. No run merges, enables auto-merge, or closes the ticket itself.
