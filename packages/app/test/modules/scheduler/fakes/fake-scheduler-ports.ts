@@ -12,6 +12,7 @@ import type { ReviewedTicket } from '../../../../src/modules/scheduler/logic/dom
 import type { ReviewedTicketLookup } from '../../../../src/modules/scheduler/logic/ports/reviewed-ticket-lookup.js';
 import type { ActiveTicketRun } from '../../../../src/modules/scheduler/logic/domain/types/active-ticket-run.js';
 import type { LatestRun } from '../../../../src/modules/scheduler/logic/domain/types/latest-run.js';
+import type { SessionLog } from '../../../../src/modules/scheduler/logic/domain/types/session-log.js';
 import type { RunStep } from '../../../../src/modules/scheduler/logic/domain/types/run-step.js';
 import type { RunnerPort } from '../../../../src/modules/scheduler/logic/ports/runner-port.js';
 import type { RunsGate } from '../../../../src/modules/scheduler/logic/ports/runs-gate.js';
@@ -78,6 +79,7 @@ export class FakeRunnerPort implements RunnerPort {
   activeTicketNumber: number | undefined;
   activeSteps: ReadonlyArray<RunStep> = [];
   latest: LatestRun | undefined;
+  sessionLog: SessionLog = { kind: 'no-session' };
   startFailure: Error | undefined;
 
   async start(request: {
@@ -108,6 +110,11 @@ export class FakeRunnerPort implements RunnerPort {
 
   async settle(runId: string): Promise<void> {
     this.calls.push(`settle ${runId}`);
+  }
+
+  async readSessionLog(runId: string): Promise<SessionLog> {
+    this.calls.push(`sessionLog ${runId}`);
+    return this.sessionLog;
   }
 }
 

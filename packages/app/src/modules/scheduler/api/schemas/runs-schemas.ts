@@ -39,6 +39,17 @@ export const startedRunResponseSchema = z.object({
 });
 export type StartedRunResponse = z.infer<typeof startedRunResponseSchema>;
 
+export const sessionLogResponseSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('found'),
+    entries: z.array(z.object({ summary: z.string() })),
+    total: z.number(),
+  }),
+  z.object({ kind: z.literal('no-session') }),
+  z.object({ kind: z.literal('transcript-not-found') }),
+]);
+export type SessionLogResponse = z.infer<typeof sessionLogResponseSchema>;
+
 export const ticketRunResponseSchema = z.object({
   availability: runAvailabilityResponseSchema,
   activeRun: startedRunResponseSchema.extend({ steps: z.array(runStepResponseSchema) }).optional(),

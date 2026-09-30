@@ -18,6 +18,7 @@ import { EnvironmentCredentialSource } from './modules/skills/infra/integrations
 import { FileSystemPluginMirror } from './modules/skills/infra/integrations/file-system-plugin-mirror.js';
 import { FileSystemSlotReader } from './modules/skills/infra/integrations/file-system-slot-reader.js';
 import { createSkillsModule, type SkillsModule } from './modules/skills/index.js';
+import { ClaudeAgentSdkSessionTranscripts } from './modules/runner/infra/integrations/claude-agent-sdk-session-transcripts.js';
 import { ClaudeAgentSdkSessions } from './modules/runner/infra/integrations/claude-agent-sdk-sessions.js';
 import { GitCliWorktrees } from './modules/runner/infra/integrations/git-cli-worktrees.js';
 import { InMemoryRecentRunSteps } from './modules/runner/infra/integrations/in-memory-recent-run-steps.js';
@@ -178,6 +179,7 @@ function buildRunnerModule(
       },
     },
     recentRunSteps: new InMemoryRecentRunSteps(),
+    sessionTranscripts: new ClaudeAgentSdkSessionTranscripts(),
     identifiers: new RandomUuidIdentifiers(),
     clock,
     events,
@@ -238,6 +240,7 @@ function buildSchedulerModule(
             };
       },
       settle: (runId) => runner.settle(runId),
+      readSessionLog: (runId) => runner.sessionLog(runId),
     },
     ticketLookup: {
       find: async (projectId, ticketNumber) => {

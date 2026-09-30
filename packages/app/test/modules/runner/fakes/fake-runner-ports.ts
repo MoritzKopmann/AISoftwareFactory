@@ -2,6 +2,7 @@ import { RunAlreadyActiveError } from '../../../../src/modules/runner/logic/erro
 import type { Run } from '../../../../src/modules/runner/logic/domain/types/run.js';
 import type { RunEnding } from '../../../../src/modules/runner/logic/domain/types/run-ending.js';
 import type { RunStep } from '../../../../src/modules/runner/logic/domain/types/run-step.js';
+import type { SessionLogEntry } from '../../../../src/modules/runner/logic/domain/types/session-log-entry.js';
 import type { RunTarget } from '../../../../src/modules/runner/logic/domain/types/run-target.js';
 import type { SessionEvent } from '../../../../src/modules/runner/logic/domain/types/session-event.js';
 import type { SessionSpec } from '../../../../src/modules/runner/logic/domain/types/session-spec.js';
@@ -11,6 +12,7 @@ import type { Identifiers } from '../../../../src/modules/runner/logic/ports/ide
 import type { RecentRunSteps } from '../../../../src/modules/runner/logic/ports/recent-run-steps.js';
 import type { RunRepository } from '../../../../src/modules/runner/logic/ports/run-repository.js';
 import type { RunTargets } from '../../../../src/modules/runner/logic/ports/run-targets.js';
+import type { SessionTranscripts } from '../../../../src/modules/runner/logic/ports/session-transcripts.js';
 import type { Worktrees } from '../../../../src/modules/runner/logic/ports/worktrees.js';
 
 export class FakeRunRepository implements RunRepository {
@@ -171,6 +173,20 @@ export class FakeRunTargets implements RunTargets {
 
   async find(): Promise<RunTarget | undefined> {
     return this.target;
+  }
+}
+
+export class FakeSessionTranscripts implements SessionTranscripts {
+  readonly reads: Array<{ sessionId: string; worktreePath: string }> = [];
+  entries: ReadonlyArray<SessionLogEntry> = [];
+  failure: Error | undefined;
+
+  async read(sessionId: string, worktreePath: string): Promise<ReadonlyArray<SessionLogEntry>> {
+    this.reads.push({ sessionId, worktreePath });
+    if (this.failure !== undefined) {
+      throw this.failure;
+    }
+    return this.entries;
   }
 }
 
