@@ -12,6 +12,8 @@ import type { ReviewedTicket } from '../../../../src/modules/scheduler/logic/dom
 import type { ReviewedTicketLookup } from '../../../../src/modules/scheduler/logic/ports/reviewed-ticket-lookup.js';
 import type { ActiveTicketRun } from '../../../../src/modules/scheduler/logic/domain/types/active-ticket-run.js';
 import type { LatestRun } from '../../../../src/modules/scheduler/logic/domain/types/latest-run.js';
+import type { PermissionDecision } from '../../../../src/modules/scheduler/logic/domain/types/permission-decision.js';
+import type { RunRecord } from '../../../../src/modules/scheduler/logic/domain/types/run-record.js';
 import type { SessionLog } from '../../../../src/modules/scheduler/logic/domain/types/session-log.js';
 import type { RunStep } from '../../../../src/modules/scheduler/logic/domain/types/run-step.js';
 import type { RunnerPort } from '../../../../src/modules/scheduler/logic/ports/runner-port.js';
@@ -80,7 +82,9 @@ export class FakeRunnerPort implements RunnerPort {
   activeSteps: ReadonlyArray<RunStep> = [];
   latest: LatestRun | undefined;
   sessionLog: SessionLog = { kind: 'no-session' };
+  record: RunRecord | undefined;
   startFailure: Error | undefined;
+  resumeFailure: Error | undefined;
 
   async start(request: {
     projectId: string;
@@ -91,6 +95,22 @@ export class FakeRunnerPort implements RunnerPort {
       throw this.startFailure;
     }
     return { id: 'run-1', startedAt: '2026-09-29T09:00:00.000Z' };
+  }
+
+  async findRun(runId: string): Promise<RunRecord | undefined> {
+    this.calls.push(`findRun ${runId}`);
+    return this.record;
+  }
+
+  async resume(
+    runId: string,
+    decision: PermissionDecision,
+  ): Promise<{ readonly id: string; readonly startedAt: string }> {
+    this.calls.push(`resume ${runId} ${decision}`);
+    if (this.resumeFailure !== undefined) {
+      throw this.resumeFailure;
+    }
+    return { id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' };
   }
 
   async activeRun(): Promise<ActiveTicketRun | undefined> {

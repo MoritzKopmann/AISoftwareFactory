@@ -27,6 +27,7 @@ import { SqliteRunRepository } from './modules/runner/infra/repositories/sqlite-
 import {
   createRunnerModule,
   RunAlreadyActiveError as RunnerRunAlreadyActiveError,
+  RunNotResumableError,
   type RunTool,
   type RunnerModule,
 } from './modules/runner/index.js';
@@ -34,6 +35,7 @@ import { GhCliPullRequestMerges } from './modules/scheduler/infra/integrations/g
 import { GhCliTicketStatusWrites } from './modules/scheduler/infra/integrations/gh-cli-ticket-status-writes.js';
 import {
   createSchedulerModule,
+  PermissionNotAnswerableError,
   RunAlreadyActiveError,
   type SchedulerModule,
 } from './modules/scheduler/index.js';
@@ -216,6 +218,33 @@ function buildSchedulerModule(
           }
           throw error;
         }
+      },
+      resume: async (runId, decision) => {
+        try {
+          const { id, startedAt } = await runner.resume(runId, decision);
+          return { id, startedAt };
+        } catch (error) {
+          if (error instanceof RunnerRunAlreadyActiveError) {
+            throw new RunAlreadyActiveError(error.message);
+          }
+          if (error instanceof RunNotResumableError) {
+            throw new PermissionNotAnswerableError(error.message);
+          }
+          throw error;
+        }
+      },
+      findRun: async (runId) => {
+        const run = await runner.findRun(runId);
+        return run === undefined
+          ? undefined
+          : {
+              id: run.id,
+              projectId: run.projectId,
+              ticketNumber: run.ticketNumber,
+              startedAt: run.startedAt,
+              ...(run.endedAt === undefined ? {} : { endedAt: run.endedAt }),
+              ...(run.ending === undefined ? {} : { ending: run.ending }),
+            };
       },
       activeRun: async (projectId) => {
         const activeRun = await runner.activeRun(projectId);
