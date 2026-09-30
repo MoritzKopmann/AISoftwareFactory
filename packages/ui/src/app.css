@@ -220,6 +220,44 @@ a.ext::after {
   color: var(--muted);
 }
 
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn.primary:hover {
+  border-color: var(--text);
+}
+
+.btn[aria-disabled='true'],
+.btn[aria-disabled='true']:hover {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.runbar {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.runline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: center;
+}
+
+.reason {
+  font-size: var(--text-size-sm);
+  line-height: var(--line-sm);
+  color: var(--muted);
+  max-width: 64ch;
+}
+
 .shape {
   display: inline-block;
   width: 1em;
@@ -586,6 +624,7 @@ details:not([open]) .t-hide {
   border: 1px solid var(--danger);
   border-radius: var(--radius);
   justify-items: start;
+  max-width: 64ch;
 }
 
 .err .shape {
@@ -595,4 +634,8 @@ details:not([open]) .t-hide {
 
 .err > :not(.shape) {
   grid-column: 2;
+}
+
+.err .mono.sm {
+  overflow-wrap: anywhere;
 }

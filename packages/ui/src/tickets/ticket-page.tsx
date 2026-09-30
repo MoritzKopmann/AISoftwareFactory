@@ -5,6 +5,7 @@ import {
   type TicketPageDescription,
   type TicketPageOutcome,
 } from './describe-ticket-page.js';
+import { RunSection } from './run-section.js';
 
 type TicketPageProps = {
   readonly id: string;
@@ -34,6 +35,7 @@ export function TicketPage({ id, number }: TicketPageProps) {
   return (
     <TicketPageView
       projectId={id}
+      number={number}
       description={describeTicketPage(outcome, id, number, Date.now())}
       onRetry={() => void load()}
     />
@@ -42,11 +44,12 @@ export function TicketPage({ id, number }: TicketPageProps) {
 
 type TicketPageViewProps = {
   readonly projectId: string;
+  readonly number: number;
   readonly description: TicketPageDescription;
   readonly onRetry: () => void;
 };
 
-export function TicketPageView({ projectId, description, onRetry }: TicketPageViewProps) {
+export function TicketPageView({ projectId, number, description, onRetry }: TicketPageViewProps) {
   return (
     <main className="page" aria-busy={description.kind === 'loading' ? 'true' : undefined}>
       {description.kind === 'loading' && (
@@ -89,7 +92,9 @@ export function TicketPageView({ projectId, description, onRetry }: TicketPageVi
           {description.detail !== '' && <p className="sm mono">{description.detail}</p>}
         </div>
       )}
-      {description.kind === 'loaded' && <LoadedTicket description={description} />}
+      {description.kind === 'loaded' && (
+        <LoadedTicket projectId={projectId} number={number} description={description} />
+      )}
     </main>
   );
 }
@@ -112,8 +117,12 @@ function TicketSkeleton() {
 }
 
 function LoadedTicket({
+  projectId,
+  number,
   description,
 }: {
+  readonly projectId: string;
+  readonly number: number;
   readonly description: Extract<TicketPageDescription, { kind: 'loaded' }>;
 }) {
   const { statusMark, parent, pullRequests } = description;
@@ -139,6 +148,7 @@ function LoadedTicket({
           </a>
         </div>
       </div>
+      <RunSection projectId={projectId} number={number} />
       <dl className="facts">
         {parent !== undefined && (
           <>
