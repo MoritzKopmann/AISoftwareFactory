@@ -36,7 +36,6 @@ import {
   RunAlreadyActiveError,
   type SchedulerModule,
 } from './modules/scheduler/index.js';
-import { createUiModule, type UiModule } from './modules/ui/index.js';
 import { FetchGraphQLTicketSource } from './modules/watcher/infra/integrations/fetch-graphql-ticket-source.js';
 import { FetchIssueFeeds } from './modules/watcher/infra/integrations/fetch-issue-feeds.js';
 import { GhCliGitHubToken } from './modules/watcher/infra/integrations/gh-cli-github-token.js';
@@ -276,12 +275,6 @@ function buildSchedulerModule(
   });
 }
 
-function buildUiModule(runner: RunnerModule): UiModule {
-  return createUiModule({
-    runs: { stop: (runId) => runner.stop(runId) },
-  });
-}
-
 const logger = createLogger(consoleLogSink);
 
 const problems = findPreflightProblems({ nodeVersion: process.versions.node, isOnPath });
@@ -320,7 +313,6 @@ const runner = buildRunnerModule(
 );
 const scheduler = buildSchedulerModule(eventBus, projects, skills, watcher, runner, logger);
 scheduler.start();
-const ui = buildUiModule(runner);
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
@@ -345,7 +337,7 @@ const runningServer = await startServer({
       findings.routes,
       watcher.routes,
       scheduler.routes,
-      ui.routes,
+      runner.routes,
     ],
   }),
   port: config.port,

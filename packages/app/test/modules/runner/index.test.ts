@@ -111,11 +111,12 @@ describe('createRunnerModule', () => {
     expect(agentSessions.startedSpecs).toEqual([]);
   });
 
-  it('should end the run as stopped when stop is called', async () => {
+  it('should end the run as stopped when POST /runs/:runId/stop is called', async () => {
     const run = await runner.start(startRequest);
 
-    await runner.stop(run.id);
+    const response = await runner.routes.request(`/runs/${run.id}/stop`, { method: 'POST' });
 
+    expect(response.status).toBe(204);
     expect(events.emittedEvents[0]).toMatchObject({ payload: { ending: { kind: 'stopped' } } });
   });
 

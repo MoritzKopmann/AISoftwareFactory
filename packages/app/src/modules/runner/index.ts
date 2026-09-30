@@ -1,6 +1,8 @@
+import { Hono } from 'hono';
 import type { EventPublisher } from '../../shared/bus/event-publisher.js';
 import type { Clock } from '../../shared/clock/clock.js';
 import type { Logger } from '../../shared/logger/create-logger.js';
+import { createStopRunRoutes } from './api/routes/create-stop-run-routes.js';
 import { createEscalateTool } from './api/tools/create-escalate-tool.js';
 import { createParkTool } from './api/tools/create-park-tool.js';
 import type { FinishRun } from './logic/domain/types/finish-run.js';
@@ -58,8 +60,8 @@ export type RunnerModuleDependencies = {
 };
 
 export type RunnerModule = {
+  readonly routes: Hono;
   readonly start: (request: StartRunRequest) => Promise<Run>;
-  readonly stop: (runId: string) => Promise<void>;
   readonly activeRun: (projectId: string) => Promise<ActiveRun | undefined>;
   readonly latestRun: (projectId: string, ticketNumber: number) => Promise<Run | undefined>;
   readonly settle: (runId: string) => Promise<void>;
@@ -96,8 +98,8 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
   });
 
   return {
+    routes: new Hono().route('/runs', createStopRunRoutes(stopRun)),
     start: (request) => startRun.execute(request),
-    stop: (runId) => stopRun.execute(runId),
     activeRun: (projectId) => readActiveRun.execute(projectId),
     latestRun: (projectId, ticketNumber) => readLatestRun.execute(projectId, ticketNumber),
     settle: (runId) => settleRun.execute(runId),
