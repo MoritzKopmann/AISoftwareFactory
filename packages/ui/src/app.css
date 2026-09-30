@@ -295,6 +295,12 @@ a.ext::after {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+  }
+}
+
 .chip {
   display: inline-flex;
   align-items: center;

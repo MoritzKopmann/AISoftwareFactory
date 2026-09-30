@@ -1,4 +1,22 @@
-import type { TicketCardDescription } from './describe-ticket-card.js';
+import type { RunMarker, TicketCardDescription } from './describe-ticket-card.js';
+import { StatusShape } from './status-shape.js';
+
+function RunMarkerChip({ marker }: { marker: RunMarker }) {
+  if (marker === 'stuck') {
+    return (
+      <span className="chip danger">
+        <StatusShape status="stuck" />
+        Stuck
+      </span>
+    );
+  }
+  return (
+    <span className="chip flow">
+      <StatusShape status="in-progress" />
+      Running
+    </span>
+  );
+}
 
 export function TicketCard({
   href,
@@ -9,9 +27,14 @@ export function TicketCard({
   blockerLabels,
   conflictLabels,
   pullRequestChips,
+  runMarker,
 }: TicketCardDescription) {
   const hasMeta =
-    conflictLabels.length > 0 || hitl || blockerLabels.length > 0 || pullRequestChips.length > 0;
+    runMarker !== undefined ||
+    conflictLabels.length > 0 ||
+    hitl ||
+    blockerLabels.length > 0 ||
+    pullRequestChips.length > 0;
   return (
     <a className="card" href={href} title={title}>
       <span className="title">
@@ -21,6 +44,7 @@ export function TicketCard({
       {parentTitle !== undefined && <span className="parent">↳ {parentTitle}</span>}
       {hasMeta && (
         <span className="meta">
+          {runMarker !== undefined && <RunMarkerChip marker={runMarker} />}
           {conflictLabels.length > 0 && <span>{conflictLabels.join(' · ')}</span>}
           {hitl && <span className="chip hitl">HITL</span>}
           {blockerLabels.map((label) => (
