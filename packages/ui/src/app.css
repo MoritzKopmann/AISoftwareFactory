@@ -747,3 +747,61 @@ details:not([open]) .t-hide {
   font-size: 13px;
   color: var(--muted);
 }
+
+.perm {
+  display: grid;
+  gap: 12px;
+  max-width: 720px;
+  padding: 14px 16px 14px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: inset 4px 0 0 var(--danger);
+}
+
+.perm h2 {
+  font-family: var(--font-ui);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.perm .explainer {
+  color: var(--text);
+}
+
+.perm .call {
+  display: grid;
+  gap: 6px;
+}
+
+.perm .callhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.perm .input {
+  margin: 0;
+  max-height: 168px;
+  overflow: auto;
+  padding: 10px 12px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font: 13px / 1.5 var(--font-mono);
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.perm .actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.perm .hints {
+  display: grid;
+  gap: 2px;
+}

@@ -1,7 +1,14 @@
 import type { TicketStatusResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
 import { useEffect, useState } from 'react';
+import { answerPermissionPrompt } from './answer-permission-prompt.js';
+import {
+  describePermissionPrompt,
+  type PermissionAnswer,
+  type PermissionDecision,
+} from './describe-permission-prompt.js';
 import { describeRunBar, type StartState } from './describe-run-bar.js';
 import { describeRunPanel } from './describe-run-panel.js';
+import { PermissionPrompt } from './permission-prompt.js';
 import { RunBar } from './run-bar.js';
 import { RunPanel } from './run-panel.js';
 import { shouldRereadTicket } from './should-reread-ticket.js';
@@ -20,6 +27,7 @@ export function RunSection({ projectId, number, ticketStatus, onTicketStale }: R
   const ticketRun = useTicketRun(projectId, number);
   const [start, setStart] = useState<StartState>({ kind: 'idle' });
   const [stoppingRunId, setStoppingRunId] = useState<string | undefined>(undefined);
+  const [permissionAnswer, setPermissionAnswer] = useState<PermissionAnswer>({ kind: 'idle' });
   const activeRunId = ticketRun.response?.activeRun?.id;
 
   useEffect(() => {
@@ -40,6 +48,16 @@ export function RunSection({ projectId, number, ticketStatus, onTicketStale }: R
     if (outcome.kind === 'failed') setStoppingRunId(undefined);
   };
 
+  const answer = async (runId: string, decision: PermissionDecision) => {
+    setPermissionAnswer({ kind: 'answering', runId, decision });
+    const outcome = await answerPermissionPrompt(runId, decision, (url, requestInit) =>
+      fetch(url, requestInit),
+    );
+    if (outcome.kind === 'failed') setPermissionAnswer({ ...outcome, runId });
+  };
+
+  const prompt = describePermissionPrompt(ticketRun.response, ticketStatus, permissionAnswer);
+
   const panel = describeRunPanel(
     {
       ...ticketRun,
@@ -54,6 +72,12 @@ export function RunSection({ projectId, number, ticketStatus, onTicketStale }: R
       <RunBar
         description={describeRunBar(ticketRun.response, start, number)}
         onRun={() => void run()}
+      />
+      <PermissionPrompt
+        description={prompt}
+        onAnswer={(decision) => {
+          if (prompt.kind === 'shown') void answer(prompt.runId, decision);
+        }}
       />
       <RunPanel
         description={panel}
