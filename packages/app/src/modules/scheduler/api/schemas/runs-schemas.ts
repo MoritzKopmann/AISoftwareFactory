@@ -50,6 +50,11 @@ export const sessionLogResponseSchema = z.discriminatedUnion('kind', [
 ]);
 export type SessionLogResponse = z.infer<typeof sessionLogResponseSchema>;
 
+export const permissionAnswerRequestSchema = z.object({
+  decision: z.enum(['allow', 'deny']),
+});
+export type PermissionAnswerRequest = z.infer<typeof permissionAnswerRequestSchema>;
+
 export const ticketRunResponseSchema = z.object({
   availability: runAvailabilityResponseSchema,
   activeRun: startedRunResponseSchema.extend({ steps: z.array(runStepResponseSchema) }).optional(),

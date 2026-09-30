@@ -6,11 +6,14 @@ import { createStopRunRoutes } from './api/routes/create-stop-run-routes.js';
 import { createEscalateTool } from './api/tools/create-escalate-tool.js';
 import { createParkTool } from './api/tools/create-park-tool.js';
 import type { FinishRun } from './logic/domain/types/finish-run.js';
+import type { LaunchRunSession } from './logic/domain/types/launch-run-session.js';
+import type { PermissionDecision } from './logic/domain/types/permission-decision.js';
 import type { Run } from './logic/domain/types/run.js';
 import type { SessionLog } from './logic/domain/types/session-log.js';
 import type { RunTool } from './logic/domain/types/run-tool.js';
 import { RunAlreadyActiveError } from './logic/errors/run-already-active-error.js';
 import { RunNotActiveError } from './logic/errors/run-not-active-error.js';
+import { RunNotResumableError } from './logic/errors/run-not-resumable-error.js';
 import { RunTargetNotFoundError } from './logic/errors/run-target-not-found-error.js';
 import { WorktreeSetupFailedError } from './logic/errors/worktree-setup-failed-error.js';
 import type { AgentSessions } from './logic/ports/agent-sessions.js';
@@ -21,17 +24,21 @@ import type { RunTargets } from './logic/ports/run-targets.js';
 import type { SessionTranscripts } from './logic/ports/session-transcripts.js';
 import type { Worktrees } from './logic/ports/worktrees.js';
 import { FinishRunUseCase } from './logic/use-cases/finish-run-use-case.js';
+import { LaunchRunSessionUseCase } from './logic/use-cases/launch-run-session-use-case.js';
 import {
   ReadActiveRunUseCase,
   type ActiveRun,
 } from './logic/use-cases/read-active-run-use-case.js';
 import { ReadLatestRunUseCase } from './logic/use-cases/read-latest-run-use-case.js';
+import { ReadRunUseCase } from './logic/use-cases/read-run-use-case.js';
 import { ReadSessionLogUseCase } from './logic/use-cases/read-session-log-use-case.js';
 import { RecoverInterruptedRunsUseCase } from './logic/use-cases/recover-interrupted-runs-use-case.js';
+import { ResumeRunUseCase } from './logic/use-cases/resume-run-use-case.js';
 import { SettleRunUseCase } from './logic/use-cases/settle-run-use-case.js';
 import { StartRunUseCase, type StartRunRequest } from './logic/use-cases/start-run-use-case.js';
 import { StopRunUseCase } from './logic/use-cases/stop-run-use-case.js';
 
+export type { PermissionDecision } from './logic/domain/types/permission-decision.js';
 export type { Run } from './logic/domain/types/run.js';
 export type { RunContext } from './logic/domain/types/run-context.js';
 export type { RunEnding } from './logic/domain/types/run-ending.js';
@@ -45,6 +52,7 @@ export type { StartRunRequest } from './logic/use-cases/start-run-use-case.js';
 export {
   RunAlreadyActiveError,
   RunNotActiveError,
+  RunNotResumableError,
   RunTargetNotFoundError,
   WorktreeSetupFailedError,
 };
@@ -67,6 +75,8 @@ export type RunnerModuleDependencies = {
 export type RunnerModule = {
   readonly routes: Hono;
   readonly start: (request: StartRunRequest) => Promise<Run>;
+  readonly resume: (runId: string, decision: PermissionDecision) => Promise<Run>;
+  readonly findRun: (runId: string) => Promise<Run | undefined>;
   readonly activeRun: (projectId: string) => Promise<ActiveRun | undefined>;
   readonly latestRun: (projectId: string, ticketNumber: number) => Promise<Run | undefined>;
   readonly settle: (runId: string) => Promise<void>;
@@ -80,19 +90,32 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
 
   const finishRunUseCase = new FinishRunUseCase({ runRepository, agentSessions, clock, events });
   const finishRun: FinishRun = (runId, ending) => finishRunUseCase.execute(runId, ending);
+  const launchRunSessionUseCase = new LaunchRunSessionUseCase({
+    agentSessions,
+    recentRunSteps,
+    finishRun,
+    tools: [createEscalateTool(), createParkTool(), ...dependencies.appTools],
+    logger: dependencies.logger,
+  });
+  const launchRunSession: LaunchRunSession = (run, launch) =>
+    launchRunSessionUseCase.execute(run, launch);
   const startRun = new StartRunUseCase({
     runRepository,
-    agentSessions,
     worktrees: dependencies.worktrees,
     runTargets: dependencies.runTargets,
-    recentRunSteps,
     identifiers: dependencies.identifiers,
     clock,
     finishRun,
-    tools: [createEscalateTool(), createParkTool(), ...dependencies.appTools],
+    launchRunSession,
     worktreesDirectory: dependencies.worktreesDirectory,
-    logger: dependencies.logger,
   });
+  const resumeRun = new ResumeRunUseCase({
+    runRepository,
+    identifiers: dependencies.identifiers,
+    clock,
+    launchRunSession,
+  });
+  const readRun = new ReadRunUseCase({ runRepository });
   const stopRun = new StopRunUseCase({ runRepository, finishRun });
   const readActiveRun = new ReadActiveRunUseCase({ runRepository, recentRunSteps });
   const readLatestRun = new ReadLatestRunUseCase({ runRepository });
@@ -110,6 +133,8 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
   return {
     routes: new Hono().route('/runs', createStopRunRoutes(stopRun)),
     start: (request) => startRun.execute(request),
+    resume: (runId, decision) => resumeRun.execute(runId, decision),
+    findRun: (runId) => readRun.execute(runId),
     activeRun: (projectId) => readActiveRun.execute(projectId),
     latestRun: (projectId, ticketNumber) => readLatestRun.execute(projectId, ticketNumber),
     settle: (runId) => settleRun.execute(runId),

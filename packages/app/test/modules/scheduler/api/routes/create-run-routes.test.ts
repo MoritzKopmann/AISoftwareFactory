@@ -124,6 +124,30 @@ describe('createRunRoutes', () => {
       });
     });
 
+    it('should answer the pending tool call when the last run ended needing permission', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      const toolInput = { command: 'git push' };
+      ticketRuns.ticketRun = {
+        availability: { kind: 'available' },
+        lastRun: {
+          id: 'run-1',
+          startedAt,
+          endedAt,
+          ending: { kind: 'permission-needed', toolName: 'Bash', toolInput },
+        },
+      };
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/139/run',
+      );
+
+      expect(ticketRunResponseSchema.parse(await response.json()).lastRun?.ending).toEqual({
+        kind: 'permission-needed',
+        toolName: 'Bash',
+        toolInput,
+      });
+    });
+
     it('should answer 400 when the ticket number is not a positive integer', async () => {
       const response = await createTestApp(new FakeTicketRuns()).request(
         '/projects/owner/name/tickets/abc/run',

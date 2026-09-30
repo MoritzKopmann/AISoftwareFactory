@@ -5,6 +5,7 @@ import type { RunStep } from '../../../../src/modules/runner/logic/domain/types/
 import type { SessionLogEntry } from '../../../../src/modules/runner/logic/domain/types/session-log-entry.js';
 import type { RunTarget } from '../../../../src/modules/runner/logic/domain/types/run-target.js';
 import type { SessionEvent } from '../../../../src/modules/runner/logic/domain/types/session-event.js';
+import type { ResumeSessionSpec } from '../../../../src/modules/runner/logic/domain/types/resume-session-spec.js';
 import type { SessionSpec } from '../../../../src/modules/runner/logic/domain/types/session-spec.js';
 import type { WorktreeSpec } from '../../../../src/modules/runner/logic/domain/types/worktree-spec.js';
 import type { AgentSessions } from '../../../../src/modules/runner/logic/ports/agent-sessions.js';
@@ -71,14 +72,24 @@ export class FakeRunRepository implements RunRepository {
 
 export class FakeAgentSessions implements AgentSessions {
   readonly startedSpecs: SessionSpec[] = [];
+  readonly resumedSpecs: ResumeSessionSpec[] = [];
   readonly stoppedSessionIds: string[] = [];
   stopAllCalls = 0;
   private readonly queuesBySessionId = new Map<string, SessionQueue>();
 
   start(spec: SessionSpec): AsyncIterable<SessionEvent> {
     this.startedSpecs.push(spec);
+    return this.openQueue(spec.sessionId);
+  }
+
+  resume(spec: ResumeSessionSpec): AsyncIterable<SessionEvent> {
+    this.resumedSpecs.push(spec);
+    return this.openQueue(spec.sessionId);
+  }
+
+  private openQueue(sessionId: string): SessionQueue {
     const queue = new SessionQueue();
-    this.queuesBySessionId.set(spec.sessionId, queue);
+    this.queuesBySessionId.set(sessionId, queue);
     return queue;
   }
 

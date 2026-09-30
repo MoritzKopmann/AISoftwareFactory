@@ -6,6 +6,7 @@ import { RunAlreadyActiveError } from '../../../../../src/modules/runner/logic/e
 import { RunTargetNotFoundError } from '../../../../../src/modules/runner/logic/errors/run-target-not-found-error.js';
 import { WorktreeSetupFailedError } from '../../../../../src/modules/runner/logic/errors/worktree-setup-failed-error.js';
 import { FinishRunUseCase } from '../../../../../src/modules/runner/logic/use-cases/finish-run-use-case.js';
+import { LaunchRunSessionUseCase } from '../../../../../src/modules/runner/logic/use-cases/launch-run-session-use-case.js';
 import { StartRunUseCase } from '../../../../../src/modules/runner/logic/use-cases/start-run-use-case.js';
 import { FakeClock } from '../../../../fakes/fake-clock.js';
 import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
@@ -39,22 +40,24 @@ describe('StartRunUseCase', () => {
 
   function buildStartRun(runTargets = new FakeRunTargets(target)): StartRunUseCase {
     const clock = new FakeClock('2026-09-29T10:00:00.000Z');
+    const finishRun = (runId: string, ending: RunEnding) =>
+      new FinishRunUseCase({ runRepository, agentSessions, clock, events }).execute(runId, ending);
+    const launchRunSession = new LaunchRunSessionUseCase({
+      agentSessions,
+      recentRunSteps,
+      finishRun,
+      tools,
+      logger,
+    });
     return new StartRunUseCase({
       runRepository,
-      agentSessions,
       worktrees,
       runTargets,
-      recentRunSteps,
       identifiers: new SequentialIdentifiers(),
       clock,
-      finishRun: (runId, ending) =>
-        new FinishRunUseCase({ runRepository, agentSessions, clock, events }).execute(
-          runId,
-          ending,
-        ),
-      tools,
+      finishRun,
+      launchRunSession: (run, launch) => launchRunSession.execute(run, launch),
       worktreesDirectory: '/worktrees',
-      logger,
     });
   }
 

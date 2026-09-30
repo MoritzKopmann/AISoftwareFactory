@@ -107,6 +107,66 @@ describe('createSchedulerModule', () => {
     expect(await response.json()).toEqual({ message: 'A run is already active' });
   });
 
+  describe('POST /runs/:runId/permission', () => {
+    function answerWith(ticketStatusWrites: FakeTicketStatusWrites): SchedulerModule {
+      runner.record = {
+        id: 'run-1',
+        projectId: 'moritz/aisf',
+        ticketNumber: 147,
+        startedAt: '2026-09-29T09:00:00.000Z',
+        endedAt: '2026-09-29T09:30:00.000Z',
+        ending: { kind: 'permission-needed', toolName: 'Bash', toolInput: { command: 'ls' } },
+      };
+      runner.latest = {
+        id: 'run-1',
+        startedAt: '2026-09-29T09:00:00.000Z',
+        ...(runner.record.endedAt === undefined ? {} : { endedAt: runner.record.endedAt }),
+        ...(runner.record.ending === undefined ? {} : { ending: runner.record.ending }),
+      };
+      return createSchedulerModule({
+        ticketStatusWrites,
+        pullRequestMerges,
+        runner,
+        ticketLookup: new FakeTicketLookup(readyLeaf),
+        reviewedTicketLookup: new FakeReviewedTicketLookup([]),
+        runsGate: new FakeRunsGate(),
+        projectLookup: new FakeProjectLookup(),
+        subscriber: bus,
+        logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+      });
+    }
+
+    function postAnswer(module: SchedulerModule): Promise<Response> {
+      return Promise.resolve(
+        module.routes.request('/runs/run-1/permission', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ decision: 'allow' }),
+        }),
+      );
+    }
+
+    it('should set the ticket in-progress, resume the run and answer 201 when the ticket is stuck', async () => {
+      const ticketStatusWrites = new FakeTicketStatusWrites();
+      ticketStatusWrites.liveStatus = 'stuck';
+
+      const response = await postAnswer(answerWith(ticketStatusWrites));
+
+      expect(response.status).toBe(201);
+      expect(ticketStatusWrites.liveStatus).toBe('in-progress');
+      expect(runner.calls).toContain('resume run-1 allow');
+    });
+
+    it('should answer 409 and resume nothing when the ticket is not stuck', async () => {
+      const ticketStatusWrites = new FakeTicketStatusWrites();
+
+      const response = await postAnswer(answerWith(ticketStatusWrites));
+
+      expect(response.status).toBe(409);
+      expect(runner.calls.filter((call) => call.startsWith('resume'))).toEqual([]);
+    });
+  });
+
   it('should settle a finished run only after start has been called', async () => {
     const runFinished = {
       runId: 'run-1',

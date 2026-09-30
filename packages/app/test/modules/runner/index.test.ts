@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   createRunnerModule,
   RunAlreadyActiveError,
+  RunNotResumableError,
   type RunnerModule,
   type RunTool,
 } from '../../../src/modules/runner/index.js';
@@ -151,6 +152,40 @@ describe('createRunnerModule', () => {
       entries: [{ summary: 'Read: ticket' }],
       total: 1,
     });
+  });
+
+  it('should resume the session with the app tools hosted when resume is called on a run needing permission', async () => {
+    await runRepository.insert(
+      buildRun({
+        id: 'stuck-run',
+        state: 'settled',
+        ending: { kind: 'permission-needed', toolName: 'Bash', toolInput: { command: 'ls' } },
+      }),
+    );
+
+    const resumed = await runner.resume('stuck-run', 'allow');
+
+    expect(resumed.sessionId).toBe('session-1');
+    expect(agentSessions.resumedSpecs[0]?.tools.map((tool) => tool.name)).toEqual([
+      'aisf_escalate',
+      'aisf_park',
+      'aisf_report_finding',
+    ]);
+  });
+
+  it('should fail with RunNotResumableError when resume is called on a run that did not need permission', async () => {
+    await runRepository.insert(
+      buildRun({ id: 'done-run', state: 'settled', ending: { kind: 'finished' } }),
+    );
+
+    await expect(runner.resume('done-run', 'allow')).rejects.toThrow(RunNotResumableError);
+  });
+
+  it('should return the run when findRun is asked for a known run id', async () => {
+    await runRepository.insert(buildRun({ id: 'known-run' }));
+
+    expect((await runner.findRun('known-run'))?.id).toBe('known-run');
+    expect(await runner.findRun('unknown-run')).toBeUndefined();
   });
 
   it('should settle an ended run when settle is called', async () => {

@@ -1,6 +1,9 @@
+import { isDeepStrictEqual } from 'node:util';
 import { createSdkMcpServer, query, tool } from '@anthropic-ai/claude-agent-sdk';
 import type { SessionEvent } from '../../logic/domain/types/session-event.js';
+import type { ResumeSessionSpec } from '../../logic/domain/types/resume-session-spec.js';
 import type { SessionSpec } from '../../logic/domain/types/session-spec.js';
+import type { ToolCall } from '../../logic/domain/types/tool-call.js';
 import type { AgentSessions } from '../../logic/ports/agent-sessions.js';
 import { mapSdkMessage } from './map-sdk-message.js';
 
@@ -14,11 +17,6 @@ export type ClaudeAgentSdkSessionsOptions = {
   readonly now: () => string;
 };
 
-type PermissionRequest = {
-  readonly toolName: string;
-  readonly toolInput: Readonly<Record<string, unknown>>;
-};
-
 export class ClaudeAgentSdkSessions implements AgentSessions {
   private readonly abortControllersBySessionId = new Map<string, AbortController>();
 
@@ -27,7 +25,13 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
   start(spec: SessionSpec): AsyncIterable<SessionEvent> {
     const abortController = new AbortController();
     this.abortControllersBySessionId.set(spec.sessionId, abortController);
-    return this.stream(spec, abortController);
+    return this.stream(spec, abortController, 'start');
+  }
+
+  resume(spec: ResumeSessionSpec): AsyncIterable<SessionEvent> {
+    const abortController = new AbortController();
+    this.abortControllersBySessionId.set(spec.sessionId, abortController);
+    return this.stream(spec, abortController, 'resume');
   }
 
   stop(sessionId: string): void {
@@ -41,10 +45,12 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
   }
 
   private async *stream(
-    spec: SessionSpec,
+    spec: ResumeSessionSpec,
     abortController: AbortController,
+    sessionMode: 'start' | 'resume',
   ): AsyncGenerator<SessionEvent> {
-    let permissionRequest: PermissionRequest | undefined;
+    let permissionRequest: ToolCall | undefined;
+    let allowedCall = spec.allowedCall;
     let sawSuccessfulResult = false;
 
     try {
@@ -52,7 +58,9 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
         prompt: spec.prompt,
         options: {
           cwd: spec.worktreePath,
-          sessionId: spec.sessionId,
+          ...(sessionMode === 'resume'
+            ? { resume: spec.sessionId }
+            : { sessionId: spec.sessionId }),
           model: spec.model,
           permissionMode: 'auto',
           settingSources: ['project'],
@@ -80,6 +88,13 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
             (sessionTool) => `mcp__${appToolServerName}__${sessionTool.name}`,
           ),
           canUseTool: async (toolName, toolInput) => {
+            if (
+              allowedCall?.toolName === toolName &&
+              isDeepStrictEqual(allowedCall.toolInput, toolInput)
+            ) {
+              allowedCall = undefined;
+              return { behavior: 'allow', updatedInput: toolInput };
+            }
             permissionRequest ??= { toolName, toolInput };
             return {
               behavior: 'deny',
