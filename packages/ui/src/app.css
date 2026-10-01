@@ -805,3 +805,64 @@ details:not([open]) .t-hide {
   display: grid;
   gap: 2px;
 }
+
+.sessionlog {
+  max-width: 720px;
+  min-width: 0;
+}
+
+.log-box {
+  min-width: 0;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.log-note {
+  padding: 8px 12px;
+  font-size: var(--text-size-sm);
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.log-msg {
+  padding: 10px 12px;
+  font-size: var(--text-size-sm);
+  line-height: var(--line-sm);
+  color: var(--muted);
+}
+
+.log {
+  max-height: 420px;
+  overflow: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.log li {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 3px 12px;
+}
+
+.log .idx {
+  font: 500 12px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  text-align: right;
+}
+
+.log .what {
+  font: 13px / 1.5 var(--font-mono);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.sk-log {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}

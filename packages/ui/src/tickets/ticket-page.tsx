@@ -7,6 +7,7 @@ import {
 } from './describe-ticket-page.js';
 import { outcomeAfterRefresh } from './outcome-after-refresh.js';
 import { RunSection } from './run-section.js';
+import { SessionLog } from './session-log.js';
 
 type TicketPageProps = {
   readonly id: string;
@@ -209,6 +210,7 @@ function LoadedTicket({
           </dd>
         )}
       </dl>
+      <SessionLog projectId={projectId} number={number} />
     </>
   );
 }
