@@ -148,7 +148,7 @@ reopen that decision and go back to step 3.
 Assemble it from the ledger plus the planner's material that never became a question.
 Synthesize; don't write a fresh second plan.
 
-    ## Dev Notes
+    ## Technical plan
 
     ### Architecture and data flow
     ### Tools and libraries
@@ -193,18 +193,20 @@ resplit or add a sub-issue, and take a changed split back to step 5.
 
 Everything through `aisf:github-issue`.
 
-1. **The ticket.** Put `## Dev Notes` into its body, replacing `## Planning so far` if present.
+1. **The ticket.** Append `## Technical plan` to its body, replacing `## Planning so far` if
+   present.
 2. **Sub-issues, in dependency order**, each with `--parent`, `--blocked-by` and the ticket's
    `priority:`. Backend: the spec as body, its own `type:`, `status: ready`, `hitl` where
    confirmed. UI: `type: ui`, `status: backlog`.
-3. **Backfill** the Dev Notes with the real sub-issue numbers, guard `plan → planned`, and check
+3. **Backfill** the plan with the real sub-issue numbers, guard `plan → planned`, and check
    the count landed:
 
    ```bash
    gh issue view <n> --json subIssuesSummary --jq .subIssuesSummary.total
    ```
 
-**Fits one PR:** Dev Notes and the spec go on the ticket itself, then guard `plan → ready`.
+**Fits one PR:** `## Technical plan`, then the spec under `## Spec`, go on the ticket itself.
+Then guard `plan → ready`.
 
 **UI only:** the UI description goes on the ticket itself, its `type:` becomes `type: ui`, then
 guard `plan → backlog`.
