@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { useGatedSkeleton } from '../board/use-gated-skeleton.js';
-import { describeKnownBugs, type KnownBugsDescription } from './describe-known-bugs.js';
+import { createTicketFromFinding } from './create-ticket-from-finding.js';
+import {
+  describeKnownBugs,
+  type FindingPress,
+  type KnownBugRowAction,
+  type KnownBugsDescription,
+} from './describe-known-bugs.js';
+import { dismissFinding } from './dismiss-finding.js';
 import { useFindings } from './use-findings.js';
 
 const skeletonLineWidths: ReadonlyArray<readonly [string, string]> = [
@@ -13,7 +20,68 @@ type KnownBugsSectionProps = {
   readonly skeletonVisible: boolean;
   readonly onRetry: () => void;
   readonly onShowAll: () => void;
+  readonly onCreateTicket: (findingId: number) => void;
+  readonly onDismiss: (findingId: number) => void;
 };
+
+type KnownBugActionsProps = {
+  readonly action: KnownBugRowAction;
+  readonly onCreateTicket: () => void;
+  readonly onDismiss: () => void;
+};
+
+function KnownBugActions({ action, onCreateTicket, onDismiss }: KnownBugActionsProps) {
+  if (action.kind === 'created') {
+    return (
+      <div className="actions">
+        <span className="made" role="status">
+          <span className="shape s-done" aria-hidden="true">
+            ✓
+          </span>
+          <a href={action.ticketHref}>
+            <span className="num-id">{action.ticketLabel}</span> created
+          </a>
+        </span>
+      </div>
+    );
+  }
+  const creating = action.kind === 'creating';
+  const pressable = action.kind === 'idle' || action.kind === 'failed';
+  return (
+    <div className="actions">
+      <button
+        className="btn"
+        type="button"
+        aria-disabled={pressable ? undefined : 'true'}
+        onClick={() => {
+          if (pressable) onCreateTicket();
+        }}
+      >
+        {creating && (
+          <span className="shape s-flow pulse" aria-hidden="true">
+            ●
+          </span>
+        )}
+        {creating ? 'Creating…' : 'Create ticket'}
+      </button>
+      <button
+        className="btn quiet"
+        type="button"
+        aria-disabled={pressable ? undefined : 'true'}
+        onClick={() => {
+          if (pressable) onDismiss();
+        }}
+      >
+        Dismiss
+      </button>
+      {creating && (
+        <span className="vh" role="status">
+          Creating a ticket
+        </span>
+      )}
+    </div>
+  );
+}
 
 function KnownBugsSkeleton() {
   return (
@@ -45,6 +113,8 @@ export function KnownBugsSection({
   skeletonVisible,
   onRetry,
   onShowAll,
+  onCreateTicket,
+  onDismiss,
 }: KnownBugsSectionProps) {
   const [open, setOpen] = useState(true);
 
@@ -127,6 +197,20 @@ export function KnownBugsSection({
                   </span>
                 </p>
               </div>
+              <KnownBugActions
+                action={row.action}
+                onCreateTicket={() => onCreateTicket(row.id)}
+                onDismiss={() => onDismiss(row.id)}
+              />
+              {row.action.kind === 'failed' && (
+                <div className="err" role="alert">
+                  <span className="shape" aria-hidden="true">
+                    ■
+                  </span>
+                  <p>{row.action.message}</p>
+                  <p className="sm mono">{row.action.detail}</p>
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -146,8 +230,39 @@ export function KnownBugsSection({
 export function KnownBugs({ projectId }: { readonly projectId: string }) {
   const { findingsPoll, readNow } = useFindings(projectId);
   const [showAll, setShowAll] = useState(false);
-  const description = describeKnownBugs(findingsPoll, projectId, showAll);
+  const [presses, setPresses] = useState<ReadonlyMap<number, FindingPress>>(new Map());
+  const description = describeKnownBugs(findingsPoll, presses, projectId, showAll);
   const skeletonVisible = useGatedSkeleton(description.kind === 'loading');
+
+  const holdPress = (findingId: number, press: FindingPress) => {
+    setPresses((previous) => new Map(previous).set(findingId, press));
+  };
+
+  const createTicket = async (findingId: number) => {
+    holdPress(findingId, { kind: 'creating' });
+    const outcome = await createTicketFromFinding(projectId, findingId, (url, requestInit) =>
+      fetch(url, requestInit),
+    );
+    holdPress(
+      findingId,
+      outcome.kind === 'created'
+        ? outcome
+        : { kind: 'failed', action: 'create-ticket', failure: outcome },
+    );
+  };
+
+  const dismiss = async (findingId: number) => {
+    holdPress(findingId, { kind: 'dismissing' });
+    const outcome = await dismissFinding(projectId, findingId, (url, requestInit) =>
+      fetch(url, requestInit),
+    );
+    holdPress(
+      findingId,
+      outcome.kind === 'dismissed'
+        ? outcome
+        : { kind: 'failed', action: 'dismiss', failure: outcome },
+    );
+  };
 
   return (
     <KnownBugsSection
@@ -155,6 +270,8 @@ export function KnownBugs({ projectId }: { readonly projectId: string }) {
       skeletonVisible={skeletonVisible}
       onRetry={readNow}
       onShowAll={() => setShowAll(true)}
+      onCreateTicket={(findingId) => void createTicket(findingId)}
+      onDismiss={(findingId) => void dismiss(findingId)}
     />
   );
 }
