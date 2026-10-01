@@ -30,8 +30,7 @@ export type KnownBugRow = {
   readonly chipTone: 'danger' | 'warn';
   readonly summary: string;
   readonly location: string;
-  readonly sourceLabel: string;
-  readonly sourceHref: string;
+  readonly source?: { readonly label: string; readonly href: string };
   readonly action: KnownBugRowAction;
 };
 
@@ -121,6 +120,7 @@ function describeRow(
   finding: FindingResponse,
   press: FindingPress | undefined,
   projectId: string,
+  sourceShown: boolean,
 ): KnownBugRow {
   return {
     id: finding.id,
@@ -128,8 +128,14 @@ function describeRow(
     chipTone: finding.kind === 'bug' ? 'danger' : 'warn',
     summary: finding.summary,
     location: finding.location,
-    sourceLabel: `#${finding.ticketNumber}`,
-    sourceHref: ticketHref(projectId, finding.ticketNumber),
+    ...(sourceShown
+      ? {
+          source: {
+            label: `#${finding.ticketNumber}`,
+            href: ticketHref(projectId, finding.ticketNumber),
+          },
+        }
+      : {}),
     action: describeAction(finding, press, projectId),
   };
 }
@@ -139,6 +145,7 @@ export function describeKnownBugs(
   presses: ReadonlyMap<number, FindingPress>,
   projectId: string,
   showAll: boolean,
+  ticketNumber?: number,
 ): KnownBugsDescription {
   if (poll.findings === undefined) {
     return poll.failure === undefined ? { kind: 'loading' } : describeFailure(poll.failure);
@@ -155,7 +162,9 @@ export function describeKnownBugs(
   return {
     kind: 'list',
     countLabel: String(listed.length - createdCount),
-    rows: shown.map((finding) => describeRow(finding, presses.get(finding.id), projectId)),
+    rows: shown.map((finding) =>
+      describeRow(finding, presses.get(finding.id), projectId, ticketNumber === undefined),
+    ),
     ...(poll.failure !== undefined && poll.answeredAt !== undefined
       ? {
           banner: `Can't reach aisf. Showing the list from ${formatClockTime(poll.answeredAt, 'minutes')}; trying again every ${findingsPollIntervalMilliseconds / 1000} s.`,

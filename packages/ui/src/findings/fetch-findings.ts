@@ -8,9 +8,11 @@ export type FindingsOutcome =
 export async function fetchFindings(
   projectId: string,
   request: (url: string) => Promise<Response>,
+  ticketNumber?: number,
 ): Promise<FindingsOutcome> {
   try {
-    const response = await request(`/api/projects/${projectId}/findings`);
+    const ticketFilter = ticketNumber === undefined ? '' : `?ticket=${ticketNumber}`;
+    const response = await request(`/api/projects/${projectId}/findings${ticketFilter}`);
     if (!response.ok) {
       return { kind: 'not-ok', status: response.status };
     }

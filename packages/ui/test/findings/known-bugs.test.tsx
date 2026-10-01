@@ -34,8 +34,7 @@ function listWith(
         chipTone: 'danger',
         summary: 'The retry counter is never reset.',
         location: 'packages/app/src/retry-policy.ts:42',
-        sourceLabel: '#56',
-        sourceHref: '#/projects/o/n/tickets/56',
+        source: { label: '#56', href: '#/projects/o/n/tickets/56' },
         action,
       },
     ],
@@ -98,6 +97,26 @@ describe('KnownBugsSection', () => {
     expect(markup).toContain('>The retry counter is never reset.<');
     expect(markup).toContain('>packages/app/src/retry-policy.ts:42<');
     expect(markup).toMatch(/from <a href="#\/projects\/o\/n\/tickets\/56">.*#56/);
+  });
+
+  it('should render the location and no source link when the row has no source', () => {
+    const markup = render({
+      ...list,
+      rows: [
+        {
+          id: 3,
+          chipLabel: 'Bug',
+          chipTone: 'danger',
+          summary: 'The retry counter is never reset.',
+          location: 'packages/app/src/retry-policy.ts:42',
+          action: { kind: 'idle' },
+        },
+      ],
+    });
+
+    expect(markup).toContain('>packages/app/src/retry-policy.ts:42<');
+    expect(markup).not.toContain('from');
+    expect(markup).not.toContain('tickets/56');
   });
 
   it('should render neither a banner nor a footer when the description has none', () => {

@@ -189,12 +189,14 @@ export function KnownBugsSection({
                 <p className="summary">{row.summary}</p>
                 <p className="where">
                   <code className="loc">{row.location}</code>
-                  <span>
-                    from{' '}
-                    <a href={row.sourceHref}>
-                      <span className="num-id">{row.sourceLabel}</span>
-                    </a>
-                  </span>
+                  {row.source !== undefined && (
+                    <span>
+                      from{' '}
+                      <a href={row.source.href}>
+                        <span className="num-id">{row.source.label}</span>
+                      </a>
+                    </span>
+                  )}
                 </p>
               </div>
               <KnownBugActions
@@ -227,11 +229,16 @@ export function KnownBugsSection({
   );
 }
 
-export function KnownBugs({ projectId }: { readonly projectId: string }) {
-  const { findingsPoll, readNow } = useFindings(projectId);
+type KnownBugsProps = {
+  readonly projectId: string;
+  readonly ticketNumber?: number;
+};
+
+export function KnownBugs({ projectId, ticketNumber }: KnownBugsProps) {
+  const { findingsPoll, readNow } = useFindings(projectId, ticketNumber);
   const [showAll, setShowAll] = useState(false);
   const [presses, setPresses] = useState<ReadonlyMap<number, FindingPress>>(new Map());
-  const description = describeKnownBugs(findingsPoll, presses, projectId, showAll);
+  const description = describeKnownBugs(findingsPoll, presses, projectId, showAll, ticketNumber);
   const skeletonVisible = useGatedSkeleton(description.kind === 'loading');
 
   const holdPress = (findingId: number, press: FindingPress) => {

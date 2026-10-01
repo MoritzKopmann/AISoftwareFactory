@@ -4,7 +4,10 @@ import { fetchFindings } from './fetch-findings.js';
 import { findingsPollIntervalMilliseconds } from './findings-poll-interval-milliseconds.js';
 import { foldFindingsPoll, initialFindingsPoll, type FindingsPoll } from './fold-findings-poll.js';
 
-export function useFindings(projectId: string): {
+export function useFindings(
+  projectId: string,
+  ticketNumber?: number,
+): {
   readonly findingsPoll: FindingsPoll;
   readonly readNow: () => void;
 } {
@@ -15,7 +18,7 @@ export function useFindings(projectId: string): {
   useEffect(
     () =>
       poll(
-        () => fetchFindings(projectId, (url) => fetch(url)),
+        () => fetchFindings(projectId, (url) => fetch(url), ticketNumber),
         (outcome) => {
           setFindingsPoll((previous) =>
             foldFindingsPoll(previous, outcome, new Date().toISOString()),
@@ -23,7 +26,7 @@ export function useFindings(projectId: string): {
         },
         findingsPollIntervalMilliseconds,
       ),
-    [projectId, readCount],
+    [projectId, ticketNumber, readCount],
   );
 
   const readNow = useCallback(() => setReadCount((count) => count + 1), []);
