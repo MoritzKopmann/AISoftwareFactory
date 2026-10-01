@@ -1,292 +1,213 @@
 ---
 name: plan-ticket
 description: >
-  Turn a settled GitHub ticket (status: plan) into a technical plan and, where the split calls
-  for it, atomic sub-issues that aisf:implement-ticket picks up one after another. Interviews
-  the human in chat, always with a recommendation, until nothing is left open. Use when the user
-  wants to plan a ticket or epic. Triggers: "plan #N", "plan ticket N", "plan this epic".
+  Turn a settled GitHub ticket (status: plan) into a technical plan on the ticket and one spec
+  per sub-issue, each buildable on its own by aisf:implement-ticket. UI work is split off as one
+  type: ui sub-issue for the design path. Interviews the human, always with a recommendation,
+  until nothing is left open. Use when the user wants to plan a ticket or epic. Triggers:
+  "plan #N", "plan ticket N", "plan this epic".
 ---
 
 # plan-ticket
 
-Turn a ticket at `status: plan` into a plan and, when the work doesn't fit one PR, ordered
-sub-issues. Argument: ticket number. If none, ask.
+Turn a ticket at `status: plan` into a plan on the ticket and a spec on each sub-issue.
+Argument: ticket number. If none, ask.
 
 `gh` infers the repository from the current checkout. Never pass `-R`. Every status change and
 every issue write goes through `aisf:github-issue`.
 
-**The agent plans, the human decides.** Research feeds one planning agent. Its plan seeds an
-interview held in chat: the human answers, you always recommend. Nothing is silently assumed.
+**The agent plans, the human decides.** Nothing is silently assumed.
 
-Lifecycle **plan → ready/planned → implement**: `aisf:create-ticket` settled _what_, this
-settles _how_, `aisf:implement-ticket` writes the code. A sub-issue is branched and PR'd on its
-own; a parent with children is a tracking umbrella with no working branch.
+`aisf:create-ticket` settled _what_, this settles _how_, `aisf:implement-ticket` writes the
+code: one sub-issue, one branch, one PR. A parent with children is a tracking umbrella.
 
 ## Precondition
 
 **Project slots.** Load `project-toolchain`, `project-architecture` and `project-testing` with
-the Skill tool (bare names). If any returns `Unknown skill`, stop and report "project not
-onboarded". Every project fact used below — stack, module layout, hard bans, placement rules,
-dependency bar — comes from these slots, never from memory of another project.
+the Skill tool (bare names), then every skill they name under `## Load also`. Any
+`Unknown skill` → stop and report "project not onboarded". Every project fact used below comes
+from these slots, never from memory of another project.
 
 **Status.**
 
 ```bash
-gh issue view <n> --json title,body,labels,state
+gh issue view <n> --json title,body,labels,state,subIssues
 ```
 
-`status: plan` → go on. Anything else → stop and name the stage the ticket actually needs
-(`status: backlog` needs nothing yet; `status: ready`/`planned` is already planned; no
-`status:` label is an idea that needs `aisf:create-ticket` first).
+`status: plan` → go on. Anything else → stop and name the stage the ticket needs.
 
-**Spec check.** The body must state a clear desired outcome and, where the human already knows
-it, its scope. Missing, vague, or self-contradictory → **stop**: through `aisf:github-issue`,
-comment the concrete gaps and guard the ticket `plan → idea`. Plan quality is bounded by spec
-quality; don't invent what the spec left out.
+**Spec check.** The body must state a clear desired outcome and acceptance criteria. Missing,
+vague or self-contradictory → stop: comment the concrete gaps and guard `plan → idea`. Don't
+invent what the spec left out.
 
-## 1. Orient
+**Resume.** A `## Planning so far` section means planning paused for a spike. Its spike still
+open → stop and name it. Otherwise that section and the verdict under it are settled: they seed
+the ledger and go to the planning agent, and step 3 asks only what is still open.
 
-- Read the ticket. State the desired end state in a few sentences — that framing drives the
-  research below.
-- Load every skill `project-architecture` and `project-testing` name under `## Load also`.
-- If a `project-index` skill exists, invoke its recall for every feature or module the ticket
-  touches. Skip silently if it returns `Unknown skill`.
+## 1. Research
 
-## 2. Research
+State the desired end state in a few sentences. It decides what to research.
 
-Up to **3 `Explore` agents in parallel**, read-only. Every prompt says: _"Do not edit files,
-commit, or open PRs — report findings only."_ Pick the lanes from the ticket — landing zone,
-precedent, crossed contracts are the usual ones, not a template. One agent is enough for a small
-ticket with known files.
+Read-only `Explore` agents in parallel, as many as the ticket needs, **each with one specific
+question**: where this lands, how the project already does it, which contract it crosses. Every
+prompt says: _"Do not edit files, commit, or open PRs — report findings only."_
 
-**Library pass** — only when the ticket needs a dependency the project lacks. Check it against
-`project-toolchain`'s dependency bar (maintenance, licence, platform support, size, and whether
-`registry`/`manifests` already cover it). A new dependency is never the agent's call — it
-becomes a question in step 4.
+**A dependency the project lacks** is checked against `project-toolchain`'s dependency bar and
+becomes a question in step 3. A new dependency is never the agent's call.
 
-Findings go straight to the planning agent. Nothing is published.
+## 2. Plan
 
-## 3. Plan
+One read-only planning subagent; say so in the prompt. It gets the ticket body, the research
+findings and the three project slots, and may read the codebase.
 
-One Opus subagent, read-only — say so in the prompt.
+**Seat: senior developer in `project-architecture`'s `## Stack`.** It:
 
-**Seat: senior developer in `project-architecture`'s `## Stack`.** Owns the business logic and,
-where `## UI` says yes for the surfaces the ticket touches, what the user sees.
-
-- Enforces `## Hard bans` and `## Placement rules`. States where things land in
-  `## Plan vocabulary` terms — class types, owning module, bus events, tables.
+- **Enforces `## Hard bans` and `## Placement rules`**, and names every change in
+  `## Plan vocabulary` terms.
 - **Optimizes for homogeneity.** A second way to do what the project already does is a defect.
-  Argues from precedent, citing code by name.
-- **Prefers reduction to addition.** Hunts the existing type, port or use case that makes new
-  code unnecessary — and says what to delete. No new seam until a third caller is real.
-- **UX duties apply only when `## UI` is yes** for a touched surface: layout, empty, loading,
-  error and too-much-data states.
-- **Names failure modes before they're written** — and their blast radius.
-- **Marks where the cheap path is fine**, so nothing gets gold-plated.
-- **Proposes `hitl` per likely subtask**, one line of why (a human check the leaf will need, or
-  none).
+  It argues from precedent, citing code by name.
+- **Prefers reduction to addition.** It hunts the existing type, port or use case that makes new
+  code unnecessary, and says what to delete.
+- **Names failure modes and their blast radius**, and marks where the cheap path is fine.
 
-**Gets:** the ticket body, the research findings, `project-architecture`, `project-testing` and
-`project-toolchain`. May read the codebase for anything they don't cover.
+**Returns** the plan, as answers in three areas:
 
-**Returns:**
+- **Architecture and data flow.** Where each piece lands: module, layer, class type, new or
+  existing. What is reused, changed and deleted. Data model and migrations. One flow line per
+  use case: entry point → what it calls → what that calls next. For each surface under
+  `project-architecture`'s `## UI`: what is shown, in which states, which actions the user has,
+  and the API contract that feeds it. No layout.
+- **Tools and libraries.** A new dependency or piece of infrastructure, and why nothing the
+  project has covers it. Omit when none.
+- **Practices and tests.** Only what is specific to this ticket: what can't be unit tested, what
+  needs a human check, how sensitive data is handled. Omit when empty.
 
-1. **Plan** — approach, where each piece lands, what is reused, what is deleted. No code. A
-   signature or data shape only where the plan is meaningless without it.
-2. **Prototype call** — does a decision need real experience first? If yes: what it chooses
-   between and what result settles it. If no, say no. Step 7 consumes this.
-3. **Questions** — one row each:
+Plus:
 
-   | Field          | Contents                                                                      |
-   | -------------- | ----------------------------------------------------------------------------- |
-   | **Question**   | Plain language, as few words as possible.                                     |
-   | **Suggestion** | Its answer plus one line of why. Never "it depends".                          |
-   | **Trivial**    | `yes` if already settled by existing code or an earlier decision — say which. |
-   | **Assumes**    | What the suggestion rests on, `;`-separated. Omit if nothing.                 |
+- **Spike call.** Does a decision need real experience first? If yes: the options, and what
+  result settles them.
+- **Questions.** Each a **Question** in plain language, a **Suggestion** (its answer plus one
+  line of why, never "it depends") and **Assumes** (what the suggestion rests on). Decisions
+  only: something cheap to change that nobody would have an opinion about is not a question.
 
-Decisions, not trivia. Something nobody would have an opinion about, and that is cheap to
-change, doesn't belong on the list at all.
+## 3. Interview
 
-## 4. Interview
+Load `aisf:grilling` and follow it. Specific to planning:
 
-Interview the human relentlessly, **in chat**, until you reach a shared understanding. Map it as
-a **design tree**: every decision branches into the decisions that hang off it.
+- **The root question is the slice**: the thinnest end-to-end thing that satisfies the ticket,
+  and what it gives up.
+- **Every recommendation comes from the planning agent**: its suggestion, or what its plan
+  implies.
+- **Rounds go on the questionnaire page.** With the `Artifact` tool present, read
+  `questionnaire.md` (this folder) and ask every round there. Without it, ask in chat.
+- **Object immediately** to an answer breaking a hard ban or placement rule: one sentence, naming
+  the rule and the legal alternative. If the human reaffirms, comply and record it under Risks
+  as a knowing override.
+- **An answer contradicting a settled decision's `assumes:` reopens that decision.** Re-scan
+  once per round.
+- **Ledger.** One scratchpad file, appended each round:
+  `decision · resolution · assumes: … · round N`. Later steps read the ledger, not the
+  scrollback.
 
-**Root of the tree is the slice** — the thinnest end-to-end thing that satisfies the ticket, and
-what it gives up. Ask it first; everything else hangs off the answer.
+**Spike.** A decision that needs real experience first pauses planning:
 
-**Work the tree in rounds.** The frontier is every decision whose prerequisites are settled: the
-questions you can ask now without guessing at answers you haven't heard yet. Ask the whole
-frontier in one round, numbered, each with your recommended answer. Then wait.
+1. Post a sub-issue, `type: spike`, `status: ready`: the options, what result settles them, and
+   that its verdict goes into this ticket's `## Planning so far`.
+2. Write the ledger into the ticket body as `## Planning so far`, ending with
+   `Waiting for the verdict of #<spike>`.
+3. The ticket stays `status: plan`. Report the spike's number and stop.
 
-**Every recommendation comes from the planning agent** — its suggestion, or what its plan
-implies. Never "it depends".
+## 4. Split
 
-Each round's answers reshape the tree: settled decisions push the frontier outward and unblock
-what depended on them. Recompute, ask the next round. **A question whose answer depends on
-another question still open this round belongs to a later round, not this one.**
+**Frontend and backend first.** Frontend is everything in the surfaces `project-architecture`
+lists under `## UI`. All of it becomes **one UI sub-issue**, built later through the design
+path, never by `aisf:implement-ticket`. It is blocked by every backend sub-issue it reads from.
 
-**Finding facts is your job, never the human's.** A frontier question needing a fact from the
-environment → dispatch a sub-agent. Don't block on it: a running exploration is an unsettled
-prerequisite, so only its downstream waits. Ask the rest of the frontier now.
+**Backend** splits into small, ordered sub-issues along the seams `project-architecture` draws
+(module boundaries, then layer boundaries), not line counts. Infrastructure before consumers. A
+sub-issue may depend on an earlier one but must not need a sibling half-done.
 
-Inside the loop:
+Per sub-issue: **Title** (the outcome) · **Scope** (one sentence, in and out) · **Blocked-by** ·
+**Proves** (which acceptance criteria) · **`hitl`** proposed or not, with one line of why.
 
-- **Object immediately** to an answer breaking a hard ban or placement rule — one sentence,
-  naming the rule and the legal alternative. If the human reaffirms, comply and record it under
-  Risks as a knowing override.
-- **Never offer an illegal option.** A banned construct is not a choice. If the illegal design
-  carries a real idea, restate it legally and ask that.
-- **An answer contradicting a settled node's `assumes:` reopens that node.** Re-scan once per
-  round. If collisions keep cascading, stop and say so — the design or the spec is wrong.
-- **Ledger.** One scratchpad file, appended each round: `decision · resolution · assumes: … ·
-round N`. Later steps read the ledger, not the scrollback.
+Two splits have no umbrella:
 
-Example. Round 1 asks the slice and where state lives — both unblocked. It does not ask the
-migration, which depends on that. Round 2's frontier holds it, unblocked by Q2:
-
-    R1  ❓ Q1 Slice: read-only first, editing later?                ➡️ yes
-        ❓ Q2 Storage: extend the existing table or add a new one?  ➡️ new table
-    R2  ❓ Q3 Migration: backfill existing rows, or leave them empty? ➡️ leave empty
-
-**Done when the frontier is empty** — every branch visited, no acceptance criterion left
-undecided, nothing silently assumed.
+- **Fits one PR, no UI.** Plan and spec land on the ticket itself.
+- **UI only.** The ticket itself becomes the UI ticket.
 
 ## 5. Confirm
 
-Post, in chat, a subtask table for the split step 7 will post: **Title** · **Blocked-by** ·
-**Proposed `hitl`** and its one-line reason. The human confirms it, or edits it, before anything
-is written to GitHub.
+Show the split as a table: **Title** · **Blocked-by** · **Proposed `hitl`** and its reason. On
+the questionnaire page it is the last section, otherwise in chat.
 
-**This is the only gate.** Confirmed → steps 6–8 run without further approval. Not confirmed →
-reopen that branch of the design tree and go back to step 4.
+**This is the only gate.** Confirmed → the rest runs without further approval. Not confirmed →
+reopen that decision and go back to step 3.
 
 ## 6. Write the plan
 
-Assemble one plan from the ledger plus the agent material that never became a question.
+Assemble it from the ledger plus the planner's material that never became a question.
 Synthesize; don't write a fresh second plan.
 
-- **No code.** Pattern, location, approach. A signature or data shape only where the plan is
-  ambiguous without it.
-- **Pin down what is expensive to correct or that the human decided. Leave free what is cheap.**
-- **Behaviour as observable outcomes**, one line each. No test design — `aisf:implement-ticket`'s
-  job.
+    ## Dev Notes
 
-Shape:
-
-    ## Technical Plan
-
-    ### Summary
-    What we're building, what it touches, the key decisions and why.
-
-    ### Approach
-    Pattern and structure in `project-architecture`'s terms. Where each piece lives — path,
-    module, layer, class type, new or existing. What is reused rather than added.
-
-    ### Flow
-    One line per use case: entry point → what it calls → what that calls next. Catches a step
-    that connects to nothing.
-
-    ### Data model
-    Entities, schema/migration changes. Omit if nothing changes.
-
-    ### Risks / open questions
-    Failure modes and blast radius · knowing human overrides · what's left to implementer
-    discretion.
-
+    ### Architecture and data flow
+    ### Tools and libraries
+    ### Practices and tests
+    ### Risks
+    Failure modes and blast radius · knowing human overrides.
     ### Out of scope
+    ### Acceptance criteria
+    The ticket's own criteria, each tagged with the sub-issue that proves it.
+    ### Sub-issues
+    The step 4 list, in order.
 
-    ### Subtasks
-    The step 7 list, in order. Omit if the ticket doesn't split (see step 7).
+- **Name what crosses a sub-issue boundary**: routes, schemas, bus events, tables. Names and
+  data shapes, never code bodies.
+- **Pin down what is expensive to correct or that the human decided. Leave free what is cheap.**
+- **A broken flow is a defect, not a footnote.** A step ending nowhere, a piece nothing calls:
+  fix it here.
 
-**A broken flow is a defect, not a footnote.** A step ending nowhere, a piece nothing calls — fix
-it here. Re-check against `project-architecture` and the patterns in the touched code before
-posting. The plan is the last catch — fix violations, never transcribe them.
+## 7. Write the specs
 
-## 7. Decompose
+**Backend.** One subagent per backend sub-issue, in parallel, read-only. Each gets the plan and
+its row of the split, and follows `spec-template.md` (this folder). A decision the plan leaves
+open comes back as a question, never as a guess: put it to the human, record the answer in
+ledger and plan, then let that spec finish.
 
-**One-subtask split.** The whole ticket fits one PR: no umbrella. The plan above lands directly
-on the ticket's own Dev Notes (step 8), and it moves `plan → ready`. Nothing else in this step
-applies.
+**UI.** Write the UI sub-issue yourself, from the plan: what is shown, in which states (empty,
+loading, error, too much data), which actions the user has, and the API contract that feeds it.
+No layout, no files, no Given/When/Then: the design settles those.
 
-**Otherwise**, split into small, ordered, atomic sub-issues. Each: **Title** (the outcome) ·
-**Scope** (one sentence, in and out) · **File paths** (exact, from Approach) · **Depends on**
-(prior subtasks, or none) · **Verification** (which acceptance criterion it proves, as
-observable behaviour).
+**Three checks before posting.** A failure is a defect in the split, not a note on the ticket:
+resplit or add a sub-issue, and take a changed split back to step 5.
 
-Infrastructure before consumers. A subtask may depend on an earlier one but must not need a
-sibling half-done. Split along the seams `project-architecture` draws (module boundaries, layer
-boundaries), not line counts.
-
-**Spikes.** A surviving prototype call from step 3 splits on what the verdict changes.
-
-- **Bounded** — same shape of work whichever option wins. The spike is a subtask (`type: spike`),
-  placed by its dependencies, not automatically first. Its body names the options and what
-  settles them; its acceptance criterion is a decision recorded as a comment on itself, not
-  shipped code. Downstream subtasks work with **any** verdict and carry `Reads the verdict from
-#<spike>`; they ship `status: ready`.
-- **Unbounded** — the verdict changes what the work _is_. The spike leaves this plan: post it as
-  its own ticket, hold the parent at `status: plan` with a comment that planning resumes on the
-  verdict, and post no sub-issues.
-
-**Never ship a sub-issue that cannot be specified.**
-
-Four checks before posting:
-
-- **Seams match.** Walk the Flow. Every step whose ends land in different sub-issues is a shared
-  contract — both sides must agree on the shape. A step no subtask implements is dropped work.
-- **File coverage.** Every file the plan names is claimed by at least one subtask. Unclaimed
-  means dropped — a migration, a wiring entry from `project-architecture`'s
-  `## Easy-to-miss wiring`.
-- **No criterion left unproven.** Every acceptance criterion maps to a subtask whose
-  Verification proves its share.
-- **Verdict independence.** With a spike in the split, read each downstream subtask as though
-  every option had won. Criteria that only work for one outcome mean it's unbounded.
-
-A failing check is a defect in the split, not a note on the ticket. Resplit or add a subtask.
+- **Seams match.** Walk the flow. Every step whose ends land in different sub-issues is a shared
+  contract: both specs must give it the same name and shape. A step no sub-issue implements is
+  dropped work.
+- **File coverage.** Every file the plan names is claimed by at least one spec. Unclaimed means
+  dropped: a migration, a wiring entry from `project-architecture`'s `## Easy-to-miss wiring`.
+- **No criterion left unproven.** Every acceptance criterion maps to a sub-issue whose criteria
+  prove its share.
 
 ## 8. Write to GitHub
 
 Everything through `aisf:github-issue`.
 
-**One-subtask split.** Append `## Dev Notes` (the step 6 plan in full) to the ticket's own body,
-then guard `plan → ready`.
+1. **The ticket.** Put `## Dev Notes` into its body, replacing `## Planning so far` if present.
+2. **Sub-issues, in dependency order**, each with `--parent`, `--blocked-by` and the ticket's
+   `priority:`. Backend: the spec as body, its own `type:`, `status: ready`, `hitl` where
+   confirmed. UI: `type: ui`, `status: backlog`.
+3. **Backfill** the Dev Notes with the real sub-issue numbers, guard `plan → planned`, and check
+   the count landed:
 
-**Multi-subtask split.** Append `## Dev Notes` to the **parent's** body — the step 6 plan in
-full, with placeholders for sub-issue numbers. Risks and Flow live here and nowhere else; a
-sub-issue's implementer has no memory of the planning. Then, for each subtask **in dependency
-order**, post a native sub-issue:
+   ```bash
+   gh issue view <n> --json subIssuesSummary --jq .subIssuesSummary.total
+   ```
 
-- Title (the outcome) · Scope (in, and explicitly out) · Acceptance criteria (the step 7
-  Verification; Given/When/Then where it fits)
-- `--parent <this ticket>`, `--blocked-by <prior subtasks>`, and `Reads the verdict from
-#<spike>` in the body where it applies
-- Labels: this ticket's `priority:`, `type:` per subtask (a spike is `type: spike`), plus
-  `status: ready`, plus `hitl` where step 5 confirmed it
+**Fits one PR:** Dev Notes and the spec go on the ticket itself, then guard `plan → ready`.
 
-Backfill the parent Dev Notes with the real sub-issue numbers, then guard `plan → planned`.
-Check the count landed:
+**UI only:** the UI description goes on the ticket itself, its `type:` becomes `type: ui`, then
+guard `plan → backlog`.
 
-```bash
-gh issue view <n> --json subIssuesSummary --jq .subIssuesSummary.total
-```
-
-**Exception — an unbounded spike.** The parent stays `status: plan`. Dev Notes get what
-research established plus the spike ticket's number and a comment that planning resumes on its
-verdict, not a plan. Skip the sub-issues.
-
-Report every ticket number written, then the ticket(s) `aisf:implement-ticket` can pick up next.
-
-## Anti-patterns
-
-- **Asking a question whose prerequisite is still open** — makes the human guess at an answer
-  they haven't given. It belongs in a later round.
-- **Asking the human a fact you could look up.** Dispatch a sub-agent.
-- **Asking about trivia** — cheap-to-change internals bury the decisions that matter.
-- **Trusting `trivial: yes`** — the cheapest way for a wrong decision to skip the interview.
-- **Untagged assumptions** — without `assumes:` a settled node goes stale unnoticed.
-- **Code in the plan** — doing the work twice.
-- **Under-planning** — no locations, no patterns, so the implementer invents structure.
-- **A sub-issue that needs re-planning before it can be worked.** The split was premature.
-- **Letting the spec stay soft** — assuming requirements is the signal to go back to the spec.
-- **Carrying architecture violations forward** — the plan is the last catch.
+Report every number written, what `aisf:implement-ticket` can pick up next, and for a UI ticket
+that it needs a design before `aisf:ui-ticket <design> <n>`.

@@ -23,7 +23,7 @@ and start work without asking the author anything.
 | **Interview-driven create** | `aisf:create-ticket`, hand run with no issue number              | New issue, full anatomy, cold-read test, `type:`, `priority:`, `status: backlog` or `status: plan`                       |
 | **Edit in place**           | `aisf:create-ticket` on `#N`                                     | Rewrites title and body, adds `type:`, `priority:` and `status: backlog` or `status: plan`. See _Edit an idea in place_. |
 | **Bare idea**               | `aisf:create-ticket` spin-offs, `aisf:implement-ticket` findings | Minimal issue, no labels. See _Bare ideas_.                                                                              |
-| **Sub-issue**               | `aisf:plan-ticket`                                               | Child of a parent, `status: ready`, `hitl` where confirmed. See _Relationships_.                                         |
+| **Sub-issue**               | `aisf:plan-ticket`                                               | Child of a parent: `status: ready`, `hitl` where confirmed; a UI child is `status: backlog`. See _Relationships_.        |
 | **Direct create**           | any automation caller with a fully-formed finding                | Full anatomy, cold-read test, labels as for interview-driven                                                             |
 
 ## Anatomy of a good ticket
@@ -48,6 +48,10 @@ it fits. Checkable: ✓ "completes in under 2s for 95% of requests" ✗ "works b
 **Supporting material** — screenshots, design links, related tickets (`Related: #N`),
 pasted error text (paste it, don't describe it — it's searchable).
 
+**A sub-issue from `aisf:plan-ticket`** carries the body that skill hands over: a spec (Context ·
+Scope · Landing zone · Acceptance criteria), or for a `type: ui` child what is displayed. Post it
+as given.
+
 ## Metadata — all via labels
 
 aisf writes only these label families. The app's label sync creates them when a project is
@@ -55,7 +59,7 @@ onboarded.
 
 | Dimension | Values                                                                                                                                   |
 | --------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Type      | `type: bug` · `type: enhancement` · `type: task` · `type: spike`                                                                         |
+| Type      | `type: bug` · `type: enhancement` · `type: task` · `type: spike` · `type: ui`                                                            |
 | Priority  | `priority: critical` · `priority: high` · `priority: medium` · `priority: low`                                                           |
 | Status    | `status: backlog` · `status: plan` · `status: planned` · `status: ready` · `status: in-progress` · `status: in-review` · `status: stuck` |
 | Flag      | `hitl`: orthogonal to status. A `ready` leaf with it runs as an interactive session instead of AFK.                                      |
@@ -73,8 +77,8 @@ An open issue with **no** `status:` label is an **idea**. Done is the closed sta
 | State           | Stored as                                       | Written by                                                                                                                                |
 | --------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | **idea**        | open, no `status:` label                        | anyone opening an issue; `aisf:plan-ticket` sends a vague spec back (`plan → idea`)                                                       |
-| **backlog**     | `status: backlog`                               | `aisf:create-ticket` (`idea → backlog`)                                                                                                   |
-| **plan**        | `status: plan`                                  | `aisf:create-ticket` (`idea → plan`); the human (`backlog → plan`, `stuck → plan`)                                                        |
+| **backlog**     | `status: backlog`                               | `aisf:create-ticket` (`idea → backlog`); `aisf:plan-ticket` for UI work awaiting a design (`plan → backlog`, and a new `type: ui` child)  |
+| **plan**        | `status: plan`; may have an open spike child    | `aisf:create-ticket` (`idea → plan`); the human (`backlog → plan`, `stuck → plan`)                                                        |
 | **planned**     | `status: planned`, has sub-issues               | `aisf:plan-ticket` (`plan → planned`)                                                                                                     |
 | **ready**       | `status: ready`, no sub-issues                  | `aisf:plan-ticket` (`plan → ready`, and new sub-issues); the human (`stuck → ready`)                                                      |
 | **in-progress** | `status: in-progress`                           | `aisf:implement-ticket` (`ready → in-progress`, and `in-review → in-progress` for rework)                                                 |
@@ -174,6 +178,9 @@ body text, because it isn't a dependency.
 - Each child: full anatomy, cold-read test, `status: ready`, `hitl` where the human
   confirmed it. `type:` is per child (a spike is `type: spike`); `priority:` is inherited
   from the parent.
+- **A `type: ui` child is `status: backlog`**, not `ready`: it waits for a design and is built
+  through the design path.
+- **A spike child leaves its parent at `status: plan`**: planning resumes on its verdict.
 
   ```bash
   gh issue create --title "<title>" --body-file <tmp> \
