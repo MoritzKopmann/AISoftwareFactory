@@ -1,6 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import type { KnownBugsDescription } from '../../src/findings/describe-known-bugs.js';
+import type {
+  KnownBugRowAction,
+  KnownBugsDescription,
+} from '../../src/findings/describe-known-bugs.js';
 import { KnownBugsSection } from '../../src/findings/known-bugs.js';
 
 const ignore = () => undefined;
@@ -12,25 +15,34 @@ function render(description: KnownBugsDescription, skeletonVisible = false): str
       skeletonVisible={skeletonVisible}
       onRetry={ignore}
       onShowAll={ignore}
+      onCreateTicket={ignore}
+      onDismiss={ignore}
     />,
   );
 }
 
-const list: KnownBugsDescription = {
-  kind: 'list',
-  countLabel: '1',
-  rows: [
-    {
-      id: 3,
-      chipLabel: 'Bug',
-      chipTone: 'danger',
-      summary: 'The retry counter is never reset.',
-      location: 'packages/app/src/retry-policy.ts:42',
-      sourceLabel: '#56',
-      sourceHref: '#/projects/o/n/tickets/56',
-    },
-  ],
-};
+function listWith(
+  action: KnownBugRowAction,
+): Extract<KnownBugsDescription, { readonly kind: 'list' }> {
+  return {
+    kind: 'list',
+    countLabel: '1',
+    rows: [
+      {
+        id: 3,
+        chipLabel: 'Bug',
+        chipTone: 'danger',
+        summary: 'The retry counter is never reset.',
+        location: 'packages/app/src/retry-policy.ts:42',
+        sourceLabel: '#56',
+        sourceHref: '#/projects/o/n/tickets/56',
+        action,
+      },
+    ],
+  };
+}
+
+const list = listWith({ kind: 'idle' });
 
 describe('KnownBugsSection', () => {
   it('should render nothing when loading and the skeleton gate is closed', () => {
@@ -106,5 +118,61 @@ describe('KnownBugsSection', () => {
 
     expect(markup).toContain('>Showing 20 of 34.<');
     expect(markup).toMatch(/<button[^>]*>Show all</);
+  });
+
+  it('should offer pressable Create ticket and Dismiss buttons when the row is idle', () => {
+    const markup = render(list);
+
+    expect(markup).toMatch(/<button[^>]*type="button"[^>]*>Create ticket<\/button>/);
+    expect(markup).toMatch(/<button[^>]*type="button"[^>]*>Dismiss<\/button>/);
+    expect(markup).not.toContain('aria-disabled');
+  });
+
+  it('should keep both buttons focusable but disabled, read Creating… and announce it when the row is creating', () => {
+    const markup = render(listWith({ kind: 'creating' }));
+
+    expect(markup.match(/aria-disabled="true"/g)).toHaveLength(2);
+    expect(markup).not.toMatch(/\sdisabled=""/);
+    expect(markup).toMatch(/<button[^>]*>.*Creating…<\/button>/);
+    expect(markup).not.toContain('Create ticket');
+    expect(markup).toMatch(/role="status"[^>]*>Creating a ticket</);
+  });
+
+  it('should disable both buttons and keep their labels when the row is dismissing', () => {
+    const markup = render(listWith({ kind: 'dismissing' }));
+
+    expect(markup.match(/aria-disabled="true"/g)).toHaveLength(2);
+    expect(markup).toMatch(/<button[^>]*>Create ticket<\/button>/);
+    expect(markup).toMatch(/<button[^>]*>Dismiss<\/button>/);
+    expect(markup).not.toContain('role="status"');
+  });
+
+  it('should replace the buttons with a status linking to the new ticket when the row is created', () => {
+    const markup = render(
+      listWith({ kind: 'created', ticketLabel: '#212', ticketHref: '#/projects/o/n/tickets/212' }),
+    );
+
+    expect(markup).not.toContain('<button');
+    expect(markup).toMatch(
+      /role="status"[^>]*>.*<a href="#\/projects\/o\/n\/tickets\/212">.*#212.* created<\/a>/,
+    );
+  });
+
+  it('should bring back pressable buttons and announce the error with its detail when the press failed', () => {
+    const markup = render(
+      listWith({
+        kind: 'failed',
+        message: "Couldn't create the ticket. The findings route answered 500.",
+        detail: '500',
+      }),
+    );
+
+    expect(markup).toMatch(/<button[^>]*>Create ticket<\/button>/);
+    expect(markup).toMatch(/<button[^>]*>Dismiss<\/button>/);
+    expect(markup).not.toContain('aria-disabled');
+    expect(markup).toMatch(
+      /role="alert"[^>]*>.*Couldn&#x27;t create the ticket. The findings route answered 500\./,
+    );
+    expect(markup).toContain('>500<');
   });
 });

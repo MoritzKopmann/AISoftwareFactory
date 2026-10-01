@@ -242,6 +242,30 @@ a.ext::after {
   cursor: not-allowed;
 }
 
+.btn.quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+  font-weight: 400;
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 2px;
+}
+
+.btn.quiet:hover {
+  border-color: transparent;
+  color: var(--text);
+  text-decoration-color: var(--accent);
+}
+
+.btn.quiet[aria-disabled='true'],
+.btn.quiet[aria-disabled='true']:hover {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+  text-decoration: none;
+}
+
 .runbar {
   display: grid;
   gap: 8px;
@@ -932,6 +956,26 @@ details:not([open]) .t-hide {
   font: 12px / 1.5 var(--font-mono);
   color: var(--muted);
   overflow-wrap: anywhere;
+}
+
+.finding .actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.finding .made {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 32px;
+  font-size: var(--text-size-sm);
+  font-weight: 600;
+}
+
+.finding .err {
+  grid-column: 2 / -1;
+  max-width: none;
 }
 
 .list-foot {
