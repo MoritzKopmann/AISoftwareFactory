@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { KnownBugs } from '../findings/known-bugs.js';
 import {
   describeTicketPage,
   outcomeFromAnswer,
@@ -210,6 +211,7 @@ function LoadedTicket({
           </dd>
         )}
       </dl>
+      <KnownBugs projectId={projectId} ticketNumber={number} />
       <SessionLog projectId={projectId} number={number} />
     </>
   );

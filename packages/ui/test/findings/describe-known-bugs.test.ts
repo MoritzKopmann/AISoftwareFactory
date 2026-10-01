@@ -147,11 +147,25 @@ describe('describeKnownBugs', () => {
           chipTone: 'danger',
           summary: 'The retry counter is never reset.',
           location: 'packages/app/src/retry-policy.ts:42',
-          sourceLabel: '#56',
-          sourceHref: '#/projects/MoritzKopmann/postkarte/tickets/56',
+          source: { label: '#56', href: '#/projects/MoritzKopmann/postkarte/tickets/56' },
         },
       ],
     });
+  });
+
+  it('should leave the source out of a row when the list is for one ticket', () => {
+    const description = describeKnownBugs(
+      { findings: [buildFindingResponse({ id: 3, ticketNumber: 56 })], answeredAt },
+      noPresses,
+      projectId,
+      false,
+      56,
+    );
+
+    expect(listedIds(description)).toEqual([3]);
+    expect(description.kind === 'list' ? description.rows[0] : undefined).not.toHaveProperty(
+      'source',
+    );
   });
 
   it('should describe a gap row with the Gap chip in the warn tone', () => {
