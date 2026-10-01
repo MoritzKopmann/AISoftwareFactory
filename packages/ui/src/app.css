@@ -866,3 +866,97 @@ details:not([open]) .t-hide {
   gap: 10px;
   padding: 12px;
 }
+
+.findings {
+  max-width: 720px;
+  min-width: 0;
+}
+
+.finding-box {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+
+.finding-box > .inline-banner {
+  border-top: 0;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.finding-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.finding {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: start;
+  padding: 10px 12px;
+}
+
+.finding + .finding {
+  border-top: 1px solid var(--border);
+}
+
+.finding .chip {
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.finding .body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.finding .summary {
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.finding .where {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  align-items: baseline;
+  font-size: var(--text-size-sm);
+  color: var(--muted);
+}
+
+.finding .loc {
+  font: 12px / 1.5 var(--font-mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.list-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border-strong);
+  font-size: var(--text-size-sm);
+}
+
+.sk-finding {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 8px 12px;
+  padding: 12px;
+}
+
+.sk-finding + .sk-finding {
+  border-top: 1px solid var(--border);
+}
+
+.sk-finding .lines {
+  display: grid;
+  gap: 8px;
+}
