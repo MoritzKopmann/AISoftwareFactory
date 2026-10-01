@@ -5,6 +5,7 @@ import { describeUpdatedTime } from '../board/describe-updated-time.js';
 import { formatAbsoluteTime } from '../board/format-absolute-time.js';
 import { useGatedSkeleton } from '../board/use-gated-skeleton.js';
 import { useProjectBoard } from '../board/use-project-board.js';
+import { KnownBugs } from '../findings/known-bugs.js';
 import { Banner } from '../shared/banner.js';
 import { ContractReport } from './contract-report.js';
 
@@ -71,6 +72,7 @@ function RegisteredProjectPage({ project }: { readonly project: ProjectResponse 
             )}
           </>
         )}
+        <KnownBugs projectId={project.id} />
       </main>
     </>
   );
