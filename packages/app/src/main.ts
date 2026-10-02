@@ -73,6 +73,7 @@ function buildProjectsModule(
   database: DatabaseSync,
   events: EventPublisher,
   skills: SkillsModule,
+  logger: Logger,
 ): ProjectsModule {
   return createProjectsModule({
     projectRepository: new SqliteProjectRepository(database),
@@ -82,6 +83,7 @@ function buildProjectsModule(
     clock: new SystemClock(),
     contractPreflight: { check: (checkoutPath) => skills.runContractPreflight(checkoutPath) },
     events,
+    logger,
   });
 }
 
@@ -288,7 +290,7 @@ const eventBus = new TypedEventBus<AisfEventMap>();
 
 const bridge = buildBridgeModule(kitDirectory);
 const skills = buildSkillsModule(config, pluginDirectory);
-const projects = buildProjectsModule(database, eventBus, skills);
+const projects = buildProjectsModule(database, eventBus, skills, logger);
 // The watcher is built before the runner, which needs watcher.ticket, so the lookup binds late.
 const watcher = buildWatcherModule(config, eventBus, projects, {
   activeRunTicketNumber: async (projectId) => (await runner.activeRun(projectId))?.run.ticketNumber,
@@ -343,6 +345,10 @@ if (options.openBrowser) {
 
 watcher.start().catch((error: unknown) => {
   logger.error(`The watcher failed to start: ${String(error)}`);
+});
+// Never-crash boundary: a failed label sync must not end the process or delay the boot.
+projects.start().catch((error: unknown) => {
+  logger.error(`Syncing the project labels failed: ${String(error)}`);
 });
 
 // The browser panel polls the status route while the start-up checks run.
