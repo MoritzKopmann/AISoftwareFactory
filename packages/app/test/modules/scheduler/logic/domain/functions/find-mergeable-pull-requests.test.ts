@@ -6,7 +6,7 @@ import type { ReviewedTicket } from '../../../../../../src/modules/scheduler/log
 const mergeablePullRequest: ClosingPullRequest = {
   number: 201,
   state: 'OPEN',
-  reviewDecision: 'APPROVED',
+  approved: true,
   checks: 'passing',
   mergeable: 'mergeable',
   canBeRebased: true,
@@ -36,9 +36,7 @@ describe('findMergeablePullRequests', () => {
     ['it conflicts', { mergeable: 'conflicting' }],
     ['its mergeability is unknown', { mergeable: 'unknown' }],
     ['it cannot be rebased', { canBeRebased: false }],
-    ['a review requested changes', { reviewDecision: 'CHANGES_REQUESTED' }],
-    ['it awaits review', { reviewDecision: 'REVIEW_REQUIRED' }],
-    ['it has no review decision', { reviewDecision: 'none' }],
+    ['it is not approved', { approved: false }],
     ['it is already merged', { state: 'MERGED' }],
   ])('should select nothing when %s', (_reason, override) => {
     const pullRequest: ClosingPullRequest = { ...mergeablePullRequest, ...override };

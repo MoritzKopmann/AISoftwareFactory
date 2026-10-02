@@ -25,7 +25,7 @@ const ticketFields = `
       number
       url
       state
-      reviewDecision
+      labels(first: 20) { nodes { name } }
       mergeable
       canBeRebased
       headRefOid
@@ -93,7 +93,7 @@ type IssueNode = {
       readonly number: number;
       readonly url: string;
       readonly state: string;
-      readonly reviewDecision: string | null;
+      readonly labels: { readonly nodes: ReadonlyArray<{ readonly name: string }> };
       readonly mergeable: string;
       readonly canBeRebased: boolean;
       readonly headRefOid: string;
@@ -238,7 +238,7 @@ function toTicket(node: IssueNode, state: 'open' | 'closed'): Ticket {
       number: pullRequest.number,
       url: pullRequest.url,
       state: pullRequest.state,
-      reviewDecision: toReviewDecision(pullRequest.reviewDecision),
+      approved: pullRequest.labels.nodes.some((label) => label.name === 'approved'),
       checks: toChecks(pullRequest.commits.nodes[0]?.commit.statusCheckRollup?.state),
       mergeable: toMergeable(pullRequest.mergeable),
       canBeRebased: pullRequest.canBeRebased,
@@ -246,14 +246,6 @@ function toTicket(node: IssueNode, state: 'open' | 'closed'): Ticket {
     })),
     updatedAt: node.updatedAt,
   };
-}
-
-function toReviewDecision(reviewDecision: string | null): ClosingPullRequest['reviewDecision'] {
-  return reviewDecision === 'APPROVED' ||
-    reviewDecision === 'CHANGES_REQUESTED' ||
-    reviewDecision === 'REVIEW_REQUIRED'
-    ? reviewDecision
-    : 'none';
 }
 
 function toChecks(rollupState: string | undefined): ClosingPullRequest['checks'] {

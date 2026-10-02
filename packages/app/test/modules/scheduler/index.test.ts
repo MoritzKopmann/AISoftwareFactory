@@ -25,7 +25,7 @@ const approvedTicket: ReviewedTicket = {
     {
       number: 201,
       state: 'OPEN',
-      reviewDecision: 'APPROVED',
+      approved: true,
       checks: 'passing',
       mergeable: 'mergeable',
       canBeRebased: true,

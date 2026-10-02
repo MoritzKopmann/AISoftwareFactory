@@ -14,7 +14,7 @@ import {
 const approvedPullRequest: ClosingPullRequest = {
   number: 201,
   state: 'OPEN',
-  reviewDecision: 'APPROVED',
+  approved: true,
   checks: 'passing',
   mergeable: 'mergeable',
   canBeRebased: true,
@@ -54,11 +54,11 @@ describe('MergeApprovedPullRequestsUseCase', () => {
   });
 
   it('should merge nothing when the pull request is not approved', async () => {
-    const awaitingReview: ReviewedTicket = {
+    const notApproved: ReviewedTicket = {
       ...approvedTicket,
-      closingPullRequests: [{ ...approvedPullRequest, reviewDecision: 'REVIEW_REQUIRED' }],
+      closingPullRequests: [{ ...approvedPullRequest, approved: false }],
     };
-    const { useCase, pullRequestMerges } = buildSubject([awaitingReview]);
+    const { useCase, pullRequestMerges } = buildSubject([notApproved]);
 
     await useCase.execute('moritz/aisf');
 
