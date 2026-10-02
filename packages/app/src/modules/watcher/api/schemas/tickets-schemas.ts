@@ -29,7 +29,7 @@ export const ticketResponseSchema = z.object({
       number: z.number(),
       url: z.string(),
       state: z.string(),
-      reviewDecision: z.enum(['APPROVED', 'CHANGES_REQUESTED', 'REVIEW_REQUIRED', 'none']),
+      approved: z.boolean(),
       checks: z.enum(['passing', 'failing', 'pending', 'none']),
       mergeable: z.enum(['mergeable', 'conflicting', 'unknown']),
       canBeRebased: z.boolean(),

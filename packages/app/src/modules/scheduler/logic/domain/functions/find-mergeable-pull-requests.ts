@@ -30,7 +30,7 @@ export function findMergeablePullRequests(
 
 function canMerge(pullRequest: ClosingPullRequest): boolean {
   return (
-    pullRequest.reviewDecision === 'APPROVED' &&
+    pullRequest.approved &&
     (pullRequest.checks === 'passing' || pullRequest.checks === 'none') &&
     pullRequest.mergeable === 'mergeable' &&
     pullRequest.canBeRebased

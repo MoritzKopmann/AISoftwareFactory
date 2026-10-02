@@ -23,9 +23,12 @@ function createSource(scriptedFetch: ScriptedFetch): FetchGraphQLTicketSource {
   });
 }
 
-function readVariables(scriptedFetch: ScriptedFetch, requestIndex: number): unknown {
+function readRequestBody(
+  scriptedFetch: ScriptedFetch,
+  requestIndex: number,
+): { query: string; variables: unknown } {
   const body = scriptedFetch.requests[requestIndex]?.body;
-  return (JSON.parse(body ?? '{}') as { variables: unknown }).variables;
+  return JSON.parse(body ?? '{}') as { query: string; variables: unknown };
 }
 
 describe('FetchGraphQLTicketSource', () => {
@@ -71,7 +74,7 @@ describe('FetchGraphQLTicketSource', () => {
             number: 21,
             url: 'https://github.com/octo/hello/pull/21',
             state: 'OPEN',
-            reviewDecision: 'APPROVED',
+            approved: true,
             checks: 'passing',
             mergeable: 'mergeable',
             canBeRebased: true,
@@ -96,8 +99,8 @@ describe('FetchGraphQLTicketSource', () => {
         'https://api.github.com/graphql',
         'https://api.github.com/graphql',
       ]);
-      expect(readVariables(scriptedFetch, 0)).toEqual({ owner: 'octo', name: 'hello' });
-      expect(readVariables(scriptedFetch, 1)).toEqual({
+      expect(readRequestBody(scriptedFetch, 0).variables).toEqual({ owner: 'octo', name: 'hello' });
+      expect(readRequestBody(scriptedFetch, 1).variables).toEqual({
         owner: 'octo',
         name: 'hello',
         after: 'cursor-after-page-1',
@@ -138,13 +141,55 @@ describe('FetchGraphQLTicketSource', () => {
           number: 20,
           url: 'https://github.com/octo/hello/pull/20',
           state: 'MERGED',
-          reviewDecision: 'none',
+          approved: false,
           checks: 'none',
           mergeable: 'unknown',
           canBeRebased: false,
           headCommit: '0c4d5e6f7a8b',
         },
       ]);
+    });
+
+    it('should read the pull request as approved when it carries a label named approved', async () => {
+      const scriptedFetch = new ScriptedFetch([
+        answer('graphql-open-page-1.json'),
+        answer('graphql-open-page-2.json'),
+        answer('graphql-closed.json'),
+      ]);
+
+      const snapshot = await createSource(scriptedFetch).snapshot(repository);
+
+      expect(snapshot.openTickets[1]?.closingPullRequests).toEqual([
+        expect.objectContaining({ number: 21, approved: true }),
+      ]);
+    });
+
+    it('should read the pull request as not approved when it has no labels', async () => {
+      const scriptedFetch = new ScriptedFetch([
+        answer('graphql-open-page-2.json'),
+        answer('graphql-closed.json'),
+      ]);
+
+      const snapshot = await createSource(scriptedFetch).snapshot(repository);
+
+      expect(snapshot.recentlyClosedTickets[0]?.closingPullRequests).toEqual([
+        expect.objectContaining({ number: 20, approved: false }),
+      ]);
+    });
+
+    it('should select the pull request labels and no review decision when the snapshot is taken', async () => {
+      const scriptedFetch = new ScriptedFetch([
+        answer('graphql-open-page-2.json'),
+        answer('graphql-closed.json'),
+      ]);
+
+      await createSource(scriptedFetch).snapshot(repository);
+
+      for (const requestIndex of [0, 1]) {
+        const query = readRequestBody(scriptedFetch, requestIndex).query;
+        expect(query.slice(query.indexOf('closedByPullRequestsReferences'))).toContain('labels');
+        expect(query).not.toContain('reviewDecision');
+      }
     });
 
     it('should throw GitHubRateLimitedError with retryAt from resetAt when GraphQL reports RATE_LIMITED', async () => {
@@ -177,19 +222,51 @@ describe('FetchGraphQLTicketSource', () => {
   });
 
   describe('ticket', () => {
-    it('should map a failing rollup, requested changes and a conflict when the pull request is blocked', async () => {
+    it('should map a failing rollup and a conflict when the pull request is blocked', async () => {
       const scriptedFetch = new ScriptedFetch([answer('graphql-ticket-blocked-pull-request.json')]);
 
       const ticket = await createSource(scriptedFetch).ticket(repository, 8);
 
       expect(ticket?.closingPullRequests).toEqual([
-        expect.objectContaining({
-          reviewDecision: 'CHANGES_REQUESTED',
-          checks: 'failing',
-          mergeable: 'conflicting',
-        }),
-        expect.objectContaining({ reviewDecision: 'REVIEW_REQUIRED', checks: 'pending' }),
+        expect.objectContaining({ checks: 'failing', mergeable: 'conflicting' }),
+        expect.objectContaining({ checks: 'pending' }),
       ]);
+    });
+
+    it('should read the pull request as not approved when it only has labels with other names', async () => {
+      const scriptedFetch = new ScriptedFetch([answer('graphql-ticket-blocked-pull-request.json')]);
+
+      const ticket = await createSource(scriptedFetch).ticket(repository, 8);
+
+      expect(ticket?.closingPullRequests[0]).toMatchObject({ number: 22, approved: false });
+    });
+
+    it('should read the pull request as not approved when its label is named Approved', async () => {
+      const scriptedFetch = new ScriptedFetch([answer('graphql-ticket-blocked-pull-request.json')]);
+
+      const ticket = await createSource(scriptedFetch).ticket(repository, 8);
+
+      expect(ticket?.closingPullRequests[1]).toMatchObject({ number: 23, approved: false });
+    });
+
+    it('should read the pull request as not approved when only the issue carries the approved label', async () => {
+      const scriptedFetch = new ScriptedFetch([answer('graphql-ticket.json')]);
+
+      const ticket = await createSource(scriptedFetch).ticket(repository, 8);
+
+      expect(ticket?.closingPullRequests).toEqual([
+        expect.objectContaining({ number: 20, approved: false }),
+      ]);
+    });
+
+    it('should select the pull request labels and no review decision when a ticket is read', async () => {
+      const scriptedFetch = new ScriptedFetch([answer('graphql-ticket.json')]);
+
+      await createSource(scriptedFetch).ticket(repository, 8);
+
+      const query = readRequestBody(scriptedFetch, 0).query;
+      expect(query.slice(query.indexOf('closedByPullRequestsReferences'))).toContain('labels');
+      expect(query).not.toContain('reviewDecision');
     });
 
     it('should return the ticket with status closed when the number is a closed issue', async () => {
@@ -202,7 +279,7 @@ describe('FetchGraphQLTicketSource', () => {
         status: 'closed',
         parent: { number: 12, title: 'Epic: Watch a project' },
       });
-      expect(readVariables(scriptedFetch, 0)).toMatchObject({ number: 8 });
+      expect(readRequestBody(scriptedFetch, 0).variables).toMatchObject({ number: 8 });
     });
 
     it('should return undefined when the number is a pull request', async () => {

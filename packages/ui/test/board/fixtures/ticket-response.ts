@@ -8,7 +8,7 @@ export function buildClosingPullRequestResponse(
   return {
     url: `https://github.com/o/n/pull/${overrides.number}`,
     state: 'OPEN',
-    reviewDecision: 'none',
+    approved: false,
     checks: 'none',
     mergeable: 'unknown',
     canBeRebased: false,

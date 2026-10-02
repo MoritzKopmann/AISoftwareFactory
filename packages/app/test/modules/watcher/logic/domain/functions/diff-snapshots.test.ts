@@ -89,7 +89,7 @@ describe('diffSnapshots', () => {
   });
 
   it.each([
-    ['review decision', { reviewDecision: 'CHANGES_REQUESTED' }],
+    ['approval', { approved: false }],
     ['checks', { checks: 'failing' }],
     ['head commit', { headCommit: 'b' }],
   ] as const)(
@@ -99,7 +99,7 @@ describe('diffSnapshots', () => {
         number: 5,
         url: 'https://github.com/owner/name/pull/5',
         state: 'OPEN',
-        reviewDecision: 'APPROVED',
+        approved: true,
         checks: 'passing',
         mergeable: 'mergeable',
         canBeRebased: true,
