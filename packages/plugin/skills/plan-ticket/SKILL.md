@@ -130,7 +130,8 @@ path, never by `aisf:implement-ticket`. It is blocked by every backend sub-issue
 sub-issue may depend on an earlier one but must not need a sibling half-done.
 
 Per sub-issue: **Title** (the outcome) · **Scope** (one sentence, in and out) · **Blocked-by** ·
-**Proves** (which acceptance criteria) · **`hitl`** proposed or not, with one line of why.
+**Proves** (which acceptance criteria) · **`hitl`** proposed or not, with one line of why. A
+criterion that needs the running app or a real external write goes to a `hitl` sub-issue only.
 
 Two splits have no umbrella:
 

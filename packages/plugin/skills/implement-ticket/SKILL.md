@@ -81,8 +81,8 @@ Where a step says **escalate** or **park**, act by mode:
   `## Decisions made` (§10).
 - Never call an `aisf_*` tool that isn't present. The human says give up → `aisf:github-issue`
   _Hand-run stuck_, with the same reason text.
-- A small, reversible choice the ticket leaves open is not a stop point: make it and list it
-  under `## Decisions made`.
+- A small, reversible choice the ticket leaves open, or a contradiction inside it, is not a
+  stop point: make it and list it under `## Decisions made`.
 
 ## 1. Identify
 
@@ -119,7 +119,11 @@ Name `<n>` and the mode (new / resume / rework, AFK / HITL) before touching a fi
 - Read the whole ticket body, and the code its Landing zone names.
 - List: the files to touch, one test per scenario, and the proof for each criterion that has
   no behaviour. No code until this list exists.
-- A criterion that is vague or unprovable as written → **escalate `spec`** now.
+- A criterion that is vague or contradicts another → settle its reading now, keeping every
+  behaviour proven.
+- A criterion that needs the running app or a write outside the checkout, on a leaf without
+  `hitl` → never run it. End the run now: AFK **escalate `spec`**, HITL `aisf:github-issue`
+  _Hand-run stuck_.
 
 ## 3. Branch
 
@@ -198,7 +202,7 @@ Every criterion gets evidence, by kind:
 - **A command** (`grep -r … returns nothing`, `analyze` clean) → run it verbatim, show the
   output. Never substitute a test.
 - **A human check** on a `hitl` leaf → ask in chat. The answer is the evidence.
-- **Vague or unprovable as written** → **escalate `spec`**. Never quietly rate it green.
+- **Vague, contradictory or live-only** → as §2 says. Never quietly rate it green.
 
 A gap → back to §4, then §5 to §7 again.
 

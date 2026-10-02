@@ -29,11 +29,14 @@ Rules:
 
 - **Given/When/Then for behaviour.** One behaviour per scenario, observable from outside.
   Include the error and edge cases the plan names. Work with no behaviour (a migration, a config
-  key, wiring) gets one plain observable outcome: "the `runs` table exists after migration".
+  key, wiring) gets one plain observable outcome, never a command: "the `runs` table exists
+  after migration". A criterion that needs the running app or a real external write: only on a
+  `hitl` sub-issue.
 - **Exact names.** A shared contract keeps the plan's name and shape, verbatim. Name everything
   else by `project-architecture`'s `## Naming conventions`, so the implementer can carry the
   names straight into tests.
-- **No code bodies, no test design, no step order.** `aisf:implement-ticket` owns those.
+- **No code bodies, test design, step order, line numbers, lists of tests to edit, or shapes no
+  sibling reads.** `aisf:implement-ticket` owns those.
 - **Class types, modules and layers in `project-architecture`'s terms.**
 
 Before returning, read it as someone who has never seen the plan. Anything they would have to
