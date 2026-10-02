@@ -25,8 +25,8 @@ the job it is good at: behaviour and the `describe-*` view models.
 **This skill follows `aisf:implement-ticket` for everything not visual.** Read it and apply
 these sections as written there: §0 Precondition (project slots, status table, mode), Stop
 points, §1 Identify (blocked, rework), §3 Branch, §5 Green (five fix attempts, never weaken a
-test), §7 Simplicity review, §8 Commit, §9 PR (body, base check, `in-progress → in-review`,
-never merge). The sections below replace §2, §4 and §6, and add the render loop.
+test), §8 Simplicity review, §9 Commit, §10 PR (body, base check, `in-progress → in-review`),
+and never merge. The sections below replace §2, §4 and §7, and add the render loop.
 
 `gh` infers the repository from the current checkout. Never pass `-R`. Every status change and
 issue write goes through `aisf:github-issue`.
@@ -129,10 +129,10 @@ side in the PR without anyone checking out the branch. Stop the dev server.
 
 ## 7. The PR
 
-The PR body follows `aisf:implement-ticket` §9, with two additions: a `## Design` section
+The PR body follows `aisf:implement-ticket` §10, with two additions: a `## Design` section
 (`Mock: <ticket's mock URL>`, `Built: <render URL from step 6>`) after `## Summary`, and
 `## Known deviations` (every unresolved difference from the mock, and why; omit if none)
-before `Closes #<n>`. Report as §9 does, plus the render URL.
+before `Closes #<n>`. Report as §10 does, plus the render URL.
 
 **What you are giving up.** There is no visual regression net, which makes the design's final
 `hitl` verification leaf the only thing between a visual regression and a release.

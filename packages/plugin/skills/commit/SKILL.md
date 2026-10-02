@@ -11,9 +11,8 @@ effort: low
 Follow these steps **in order** every time you create a commit. Never ask the user
 anything: this skill behaves the same in an unattended run and by hand.
 
-**Project slots.** Load `project-toolchain` and `project-architecture` with the Skill tool
-(bare names). If either returns `Unknown skill`, stop and report "project not onboarded".
-Do not improvise commands or scopes.
+**Project slots.** Load `project-toolchain` with the Skill tool (bare name). If it returns
+`Unknown skill`, stop and report "project not onboarded". Do not improvise commands.
 
 ---
 
@@ -50,19 +49,21 @@ If any are present in the diff, exclude them and say so in your report.
 
 ## Step 4 — Determine scope
 
-Take the **module-root pattern** from `## Module layout` in `project-architecture`
-(for example `src/<feature>/` or `packages/app/src/modules/<name>/`). The scope
-is the placeholder segment of the root the changed files sit under.
+Read the scope from the changed paths and from precedent: the scope earlier commits used for
+the same paths.
 
-| Changed path                                                            | Scope              |
-| ----------------------------------------------------------------------- | ------------------ |
-| Under one module root                                                   | that module's name |
-| Under several unrelated module roots                                    | _(omit scope)_     |
-| Outside module roots, where `project-architecture` names a scope for it | that scope         |
-| Tests only                                                              | `test`             |
-| Only files listed in the toolchain's `manifests`                        | `deps`             |
-| `.claude/` / `CLAUDE.md` only                                           | `tooling`          |
-| Anything else                                                           | _(omit scope)_     |
+```bash
+git log --format=%s -10 -- <changed paths>
+```
+
+| Changed path                                     | Scope                             |
+| ------------------------------------------------ | --------------------------------- |
+| Tests only                                       | `test`                            |
+| Only files listed in the toolchain's `manifests` | `deps`                            |
+| `.claude/` / `CLAUDE.md` only                    | `tooling`                         |
+| One area, and earlier commits scope it           | that scope                        |
+| One area, no precedent                           | the module or package folder name |
+| Several unrelated areas, or unclear              | _(omit scope)_                    |
 
 ---
 
@@ -138,10 +139,9 @@ chore(deps): add zod ^4.1.0
 
 ## Step 8 — Refresh the project index
 
-If a `project-index` skill exists and any changed path is under a module root, invoke
-`project-index` record for each touched module before staging. The refreshed index stages
-with this commit. Skip silently if the skill is absent (`Unknown skill`) or no module root
-is touched.
+If a `project-index` skill exists, invoke `project-index` record for each module the diff
+touches before staging. The refreshed index stages with this commit. Skip silently if the
+skill is absent (`Unknown skill`) or the diff touches no module.
 
 ---
 
