@@ -84,8 +84,8 @@ findings and the three project slots, and may read the codebase.
 
 Plus:
 
-- **Spike call.** Does a decision need real experience first? If yes: the options, and what
-  result settles them.
+- **Spike call.** Does a decision need real experience first? If yes: the options, what result
+  settles them, and whether the human has to judge that result.
 - **Questions.** Each a **Question** in plain language, a **Suggestion** (its answer plus one
   line of why, never "it depends") and **Assumes** (what the suggestion rests on). Decisions
   only: something cheap to change that nobody would have an opinion about is not a question.
@@ -112,10 +112,12 @@ Load `aisf:grilling` and follow it. Specific to planning:
 **Spike.** A decision that needs real experience first pauses planning:
 
 1. Post a sub-issue, `type: spike`, `status: ready`: the options, what result settles them, and
-   that its verdict goes into this ticket's `## Planning so far`.
+   that its verdict goes into this ticket's `## Planning so far`. It gets `hitl` when the human
+   confirmed they judge the result; without it `aisf:spike` tests alone.
 2. Write the ledger into the ticket body as `## Planning so far`, ending with
    `Waiting for the verdict of #<spike>`.
-3. The ticket stays `status: plan`. Report the spike's number and stop.
+3. The ticket stays `status: plan`. Report the spike's number, that `aisf:spike` runs it, and
+   stop.
 
 ## 4. Split
 

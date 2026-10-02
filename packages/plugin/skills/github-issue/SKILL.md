@@ -88,6 +88,8 @@ An open issue with **no** `status:` label is an **idea**. Done is the closed sta
 
 - Never `backlog → in-progress` — plan first.
 - A `planned` parent is a tracking umbrella: it is never implemented and never closed by hand.
+- **A spike has no PR.** `aisf:spike` moves it `ready → in-progress` and closes it itself, once
+  its verdict is in the parent's body.
 
 ## Guarded transitions
 
