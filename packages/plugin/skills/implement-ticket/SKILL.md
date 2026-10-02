@@ -60,15 +60,16 @@ A stop here writes nothing.
 
 **Mode.** Decide once, keep it for the run:
 
-- **AFK**: the `aisf_escalate` tool is present **and** the ticket has no `hitl` label. No human
-  is watching.
-- **HITL**: otherwise. A human is in chat.
+- **AFK**: the `aisf_escalate` tool is present. No human is watching.
+- **Hand-run**: otherwise. A human is in chat.
+
+`hitl` is not a mode. The spec names its human checkpoint: work alone up to it (§7).
 
 ## Stop points
 
 Where a step says **escalate** or **park**, act by mode:
 
-| Stop point                                                                          | AFK                                                   | HITL                              |
+| Stop point                                                                          | AFK                                                   | Hand-run                          |
 | ----------------------------------------------------------------------------------- | ----------------------------------------------------- | --------------------------------- |
 | **escalate `red`**: a check is still failing (§5)                                   | `aisf_escalate({kind: 'red', reason})`                | show the failing output and ask   |
 | **escalate `spec`**: a question the ticket doesn't answer                           | `aisf_escalate({kind: 'spec', reason})`               | ask the concrete question         |
@@ -77,7 +78,7 @@ Where a step says **escalate** or **park**, act by mode:
 
 - **AFK:** the run ends at the tool call. `reason` holds what was tried, what failed (paste
   the output), and the decision a human has to make.
-- **HITL:** carry on with the answer, and record it as evidence (§7) or under
+- **Hand-run:** carry on with the answer, and record it as evidence (§7) or under
   `## Decisions made` (§10).
 - Never call an `aisf_*` tool that isn't present. The human says give up → `aisf:github-issue`
   _Hand-run stuck_, with the same reason text.
@@ -111,7 +112,7 @@ gh pr view <pr> --json reviewDecision,mergeable,statusCheckRollup,reviews,headRe
   §10.
 - Otherwise the PR is waiting on review → stop and say so.
 
-Name `<n>` and the mode (new / resume / rework, AFK / HITL) before touching a file.
+Name `<n>` and the mode (new / resume / rework, AFK / hand-run) before touching a file.
 
 ## 2. Understand
 
@@ -122,8 +123,8 @@ Name `<n>` and the mode (new / resume / rework, AFK / HITL) before touching a fi
 - A criterion that is vague or contradicts another → settle its reading now, keeping every
   behaviour proven.
 - A criterion that needs the running app or a write outside the checkout, on a leaf without
-  `hitl` → never run it. End the run now: AFK **escalate `spec`**, HITL `aisf:github-issue`
-  _Hand-run stuck_.
+  `hitl` → never run it. End the run now: AFK **escalate `spec`**, hand-run
+  `aisf:github-issue` _Hand-run stuck_.
 
 ## 3. Branch
 
@@ -155,7 +156,8 @@ Strict TDD per `aisf:tdd`: one scenario per Red-Green-Refactor cycle, every scen
 - **AFK:** find the blocking ticket or post a bare idea for it
   (`Found while implementing #<n>`), add it as a native blocker
   (`gh issue edit <n> --add-blocked-by <m>`), comment on `<n>` why. Then **park**.
-- **HITL:** name the ticket that should block this one. Write nothing until the human agrees.
+- **Hand-run:** name the ticket that should block this one. Write nothing until the human
+  agrees.
 
 ## 5. Green
 
@@ -201,7 +203,8 @@ Every criterion gets evidence, by kind:
 - **A scenario** → the passing test that asserts it, named.
 - **A command** (`grep -r … returns nothing`, `analyze` clean) → run it verbatim, show the
   output. Never substitute a test.
-- **A human check** on a `hitl` leaf → ask in chat. The answer is the evidence.
+- **The human checkpoint** on a `hitl` leaf → finish every step the spec puts before it, then
+  ask in chat. The answer is the evidence. Never ask a human to do any other step.
 - **Vague, contradictory or live-only** → as §2 says. Never quietly rate it green.
 
 A gap → back to §4, then §5 to §7 again.

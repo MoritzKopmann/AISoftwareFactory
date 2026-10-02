@@ -130,8 +130,9 @@ path, never by `aisf:implement-ticket`. It is blocked by every backend sub-issue
 sub-issue may depend on an earlier one but must not need a sibling half-done.
 
 Per sub-issue: **Title** (the outcome) · **Scope** (one sentence, in and out) · **Blocked-by** ·
-**Proves** (which acceptance criteria) · **`hitl`** proposed or not, with one line of why. A
-criterion that needs the running app or a real external write goes to a `hitl` sub-issue only.
+**Proves** (which acceptance criteria) · **`hitl`** proposed or not, with its human checkpoint:
+what the human does or judges. Nothing before it may need them. A criterion that needs the
+running app or a real external write goes to a `hitl` sub-issue only.
 
 Two splits have no umbrella:
 
@@ -140,8 +141,8 @@ Two splits have no umbrella:
 
 ## 5. Confirm
 
-Show the split as a table: **Title** · **Blocked-by** · **Proposed `hitl`** and its reason. On
-the questionnaire page it is the last section, otherwise in chat.
+Show the split as a table: **Title** · **Blocked-by** · **Proposed `hitl`** and its checkpoint.
+On the questionnaire page it is the last section, otherwise in chat.
 
 **This is the only gate.** Confirmed → the rest runs without further approval. Not confirmed →
 reopen that decision and go back to step 3.
