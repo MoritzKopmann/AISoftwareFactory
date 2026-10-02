@@ -9,6 +9,7 @@ export const aisfLabels: ReadonlyArray<AisfLabel> = [
   { name: 'type: enhancement', color: 'A2EEEF', description: 'New feature or improvement' },
   { name: 'type: task', color: 'BFD4F2', description: 'Non-feature work item' },
   { name: 'type: spike', color: 'D4C5F9', description: 'Research or investigation' },
+  { name: 'type: ui', color: 'C5DEF5', description: 'Design-driven UI work' },
   { name: 'priority: critical', color: 'B60205', description: 'Must fix immediately' },
   { name: 'priority: high', color: 'D93F0B', description: 'Important, next up' },
   { name: 'priority: medium', color: 'E99695', description: 'Normal backlog priority' },
