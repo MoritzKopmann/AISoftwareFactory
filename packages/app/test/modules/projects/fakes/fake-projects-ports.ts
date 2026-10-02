@@ -51,11 +51,18 @@ export class FakeProjectRepository implements ProjectRepository {
 export class FakeLabelSync implements LabelSync {
   syncCalls: RepositoryReference[] = [];
   failure: Error | undefined;
+  private readonly failuresByRepository = new Map<string, Error>();
+
+  setFailure(repository: RepositoryReference, failure: Error): void {
+    this.failuresByRepository.set(`${repository.owner}/${repository.name}`, failure);
+  }
 
   async sync(repository: RepositoryReference): Promise<void> {
     this.syncCalls.push(repository);
-    if (this.failure !== undefined) {
-      throw this.failure;
+    const failure =
+      this.failure ?? this.failuresByRepository.get(`${repository.owner}/${repository.name}`);
+    if (failure !== undefined) {
+      throw failure;
     }
   }
 }

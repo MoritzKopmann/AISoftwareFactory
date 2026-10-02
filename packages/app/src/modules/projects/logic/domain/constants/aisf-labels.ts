@@ -38,4 +38,9 @@ export const aisfLabels: ReadonlyArray<AisfLabel> = [
     color: 'F9A825',
     description: 'Runs as an interactive session, never AFK',
   },
+  {
+    name: 'approved',
+    color: '1A7F37',
+    description: 'Set by the human on a pull request; the app then rebase-merges it',
+  },
 ];
