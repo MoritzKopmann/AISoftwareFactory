@@ -32,6 +32,8 @@ Rules:
   key, wiring) gets one plain observable outcome, never a command: "the `runs` table exists
   after migration". A criterion that needs the running app or a real external write: only on a
   `hitl` sub-issue.
+- **A `hitl` spec names its human checkpoint**: the scenario where the human acts or judges,
+  and what they act on. Every other step must run without them.
 - **Exact names.** A shared contract keeps the plan's name and shape, verbatim. Name everything
   else by `project-architecture`'s `## Naming conventions`, so the implementer can carry the
   names straight into tests.

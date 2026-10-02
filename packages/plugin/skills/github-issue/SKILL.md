@@ -62,7 +62,7 @@ onboarded.
 | Type      | `type: bug` · `type: enhancement` · `type: task` · `type: spike` · `type: ui`                                                            |
 | Priority  | `priority: critical` · `priority: high` · `priority: medium` · `priority: low`                                                           |
 | Status    | `status: backlog` · `status: plan` · `status: planned` · `status: ready` · `status: in-progress` · `status: in-review` · `status: stuck` |
-| Flag      | `hitl`: orthogonal to status. A `ready` leaf with it runs as an interactive session instead of AFK.                                      |
+| Flag      | `hitl`: orthogonal to status. A `ready` leaf with it is run by hand and needs a human only at the checkpoint its spec names.             |
 
 - Every **labelled** issue has exactly one `type:`, one `priority:` and one `status:`.
   Bare ideas have none.
