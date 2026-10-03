@@ -217,7 +217,7 @@ function buildSchedulerModule(
       },
       resume: async (runId, decision) => {
         try {
-          return await runner.resume(runId, decision);
+          return await runner.resume(runId, { kind: 'permission', decision });
         } catch (error) {
           if (error instanceof RunnerRunAlreadyActiveError) {
             throw new RunAlreadyActiveError(error.message);

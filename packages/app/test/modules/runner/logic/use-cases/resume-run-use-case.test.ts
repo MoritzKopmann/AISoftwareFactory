@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
+import type { RunAnswer } from '../../../../../src/modules/runner/logic/domain/types/run-answer.js';
+import { buildCheckpointResumePrompt } from '../../../../../src/modules/runner/logic/domain/functions/build-checkpoint-resume-prompt.js';
 import type { RunEnding } from '../../../../../src/modules/runner/logic/domain/types/run-ending.js';
 import { RunAlreadyActiveError } from '../../../../../src/modules/runner/logic/errors/run-already-active-error.js';
 import { RunNotResumableError } from '../../../../../src/modules/runner/logic/errors/run-not-resumable-error.js';
@@ -15,6 +17,9 @@ import {
   SequentialIdentifiers,
 } from '../../fakes/fake-runner-ports.js';
 
+const allow: RunAnswer = { kind: 'permission', decision: 'allow' };
+const deny: RunAnswer = { kind: 'permission', decision: 'deny' };
+const checkpointEnding: RunEnding = { kind: 'checkpoint', request: 'Check the page' };
 const permissionNeeded: RunEnding = {
   kind: 'permission-needed',
   toolName: 'Bash',
@@ -67,7 +72,7 @@ describe('ResumeRunUseCase', () => {
   it('should insert a running run for the same ticket, worktree and session when the run needs permission', async () => {
     await insertEndedRun();
 
-    const resumed = await resumeRun.execute('run-1', 'allow');
+    const resumed = await resumeRun.execute('run-1', allow);
 
     expect(resumed).toEqual({
       id: 'id-1',
@@ -87,7 +92,7 @@ describe('ResumeRunUseCase', () => {
   it('should resume the session with the call allowed once when the decision is allow', async () => {
     await insertEndedRun();
 
-    await resumeRun.execute('run-1', 'allow');
+    await resumeRun.execute('run-1', allow);
 
     expect(agentSessions.startedSpecs).toEqual([]);
     expect(agentSessions.resumedSpecs).toHaveLength(1);
@@ -103,7 +108,7 @@ describe('ResumeRunUseCase', () => {
   it('should resume the session without an allowed call and tell it the call was refused when the decision is deny', async () => {
     await insertEndedRun();
 
-    await resumeRun.execute('run-1', 'deny');
+    await resumeRun.execute('run-1', deny);
 
     expect(agentSessions.resumedSpecs).toHaveLength(1);
     expect(agentSessions.resumedSpecs[0]?.prompt).toContain('refused');
@@ -113,7 +118,7 @@ describe('ResumeRunUseCase', () => {
   it('should resume a settled run when its ending was permission-needed', async () => {
     await insertEndedRun({ state: 'settled' });
 
-    await resumeRun.execute('run-1', 'allow');
+    await resumeRun.execute('run-1', allow);
 
     expect(agentSessions.resumedSpecs).toHaveLength(1);
   });
@@ -145,7 +150,7 @@ describe('ResumeRunUseCase', () => {
       await arrange();
       const runCountBefore = runRepository.runs.size;
 
-      await expect(resumeRun.execute('run-1', 'allow')).rejects.toThrow(RunNotResumableError);
+      await expect(resumeRun.execute('run-1', allow)).rejects.toThrow(RunNotResumableError);
 
       expect(runRepository.runs.size).toBe(runCountBefore);
       expect(agentSessions.resumedSpecs).toEqual([]);
@@ -156,14 +161,14 @@ describe('ResumeRunUseCase', () => {
     await insertEndedRun();
     await runRepository.insert(buildRun({ id: 'other-run' }));
 
-    await expect(resumeRun.execute('run-1', 'allow')).rejects.toThrow(RunAlreadyActiveError);
+    await expect(resumeRun.execute('run-1', allow)).rejects.toThrow(RunAlreadyActiveError);
 
     expect(agentSessions.resumedSpecs).toEqual([]);
   });
 
   it('should record the resumed steps and the ending on the new run when the session carries on', async () => {
     await insertEndedRun();
-    await resumeRun.execute('run-1', 'allow');
+    await resumeRun.execute('run-1', allow);
 
     agentSessions.push('session-1', {
       kind: 'step',
@@ -182,7 +187,7 @@ describe('ResumeRunUseCase', () => {
 
   it('should end the new run as permission-needed when the resumed session needs another permission', async () => {
     await insertEndedRun();
-    await resumeRun.execute('run-1', 'allow');
+    await resumeRun.execute('run-1', allow);
 
     agentSessions.push('session-1', {
       kind: 'permission-needed',
@@ -197,4 +202,81 @@ describe('ResumeRunUseCase', () => {
       });
     });
   });
+
+  describe('with a checkpoint answer', () => {
+    const answer: RunAnswer = { kind: 'checkpoint', text: 'Looks right' };
+
+    it.each(['ended', 'settled'])(
+      'should resume the same session with the checkpoint prompt and no allowed call when the run is %s',
+      async (state) => {
+        await insertEndedRun({ state, ending: checkpointEnding });
+
+        const resumed = await resumeRun.execute('run-1', answer);
+
+        expect(resumed).toMatchObject({
+          id: 'id-1',
+          state: 'running',
+          sessionId: 'session-1',
+          worktreePath: '/worktrees/aisf/137',
+          branchName: 'aisf/137-runner',
+        });
+        expect(runRepository.runs.get('id-1')).toEqual(resumed);
+        expect(agentSessions.resumedSpecs).toHaveLength(1);
+        expect(agentSessions.resumedSpecs[0]?.prompt).toBe(
+          buildCheckpointResumePrompt(137, 'Check the page', 'Looks right'),
+        );
+        expect(agentSessions.resumedSpecs[0]).not.toHaveProperty('allowedCall');
+      },
+    );
+
+    it.each([
+      ['a permission-needed ending', { ending: permissionNeeded }],
+      ['a finished ending', { ending: { kind: 'finished' } }],
+    ])('should throw RunNotResumableError when the run has %s', async (_name, overrides) => {
+      await insertEndedRun(overrides);
+
+      await expect(resumeRun.execute('run-1', answer)).rejects.toThrow(RunNotResumableError);
+
+      expect(runRepository.runs.size).toBe(1);
+      expect(agentSessions.resumedSpecs).toEqual([]);
+    });
+
+    it('should throw RunNotResumableError when the run is unknown', async () => {
+      await expect(resumeRun.execute('missing-run', answer)).rejects.toThrow(RunNotResumableError);
+    });
+
+    it('should throw RunNotResumableError when a newer run exists', async () => {
+      await insertEndedRun({ ending: checkpointEnding });
+      await runRepository.insert(
+        buildRun({
+          id: 'run-2',
+          state: 'ended',
+          ending: { kind: 'finished' },
+          startedAt: '2026-09-29T10:30:00.000Z',
+        }),
+      );
+
+      await expect(resumeRun.execute('run-1', answer)).rejects.toThrow(RunNotResumableError);
+      expect(agentSessions.resumedSpecs).toEqual([]);
+    });
+
+    it('should throw RunAlreadyActiveError when another run is running', async () => {
+      await insertEndedRun({ ending: checkpointEnding });
+      await runRepository.insert(buildRun({ id: 'other-run' }));
+
+      await expect(resumeRun.execute('run-1', answer)).rejects.toThrow(RunAlreadyActiveError);
+      expect(agentSessions.resumedSpecs).toEqual([]);
+    });
+  });
+
+  it.each([['a checkpoint run', checkpointEnding]])(
+    'should throw RunNotResumableError when a permission answer meets %s',
+    async (_n, ending) => {
+      await insertEndedRun({ ending });
+
+      await expect(resumeRun.execute('run-1', allow)).rejects.toThrow(RunNotResumableError);
+      expect(runRepository.runs.size).toBe(1);
+      expect(agentSessions.resumedSpecs).toEqual([]);
+    },
+  );
 });

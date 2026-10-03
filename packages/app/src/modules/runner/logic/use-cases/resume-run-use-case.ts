@@ -1,7 +1,9 @@
 import type { Clock } from '../../../../shared/clock/clock.js';
+import { buildCheckpointResumePrompt } from '../domain/functions/build-checkpoint-resume-prompt.js';
 import { buildResumePrompt } from '../domain/functions/build-resume-prompt.js';
 import type { LaunchRunSession } from '../domain/types/launch-run-session.js';
-import type { PermissionDecision } from '../domain/types/permission-decision.js';
+import type { RunAnswer } from '../domain/types/run-answer.js';
+import type { SessionLaunch } from '../domain/types/session-launch.js';
 import type { Run } from '../domain/types/run.js';
 import { RunNotResumableError } from '../errors/run-not-resumable-error.js';
 import type { Identifiers } from '../ports/identifiers.js';
@@ -17,13 +19,30 @@ export type ResumeRunDependencies = {
 export class ResumeRunUseCase {
   constructor(private readonly dependencies: ResumeRunDependencies) {}
 
-  async execute(runId: string, decision: PermissionDecision): Promise<Run> {
+  async execute(runId: string, answer: RunAnswer): Promise<Run> {
     const { runRepository, identifiers, clock, launchRunSession } = this.dependencies;
 
     const previousRun = await runRepository.findById(runId);
     const ending = previousRun?.ending;
-    if (previousRun === undefined || ending?.kind !== 'permission-needed') {
-      throw new RunNotResumableError(`Run ${runId} did not end needing permission`);
+    if (previousRun === undefined || ending === undefined) {
+      throw new RunNotResumableError(`Run ${runId} has no ending to answer`);
+    }
+    let launch: SessionLaunch;
+    if (ending.kind === 'permission-needed' && answer.kind === 'permission') {
+      launch = {
+        kind: 'resume',
+        prompt: buildResumePrompt(ending, answer.decision),
+        ...(answer.decision === 'allow'
+          ? { allowedCall: { toolName: ending.toolName, toolInput: ending.toolInput } }
+          : {}),
+      };
+    } else if (ending.kind === 'checkpoint' && answer.kind === 'checkpoint') {
+      launch = {
+        kind: 'resume',
+        prompt: buildCheckpointResumePrompt(previousRun.ticketNumber, ending.request, answer.text),
+      };
+    } else {
+      throw new RunNotResumableError(`Run ${runId} cannot take a ${answer.kind} answer`);
     }
     const latestRun = await runRepository.findLatest(
       previousRun.projectId,
@@ -49,13 +68,7 @@ export class ResumeRunUseCase {
     };
     await runRepository.insert(run);
 
-    launchRunSession(run, {
-      kind: 'resume',
-      prompt: buildResumePrompt(ending, decision),
-      ...(decision === 'allow'
-        ? { allowedCall: { toolName: ending.toolName, toolInput: ending.toolInput } }
-        : {}),
-    });
+    launchRunSession(run, launch);
 
     return run;
   }

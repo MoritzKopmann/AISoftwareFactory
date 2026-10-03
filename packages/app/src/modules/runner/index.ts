@@ -8,7 +8,7 @@ import { createEscalateTool } from './api/tools/create-escalate-tool.js';
 import { createParkTool } from './api/tools/create-park-tool.js';
 import type { FinishRun } from './logic/domain/types/finish-run.js';
 import type { LaunchRunSession } from './logic/domain/types/launch-run-session.js';
-import type { PermissionDecision } from './logic/domain/types/permission-decision.js';
+import type { RunAnswer } from './logic/domain/types/run-answer.js';
 import type { Run } from './logic/domain/types/run.js';
 import type { SessionLog } from './logic/domain/types/session-log.js';
 import type { RunTool } from './logic/domain/types/run-tool.js';
@@ -40,6 +40,7 @@ import { StartRunUseCase, type StartRunRequest } from './logic/use-cases/start-r
 import { StopRunUseCase } from './logic/use-cases/stop-run-use-case.js';
 
 export type { PermissionDecision } from './logic/domain/types/permission-decision.js';
+export type { RunAnswer } from './logic/domain/types/run-answer.js';
 export type { Run } from './logic/domain/types/run.js';
 export type { RunContext } from './logic/domain/types/run-context.js';
 export type { RunEnding } from './logic/domain/types/run-ending.js';
@@ -76,7 +77,7 @@ export type RunnerModuleDependencies = {
 export type RunnerModule = {
   readonly routes: Hono;
   readonly start: (request: StartRunRequest) => Promise<Run>;
-  readonly resume: (runId: string, decision: PermissionDecision) => Promise<Run>;
+  readonly resume: (runId: string, answer: RunAnswer) => Promise<Run>;
   readonly findRun: (runId: string) => Promise<Run | undefined>;
   readonly activeRuns: (projectId: string) => Promise<ReadonlyArray<ActiveRun>>;
   readonly latestRun: (projectId: string, ticketNumber: number) => Promise<Run | undefined>;
@@ -139,7 +140,7 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
   return {
     routes: new Hono().route('/runs', createStopRunRoutes(stopRun)),
     start: (request) => startRun.execute(request),
-    resume: (runId, decision) => resumeRun.execute(runId, decision),
+    resume: (runId, answer) => resumeRun.execute(runId, answer),
     findRun: (runId) => readRun.execute(runId),
     activeRuns: (projectId) => readActiveRuns.execute(projectId),
     latestRun: (projectId, ticketNumber) => readLatestRun.execute(projectId, ticketNumber),
