@@ -34,6 +34,7 @@ export const readyLeaf: SchedulableTicket = {
 export class FakeTicketStatusWrites implements TicketStatusWrites {
   readonly calls: string[] = [];
   liveStatus: TicketStatus = 'in-progress';
+  setStatusFailure: Error | undefined;
 
   async readStatus(): Promise<TicketStatus> {
     this.calls.push('readStatus');
@@ -46,6 +47,9 @@ export class FakeTicketStatusWrites implements TicketStatusWrites {
     to: TicketStatus,
   ): Promise<void> {
     this.calls.push(`setStatus #${ticketNumber} -> ${to}`);
+    if (this.setStatusFailure !== undefined) {
+      throw this.setStatusFailure;
+    }
     this.liveStatus = to;
   }
 

@@ -25,6 +25,7 @@ function buildSubject() {
     ticketStatusWrites,
     runner,
     projectLookup: new FakeProjectLookup(),
+    events: bus,
     logger,
   });
   const unsubscribe = subscribeToRunFinished(bus, settleFinishedRun, logger);

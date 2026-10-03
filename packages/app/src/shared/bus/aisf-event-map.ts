@@ -1,3 +1,5 @@
+import type { TicketStatus } from '../ticket-status/ticket-status.js';
+
 export type AisfEventMap = {
   readonly 'project.added': {
     readonly projectId: string;
@@ -31,5 +33,11 @@ export type AisfEventMap = {
       | { readonly kind: 'crashed'; readonly reason: string }
       | { readonly kind: 'usage-limit'; readonly reason: string }
       | { readonly kind: 'app-restarted' };
+  };
+  readonly 'ticket.status-written': {
+    readonly projectId: string;
+    readonly ticketNumber: number;
+    readonly from: TicketStatus;
+    readonly to: TicketStatus;
   };
 };

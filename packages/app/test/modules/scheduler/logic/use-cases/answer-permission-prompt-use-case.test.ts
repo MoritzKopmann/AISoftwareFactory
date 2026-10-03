@@ -3,6 +3,7 @@ import type { RunRecord } from '../../../../../src/modules/scheduler/logic/domai
 import { PermissionNotAnswerableError } from '../../../../../src/modules/scheduler/logic/errors/permission-not-answerable-error.js';
 import type { ProjectLookup } from '../../../../../src/modules/scheduler/logic/ports/project-lookup.js';
 import { AnswerPermissionPromptUseCase } from '../../../../../src/modules/scheduler/logic/use-cases/answer-permission-prompt-use-case.js';
+import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
 import {
   FakeProjectLookup,
   FakeRunnerPort,
@@ -29,8 +30,14 @@ function buildSubject(projectLookup: ProjectLookup = new FakeProjectLookup()) {
     ...(permissionRun.endedAt === undefined ? {} : { endedAt: permissionRun.endedAt }),
     ...(permissionRun.ending === undefined ? {} : { ending: permissionRun.ending }),
   };
-  const useCase = new AnswerPermissionPromptUseCase({ ticketStatusWrites, runner, projectLookup });
-  return { useCase, ticketStatusWrites, runner };
+  const events = new FakeEventPublisher();
+  const useCase = new AnswerPermissionPromptUseCase({
+    ticketStatusWrites,
+    runner,
+    projectLookup,
+    events,
+  });
+  return { useCase, ticketStatusWrites, runner, events };
 }
 
 describe('AnswerPermissionPromptUseCase', () => {
@@ -114,5 +121,61 @@ describe('AnswerPermissionPromptUseCase', () => {
       'setStatus #147 -> in-progress',
       'setStatus #147 -> stuck',
     ]);
+  });
+
+  const written = (from: string, to: string) => ({
+    name: 'ticket.status-written',
+    payload: { projectId: 'moritz/aisf', ticketNumber: 147, from, to },
+  });
+
+  it.each(['allow', 'deny'] as const)(
+    'should announce the in-progress write before resuming when the decision is %s',
+    async (decision) => {
+      const { useCase, runner, events } = buildSubject();
+      let eventsSeenAtResume = -1;
+      const resume = runner.resume.bind(runner);
+      runner.resume = async (runId, resumeDecision) => {
+        eventsSeenAtResume = events.emittedEvents.length;
+        return resume(runId, resumeDecision);
+      };
+
+      await useCase.execute('run-1', decision);
+
+      expect(events.emittedEvents).toEqual([written('stuck', 'in-progress')]);
+      expect(eventsSeenAtResume).toBe(1);
+    },
+  );
+
+  it('should announce the rollback after the in-progress write when the runner cannot resume', async () => {
+    const { useCase, runner, events } = buildSubject();
+    const failure = new Error('worktree is gone');
+    runner.resumeFailure = failure;
+
+    await expect(useCase.execute('run-1', 'allow')).rejects.toBe(failure);
+
+    expect(events.emittedEvents).toEqual([
+      written('stuck', 'in-progress'),
+      written('in-progress', 'stuck'),
+    ]);
+  });
+
+  it('should announce nothing when the answer is rejected', async () => {
+    const { useCase, ticketStatusWrites, events } = buildSubject();
+    ticketStatusWrites.liveStatus = 'in-progress';
+
+    await expect(useCase.execute('run-1', 'allow')).rejects.toThrow(PermissionNotAnswerableError);
+
+    expect(events.emittedEvents).toEqual([]);
+  });
+
+  it('should announce nothing and not resume when the in-progress write fails', async () => {
+    const { useCase, ticketStatusWrites, runner, events } = buildSubject();
+    const failure = new Error('gh failed');
+    ticketStatusWrites.setStatusFailure = failure;
+
+    await expect(useCase.execute('run-1', 'allow')).rejects.toBe(failure);
+
+    expect(events.emittedEvents).toEqual([]);
+    expect(runner.calls.filter((call) => call.startsWith('resume'))).toEqual([]);
   });
 });
