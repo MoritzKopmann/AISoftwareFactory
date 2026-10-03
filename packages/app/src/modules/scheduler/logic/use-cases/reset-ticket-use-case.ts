@@ -19,8 +19,8 @@ export class ResetTicketUseCase {
     if (project === undefined) {
       throw new TicketNotResettableError(`${projectId} is unknown`);
     }
-    const activeRun = await runner.activeRun(projectId);
-    if (activeRun?.run.ticketNumber === ticketNumber) {
+    const activeRuns = await runner.activeRuns(projectId);
+    if (activeRuns.some(({ run }) => run.ticketNumber === ticketNumber)) {
       throw new TicketNotResettableError(`#${ticketNumber} has an active run`);
     }
     const status = await ticketStatusWrites.readStatus(project.repository, ticketNumber);
