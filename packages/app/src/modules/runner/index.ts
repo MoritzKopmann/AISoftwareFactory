@@ -3,6 +3,7 @@ import type { EventPublisher } from '../../shared/bus/event-publisher.js';
 import type { Clock } from '../../shared/clock/clock.js';
 import type { Logger } from '../../shared/logger/create-logger.js';
 import { createStopRunRoutes } from './api/routes/create-stop-run-routes.js';
+import { createCheckpointTool } from './api/tools/create-checkpoint-tool.js';
 import { createEscalateTool } from './api/tools/create-escalate-tool.js';
 import { createParkTool } from './api/tools/create-park-tool.js';
 import type { FinishRun } from './logic/domain/types/finish-run.js';
@@ -94,7 +95,12 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
     agentSessions,
     recentRunSteps,
     finishRun,
-    tools: [createEscalateTool(), createParkTool(), ...dependencies.appTools],
+    tools: [
+      createEscalateTool(),
+      createParkTool(),
+      createCheckpointTool(),
+      ...dependencies.appTools,
+    ],
     logger: dependencies.logger,
   });
   const launchRunSession: LaunchRunSession = (run, launch) =>
