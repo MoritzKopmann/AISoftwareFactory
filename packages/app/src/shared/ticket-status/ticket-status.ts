@@ -5,6 +5,7 @@ export type TicketStatus =
   | 'planned'
   | 'ready'
   | 'in-progress'
+  | 'waiting'
   | 'in-review'
   | 'stuck'
   | 'conflict'

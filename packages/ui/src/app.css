@@ -301,6 +301,10 @@ a.ext::after {
   color: var(--info);
 }
 
+.s-hitl {
+  color: var(--hitl);
+}
+
 .s-done {
   color: var(--ok);
 }

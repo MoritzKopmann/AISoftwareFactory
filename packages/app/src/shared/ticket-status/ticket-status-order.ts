@@ -7,6 +7,7 @@ export const ticketStatusOrder: ReadonlyArray<TicketStatus> = [
   'planned',
   'ready',
   'in-progress',
+  'waiting',
   'in-review',
   'stuck',
   'conflict',

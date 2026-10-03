@@ -30,6 +30,14 @@ describe('describeTicketStatusMark', () => {
     });
   });
 
+  it('should return a still hitl circle when the status is waiting', () => {
+    expect(describeTicketStatusMark('waiting')).toEqual({
+      shape: '●',
+      tone: 'hitl',
+      pulses: false,
+    });
+  });
+
   it('should return a danger square when the status is stuck', () => {
     expect(describeTicketStatusMark('stuck')).toEqual({
       shape: '■',

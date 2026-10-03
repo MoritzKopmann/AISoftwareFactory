@@ -40,4 +40,20 @@ describe('deriveTicketStatus', () => {
       deriveTicketStatus({ state: 'open', labelNames: ['status: ready', 'status: in-review'] }),
     ).toEqual({ status: 'conflict', conflictingStatuses: ['ready', 'in-review'] });
   });
+
+  it('should be waiting with no conflict when the only status label is status: waiting', () => {
+    expect(deriveTicketStatus({ state: 'open', labelNames: ['status: waiting'] })).toEqual({
+      status: 'waiting',
+      conflictingStatuses: [],
+    });
+  });
+
+  it('should be conflict naming in-progress and waiting when both labels are present', () => {
+    expect(
+      deriveTicketStatus({
+        state: 'open',
+        labelNames: ['status: in-progress', 'status: waiting'],
+      }),
+    ).toEqual({ status: 'conflict', conflictingStatuses: ['in-progress', 'waiting'] });
+  });
 });
