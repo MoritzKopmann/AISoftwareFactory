@@ -21,6 +21,7 @@ import { MergeApprovedPullRequestsUseCase } from './logic/use-cases/merge-approv
 import { ReadRunAvailabilityUseCase } from './logic/use-cases/read-run-availability-use-case.js';
 import { ReadTicketRunUseCase } from './logic/use-cases/read-ticket-run-use-case.js';
 import { ReadTicketSessionLogUseCase } from './logic/use-cases/read-ticket-session-log-use-case.js';
+import { ResetTicketUseCase } from './logic/use-cases/reset-ticket-use-case.js';
 import { SettleFinishedRunUseCase } from './logic/use-cases/settle-finished-run-use-case.js';
 import { StartTicketRunUseCase } from './logic/use-cases/start-ticket-run-use-case.js';
 
@@ -94,6 +95,7 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
     projectLookup,
     events,
   });
+  const resetTicket = new ResetTicketUseCase({ ticketStatusWrites, runner, projectLookup });
   const mergeApprovedPullRequests = new MergeApprovedPullRequestsUseCase({
     pullRequestMerges,
     runner,
@@ -109,6 +111,7 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
         createRunRoutes({
           read: (projectId, ticketNumber) => readTicketRun.execute(projectId, ticketNumber),
           start: (projectId, ticketNumber) => startTicketRun.execute(projectId, ticketNumber),
+          reset: (projectId, ticketNumber) => resetTicket.execute(projectId, ticketNumber),
           readSessionLog: (projectId, ticketNumber) =>
             readTicketSessionLog.execute(projectId, ticketNumber),
         }),

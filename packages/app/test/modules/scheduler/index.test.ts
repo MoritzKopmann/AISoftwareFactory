@@ -38,14 +38,16 @@ describe('createSchedulerModule', () => {
   let bus: TypedEventBus<AisfEventMap>;
   let pullRequestMerges: FakePullRequestMerges;
   let runner: FakeRunnerPort;
+  let ticketStatusWrites: FakeTicketStatusWrites;
   let scheduler: SchedulerModule;
 
   beforeEach(() => {
     bus = new TypedEventBus<AisfEventMap>();
     pullRequestMerges = new FakePullRequestMerges();
     runner = new FakeRunnerPort();
+    ticketStatusWrites = new FakeTicketStatusWrites();
     scheduler = createSchedulerModule({
-      ticketStatusWrites: new FakeTicketStatusWrites(),
+      ticketStatusWrites,
       pullRequestMerges,
       runner,
       ticketLookup: new FakeTicketLookup(readyLeaf),
@@ -56,6 +58,17 @@ describe('createSchedulerModule', () => {
       subscriber: bus,
       logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
     });
+  });
+
+  it('should reset a stuck ticket to ready and answer 204 when the reset is posted', async () => {
+    ticketStatusWrites.liveStatus = 'stuck';
+
+    const response = await scheduler.routes.request('/projects/moritz/aisf/tickets/138/reset', {
+      method: 'POST',
+    });
+
+    expect(response.status).toBe(204);
+    expect(ticketStatusWrites.calls).toContain('setStatus #138 -> ready');
   });
 
   it('should report a ready leaf as available when its run is read', async () => {
