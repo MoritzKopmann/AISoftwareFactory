@@ -1,11 +1,16 @@
 import { Hono } from 'hono';
 import type { EventSubscriber } from '../../shared/bus/event-subscriber.js';
 import { createTicketsRoutes } from './api/routes/create-tickets-routes.js';
+import { subscribeToRunFinished } from './api/subscriptions/subscribe-to-run-finished.js';
+import { subscribeToTicketStatusWritten } from './api/subscriptions/subscribe-to-ticket-status-written.js';
 import { subscribeToProjectAdded } from './api/subscriptions/subscribe-to-project-added.js';
 import { failWatch } from './logic/domain/functions/fail-watch.js';
+import { presentSnapshot } from './logic/domain/functions/present-snapshot.js';
+import { pruneStatusWrites } from './logic/domain/functions/prune-status-writes.js';
 import type { ProjectTicket } from './logic/domain/types/project-ticket.js';
 import type { RepositoryReference } from './logic/domain/types/repository-reference.js';
 import type { RepositoryWatch } from './logic/domain/types/repository-watch.js';
+import type { StatusWrite } from './logic/domain/types/status-write.js';
 import type { Ticket } from './logic/domain/types/ticket.js';
 import type { ActiveRunLookup } from './logic/ports/active-run-lookup.js';
 import type { RegisteredRepositories } from './logic/ports/registered-repositories.js';
@@ -50,8 +55,9 @@ export function createWatcherModule(dependencies: WatcherModuleDependencies): Wa
   const readTicket = new ReadTicketUseCase(dependencies);
   const readProjectBoard = new ReadProjectBoardUseCase(dependencies);
   const watchesByProjectId = new Map<string, RepositoryWatch>();
+  const statusWritesByProjectId = new Map<string, Map<number, StatusWrite>>();
   let nextPollTimer: ReturnType<typeof setTimeout> | undefined;
-  let unsubscribe: (() => void) | undefined;
+  let unsubscribers: ReadonlyArray<() => void> = [];
   let runningPolls: Promise<void> | undefined;
   let pollRequested = false;
   let stopped = false;
@@ -62,13 +68,57 @@ export function createWatcherModule(dependencies: WatcherModuleDependencies): Wa
     }
   }
 
+  function statusWritesOf(projectId: string): ReadonlyArray<StatusWrite> {
+    return [...(statusWritesByProjectId.get(projectId)?.values() ?? [])];
+  }
+
+  function presentWatch(watch: RepositoryWatch): RepositoryWatch {
+    return watch.snapshot === undefined
+      ? watch
+      : { ...watch, snapshot: presentSnapshot(watch.snapshot, statusWritesOf(watch.projectId)) };
+  }
+
+  function presentedWatch(projectId: string): RepositoryWatch | undefined {
+    const watch = watchesByProjectId.get(projectId);
+    return watch === undefined ? undefined : presentWatch(watch);
+  }
+
+  function recordStatusWrite(projectId: string, write: Omit<StatusWrite, 'writtenAt'>): void {
+    const writes = statusWritesByProjectId.get(projectId) ?? new Map<number, StatusWrite>();
+    writes.set(write.ticketNumber, { ...write, writtenAt: dependencies.clock.now() });
+    statusWritesByProjectId.set(projectId, writes);
+  }
+
+  function pruneAllStatusWrites(): void {
+    const now = dependencies.clock.now();
+    for (const [projectId, writes] of statusWritesByProjectId) {
+      const snapshot = watchesByProjectId.get(projectId)?.snapshot;
+      const kept =
+        snapshot === undefined
+          ? [...writes.values()]
+          : pruneStatusWrites([...writes.values()], snapshot, now);
+      if (kept.length === 0) {
+        statusWritesByProjectId.delete(projectId);
+      } else {
+        statusWritesByProjectId.set(
+          projectId,
+          new Map(kept.map((write) => [write.ticketNumber, write])),
+        );
+      }
+    }
+  }
+
   // The timer callback must never reject, or an unhandled rejection ends the process.
   async function runPoll(): Promise<void> {
     try {
-      const polledWatches = await pollRepositories.execute([...watchesByProjectId.values()]);
+      const polledWatches = await pollRepositories.execute(
+        [...watchesByProjectId.values()],
+        new Set(statusWritesByProjectId.keys()),
+      );
       for (const watch of polledWatches) {
         watchesByProjectId.set(watch.projectId, watch);
       }
+      pruneAllStatusWrites();
     } catch (error) {
       const failedAt = dependencies.clock.now();
       const message = error instanceof Error ? error.message : String(error);
@@ -110,11 +160,11 @@ export function createWatcherModule(dependencies: WatcherModuleDependencies): Wa
 
   const ticketReads = {
     board: async (projectId: string) => {
-      const watch = watchesByProjectId.get(projectId);
+      const watch = presentedWatch(projectId);
       return watch === undefined ? undefined : readProjectBoard.execute(watch);
     },
     ticket: async (projectId: string, number: number) => {
-      const watch = watchesByProjectId.get(projectId);
+      const watch = presentedWatch(projectId);
       return watch === undefined ? undefined : readTicket.execute(watch, number);
     },
   };
@@ -123,10 +173,19 @@ export function createWatcherModule(dependencies: WatcherModuleDependencies): Wa
     routes: new Hono().route('/projects', createTicketsRoutes(ticketReads)),
     start: async () => {
       stopped = false;
-      unsubscribe = subscribeToProjectAdded(dependencies.subscriber, (projectId, repository) => {
-        watchRepository(projectId, repository);
-        void requestPoll();
-      });
+      unsubscribers = [
+        subscribeToProjectAdded(dependencies.subscriber, (projectId, repository) => {
+          watchRepository(projectId, repository);
+          void requestPoll();
+        }),
+        subscribeToTicketStatusWritten(dependencies.subscriber, (projectId, write) => {
+          recordStatusWrite(projectId, write);
+          void requestPoll();
+        }),
+        subscribeToRunFinished(dependencies.subscriber, () => {
+          void requestPoll();
+        }),
+      ];
       for (const { projectId, repository } of await dependencies.registeredRepositories.list()) {
         watchRepository(projectId, repository);
       }
@@ -135,9 +194,12 @@ export function createWatcherModule(dependencies: WatcherModuleDependencies): Wa
     stop: () => {
       stopped = true;
       clearTimeout(nextPollTimer);
-      unsubscribe?.();
+      for (const unsubscribe of unsubscribers) {
+        unsubscribe();
+      }
+      unsubscribers = [];
     },
-    openTickets: (projectId) => watchesByProjectId.get(projectId)?.snapshot?.openTickets ?? [],
+    openTickets: (projectId) => presentedWatch(projectId)?.snapshot?.openTickets ?? [],
     ticket: ticketReads.ticket,
   };
 }
