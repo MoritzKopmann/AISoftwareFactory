@@ -5,4 +5,5 @@ export type SnapshotRuleInput = {
   readonly watch: RepositoryWatch;
   readonly now: string;
   readonly snapshotIntervalMilliseconds: number;
+  readonly hasUnconfirmedStatusWrites: boolean;
 };

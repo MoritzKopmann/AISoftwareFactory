@@ -25,7 +25,10 @@ export type PollRepositoriesDependencies = {
 export class PollRepositoriesUseCase {
   constructor(private readonly dependencies: PollRepositoriesDependencies) {}
 
-  async execute(watches: ReadonlyArray<RepositoryWatch>): Promise<ReadonlyArray<RepositoryWatch>> {
+  async execute(
+    watches: ReadonlyArray<RepositoryWatch>,
+    projectIdsWithStatusWrites: ReadonlySet<string> = new Set(),
+  ): Promise<ReadonlyArray<RepositoryWatch>> {
     const gate = findRateLimitGate(watches, this.dependencies.clock.now());
     if (gate !== undefined) {
       return watches.map((watch) => this.pauseForRateLimit(watch, gate));
@@ -34,7 +37,9 @@ export class PollRepositoriesUseCase {
     const polledWatches: RepositoryWatch[] = [];
     for (const [index, watch] of watches.entries()) {
       try {
-        polledWatches.push(await this.pollRepository(watch));
+        polledWatches.push(
+          await this.pollRepository(watch, projectIdsWithStatusWrites.has(watch.projectId)),
+        );
       } catch (error) {
         if (error instanceof GitHubRateLimitedError) {
           const newGate = { retryAt: error.retryAt.toISOString(), message: error.message };
@@ -50,7 +55,10 @@ export class PollRepositoriesUseCase {
     return polledWatches;
   }
 
-  private async pollRepository(watch: RepositoryWatch): Promise<RepositoryWatch> {
+  private async pollRepository(
+    watch: RepositoryWatch,
+    hasUnconfirmedStatusWrites: boolean,
+  ): Promise<RepositoryWatch> {
     const { issueFeeds, ticketSource, clock, events, snapshotIntervalMilliseconds } =
       this.dependencies;
     const feedsChanged = await issueFeeds.changedSince(watch.repository);
@@ -60,6 +68,7 @@ export class PollRepositoriesUseCase {
       watch,
       now: checkedAt,
       snapshotIntervalMilliseconds,
+      hasUnconfirmedStatusWrites,
     });
     if (!takeSnapshot && watch.snapshot !== undefined) {
       return {

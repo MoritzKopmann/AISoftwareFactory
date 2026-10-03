@@ -13,8 +13,19 @@ const watchWithSnapshot: RepositoryWatch = {
   sync: { state: 'ok', checkedAt: takenAt, snapshotTakenAt: takenAt },
 };
 
-function decide(feedsChanged: boolean, watch: RepositoryWatch, at = now): boolean {
-  return shouldTakeSnapshot({ feedsChanged, watch, now: at, snapshotIntervalMilliseconds });
+function decide(
+  feedsChanged: boolean,
+  watch: RepositoryWatch,
+  at = now,
+  hasUnconfirmedStatusWrites = false,
+): boolean {
+  return shouldTakeSnapshot({
+    feedsChanged,
+    watch,
+    now: at,
+    snapshotIntervalMilliseconds,
+    hasUnconfirmedStatusWrites,
+  });
 }
 
 describe('shouldTakeSnapshot', () => {
@@ -43,6 +54,10 @@ describe('shouldTakeSnapshot', () => {
 
   it('should take a snapshot when the safety-net interval has passed', () => {
     expect(decide(false, watchWithSnapshot, '2026-09-28T12:03:00.000Z')).toBe(true);
+  });
+
+  it('should take a snapshot when a status write is unconfirmed', () => {
+    expect(decide(false, watchWithSnapshot, now, true)).toBe(true);
   });
 
   it('should skip the snapshot when nothing changed and the interval has not passed', () => {
