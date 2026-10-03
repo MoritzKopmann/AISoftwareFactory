@@ -35,7 +35,7 @@ import { GhCliPullRequestMerges } from './modules/scheduler/infra/integrations/g
 import { GhCliTicketStatusWrites } from './modules/scheduler/infra/integrations/gh-cli-ticket-status-writes.js';
 import {
   createSchedulerModule,
-  PermissionNotAnswerableError,
+  RunNotAnswerableError,
   RunAlreadyActiveError,
   type SchedulerModule,
 } from './modules/scheduler/index.js';
@@ -215,15 +215,15 @@ function buildSchedulerModule(
           throw error;
         }
       },
-      resume: async (runId, decision) => {
+      resume: async (runId, answer) => {
         try {
-          return await runner.resume(runId, { kind: 'permission', decision });
+          return await runner.resume(runId, answer);
         } catch (error) {
           if (error instanceof RunnerRunAlreadyActiveError) {
             throw new RunAlreadyActiveError(error.message);
           }
           if (error instanceof RunNotResumableError) {
-            throw new PermissionNotAnswerableError(error.message);
+            throw new RunNotAnswerableError(error.message);
           }
           throw error;
         }

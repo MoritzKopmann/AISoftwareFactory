@@ -56,6 +56,11 @@ export const permissionAnswerRequestSchema = z.object({
 });
 export type PermissionAnswerRequest = z.infer<typeof permissionAnswerRequestSchema>;
 
+export const checkpointAnswerRequestSchema = z.object({
+  answer: z.string().trim().min(1).max(10_000),
+});
+export type CheckpointAnswerRequest = z.infer<typeof checkpointAnswerRequestSchema>;
+
 export const ticketRunResponseSchema = z.object({
   availability: runAvailabilityResponseSchema,
   activeRun: startedRunResponseSchema.extend({ steps: z.array(runStepResponseSchema) }).optional(),
