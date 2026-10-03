@@ -77,6 +77,7 @@ function describeLiveRun(
 function endingNote(ending: RunEndingResponse): string | undefined {
   switch (ending.kind) {
     case 'permission-needed':
+    case 'checkpoint':
       return undefined;
     case 'stopped':
       return 'Run ended: you pressed Stop. The worktree and branch are left as they are.';

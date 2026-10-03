@@ -1,6 +1,6 @@
 import type { TicketRunResponse } from '@aisf/app/api-schemas/runs-schemas.js';
 import { describe, expect, it } from 'vitest';
-import { describeRunBar } from '../../src/tickets/describe-run-bar.js';
+import { describeRunBar, settleStartState } from '../../src/tickets/describe-run-bar.js';
 
 const available: TicketRunResponse = { availability: { kind: 'available' } };
 const disabled: TicketRunResponse = {
@@ -11,15 +11,13 @@ const live: TicketRunResponse = {
   availability: { kind: 'disabled', reason: '#56 is running.' },
   activeRun: { id: 'run-1', startedAt: '2026-09-30T10:00:00Z', steps: [] },
 };
-const ended: TicketRunResponse = {
-  availability: { kind: 'available' },
-  lastRun: {
-    id: 'run-1',
-    startedAt: '2026-09-30T10:00:00Z',
-    endedAt: '2026-09-30T10:05:00Z',
-    ending: { kind: 'stopped' },
-  },
+const lastRun: NonNullable<TicketRunResponse['lastRun']> = {
+  id: 'run-1',
+  startedAt: '2026-09-30T10:00:00Z',
+  endedAt: '2026-09-30T10:05:00Z',
+  ending: { kind: 'stopped' },
 };
+const ended: TicketRunResponse = { availability: { kind: 'available' }, lastRun };
 const failedStart = {
   kind: 'failed',
   message: 'Another run started first; #42 is running.',
@@ -66,8 +64,58 @@ describe('describeRunBar', () => {
     expect(describeRunBar(live, { kind: 'starting' }, 56)).toEqual({ kind: 'hidden' });
   });
 
-  it('should hide the bar when the ticket has an ended run', () => {
-    expect(describeRunBar(ended, { kind: 'idle' }, 56)).toEqual({ kind: 'hidden' });
+  it('should show a pressable Run button with the hint when the ready ticket has an ended run', () => {
+    expect(describeRunBar(ended, { kind: 'idle' }, 56)).toEqual({
+      kind: 'shown',
+      button: 'run',
+      pressable: true,
+      hint: 'Runs implement-ticket on #56 in its own worktree.',
+    });
+  });
+
+  it('should show the disabled reason when GitHub is catching up after an ended run', () => {
+    const response: TicketRunResponse = {
+      availability: { kind: 'disabled', reason: 'Waiting for GitHub to catch up' },
+      lastRun,
+    };
+    expect(describeRunBar(response, { kind: 'idle' }, 56)).toEqual({
+      kind: 'shown',
+      button: 'disabled',
+      pressable: false,
+      reason: 'Waiting for GitHub to catch up',
+    });
+  });
+
+  it.each([
+    { kind: 'permission-needed', toolName: 'Bash', toolInput: {} },
+    { kind: 'checkpoint', request: 'Check the board.' },
+  ] as const)(
+    'should hide the bar when the ticket is not ready and its run ended on $kind',
+    (ending) => {
+      const response: TicketRunResponse = {
+        availability: { kind: 'absent' },
+        lastRun: { ...lastRun, ending },
+      };
+      expect(describeRunBar(response, { kind: 'idle' }, 56)).toEqual({ kind: 'hidden' });
+    },
+  );
+
+  it('should hide the bar when a run is active and an earlier run ended', () => {
+    expect(describeRunBar({ ...live, lastRun }, { kind: 'idle' }, 56)).toEqual({
+      kind: 'hidden',
+    });
+  });
+
+  it('should show a pressable Run button when the started run was seen active and has ended', () => {
+    const afterActive = settleStartState({ kind: 'starting' }, live);
+    expect(describeRunBar(ended, afterActive, 56)).toMatchObject({
+      button: 'run',
+      pressable: true,
+    });
+  });
+
+  it('should keep the starting state when no active run has been seen yet', () => {
+    expect(settleStartState({ kind: 'starting' }, ended)).toEqual({ kind: 'starting' });
   });
 
   it('should bring the Run button back without the hint and show the error with the status when the start failed', () => {

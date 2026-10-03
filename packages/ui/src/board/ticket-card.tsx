@@ -10,6 +10,14 @@ function RunMarkerChip({ marker }: { marker: RunMarker }) {
       </span>
     );
   }
+  if (marker === 'waiting') {
+    return (
+      <span className="chip hitl">
+        <StatusShape status="waiting" />
+        Waiting
+      </span>
+    );
+  }
   return (
     <span className="chip flow">
       <StatusShape status="in-progress" />

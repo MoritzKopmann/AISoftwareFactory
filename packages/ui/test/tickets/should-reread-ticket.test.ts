@@ -38,4 +38,24 @@ describe('shouldRereadTicket', () => {
   it('should not re-read when no answer has arrived yet', () => {
     expect(shouldRereadTicket(undefined, 'in-progress')).toBe(false);
   });
+
+  it('should re-read when a checkpoint run ended but the ticket still shows in progress', () => {
+    const checkpoint: TicketRunResponse = {
+      availability: { kind: 'absent' },
+      lastRun: { ...lastRun, ending: { kind: 'checkpoint', request: 'Check the board.' } },
+    };
+    expect(shouldRereadTicket(checkpoint, 'in-progress')).toBe(true);
+  });
+
+  it('should not re-read when a checkpoint run ended and the ticket shows waiting', () => {
+    const checkpoint: TicketRunResponse = {
+      availability: { kind: 'absent' },
+      lastRun: { ...lastRun, ending: { kind: 'checkpoint', request: 'Check the board.' } },
+    };
+    expect(shouldRereadTicket(checkpoint, 'waiting')).toBe(false);
+  });
+
+  it('should re-read when the answered run resumed but the ticket still shows waiting', () => {
+    expect(shouldRereadTicket(live, 'waiting')).toBe(true);
+  });
 });
