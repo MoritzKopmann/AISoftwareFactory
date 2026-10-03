@@ -102,4 +102,11 @@ describe('describeTicketCard', () => {
     );
     expect(card.runMarker).toBeUndefined();
   });
+
+  it('should describe the same card when two tickets differ only in body', () => {
+    const describeWith = (body: string) =>
+      describeTicketCard(buildTicketResponse({ number: 12, body }), 'o/n', undefined);
+
+    expect(describeWith('')).toEqual(describeWith('# A long description'));
+  });
 });

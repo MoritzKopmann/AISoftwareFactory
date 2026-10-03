@@ -13,9 +13,19 @@ import { FakeTicketSource } from '../../fakes/fake-watcher-ports.js';
 const now = '2026-09-28T12:00:00.000Z';
 const okSync: SyncStatus = { state: 'ok', checkedAt: now, snapshotTakenAt: now };
 
-const openTicket = buildTicket({ number: 1, status: 'ready' });
-const staleClosedTicket = buildTicket({ number: 2, status: 'closed', title: 'Stale title' });
-const freshClosedTicket = buildTicket({ number: 2, status: 'closed', title: 'Fresh title' });
+const openTicket = buildTicket({ number: 1, status: 'ready', body: 'Open body' });
+const staleClosedTicket = buildTicket({
+  number: 2,
+  status: 'closed',
+  title: 'Stale title',
+  body: 'Stale body',
+});
+const freshClosedTicket = buildTicket({
+  number: 2,
+  status: 'closed',
+  title: 'Fresh title',
+  body: 'Fresh body',
+});
 const snapshot: TicketSnapshot = {
   takenAt: now,
   openTickets: [openTicket],
@@ -54,6 +64,23 @@ describe('ReadTicketUseCase', () => {
 
       expect(projectTicket).toEqual({ projectId: 'owner/name', sync: okSync, ticket: openTicket });
       expect(ticketSource.ticketRequests).toHaveLength(0);
+    });
+
+    it('should carry the snapshot body when an open ticket is served from the snapshot', async () => {
+      const { useCase, ticketSource } = createSubject();
+
+      const projectTicket = await useCase.execute(buildWatch(), 1);
+
+      expect(projectTicket?.ticket?.body).toBe('Open body');
+      expect(ticketSource.ticketRequests).toHaveLength(0);
+    });
+
+    it('should carry the live body with the live title when a closed ticket is fetched live', async () => {
+      const { useCase } = createSubject();
+
+      const projectTicket = await useCase.execute(buildWatch(), 2);
+
+      expect(projectTicket?.ticket).toMatchObject({ title: 'Fresh title', body: 'Fresh body' });
     });
 
     it('should fetch a recently closed ticket live when it is in the snapshot', async () => {

@@ -11,6 +11,7 @@
         "url": "https://github.com/octo/hello/issues/8",
         "state": "CLOSED",
         "updatedAt": "2026-09-28T08:41:09Z",
+        "body": "Blocked body",
         "labels": {
           "nodes": [
             {

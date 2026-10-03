@@ -5,6 +5,7 @@ export type Ticket = {
   readonly number: number;
   readonly title: string;
   readonly url: string;
+  readonly body: string;
   readonly status: TicketStatus;
   readonly conflictingStatuses: ReadonlyArray<TicketStatus>;
   readonly hitl: boolean;

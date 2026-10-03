@@ -6,6 +6,7 @@ import { GitHubRequestError } from '../../../../../src/modules/watcher/logic/err
 import { FakeGitHubToken, ScriptedFetch } from '../../fakes/fake-watcher-ports.js';
 
 const repository = { owner: 'octo', name: 'hello' };
+const rawBody = '\n  ## Snapshot\n\n**bold** <details><summary>raw</summary></details>  \n\n';
 
 function readFixture(name: string): string {
   return readFileSync(new URL(`../../../../fixtures/github/${name}`, import.meta.url), 'utf8');
@@ -48,6 +49,7 @@ describe('FetchGraphQLTicketSource', () => {
         number: 12,
         title: 'Epic: Watch a project',
         url: 'https://github.com/octo/hello/issues/12',
+        body: 'Epic body',
         status: 'planned',
         conflictingStatuses: [],
         hitl: false,
@@ -60,6 +62,7 @@ describe('FetchGraphQLTicketSource', () => {
         number: 13,
         title: 'Snapshot the tickets',
         url: 'https://github.com/octo/hello/issues/13',
+        body: rawBody,
         status: 'in-review',
         conflictingStatuses: [],
         hitl: true,
@@ -192,6 +195,56 @@ describe('FetchGraphQLTicketSource', () => {
       }
     });
 
+    it('should carry the body of a recently closed issue when the closed query answers', async () => {
+      const scriptedFetch = new ScriptedFetch([
+        answer('graphql-open-page-2.json'),
+        answer('graphql-closed.json'),
+      ]);
+
+      const snapshot = await createSource(scriptedFetch).snapshot(repository);
+
+      expect(snapshot.recentlyClosedTickets[0]?.body).toBe('Closed body');
+    });
+
+    it('should map an empty body to an empty string when the issue has no description', async () => {
+      const scriptedFetch = new ScriptedFetch([
+        answer('graphql-open-page-2.json'),
+        answer('graphql-closed.json'),
+      ]);
+
+      const snapshot = await createSource(scriptedFetch).snapshot(repository);
+
+      expect(snapshot.openTickets[0]).toHaveProperty('body', '');
+      expect(snapshot.recentlyClosedTickets[1]).toHaveProperty('body', '');
+    });
+
+    it('should keep markdown, raw html and surrounding whitespace when the body is mapped', async () => {
+      const scriptedFetch = new ScriptedFetch([
+        answer('graphql-open-page-1.json'),
+        answer('graphql-open-page-2.json'),
+        answer('graphql-closed.json'),
+      ]);
+
+      const snapshot = await createSource(scriptedFetch).snapshot(repository);
+
+      expect(snapshot.openTickets[1]?.body).toBe(rawBody);
+    });
+
+    it('should select body and not bodyHTML in the open and the closed query', async () => {
+      const scriptedFetch = new ScriptedFetch([
+        answer('graphql-open-page-2.json'),
+        answer('graphql-closed.json'),
+      ]);
+
+      await createSource(scriptedFetch).snapshot(repository);
+
+      for (const requestIndex of [0, 1]) {
+        const query = readRequestBody(scriptedFetch, requestIndex).query;
+        expect(query).toMatch(/\bbody\b/);
+        expect(query).not.toContain('bodyHTML');
+      }
+    });
+
     it('should throw GitHubRateLimitedError with retryAt from resetAt when GraphQL reports RATE_LIMITED', async () => {
       const scriptedFetch = new ScriptedFetch([answer('graphql-rate-limited.json')]);
 
@@ -280,6 +333,36 @@ describe('FetchGraphQLTicketSource', () => {
         parent: { number: 12, title: 'Epic: Watch a project' },
       });
       expect(readRequestBody(scriptedFetch, 0).variables).toMatchObject({ number: 8 });
+    });
+
+    it('should carry the body when a single ticket is read', async () => {
+      const scriptedFetch = new ScriptedFetch([answer('graphql-ticket.json')]);
+
+      const ticket = await createSource(scriptedFetch).ticket(repository, 8);
+
+      expect(ticket?.body).toBe('Ticket body');
+    });
+
+    it('should select body and not bodyHTML when a ticket is read', async () => {
+      const scriptedFetch = new ScriptedFetch([answer('graphql-ticket.json')]);
+
+      await createSource(scriptedFetch).ticket(repository, 8);
+
+      const query = readRequestBody(scriptedFetch, 0).query;
+      expect(query).toMatch(/\bbody\b/);
+      expect(query).not.toContain('bodyHTML');
+    });
+
+    it('should map an empty body to an empty string when a ticket without description is read', async () => {
+      const scriptedFetch = new ScriptedFetch([
+        new Response(readFixture('graphql-ticket.json').replace('"Ticket body"', '""'), {
+          status: 200,
+        }),
+      ]);
+
+      const ticket = await createSource(scriptedFetch).ticket(repository, 8);
+
+      expect(ticket).toHaveProperty('body', '');
     });
 
     it('should return undefined when the number is a pull request', async () => {

@@ -10,6 +10,7 @@
             "title": "Epic: Watch a project",
             "url": "https://github.com/octo/hello/issues/12",
             "updatedAt": "2026-09-27T09:47:23Z",
+            "body": "Epic body",
             "labels": { "nodes": [{ "name": "status: planned" }, { "name": "type: enhancement" }] },
             "parent": null,
             "subIssues": { "nodes": [{ "number": 13 }, { "number": 14 }] },
@@ -21,6 +22,7 @@
             "title": "Snapshot the tickets",
             "url": "https://github.com/octo/hello/issues/13",
             "updatedAt": "2026-09-28T08:15:02Z",
+            "body": "\n  ## Snapshot\n\n**bold** <details><summary>raw</summary></details>  \n\n",
             "labels": {
               "nodes": [
                 { "name": "status: in-review" },
