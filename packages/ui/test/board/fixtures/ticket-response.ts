@@ -22,6 +22,7 @@ export function buildTicketResponse(overrides: Partial<TicketResponse> = {}): Ti
     number: 1,
     title: 'A ticket',
     url: 'https://github.com/o/n/issues/1',
+    body: '',
     status: 'ready',
     conflictingStatuses: [],
     hitl: false,

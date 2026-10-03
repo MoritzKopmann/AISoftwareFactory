@@ -4,6 +4,7 @@ export function buildTicket(overrides: Partial<Ticket> & Pick<Ticket, 'number'>)
   return {
     title: `Ticket ${overrides.number}`,
     url: `https://github.com/owner/name/issues/${overrides.number}`,
+    body: '',
     status: 'idea',
     conflictingStatuses: [],
     hitl: false,

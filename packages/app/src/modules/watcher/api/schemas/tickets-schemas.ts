@@ -18,6 +18,7 @@ export const ticketResponseSchema = z.object({
   number: z.number(),
   title: z.string(),
   url: z.string(),
+  body: z.string(),
   status: ticketStatusSchema,
   conflictingStatuses: z.array(ticketStatusSchema),
   hitl: z.boolean(),

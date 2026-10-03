@@ -22,6 +22,13 @@ describe('ticketResponseSchema', () => {
     expect(ticketResponseSchema.parse(ticket).closingPullRequests[0]?.approved).toBe(true);
   });
 
+  it('should fail to parse when the ticket has no body', () => {
+    const ticket: Record<string, unknown> = { ...buildTicket({ number: 1 }) };
+    delete ticket['body'];
+
+    expect(ticketResponseSchema.safeParse(ticket).success).toBe(false);
+  });
+
   it('should fail to parse when the closing pull request carries reviewDecision in place of approved', () => {
     const ticket = {
       ...buildTicket({ number: 1 }),

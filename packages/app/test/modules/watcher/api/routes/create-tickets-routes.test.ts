@@ -59,6 +59,29 @@ describe('createTicketsRoutes', () => {
       ]);
     });
 
+    it('should carry the body of each ticket when the board is served', async () => {
+      const watcher = new FakeWatcher();
+      watcher.boards.set('owner/name', {
+        projectId: 'owner/name',
+        sync: okSync,
+        board: {
+          rows: [
+            {
+              key: 'idea',
+              tickets: [buildTicket({ number: 1, body: 'Board body' })],
+              totalCount: 1,
+            },
+          ],
+        },
+      });
+
+      const response = await createTestApp(watcher).request('/projects/owner/name/board');
+
+      expect(response.status).toBe(200);
+      const body = projectBoardResponseSchema.parse(await response.json());
+      expect(body.board?.rows[0]?.tickets[0]?.body).toBe('Board body');
+    });
+
     it('should answer 200 with a pending sync and no board when the first snapshot is not done', async () => {
       const watcher = new FakeWatcher();
       watcher.boards.set('owner/name', { projectId: 'owner/name', sync: { state: 'pending' } });
@@ -124,6 +147,35 @@ describe('createTicketsRoutes', () => {
       const body = projectTicketResponseSchema.parse(await response.json());
       expect(body.ticket).toMatchObject({ number: 7, status: 'ready', hitl: true });
       expect(watcher.ticketRequests).toEqual([{ projectId: 'owner/name', number: 7 }]);
+    });
+
+    it('should answer 200 with the body when the ticket has one', async () => {
+      const watcher = new FakeWatcher();
+      watcher.tickets.set('owner/name#7', {
+        projectId: 'owner/name',
+        sync: okSync,
+        ticket: buildTicket({ number: 7, body: '# Heading\n\nText' }),
+      });
+
+      const response = await createTestApp(watcher).request('/projects/owner/name/tickets/7');
+
+      expect(response.status).toBe(200);
+      const body = projectTicketResponseSchema.parse(await response.json());
+      expect(body.ticket?.body).toBe('# Heading\n\nText');
+    });
+
+    it('should answer 200 with an empty string body when the ticket has no description', async () => {
+      const watcher = new FakeWatcher();
+      watcher.tickets.set('owner/name#7', {
+        projectId: 'owner/name',
+        sync: okSync,
+        ticket: buildTicket({ number: 7, body: '' }),
+      });
+
+      const response = await createTestApp(watcher).request('/projects/owner/name/tickets/7');
+
+      const body = projectTicketResponseSchema.parse(await response.json());
+      expect(body.ticket?.body).toBe('');
     });
 
     it('should answer 200 with the failure and no ticket when the live fetch failed', async () => {

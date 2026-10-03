@@ -14,6 +14,7 @@ const requestTimeoutMilliseconds = 30_000;
 const ticketFields = `
   number
   title
+  body
   url
   updatedAt
   labels(first: 20) { nodes { name } }
@@ -76,6 +77,7 @@ const ticketQuery = `
 type IssueNode = {
   readonly number: number;
   readonly title: string;
+  readonly body: string;
   readonly url: string;
   readonly updatedAt: string;
   readonly labels: { readonly nodes: ReadonlyArray<{ readonly name: string }> };
@@ -224,6 +226,7 @@ function toTicket(node: IssueNode, state: 'open' | 'closed'): Ticket {
     number: node.number,
     title: node.title,
     url: node.url,
+    body: node.body,
     status,
     conflictingStatuses,
     hitl: labelNames.includes('hitl'),
