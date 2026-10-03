@@ -67,15 +67,15 @@ A stop here writes nothing.
 
 ## When to involve the human
 
-Two cases only. Anything else, decide and go on.
+Only for:
 
-1. **A planned gate.** The spec names a human checkpoint on a `hitl` leaf (§7).
-2. **A blocker you can't resolve.** A stop point below, reached only after you tried what the
-   ticket, the code and the checks allow.
+1. **A planned gate**: the spec's human checkpoint on a `hitl` leaf (§7).
+2. **A blocker you can't resolve**: a stop point below, after trying what the ticket, code and
+   checks allow.
 
-No check-ins, progress questions, confirmations or "shall I continue?". Not between steps, not
-before commit or PR. A question that has a sensible default is a decision: make it, list it
-under `## Decisions made`.
+Otherwise decide and go on. No check-ins, progress questions or confirmations, not between
+steps, not before commit or PR. A question with a sensible default is a decision: list it under
+`## Decisions made`.
 
 ## Stop points
 
@@ -90,8 +90,8 @@ Where a step says **escalate** or **park**, act by mode:
 
 - **AFK:** the run ends at the tool call. `reason` holds what was tried, what failed (paste
   the output), and the decision a human has to make.
-- **Hand-run:** ask only at these stop points, once the blocker is real. Carry on with the
-  answer, and record it as evidence (§7) or under `## Decisions made` (§10).
+- **Hand-run:** ask only here, once the blocker is real. Carry on with the answer, and record
+  it as evidence (§7) or under `## Decisions made` (§10).
 - Never call an `aisf_*` tool that isn't present. The human says give up → `aisf:github-issue`
   _Hand-run stuck_, with the same reason text.
 - A small, reversible choice the ticket leaves open, or a contradiction inside it, is not a
