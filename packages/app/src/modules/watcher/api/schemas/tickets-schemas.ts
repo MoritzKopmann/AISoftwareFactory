@@ -7,6 +7,7 @@ export const ticketStatusSchema = z.enum([
   'planned',
   'ready',
   'in-progress',
+  'waiting',
   'in-review',
   'stuck',
   'conflict',

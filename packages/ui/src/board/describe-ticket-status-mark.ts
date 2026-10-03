@@ -1,6 +1,6 @@
 import type { TicketStatusResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
 
-export type StatusMarkTone = 'neutral' | 'flow' | 'done' | 'warn' | 'danger';
+export type StatusMarkTone = 'neutral' | 'flow' | 'hitl' | 'done' | 'warn' | 'danger';
 
 export type StatusMark = {
   readonly shape: string;
@@ -20,6 +20,8 @@ export function describeTicketStatusMark(status: TicketStatusResponse): StatusMa
       return { shape: '●', tone: 'flow', pulses: false };
     case 'in-progress':
       return { shape: '●', tone: 'flow', pulses: true };
+    case 'waiting':
+      return { shape: '●', tone: 'hitl', pulses: false };
     case 'stuck':
       return { shape: '■', tone: 'danger', pulses: false };
     case 'conflict':

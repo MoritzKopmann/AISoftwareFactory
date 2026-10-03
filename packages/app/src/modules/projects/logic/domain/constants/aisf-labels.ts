@@ -31,12 +31,17 @@ export const aisfLabels: ReadonlyArray<AisfLabel> = [
     color: 'FBCA04',
     description: 'Implementation run in progress',
   },
+  {
+    name: 'status: waiting',
+    color: 'D876E3',
+    description: 'A run waits at its human checkpoint',
+  },
   { name: 'status: in-review', color: 'E4E669', description: 'PR open, awaiting review' },
   { name: 'status: stuck', color: 'B60205', description: 'A run gave up; needs a human' },
   {
     name: 'hitl',
     color: 'F9A825',
-    description: 'Runs as an interactive session, never AFK',
+    description: 'Has one human checkpoint; the run waits there for an answer',
   },
   {
     name: 'approved',

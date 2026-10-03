@@ -15,7 +15,19 @@ function rowTicketNumbers(board: ReturnType<typeof arrangeBoard>, key: string) {
 }
 
 describe('arrangeBoard', () => {
-  it('should return all ten rows in lifecycle order without tickets when the snapshot is empty', () => {
+  it('should put a waiting ticket in a waiting row between in-progress and in-review', () => {
+    const board = arrangeBoard({
+      ...emptySnapshot,
+      openTickets: [buildTicket({ number: 7, status: 'waiting' })],
+    });
+
+    const keys = board.rows.map((row) => row.key);
+    expect(keys.indexOf('waiting')).toBe(keys.indexOf('in-progress') + 1);
+    expect(keys.indexOf('in-review')).toBe(keys.indexOf('waiting') + 1);
+    expect(rowTicketNumbers(board, 'waiting')).toEqual([7]);
+  });
+
+  it('should return all eleven rows in lifecycle order without tickets when the snapshot is empty', () => {
     const board = arrangeBoard(emptySnapshot);
 
     expect(board.rows.map((row) => row.key)).toEqual([
@@ -25,6 +37,7 @@ describe('arrangeBoard', () => {
       'planned',
       'ready',
       'in-progress',
+      'waiting',
       'in-review',
       'stuck',
       'conflict',

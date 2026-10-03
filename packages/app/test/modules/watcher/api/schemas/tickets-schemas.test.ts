@@ -13,6 +13,12 @@ const closingPullRequest = {
 };
 
 describe('ticketResponseSchema', () => {
+  it('should parse when the ticket status is waiting', () => {
+    const ticket = buildTicket({ number: 1, status: 'waiting' });
+
+    expect(ticketResponseSchema.safeParse(ticket).success).toBe(true);
+  });
+
   it('should carry the approval as a boolean when the closing pull request has approved', () => {
     const ticket = {
       ...buildTicket({ number: 1 }),

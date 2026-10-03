@@ -6,13 +6,14 @@ import { StatusShape } from './status-shape.js';
 import { TicketCard } from './ticket-card.js';
 import { ticketStatusLabel } from './ticket-status-labels.js';
 
-const boardStatuses: ReadonlyArray<TicketStatusResponse> = [
+export const boardStatuses: ReadonlyArray<TicketStatusResponse> = [
   'idea',
   'backlog',
   'plan',
   'planned',
   'ready',
   'in-progress',
+  'waiting',
   'in-review',
   'stuck',
   'conflict',

@@ -11,4 +11,3 @@ Never guess what to do if it is not defined enough.
 Never make feature decisions without asking me unless they are a direct cause of previous decisions.
 
 Only do what you are promted to do.
-
