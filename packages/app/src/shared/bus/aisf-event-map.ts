@@ -32,7 +32,8 @@ export type AisfEventMap = {
       | { readonly kind: 'stopped' }
       | { readonly kind: 'crashed'; readonly reason: string }
       | { readonly kind: 'usage-limit'; readonly reason: string }
-      | { readonly kind: 'app-restarted' };
+      | { readonly kind: 'app-restarted' }
+      | { readonly kind: 'checkpoint'; readonly request: string };
   };
   readonly 'ticket.status-written': {
     readonly projectId: string;

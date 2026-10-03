@@ -14,6 +14,13 @@ export function decideRunEndTransition(
   if (!runningStatuses.includes(liveStatus)) {
     return { kind: 'none' };
   }
+  if (ending.kind === 'checkpoint') {
+    return {
+      kind: 'transition',
+      to: 'waiting',
+      comment: `The run reached its human checkpoint and waits for an answer on the ticket page:\n\n${ending.request}`,
+    };
+  }
   return {
     kind: 'transition',
     to: 'stuck',
@@ -21,7 +28,7 @@ export function decideRunEndTransition(
   };
 }
 
-function describeEnding(ending: Exclude<RunEnding, { kind: 'parked' }>): string {
+function describeEnding(ending: Exclude<RunEnding, { kind: 'parked' | 'checkpoint' }>): string {
   switch (ending.kind) {
     case 'escalated':
       return `The run escalated (${ending.escalation}): ${ending.reason}`;

@@ -45,6 +45,22 @@ describe('SettleFinishedRunUseCase', () => {
     expect(runner.calls).toEqual(['settle run-1']);
   });
 
+  it('should set waiting, post the request and settle the run when the run reached its checkpoint', async () => {
+    const { useCase, ticketStatusWrites, runner } = buildSubject();
+
+    await useCase.execute({
+      ...escalatedRun,
+      ending: { kind: 'checkpoint', request: 'Check the waiting chip' },
+    });
+
+    expect(ticketStatusWrites.calls).toEqual([
+      'readStatus',
+      'setStatus #138 -> waiting',
+      'comment #138: The run reached its human checkpoint and waits for an answer on the ticket page:\n\nCheck the waiting chip',
+    ]);
+    expect(runner.calls).toEqual(['settle run-1']);
+  });
+
   it('should return the ticket to ready without a comment and settle when the run parked', async () => {
     const { useCase, ticketStatusWrites, runner } = buildSubject();
 
