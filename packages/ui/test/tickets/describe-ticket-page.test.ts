@@ -89,7 +89,16 @@ describe('describeTicketPage', () => {
       statusLabel: 'Closed',
       statusMark: { shape: '✓', tone: 'done', pulses: false },
       url: 'https://github.com/MoritzKopmann/postkarte/issues/36',
+      body: '',
       pullRequests: [],
+    });
+  });
+
+  it('should pass the ticket body on when the ticket loads', () => {
+    const ticket = buildTicketResponse({ body: '## Spec\n\nText' });
+
+    expect(describeTicketPage(answered(ticket), projectId, 1, now)).toMatchObject({
+      body: '## Spec\n\nText',
     });
   });
 

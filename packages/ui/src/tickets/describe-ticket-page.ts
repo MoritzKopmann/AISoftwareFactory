@@ -30,6 +30,7 @@ export type TicketPageDescription =
       readonly statusLabel: string;
       readonly statusMark: StatusMark;
       readonly url: string;
+      readonly body: string;
       readonly parent?: {
         readonly href: string;
         readonly numberLabel: string;
@@ -51,6 +52,7 @@ function describeLoadedTicket(ticket: TicketResponse, projectId: string): Ticket
     statusLabel: ticketStatusLabel(ticket.status),
     statusMark: describeTicketStatusMark(ticket.status),
     url: ticket.url,
+    body: ticket.body,
     ...(ticket.parent === undefined
       ? {}
       : {
