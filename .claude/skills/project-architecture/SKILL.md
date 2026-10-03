@@ -260,7 +260,6 @@ if (response.status === 304) return previousPage;
 - **No persistence besides `aisf.db`:** no JSON state files, no native SQLite binding.
 - **Rejected stacks stay rejected:** htmx, Fastify, Svelte, Docker, a single binary.
 - **No global 3-layer split** (a top-level `api/`, `logic/`, `infra/` across modules). Layers live inside each module.
-- **No parallel sibling runs by default.** Concurrency is serial per project.
 
 ## Plan vocabulary
 
