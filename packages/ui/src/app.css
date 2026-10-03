@@ -1004,3 +1004,142 @@ details:not([open]) .t-hide {
   display: grid;
   gap: 8px;
 }
+
+.ticket-markdown {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-size);
+  line-height: var(--line);
+  color: var(--text);
+}
+
+.ticket-markdown h1,
+.ticket-markdown h2,
+.ticket-markdown h3 {
+  font-family: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ticket-markdown h1 {
+  font-size: 20px;
+}
+
+.ticket-markdown h2 {
+  font-size: 17px;
+}
+
+.ticket-markdown h3 {
+  font-size: 15px;
+}
+
+.ticket-markdown ul,
+.ticket-markdown ol {
+  margin: 0;
+  padding-left: 24px;
+}
+
+.ticket-markdown li + li {
+  margin-top: 4px;
+}
+
+.ticket-markdown li:has(> input[type='checkbox']) {
+  list-style: none;
+  margin-left: -20px;
+}
+
+.ticket-markdown input[type='checkbox'] {
+  margin: 0 6px 0 0;
+  accent-color: var(--accent);
+}
+
+.ticket-markdown a {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 2px;
+}
+
+.ticket-markdown a:hover,
+.ticket-markdown a:focus-visible {
+  color: var(--accent);
+}
+
+.ticket-markdown code {
+  padding: 1px 4px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.ticket-markdown pre {
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.ticket-markdown pre code {
+  padding: 0;
+  background: none;
+  border: 0;
+  overflow-wrap: normal;
+  white-space: pre;
+}
+
+.ticket-markdown blockquote {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--border-strong);
+  color: var(--muted);
+}
+
+.ticket-markdown hr {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.ticket-markdown img {
+  max-width: 100%;
+  height: auto;
+}
+
+.ticket-markdown-table {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.ticket-markdown table {
+  border-collapse: collapse;
+}
+
+.ticket-markdown th,
+.ticket-markdown td {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.ticket-markdown th {
+  background: var(--surface-2);
+}
+
+.ticket-markdown details {
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.ticket-markdown summary {
+  cursor: pointer;
+  font-weight: 600;
+}
