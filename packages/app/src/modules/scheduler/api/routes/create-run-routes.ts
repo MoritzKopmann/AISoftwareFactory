@@ -5,11 +5,13 @@ import type { StartedRun } from '../../logic/domain/types/started-run.js';
 import type { TicketRun } from '../../logic/domain/types/ticket-run.js';
 import { RunAlreadyActiveError } from '../../logic/errors/run-already-active-error.js';
 import { RunNotAvailableError } from '../../logic/errors/run-not-available-error.js';
+import { TicketNotResettableError } from '../../logic/errors/ticket-not-resettable-error.js';
 import type { SessionLogResponse, TicketRunResponse } from '../schemas/runs-schemas.js';
 
 export type TicketRuns = {
   readonly read: (projectId: string, ticketNumber: number) => Promise<TicketRun>;
   readonly start: (projectId: string, ticketNumber: number) => Promise<StartedRun>;
+  readonly reset: (projectId: string, ticketNumber: number) => Promise<void>;
   readonly readSessionLog: (projectId: string, ticketNumber: number) => Promise<SessionLog>;
 };
 
@@ -70,6 +72,22 @@ export function createRunRoutes(ticketRuns: TicketRuns): Hono {
         return context.json(startedRun, 201);
       } catch (error) {
         if (error instanceof RunNotAvailableError || error instanceof RunAlreadyActiveError) {
+          return context.json({ message: error.message }, 409);
+        }
+        throw error;
+      }
+    })
+    .post('/:owner/:name/tickets/:number/reset', async (context) => {
+      const parsedNumber = ticketNumberParameterSchema.safeParse(context.req.param('number'));
+      if (!parsedNumber.success) {
+        return context.json({ message: parsedNumber.error.issues[0]?.message }, 400);
+      }
+
+      try {
+        await ticketRuns.reset(readProjectId(context), parsedNumber.data);
+        return context.body(null, 204);
+      } catch (error) {
+        if (error instanceof TicketNotResettableError) {
           return context.json({ message: error.message }, 409);
         }
         throw error;

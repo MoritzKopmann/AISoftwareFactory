@@ -12,6 +12,7 @@ import {
 import type { SessionLog } from '../../../../../src/modules/scheduler/logic/domain/types/session-log.js';
 import type { TicketRun } from '../../../../../src/modules/scheduler/logic/domain/types/ticket-run.js';
 import { RunAlreadyActiveError } from '../../../../../src/modules/scheduler/logic/errors/run-already-active-error.js';
+import { TicketNotResettableError } from '../../../../../src/modules/scheduler/logic/errors/ticket-not-resettable-error.js';
 import { RunNotAvailableError } from '../../../../../src/modules/scheduler/logic/errors/run-not-available-error.js';
 
 const startedAt = '2026-09-29T09:00:00.000Z';
@@ -20,6 +21,7 @@ const endedAt = '2026-09-29T09:30:00.000Z';
 class FakeTicketRuns implements TicketRuns {
   ticketRun: TicketRun = { availability: { kind: 'available' } };
   startFailure: Error | undefined;
+  resetFailure: Error | undefined;
   sessionLog: SessionLog = { kind: 'no-session' };
   readonly calls: string[] = [];
 
@@ -31,6 +33,13 @@ class FakeTicketRuns implements TicketRuns {
   async read(projectId: string, ticketNumber: number): Promise<TicketRun> {
     this.calls.push(`read ${projectId} #${ticketNumber}`);
     return this.ticketRun;
+  }
+
+  async reset(projectId: string, ticketNumber: number): Promise<void> {
+    this.calls.push(`reset ${projectId} #${ticketNumber}`);
+    if (this.resetFailure !== undefined) {
+      throw this.resetFailure;
+    }
   }
 
   async start(projectId: string, ticketNumber: number) {
@@ -263,6 +272,49 @@ describe('createRunRoutes', () => {
       );
 
       expect(response.status).toBe(400);
+    });
+  });
+
+  describe('POST /projects/:owner/:name/tickets/:number/reset', () => {
+    it('should answer 204 with an empty body when the reset succeeds', async () => {
+      const ticketRuns = new FakeTicketRuns();
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/moritz/aisf/tickets/138/reset',
+        { method: 'POST' },
+      );
+
+      expect(response.status).toBe(204);
+      expect(await response.text()).toBe('');
+      expect(ticketRuns.calls).toEqual(['reset moritz/aisf #138']);
+    });
+
+    it('should answer 409 with the message when the ticket is not resettable', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.resetFailure = new TicketNotResettableError('#138 is not stuck or in progress');
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/moritz/aisf/tickets/138/reset',
+        { method: 'POST' },
+      );
+
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ message: '#138 is not stuck or in progress' });
+    });
+
+    it('should answer 400 and not reset when the ticket number is bad', async () => {
+      const ticketRuns = new FakeTicketRuns();
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/moritz/aisf/tickets/abc/reset',
+        { method: 'POST' },
+      );
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({
+        message: 'The ticket number must be a positive integer',
+      });
+      expect(ticketRuns.calls).toEqual([]);
     });
   });
 });
