@@ -37,12 +37,8 @@ The number you were given may be a parent (`status: planned`). Parents are never
 list its open children that are `status: ready` and unblocked, report them and stop, as
 `aisf:implement-ticket` §1 does.
 
-Then two checks:
+Then one check:
 
-- **The verification leaf?** Every design ends with a `hitl` "Verify the implemented … against
-  the design document" leaf asking the _human_ for screenshots of the running app. That is not
-  this skill's work: say so and stop, or you produce a PR containing nothing. Run it by hand
-  with the human in chat and record their verdicts as a comment on the leaf.
 - **Blocked?** An open `blockedBy` issue → stop and name it.
 
 Name `<n>` and the mode before touching a file.
@@ -134,8 +130,8 @@ The PR body follows `aisf:implement-ticket` §10, with two additions: a `## Desi
 `## Known deviations` (every unresolved difference from the mock, and why; omit if none)
 before `Closes #<n>`. Report as §10 does, plus the render URL.
 
-**What you are giving up.** There is no visual regression net, which makes the design's final
-`hitl` verification leaf the only thing between a visual regression and a release.
+**What you are giving up.** There is no visual regression net, and nothing checks the
+assembled page against the design once the components land.
 
 ## Left to Epic: Design path (#34)
 

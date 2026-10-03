@@ -2,7 +2,7 @@
 name: ui-ticket
 description: >
   Split a plain-HTML design document into a parent ticket plus one ready sub-issue per
-  component, each with its own mock and landing zone, and a final hitl verification leaf.
+  component, each with its own mock and landing zone.
   Use when the user wants to turn a design into UI tickets. Triggers: "ui-ticket",
   "split this design into tickets", "ticket this mockup".
 disable-model-invocation: true
@@ -19,7 +19,7 @@ _how_. The mockup has already settled both for everything visual, so this skill 
 interview. The one thing it asks the human is what to do about UI the app can't back yet
 (step 5): it flags each such piece and never guesses.
 
-Apart from that decision it runs one-shot, so the checks in step 7 are what stand between a
+Apart from that decision it runs one-shot, so the checks in step 6 are what stand between a
 bad split and many bad tickets.
 
 `gh` infers the repository from the current checkout. Never pass `-R`. Every issue write goes
@@ -133,23 +133,10 @@ List every such piece with the component it belongs to and what is missing.
 Several pieces needing one feature share one blocking ticket. Take no action for a piece until
 the human has chosen. Record every choice in the parent's body.
 
-## 6. The verification leaf
-
-Always add one final sub-issue, blocked by every other, so it is picked up last. Without it
-each component is checked alone and nothing checks the assembled page against the design.
-
-- **Title**: "Verify the implemented <design> against the design document".
-- **Labels**: `type: task`, the parent's `priority:`, `status: ready` and **`hitl`**.
-- **Body**: asks the human to run the app, screenshot every affected screen and compare it with
-  the design doc and each mock, recording a match or mismatch per component. Fix trivial
-  mismatches (padding, radius, weight, colour) in its own PR. Anything structural becomes a new
-  backlog ticket. Acceptance criteria: a comment on itself holding the screenshots, the
-  verdicts and every follow-up filed.
-
-## 7. Write to GitHub
+## 6. Write to GitHub
 
 Through `aisf:github-issue`, in this order, each step needs the numbers from the last: **parent
-→ blocking tickets → components in dependency order → verification leaf.**
+→ blocking tickets → components in dependency order.**
 
 - **Parent**: the design doc, a screen-by-screen overview, the component list with numbers,
   what is out of scope. Labels: `type: enhancement`, `priority:` (inherited, else `medium`),

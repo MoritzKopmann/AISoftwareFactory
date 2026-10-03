@@ -33,7 +33,9 @@ Rules:
   after migration". A criterion that needs the running app or a real external write: only on a
   `hitl` sub-issue.
 - **A `hitl` spec names its human checkpoint**: the scenario where the human acts or judges,
-  and what they act on. Every other step must run without them.
+  and what they act on, and the worktree path and the exact commands the human runs. Every
+  other step must run without them. A `hitl` leaf with no code change says so in its spec, and
+  ends in an evidence comment on the ticket and a closed ticket.
 - **Exact names.** A shared contract keeps the plan's name and shape, verbatim. Name everything
   else by `project-architecture`'s `## Naming conventions`, so the implementer can carry the
   names straight into tests.
