@@ -187,7 +187,7 @@ describe('createRunnerModule', () => {
       }),
     );
 
-    const resumed = await runner.resume('stuck-run', 'allow');
+    const resumed = await runner.resume('stuck-run', { kind: 'permission', decision: 'allow' });
 
     expect(resumed.sessionId).toBe('session-1');
     expect(agentSessions.resumedSpecs[0]?.tools.map((tool) => tool.name)).toEqual([
@@ -203,7 +203,51 @@ describe('createRunnerModule', () => {
       buildRun({ id: 'done-run', state: 'settled', ending: { kind: 'finished' } }),
     );
 
-    await expect(runner.resume('done-run', 'allow')).rejects.toThrow(RunNotResumableError);
+    await expect(
+      runner.resume('done-run', { kind: 'permission', decision: 'allow' }),
+    ).rejects.toThrow(RunNotResumableError);
+  });
+
+  it('should resume a checkpoint run with the app tools hosted when a checkpoint answer arrives', async () => {
+    await runRepository.insert(
+      buildRun({
+        id: 'waiting-run',
+        state: 'settled',
+        ending: { kind: 'checkpoint', request: 'Check the page' },
+      }),
+    );
+
+    const resumed = await runner.resume('waiting-run', { kind: 'checkpoint', text: 'Looks right' });
+
+    expect(resumed.sessionId).toBe('session-1');
+    expect(agentSessions.resumedSpecs[0]?.tools.map((tool) => tool.name)).toContain(
+      'aisf_checkpoint',
+    );
+  });
+
+  it('should end the new run as checkpoint and keep the old ending when the resumed session checkpoints again', async () => {
+    await runRepository.insert(
+      buildRun({
+        id: 'run-1',
+        state: 'settled',
+        ending: { kind: 'checkpoint', request: 'Check the page' },
+      }),
+    );
+    await runner.resume('run-1', { kind: 'checkpoint', text: 'It failed: the chip is missing' });
+    const checkpoint = agentSessions.resumedSpecs[0]?.tools.find(
+      (tool) => tool.name === 'aisf_checkpoint',
+    );
+
+    await checkpoint?.execute({ request: 'Check the page again' });
+
+    expect((await runner.findRun('id-1'))?.ending).toEqual({
+      kind: 'checkpoint',
+      request: 'Check the page again',
+    });
+    expect((await runner.findRun('run-1'))?.ending).toEqual({
+      kind: 'checkpoint',
+      request: 'Check the page',
+    });
   });
 
   it('should return the run when findRun is asked for a known run id', async () => {
