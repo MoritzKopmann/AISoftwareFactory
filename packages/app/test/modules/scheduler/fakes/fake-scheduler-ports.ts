@@ -12,7 +12,7 @@ import type { ReviewedTicket } from '../../../../src/modules/scheduler/logic/dom
 import type { ReviewedTicketLookup } from '../../../../src/modules/scheduler/logic/ports/reviewed-ticket-lookup.js';
 import type { ActiveTicketRun } from '../../../../src/modules/scheduler/logic/domain/types/active-ticket-run.js';
 import type { LatestRun } from '../../../../src/modules/scheduler/logic/domain/types/latest-run.js';
-import type { PermissionDecision } from '../../../../src/modules/scheduler/logic/domain/types/permission-decision.js';
+import type { RunAnswer } from '../../../../src/modules/scheduler/logic/domain/types/run-answer.js';
 import type { RunRecord } from '../../../../src/modules/scheduler/logic/domain/types/run-record.js';
 import type { SessionLog } from '../../../../src/modules/scheduler/logic/domain/types/session-log.js';
 import type { RunStep } from '../../../../src/modules/scheduler/logic/domain/types/run-step.js';
@@ -108,9 +108,9 @@ export class FakeRunnerPort implements RunnerPort {
 
   async resume(
     runId: string,
-    decision: PermissionDecision,
+    answer: RunAnswer,
   ): Promise<{ readonly id: string; readonly startedAt: string }> {
-    this.calls.push(`resume ${runId} ${decision}`);
+    this.calls.push(`resume ${runId} ${JSON.stringify(answer)}`);
     if (this.resumeFailure !== undefined) {
       throw this.resumeFailure;
     }

@@ -169,7 +169,9 @@ describe('createSchedulerModule', () => {
 
       expect(response.status).toBe(201);
       expect(ticketStatusWrites.liveStatus).toBe('in-progress');
-      expect(runner.calls).toContain('resume run-1 allow');
+      expect(runner.calls).toContain(
+        `resume run-1 ${JSON.stringify({ kind: 'permission', decision: 'allow' })}`,
+      );
     });
 
     it('should answer 409 and resume nothing when the ticket is not stuck', async () => {
