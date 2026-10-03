@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { FinishedRun } from '../../../../../src/modules/scheduler/logic/domain/types/finished-run.js';
 import type { ProjectLookup } from '../../../../../src/modules/scheduler/logic/ports/project-lookup.js';
 import { SettleFinishedRunUseCase } from '../../../../../src/modules/scheduler/logic/use-cases/settle-finished-run-use-case.js';
+import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
 import {
   FakeProjectLookup,
   FakeRunnerPort,
@@ -19,13 +20,15 @@ function buildSubject(projectLookup: ProjectLookup = new FakeProjectLookup()) {
   const ticketStatusWrites = new FakeTicketStatusWrites();
   const runner = new FakeRunnerPort();
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+  const events = new FakeEventPublisher();
   const useCase = new SettleFinishedRunUseCase({
     ticketStatusWrites,
     runner,
     projectLookup,
+    events,
     logger,
   });
-  return { useCase, ticketStatusWrites, runner, logger };
+  return { useCase, ticketStatusWrites, runner, logger, events };
 }
 
 describe('SettleFinishedRunUseCase', () => {
@@ -114,5 +117,77 @@ describe('SettleFinishedRunUseCase', () => {
 
     await expect(useCase.execute(escalatedRun)).rejects.toThrow('gh failed');
     expect(runner.calls).toEqual([]);
+  });
+
+  it('should announce the stuck write after setStatus and before comment when the run needs permission', async () => {
+    const { useCase, ticketStatusWrites, events } = buildSubject();
+    let eventsSeenAtComment = -1;
+    ticketStatusWrites.comment = async () => {
+      eventsSeenAtComment = events.emittedEvents.length;
+    };
+
+    await useCase.execute({
+      ...escalatedRun,
+      ending: { kind: 'permission-needed', toolName: 'Bash', toolInput: {} },
+    });
+
+    expect(events.emittedEvents).toEqual([
+      {
+        name: 'ticket.status-written',
+        payload: {
+          projectId: 'moritz/aisf',
+          ticketNumber: 138,
+          from: 'in-progress',
+          to: 'stuck',
+        },
+      },
+    ]);
+    expect(eventsSeenAtComment).toBe(1);
+  });
+
+  it('should announce the ready write when the run parked', async () => {
+    const { useCase, events } = buildSubject();
+
+    await useCase.execute({ ...escalatedRun, ending: { kind: 'parked', blockerNumber: 12 } });
+
+    expect(events.emittedEvents).toEqual([
+      {
+        name: 'ticket.status-written',
+        payload: {
+          projectId: 'moritz/aisf',
+          ticketNumber: 138,
+          from: 'in-progress',
+          to: 'ready',
+        },
+      },
+    ]);
+  });
+
+  it('should announce nothing and still settle when no transition is needed', async () => {
+    const { useCase, ticketStatusWrites, runner, events } = buildSubject();
+    ticketStatusWrites.liveStatus = 'in-review';
+
+    await useCase.execute({ ...escalatedRun, ending: { kind: 'finished' } });
+
+    expect(events.emittedEvents).toEqual([]);
+    expect(runner.calls).toEqual(['settle run-1']);
+  });
+
+  it('should announce nothing when the project is unknown', async () => {
+    const { useCase, events } = buildSubject({ find: async () => undefined });
+
+    await useCase.execute(escalatedRun);
+
+    expect(events.emittedEvents).toEqual([]);
+  });
+
+  it('should announce nothing and rethrow when setStatus throws', async () => {
+    const { useCase, ticketStatusWrites, events } = buildSubject();
+    const failure = new Error('gh failed');
+    ticketStatusWrites.setStatusFailure = failure;
+
+    await expect(useCase.execute(escalatedRun)).rejects.toBe(failure);
+
+    expect(events.emittedEvents).toEqual([]);
   });
 });

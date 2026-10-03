@@ -52,6 +52,7 @@ describe('createSchedulerModule', () => {
       reviewedTicketLookup: new FakeReviewedTicketLookup([approvedTicket]),
       runsGate: new FakeRunsGate(),
       projectLookup: new FakeProjectLookup(),
+      events: bus,
       subscriber: bus,
       logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
     });
@@ -131,6 +132,7 @@ describe('createSchedulerModule', () => {
         reviewedTicketLookup: new FakeReviewedTicketLookup([]),
         runsGate: new FakeRunsGate(),
         projectLookup: new FakeProjectLookup(),
+        events: bus,
         subscriber: bus,
         logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
       });
@@ -201,5 +203,22 @@ describe('createSchedulerModule', () => {
     bus.emit('snapshot.changed', snapshotChanged);
 
     await vi.waitFor(() => expect(pullRequestMerges.calls).toEqual(['merge #201 abc123']));
+  });
+
+  it('should publish ticket.status-written on its bus when a run needing permission settles', async () => {
+    const listener = vi.fn();
+    bus.on('ticket.status-written', listener);
+    scheduler.start();
+
+    bus.emit('run.finished', {
+      runId: 'run-1',
+      projectId: 'moritz/aisf',
+      ticketNumber: 138,
+      ending: { kind: 'permission-needed', toolName: 'Bash', toolInput: {} },
+    });
+
+    await vi.waitFor(() =>
+      expect(listener).toHaveBeenCalledWith(expect.objectContaining({ to: 'stuck' })),
+    );
   });
 });

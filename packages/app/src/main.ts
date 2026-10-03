@@ -194,7 +194,7 @@ function buildRunnerModule(
 }
 
 function buildSchedulerModule(
-  events: EventSubscriber,
+  events: EventPublisher & EventSubscriber,
   projects: ProjectsModule,
   skills: SkillsModule,
   watcher: WatcherModule,
@@ -265,6 +265,7 @@ function buildSchedulerModule(
           : { repository: project.repository, onboarded: project.contract.passed };
       },
     },
+    events,
     subscriber: events,
     logger,
   });

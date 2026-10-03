@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import type { EventPublisher } from '../../shared/bus/event-publisher.js';
 import type { EventSubscriber } from '../../shared/bus/event-subscriber.js';
 import type { Logger } from '../../shared/logger/create-logger.js';
 import { createPermissionRoutes } from './api/routes/create-permission-routes.js';
@@ -39,6 +40,7 @@ export type SchedulerModuleDependencies = {
   readonly reviewedTicketLookup: ReviewedTicketLookup;
   readonly runsGate: RunsGate;
   readonly projectLookup: ProjectLookup;
+  readonly events: EventPublisher;
   readonly subscriber: EventSubscriber;
   readonly logger: Logger;
 };
@@ -57,6 +59,7 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
     reviewedTicketLookup,
     runsGate,
     projectLookup,
+    events,
     subscriber,
     logger,
   } = dependencies;
@@ -82,12 +85,14 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
     ticketStatusWrites,
     runner,
     projectLookup,
+    events,
     logger,
   });
   const answerPermissionPrompt = new AnswerPermissionPromptUseCase({
     ticketStatusWrites,
     runner,
     projectLookup,
+    events,
   });
   const mergeApprovedPullRequests = new MergeApprovedPullRequestsUseCase({
     pullRequestMerges,
