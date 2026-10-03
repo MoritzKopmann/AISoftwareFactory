@@ -835,6 +835,25 @@ details:not([open]) .t-hide {
   min-width: 0;
 }
 
+.ticket-body {
+  max-width: 720px;
+  min-width: 0;
+}
+
+.ticket-body-box {
+  min-width: 0;
+  padding: 16px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.ticket-body-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .log-box {
   min-width: 0;
   background: var(--surface-sunken);

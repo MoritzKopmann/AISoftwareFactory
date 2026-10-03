@@ -9,6 +9,7 @@ import {
 import { outcomeAfterRefresh } from './outcome-after-refresh.js';
 import { RunSection } from './run-section.js';
 import { SessionLog } from './session-log.js';
+import { TicketBodySection } from './ticket-body-section.js';
 
 type TicketPageProps = {
   readonly id: string;
@@ -213,6 +214,7 @@ function LoadedTicket({
       </dl>
       <KnownBugs projectId={projectId} ticketNumber={number} />
       <SessionLog projectId={projectId} number={number} />
+      <TicketBodySection body={description.body} />
     </>
   );
 }
