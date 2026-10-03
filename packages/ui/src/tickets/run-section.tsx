@@ -6,7 +6,7 @@ import {
   type PermissionAnswer,
   type PermissionDecision,
 } from './describe-permission-prompt.js';
-import { describeRunBar, type StartState } from './describe-run-bar.js';
+import { describeRunBar, settleStartState, type StartState } from './describe-run-bar.js';
 import { describeRunPanel } from './describe-run-panel.js';
 import { PermissionPrompt } from './permission-prompt.js';
 import { RunBar } from './run-bar.js';
@@ -33,6 +33,10 @@ export function RunSection({ projectId, number, ticketStatus, onTicketStale }: R
   useEffect(() => {
     if (shouldRereadTicket(ticketRun.response, ticketStatus)) onTicketStale();
   }, [ticketRun.response, ticketStatus, onTicketStale]);
+
+  useEffect(() => {
+    setStart((current) => settleStartState(current, ticketRun.response));
+  }, [ticketRun.response]);
 
   const run = async () => {
     setStart({ kind: 'starting' });

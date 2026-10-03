@@ -105,4 +105,30 @@ describe('describeTicketCard', () => {
 
     expect(describeWith('')).toEqual(describeWith('# A long description'));
   });
+
+  it('should mark the card waiting when the ticket is waiting', () => {
+    const card = describeTicketCard(buildTicketResponse({ status: 'waiting' }), 'o/n', []);
+    expect(card.runMarker).toBe('waiting');
+  });
+
+  it('should mark the card waiting and not running when the waiting ticket is the running one', () => {
+    const card = describeTicketCard(
+      buildTicketResponse({ number: 7, status: 'waiting' }),
+      'o/n',
+      [7],
+    );
+    expect(card.runMarker).toBe('waiting');
+  });
+
+  it.each([
+    { status: 'stuck', running: [], marker: 'stuck' },
+    { status: 'in-progress', running: [1], marker: 'running' },
+    { status: 'ready', running: [], marker: undefined },
+  ] as const)(
+    'should mark the card $marker when the status is $status',
+    ({ status, running, marker }) => {
+      const card = describeTicketCard(buildTicketResponse({ status }), 'o/n', running);
+      expect(card.runMarker).toBe(marker);
+    },
+  );
 });

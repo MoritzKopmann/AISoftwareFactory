@@ -32,16 +32,20 @@ function describeError(start: StartState): { readonly error?: RunBarError } {
   };
 }
 
+// A start that succeeded stays `starting` until the poll shows its run. Once it has, it is done.
+export function settleStartState(
+  start: StartState,
+  response: TicketRunResponse | undefined,
+): StartState {
+  return start.kind === 'starting' && response?.activeRun !== undefined ? { kind: 'idle' } : start;
+}
+
 export function describeRunBar(
   response: TicketRunResponse | undefined,
   start: StartState,
   number: number,
 ): RunBarDescription {
-  if (
-    response === undefined ||
-    response.activeRun !== undefined ||
-    response.lastRun !== undefined
-  ) {
+  if (response === undefined || response.activeRun !== undefined) {
     return { kind: 'hidden' };
   }
   if (start.kind === 'starting') {

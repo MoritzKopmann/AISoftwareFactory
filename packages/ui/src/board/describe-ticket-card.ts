@@ -1,7 +1,7 @@
 import type { TicketResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
 import { ticketStatusLabel } from './ticket-status-labels.js';
 
-export type RunMarker = 'running' | 'stuck';
+export type RunMarker = 'running' | 'stuck' | 'waiting';
 
 export type TicketCardDescription = {
   readonly href: string;
@@ -21,6 +21,9 @@ function describeRunMarker(
 ): RunMarker | undefined {
   if (ticket.status === 'stuck') {
     return 'stuck';
+  }
+  if (ticket.status === 'waiting') {
+    return 'waiting';
   }
   if (runningTicketNumbers.includes(ticket.number)) {
     return 'running';

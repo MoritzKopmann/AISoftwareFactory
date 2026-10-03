@@ -181,6 +181,16 @@ describe('describeRunPanel', () => {
   });
 });
 
+describe('describeRunPanel checkpoint ending', () => {
+  it.each(['stuck', 'waiting'] as const)(
+    'should hide the panel when the run ended on a checkpoint and the ticket is %s',
+    (ticketStatus) => {
+      const response = ended({ kind: 'checkpoint', request: 'Open the board.' });
+      expect(describeRunPanel(input({ response, ticketStatus }), now)).toEqual({ kind: 'hidden' });
+    },
+  );
+});
+
 function ended(
   ending: RunEndingResponse,
   startedAt = localTime(9, 41),
