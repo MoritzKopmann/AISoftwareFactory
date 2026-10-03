@@ -13,6 +13,13 @@ const live: TicketRunResponse = {
   ...ended,
   activeRun: { id: 'run-2', startedAt: '2026-09-30T09:50:00Z', steps: [] },
 };
+const permissionStop: TicketRunResponse = {
+  ...ended,
+  lastRun: {
+    ...lastRun,
+    ending: { kind: 'permission-needed', toolName: 'Bash', toolInput: { command: 'ls' } },
+  },
+};
 
 describe('shouldRereadTicket', () => {
   it('should re-read when the ticket still shows in progress but its run has ended', () => {
@@ -27,7 +34,7 @@ describe('shouldRereadTicket', () => {
     expect(shouldRereadTicket(live, 'ready')).toBe(true);
   });
 
-  it('should not re-read when the ticket already left in progress', () => {
+  it('should not re-read when the ended run did not need permission and the ticket shows stuck', () => {
     expect(shouldRereadTicket(ended, 'stuck')).toBe(false);
   });
 
@@ -57,5 +64,17 @@ describe('shouldRereadTicket', () => {
 
   it('should re-read when the answered run resumed but the ticket still shows waiting', () => {
     expect(shouldRereadTicket(live, 'waiting')).toBe(true);
+  });
+
+  it('should re-read when a permission stop ended the run and the ticket does not show stuck yet', () => {
+    expect(shouldRereadTicket(permissionStop, 'ready')).toBe(true);
+  });
+
+  it('should not re-read when a permission stop ended the run and the ticket shows stuck', () => {
+    expect(shouldRereadTicket(permissionStop, 'stuck')).toBe(false);
+  });
+
+  it('should not re-read when the ticket shows closed', () => {
+    expect(shouldRereadTicket(permissionStop, 'closed')).toBe(false);
   });
 });
