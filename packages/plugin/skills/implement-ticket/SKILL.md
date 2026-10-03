@@ -13,262 +13,156 @@ description: >
 
 Drive a ready leaf to a PR. Argument: ticket number. If none, ask.
 
-`gh` infers the repository from the current checkout. Never pass `-R`. Every status change
-and every issue write goes through `aisf:github-issue`.
+## Guard rails
 
-**The ticket is the whole brief.** Through §7, never load `project-architecture` or
-`project-index`, and never read the body of the parent or a sibling. `aisf:review-code` checks
-the architecture afterwards, uninfluenced by your choices.
+- **The ticket is the whole brief.** Through §7, never load `project-architecture` or
+  `project-index`, and never read a parent's or sibling's body. `aisf:review-code` checks the
+  architecture afterwards.
+- **Every status change and issue write goes through `aisf:github-issue`.** Never pass `-R`.
+- **Never merge**, enable auto-merge or close a ticket. The app merges; `Closes #<n>` closes.
+- **Never weaken a test**, and never push or touch a PR while red.
+- Everything else is your call. No check-ins or confirmations. A choice the ticket leaves
+  open, or a contradiction in it, is a decision: make it, list it under `## Decisions made`.
 
-**Never merge**, enable auto-merge or close a ticket. The app rebase-merges an approved PR, and
-`Closes #<n>` closes the ticket.
+## Stop points
+
+The only times to involve a human. Mode is **AFK** when the `aisf_escalate` tool is present,
+**hand-run** otherwise. Decide once.
+
+| Stop point                                         | AFK                                       | Hand-run                  |
+| -------------------------------------------------- | ----------------------------------------- | ------------------------- |
+| **escalate `red`**: a check still fails (§5)       | `aisf_escalate({kind: 'red', reason})`    | show the output, ask      |
+| **escalate `spec`**: the ticket doesn't answer it  | `aisf_escalate({kind: 'spec', reason})`   | ask the concrete question |
+| **escalate `denied`**: the hook denied it ~3 times | `aisf_escalate({kind: 'denied', reason})` | say what was denied, ask  |
+| **park**: hidden dependency on another ticket (§4) | blocker + comment, `aisf_park({blocker})` | propose the blocker, ask  |
+
+Plus the one planned stop: the spec's human checkpoint on a `hitl` leaf (§7).
+
+`reason`: what you tried, the output, the decision needed. AFK ends at the call. Hand-run
+carries on with the answer; the human says give up → `aisf:github-issue` _Hand-run stuck_.
+Never call an `aisf_*` tool that isn't present.
 
 ## 0. Precondition
 
-**Project slots.** Load `project-toolchain` with the Skill tool (bare name). `Unknown skill` →
-stop and report "project not onboarded". `format`, `analyze`, `test` and `test_file` below are
-the commands in its `aisf-toolchain` block.
-
-**Read the ticket:**
+Load `project-toolchain`. `Unknown skill` → stop: "project not onboarded". Its
+`aisf-toolchain` block gives `format`, `analyze`, `test`, `test_file`.
 
 ```bash
 gh issue view <n> --json title,body,labels,state,parent,subIssues,blockedBy
 ```
 
-**Type.** `type: spike` → stop: `aisf:spike <n>`. `type: ui` → stop: it needs a design, then
-`aisf:ui-ticket <design> <n>`.
-
-**Status.**
-
-| `status:`     | Go on as                                                           |
-| ------------- | ------------------------------------------------------------------ |
-| `ready`       | new run                                                            |
-| `in-progress` | resume: an earlier run crashed or paused                           |
-| `in-review`   | rework, if §1 finds the PR needs it. Otherwise stop                |
-| `planned`     | a parent: list its ready children (§1) and stop                    |
-| `backlog`     | stop: needs `aisf:create-ticket` → `plan`, then `aisf:plan-ticket` |
-| `plan`        | stop: needs `aisf:plan-ticket`                                     |
-| `stuck`       | stop: the human retries, starts over, or moves it back by hand     |
-| none          | stop: an idea, needs `aisf:create-ticket`                          |
-| closed        | stop: done                                                         |
-
-**Spec.** A ticket that goes on must hold Scope, Landing zone and Acceptance criteria: as its
-whole body on a sub-issue, under `## Spec` on a one-PR ticket. Missing → stop: needs
-`aisf:plan-ticket`.
-
-A stop here writes nothing.
-
-**Mode.** Decide once, keep it for the run:
-
-- **AFK**: the `aisf_escalate` tool is present. No human is watching.
-- **Hand-run**: otherwise. A human is in chat.
-
-`hitl` is not a mode. The spec names its human checkpoint: work alone up to it (§7).
-
-## When to involve the human
-
-Only for:
-
-1. **A planned gate**: the spec's human checkpoint on a `hitl` leaf (§7).
-2. **A blocker you can't resolve**: a stop point below, after trying what the ticket, code and
-   checks allow.
-
-Otherwise decide and go on. No check-ins, progress questions or confirmations, not between
-steps, not before commit or PR. A question with a sensible default is a decision: list it under
-`## Decisions made`.
-
-## Stop points
-
-Where a step says **escalate** or **park**, act by mode:
-
-| Stop point                                                                          | AFK                                                   | Hand-run                          |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------- | --------------------------------- |
-| **escalate `red`**: a check is still failing (§5)                                   | `aisf_escalate({kind: 'red', reason})`                | show the failing output and ask   |
-| **escalate `spec`**: a question the ticket doesn't answer                           | `aisf_escalate({kind: 'spec', reason})`               | ask the concrete question         |
-| **escalate `denied`**: the policy hook denied the same kind of action about 3 times | `aisf_escalate({kind: 'denied', reason})`             | say what was denied and ask       |
-| **park**: a hidden dependency on another ticket (§4)                                | set the blocker, comment, then `aisf_park({blocker})` | propose the blocker and ask first |
-
-- **AFK:** the run ends at the tool call. `reason` holds what was tried, what failed (paste
-  the output), and the decision a human has to make.
-- **Hand-run:** ask only here, once the blocker is real. Carry on with the answer, and record
-  it as evidence (§7) or under `## Decisions made` (§10).
-- Never call an `aisf_*` tool that isn't present. The human says give up → `aisf:github-issue`
-  _Hand-run stuck_, with the same reason text.
-- A small, reversible choice the ticket leaves open, or a contradiction inside it, is not a
-  stop point: make it and list it under `## Decisions made`.
+Go on only for a leaf that is `status: ready` (new), `in-progress` (resume) or `in-review`
+(rework, §1), not `type: spike` or `type: ui`, with Scope, Landing zone and Acceptance criteria
+in its body (under `## Spec` on a one-PR ticket). `planned` → §1. Anything else → stop, name
+the next step (`aisf:spike`, `aisf:ui-ticket`, `aisf:plan-ticket`, `aisf:create-ticket`, or the
+human for `stuck`). A stop here writes nothing.
 
 ## 1. Identify
 
-**Parent** (`status: planned`). Never implemented. List its open children that are
-`status: ready` and have no open blocker:
+- **Parent** (`planned`): list its open children that are `ready` and unblocked, one line each
+  (`#<child>` title, `hitl` if set). Don't pick one. Stop.
+- **Blocked**: an open `blockedBy` → stop and name it.
+- **In review**: find the PR (`closedByPullRequestsReferences`). Changes requested, failing
+  checks or conflicts → **rework**: read `rework.md` now. Otherwise stop: it waits on review.
 
-```bash
-gh issue view <n> --json subIssues --jq '.subIssues.nodes[] | select(.state=="OPEN") | .number'
-gh issue view <child> --json title,labels,blockedBy
-```
-
-Report one line each (`#<child>` title, `hitl` if set), in GitHub's order. **Don't pick one.**
-Stop.
-
-**Blocked.** `blockedBy` lists an open issue → stop and name it. Don't park.
-
-**Rework** (`status: in-review`). Find the PR that closes the ticket:
-
-```bash
-gh issue view <n> --json closedByPullRequestsReferences --jq '.closedByPullRequestsReferences[].number'
-gh pr view <pr> --json reviewDecision,mergeable,statusCheckRollup,reviews,headRefName,url
-```
-
-- `reviewDecision` is `CHANGES_REQUESTED`, or checks are failing, or `mergeable` is
-  `CONFLICTING` → **rework**. Read `rework.md` (this folder) now: it changes §3, §4, §7 and
-  §10.
-- Otherwise the PR is waiting on review → stop and say so.
-
-Name `<n>` and the mode (new / resume / rework, AFK / hand-run) before touching a file.
+Say `<n>` and the mode (new / resume / rework, AFK / hand-run).
 
 ## 2. Understand
 
-- Load `aisf:tdd`. It loads `project-testing`.
-- Read the whole ticket body, and the code its Landing zone names.
-- List: the files to touch, one test per scenario, and the proof for each criterion that has
-  no behaviour. No code until this list exists.
-- A criterion that is vague or contradicts another → settle its reading now, keeping every
-  behaviour proven.
-- A criterion that needs the running app or a write outside the checkout, on a leaf without
-  `hitl` → never run it. End the run now: AFK **escalate `spec`**, hand-run
-  `aisf:github-issue` _Hand-run stuck_.
+Load `aisf:tdd`. Read the ticket and the code its Landing zone names. List the files to touch,
+one test per scenario, and the proof for each criterion without behaviour. Settle any vague
+criterion's reading now. A criterion that needs the running app or a write outside the
+checkout, on a leaf without `hitl` → **escalate `spec`** (hand-run: _Hand-run stuck_).
 
-## 3. Branch
+## 3. Claim and branch
 
-Target: `aisf/<n>-<kebab title>`.
+**First, claim the ticket** — before any branch or file work, even if the branch exists:
+guarded `ready → in-progress` (new run). Resume: nothing. Rework: per `rework.md`. A guard
+mismatch → stop, report the actual state.
 
-- **Already on `aisf/<n>-*`** → stay. Uncommitted work there belongs to this ticket: keep it.
-- **Otherwise** `git status --porcelain` must be empty:
-  - New run → `git fetch origin && git switch -c aisf/<n>-<kebab title> origin/main`. Never
-    `checkout main`: in a worktree that fails.
-  - Resume with a pushed branch → `git fetch origin && git switch <branch>`.
-  - Not empty → ask the human: commit it, stash it, or drop it. **Never stash**, discard or
-    carry changes across branches on your own.
+Then the branch, `aisf/<n>-<kebab title>`:
 
-Then write the status (guarded): new run `ready → in-progress`, resume nothing. A guard
-mismatch → stop, report the actual state, write nothing.
+- Already on `aisf/<n>-*` → stay. Its uncommitted work is this ticket's.
+- Otherwise, on a clean tree: `git fetch origin`, then `git switch -c <branch> origin/main`
+  (new) or `git switch <branch>` (resume). Never `checkout main`.
+- Dirty tree on another branch → ask the human. Never stash, discard or carry changes over.
 
 ## 4. Implement
 
-Strict TDD per `aisf:tdd`: one scenario per Red-Green-Refactor cycle, every scenario covered.
+Strict TDD, one scenario per cycle, every scenario covered.
 
-- **The spec's names go into tests and code as written.**
-- **Files land where the Landing zone puts them.**
-- **Contracts keep their name and shape verbatim.** A sibling builds against them.
-- **Stay inside Scope.** What is listed under **Out** belongs to a sibling: never edit it.
-  Work the ticket needs but Scope excludes → **escalate `spec`**.
-
-**Hidden dependency.** The ticket can't be finished until another ticket lands.
-
-- **AFK:** find the blocking ticket or post a bare idea for it
-  (`Found while implementing #<n>`), add it as a native blocker
-  (`gh issue edit <n> --add-blocked-by <m>`), comment on `<n>` why. Then **park**.
-- **Hand-run:** name the ticket that should block this one. Write nothing until the human
-  agrees.
+- The spec's names, Landing zone and contracts go in **verbatim**. A sibling builds against
+  them.
+- Stay inside Scope. **Out** belongs to a sibling. Needed work outside Scope → **escalate
+  `spec`**.
+- **Hidden dependency** (can't finish until another ticket lands): find or post a bare idea
+  for it (`Found while implementing #<n>`), `gh issue edit <n> --add-blocked-by <m>`, comment
+  why, **park**. Hand-run: write nothing until the human agrees.
 
 ## 5. Green
 
-`test` and `analyze`, both clean. Read `analyze` output as the prose under the
-`aisf-toolchain` block describes.
+`test` and `analyze` clean, `analyze` read as the toolchain block says.
 
-- **Never weaken a test to get green**: no deleted assertion, loosened matcher, skipped test,
-  or expectation rewritten to match the bug.
-- **5 fix attempts per failing check.** An attempt is one change and a re-run. A different
-  failure resets the count. Still failing → **escalate `red`** with the output.
-- **A failure you did not cause isn't yours.** Unsure → run the file on a clean base, never
-  with `git stash`:
-
-  ```bash
-  git fetch origin && git worktree add <tmp>/base origin/main
-  # run test_file for <file> inside <tmp>/base
-  git worktree remove --force <tmp>/base
-  ```
-
-  Red on main too → leave it, report it, and post a bare idea for it if no issue exists
-  (`Found while implementing #<n>`).
-
-- **Never push, and never open or update a PR, while red.**
+- 5 fix attempts per failing check; a new failure resets the count. Then **escalate `red`**.
+- Unsure a failure is yours → run the file in a throwaway `git worktree` on `origin/main`,
+  never via `git stash`. Red there too → not yours: report it, post a bare idea if none exists.
 
 ## 6. Code review
 
-Every run: new, resume and rework. Launch one `aisf:review-code` agent. **Its prompt is the
-spec, verbatim, and nothing else**: no summary of what you built, no reasons, no hints. On a
-one-PR ticket that is the `## Spec` section alone. It returns three lists:
+Every run. Launch one `aisf:review-code` agent whose prompt is **the spec, verbatim, nothing
+else** (on a one-PR ticket: the `## Spec` section). It returns:
 
-- **Fixed** → nothing to do. It never goes in the PR.
-- **Deviates from spec** → each line goes under `## Decisions made` (§10). One marked
-  `contract` also gets a comment on every sibling the spec names for it (find its number by
-  title among the parent's sub-issues): the old name and shape, the new one, the rule.
+- **Fixed** → nothing to do.
+- **Deviates from spec** → each under `## Decisions made`. A `contract` one also gets a comment
+  on every sibling the spec names for it: old name and shape, new one, the rule.
 - **Unresolved** → **escalate `spec`**.
 
-Then re-run §5. Never move its fixes back to get green.
+Re-run §5. Never undo its fixes to get green.
 
 ## 7. Verify AC
 
-Every criterion gets evidence, by kind:
+Every criterion gets evidence:
 
-- **A scenario** → the passing test that asserts it, named.
-- **A command** (`grep -r … returns nothing`, `analyze` clean) → run it verbatim, show the
-  output. Never substitute a test.
-- **The human checkpoint** on a `hitl` leaf → finish every step the spec puts before it, then
-  ask in chat. The answer is the evidence. Never ask a human to do any other step.
-- **Vague, contradictory or live-only** → as §2 says. Never quietly rate it green.
+- **Scenario** → the passing test that asserts it, by name.
+- **Command** → run it verbatim, show the output. Never substitute a test.
+- **Human checkpoint** (`hitl`) → finish every step before it, then ask in chat. The answer
+  is the evidence. Never ask a human to do any other step.
 
-A gap → back to §4, then §5 to §7 again.
+A gap → back to §4.
 
 ## 8. Simplicity review
 
-Invoke `aisf:review-simplicity`. Then, by what it reports:
+Invoke `aisf:review-simplicity`.
 
 - **Applied** → re-run §5.
-- **Architecture (must-fix)** → fix each, re-run §5, invoke it again. A fix that needs a
-  judgement call → **escalate `spec`**.
-- **Bugs/gaps** → never fix them here. Keep the count or the lines for §10's `## Known bugs`.
+- **Architecture (must-fix)** → fix, re-run §5, invoke again. A judgement call → **escalate
+  `spec`**.
+- **Bugs/gaps** → don't fix. Carry them to `## Known bugs`.
 
 ## 9. Commit
 
-Invoke `aisf:commit`. It takes `refs #<n>` from the branch name. `<n>` is this leaf, never its
-parent: a wrong number → amend before pushing.
+Invoke `aisf:commit`. Its `refs #<n>` must be this leaf, never the parent.
 
 ## 10. PR
 
-`git push -u origin HEAD`. Never force-push, never the default branch.
-
-`gh pr view --json url -q .url` succeeds → the PR exists (a resumed run): reuse it. Otherwise:
-
-```bash
-gh repo view --json defaultBranchRef -q .defaultBranchRef.name
-gh pr create --base <default> --title "<type>(<scope>): <ticket title>" --body-file <tmp>
-gh pr view --json baseRefName -q .baseRefName
-```
-
-`<type>` and `<scope>` as `aisf:commit` chose them. No `--head`, no `--draft`. The last command
-must print the default branch: otherwise `gh pr edit --base <default>`. Body:
+`git push -u origin HEAD`. Never force, never the default branch. Reuse an existing PR;
+otherwise `gh pr create` against the default branch, title `<type>(<scope>): <ticket title>`
+as `aisf:commit` chose, not draft. Check its base afterwards. Body:
 
     ## Summary
     What changed and why. Two or three lines.
 
     ## Acceptance criteria
-    - [x] One line per criterion: the criterion, `—`, its evidence from §7 (the test name,
-      the command and what it printed, or the human's answer).
+    - [x] Each criterion — its evidence from §7.
 
     ## Decisions made
-    The small, reversible choices the ticket left open, every deviation from the spec (§6),
-    and every untestable-change skip from `aisf:tdd` with the proof used. Omit if none.
+    Open choices, spec deviations (§6), `aisf:tdd` untestable skips with their proof. Omit if none.
 
     ## Known bugs
-    The lines from §8. Findings reported through the tool: one line,
-    `Findings reported through the app: N`. Omit if none.
+    Lines from §8, or `Findings reported through the app: N`. Omit if none.
 
     Closes #<n>
 
-An unticked box means §7 isn't done.
+Then guarded `in-progress → in-review`. **Never skip it: it makes the ticket findable.**
 
-Write `in-progress → in-review`. **Never skip this: it is what makes the ticket findable.**
-
-**Report** the PR URL, in one line. The PR holds the rest.
+Report the PR URL in one line.

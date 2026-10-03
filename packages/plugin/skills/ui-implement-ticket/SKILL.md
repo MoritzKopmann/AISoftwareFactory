@@ -23,9 +23,9 @@ The oracle for visual work is the mock, so the loop here is **render, look, adju
 the job it is good at: behaviour and the `describe-*` view models.
 
 **This skill follows `aisf:implement-ticket` for everything not visual.** Read it and apply
-these sections as written there: §0 Precondition (project slots, status table, mode), Stop
-points, §1 Identify (blocked, rework), §3 Branch, §5 Green (five fix attempts, never weaken a
-test), §8 Simplicity review, §9 Commit, §10 PR (body, base check, `in-progress → in-review`),
+these sections as written there: Guard rails, Stop points (with mode), §0 Precondition
+(project slots, status rules), §1 Identify (blocked, rework), §3 Claim and branch, §5 Green
+(five fix attempts, never weaken a test), §8 Simplicity review, §9 Commit, §10 PR (body, base check, `in-progress → in-review`),
 and never merge. The sections below replace §2, §4 and §7, and add the render loop.
 
 `gh` infers the repository from the current checkout. Never pass `-R`. Every status change and
