@@ -90,4 +90,27 @@ describe('decideRunEndTransition', () => {
       kind: 'none',
     });
   });
+
+  describe('checkpoint', () => {
+    const request = 'Open http://localhost:5173 and confirm the board shows a Waiting row';
+    const ending: RunEnding = { kind: 'checkpoint', request };
+
+    it.each<TicketStatus>(['ready', 'in-progress'])(
+      'should move the ticket to waiting with the request comment when the run reached its checkpoint while it is %s',
+      (liveStatus) => {
+        expect(decideRunEndTransition(ending, liveStatus)).toEqual({
+          kind: 'transition',
+          to: 'waiting',
+          comment: `The run reached its human checkpoint and waits for an answer on the ticket page:\n\n${request}`,
+        });
+      },
+    );
+
+    it.each<TicketStatus>(['waiting', 'stuck', 'in-review', 'conflict', 'closed'])(
+      'should write nothing when the checkpoint run finds the ticket %s',
+      (liveStatus) => {
+        expect(decideRunEndTransition(ending, liveStatus)).toEqual({ kind: 'none' });
+      },
+    );
+  });
 });

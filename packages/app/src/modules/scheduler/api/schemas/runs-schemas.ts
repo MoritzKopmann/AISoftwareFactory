@@ -30,6 +30,7 @@ export const runEndingResponseSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('crashed'), reason: z.string() }),
   z.object({ kind: z.literal('usage-limit'), reason: z.string() }),
   z.object({ kind: z.literal('app-restarted') }),
+  z.object({ kind: z.literal('checkpoint'), request: z.string() }),
 ]);
 export type RunEndingResponse = z.infer<typeof runEndingResponseSchema>;
 
