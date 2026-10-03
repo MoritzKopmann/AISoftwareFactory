@@ -66,12 +66,13 @@ describe('createRunnerModule', () => {
     });
   });
 
-  it('should host aisf_escalate, aisf_park and the app tools in the session when a run starts', async () => {
+  it('should host aisf_escalate, aisf_park, aisf_checkpoint and the app tools in the session when a run starts', async () => {
     await runner.start(startRequest);
 
     expect(agentSessions.startedSpecs[0]?.tools.map((tool) => tool.name)).toEqual([
       'aisf_escalate',
       'aisf_park',
+      'aisf_checkpoint',
       'aisf_report_finding',
     ]);
   });
@@ -107,6 +108,29 @@ describe('createRunnerModule', () => {
     expect(events.emittedEvents[0]).toMatchObject({
       payload: { ending: { kind: 'parked', blockerNumber: 42 } },
     });
+  });
+
+  it('should end the run as checkpoint and emit run.finished when the session calls aisf_checkpoint', async () => {
+    await runner.start(startRequest);
+    const checkpoint = agentSessions.startedSpecs[0]?.tools.find(
+      (tool) => tool.name === 'aisf_checkpoint',
+    );
+
+    await checkpoint?.execute({ request: 'Check the page' });
+
+    expect(events.emittedEvents).toEqual([
+      {
+        name: 'run.finished',
+        payload: {
+          runId: 'id-1',
+          projectId: 'moritz/aisf',
+          ticketNumber: 137,
+          ending: { kind: 'checkpoint', request: 'Check the page' },
+        },
+      },
+    ]);
+    expect(agentSessions.stoppedSessionIds).toEqual(['id-2']);
+    expect((await runner.findRun('id-1'))?.state).toBe('ended');
   });
 
   it('should fail with RunAlreadyActiveError when a start comes while the ticket has a running run', async () => {
@@ -169,6 +193,7 @@ describe('createRunnerModule', () => {
     expect(agentSessions.resumedSpecs[0]?.tools.map((tool) => tool.name)).toEqual([
       'aisf_escalate',
       'aisf_park',
+      'aisf_checkpoint',
       'aisf_report_finding',
     ]);
   });

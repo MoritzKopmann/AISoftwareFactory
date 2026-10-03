@@ -64,6 +64,8 @@ function toEnding(row: RunRow): RunEnding | undefined {
       };
     case 'parked':
       return { kind: 'parked', blockerNumber: Number(row.blocker_number) };
+    case 'checkpoint':
+      return { kind: 'checkpoint', request: String(row.ending_reason) };
     case 'crashed':
       return { kind: 'crashed', reason: String(row.ending_reason) };
     case 'usage-limit':
@@ -75,6 +77,11 @@ function toEnding(row: RunRow): RunEnding | undefined {
     default:
       return undefined;
   }
+}
+
+function endingReason(ending: RunEnding): string | null {
+  if ('reason' in ending) return ending.reason;
+  return ending.kind === 'checkpoint' ? ending.request : null;
 }
 
 function toRun(row: RunRow): Run {
@@ -225,7 +232,7 @@ export class SqliteRunRepository implements RunRepository {
       )
       .run(
         ending.kind,
-        'reason' in ending ? ending.reason : null,
+        endingReason(ending),
         ending.kind === 'escalated' ? ending.escalation : null,
         ending.kind === 'parked' ? ending.blockerNumber : null,
         ending.kind === 'permission-needed' ? ending.toolName : null,

@@ -72,16 +72,22 @@ describe('SqliteRunRepository', () => {
   });
 
   describe('recordEnding', () => {
-    const endings: ReadonlyArray<RunEnding> = [
-      { kind: 'escalated', escalation: 'spec', reason: 'AC is vague' },
-      { kind: 'permission-needed', toolName: 'Bash', toolInput: { command: 'git config x 1' } },
-      { kind: 'parked', blockerNumber: 42 },
-      { kind: 'finished' },
-      { kind: 'stopped' },
-      { kind: 'crashed', reason: 'Login expired' },
-      { kind: 'usage-limit', reason: 'five_hour limit rejected' },
-      { kind: 'app-restarted' },
-    ];
+    const samples: { readonly [Kind in RunEnding['kind']]: Extract<RunEnding, { kind: Kind }> } = {
+      escalated: { kind: 'escalated', escalation: 'spec', reason: 'AC is vague' },
+      'permission-needed': {
+        kind: 'permission-needed',
+        toolName: 'Bash',
+        toolInput: { command: 'git config x 1' },
+      },
+      parked: { kind: 'parked', blockerNumber: 42 },
+      checkpoint: { kind: 'checkpoint', request: 'Check the page' },
+      finished: { kind: 'finished' },
+      stopped: { kind: 'stopped' },
+      crashed: { kind: 'crashed', reason: 'Login expired' },
+      'usage-limit': { kind: 'usage-limit', reason: 'five_hour limit rejected' },
+      'app-restarted': { kind: 'app-restarted' },
+    };
+    const endings: ReadonlyArray<RunEnding> = Object.values(samples);
 
     it.each(endings)('should store a $kind ending that reads back the same', async (ending) => {
       await repository.insert(buildRun());
