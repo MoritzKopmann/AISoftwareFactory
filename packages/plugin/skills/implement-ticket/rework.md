@@ -4,7 +4,7 @@ The ticket is `in-review` and its PR needs work. These replace the named steps o
 
 ## §3 Claim and branch
 
-Claim first: guarded `in-review → in-progress`. Then, on a clean tree, `git fetch origin` and
+Claim first: guarded `in-review → in-progress`. Then, on a clean tree (a dirty tree: `SKILL.md` §3), `git fetch origin` and
 switch to the PR's `headRefName`.
 
 **Conflicts:** `git rebase origin/main`, then re-run §5. Never merge `origin/main` in: a merge
