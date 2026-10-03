@@ -37,12 +37,20 @@ describe('SqliteRunRepository', () => {
       expect(await repository.findById('run-1')).toEqual(run);
     });
 
-    it('should throw RunAlreadyActiveError when another run in the project is running', async () => {
+    it('should throw RunAlreadyActiveError when the ticket already has a running run', async () => {
       await repository.insert(buildRun());
 
-      await expect(repository.insert(buildRun({ id: 'run-2', ticketNumber: 12 }))).rejects.toThrow(
+      await expect(repository.insert(buildRun({ id: 'run-2' }))).rejects.toThrow(
         RunAlreadyActiveError,
       );
+    });
+
+    it('should accept a running run when another ticket in the project is running', async () => {
+      await repository.insert(buildRun());
+
+      await repository.insert(buildRun({ id: 'run-2', ticketNumber: 12 }));
+
+      expect(await repository.findById('run-2')).toBeDefined();
     });
 
     it('should accept a running run when another project has one running', async () => {
@@ -59,7 +67,7 @@ describe('SqliteRunRepository', () => {
 
       await repository.insert(buildRun({ id: 'run-2', ticketNumber: 12 }));
 
-      expect(await repository.findActive('moritz/aisf')).toMatchObject({ id: 'run-2' });
+      expect(await repository.listActive('moritz/aisf')).toMatchObject([{ id: 'run-2' }]);
     });
   });
 
@@ -103,9 +111,22 @@ describe('SqliteRunRepository', () => {
     });
   });
 
-  describe('findActive', () => {
-    it('should return undefined when the project has no running run', async () => {
-      expect(await repository.findActive('moritz/aisf')).toBeUndefined();
+  describe('listActive', () => {
+    it('should return nothing when the project has no running run', async () => {
+      expect(await repository.listActive('moritz/aisf')).toEqual([]);
+    });
+
+    it('should return every running run of the project, oldest first', async () => {
+      await repository.insert(
+        buildRun({ id: 'run-2', ticketNumber: 12, startedAt: '2026-09-29T10:00:00.000Z' }),
+      );
+      await repository.insert(buildRun({ startedAt: '2026-09-29T09:00:00.000Z' }));
+      await repository.insert(buildRun({ id: 'run-3', projectId: 'moritz/other' }));
+
+      expect(await repository.listActive('moritz/aisf')).toMatchObject([
+        { id: 'run-1' },
+        { id: 'run-2' },
+      ]);
     });
   });
 

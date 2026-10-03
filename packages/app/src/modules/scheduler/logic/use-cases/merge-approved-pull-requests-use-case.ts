@@ -28,10 +28,10 @@ export class MergeApprovedPullRequestsUseCase {
       return;
     }
     const tickets = await reviewedTicketLookup.list(projectId);
-    const activeRun = await runner.activeRun(projectId);
+    const activeRuns = await runner.activeRuns(projectId);
     const mergeablePullRequests = findMergeablePullRequests(
       tickets,
-      activeRun === undefined ? [] : [activeRun.run],
+      activeRuns.map(({ run }) => run),
     );
 
     for (const { ticketNumber, pullRequestNumber, headCommit } of mergeablePullRequests) {

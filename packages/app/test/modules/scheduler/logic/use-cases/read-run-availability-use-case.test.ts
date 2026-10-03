@@ -40,13 +40,22 @@ describe('ReadRunAvailabilityUseCase', () => {
     expect(await useCase.execute('moritz/aisf', 138)).toEqual({ kind: 'absent' });
   });
 
-  it('should be disabled naming the running ticket when another run is active', async () => {
+  it('should be disabled naming the ticket when it already has a run active', async () => {
     const runner = new FakeRunnerPort();
-    runner.activeTicketNumber = 42;
+    runner.activeTicketNumbers = [138];
 
     expect(await buildUseCase({ runner }).execute('moritz/aisf', 138)).toEqual({
       kind: 'disabled',
-      reason: '#42 is running',
+      reason: '#138 is running',
+    });
+  });
+
+  it('should be available when only another ticket has a run active', async () => {
+    const runner = new FakeRunnerPort();
+    runner.activeTicketNumbers = [42];
+
+    expect(await buildUseCase({ runner }).execute('moritz/aisf', 138)).toEqual({
+      kind: 'available',
     });
   });
 

@@ -21,10 +21,15 @@ export class FakeRunRepository implements RunRepository {
 
   async insert(run: Run): Promise<void> {
     const runningRun = [...this.runs.values()].find(
-      (existing) => existing.projectId === run.projectId && existing.state === 'running',
+      (existing) =>
+        existing.projectId === run.projectId &&
+        existing.ticketNumber === run.ticketNumber &&
+        existing.state === 'running',
     );
     if (runningRun !== undefined && run.state === 'running') {
-      throw new RunAlreadyActiveError(`${run.projectId} already has a running run`);
+      throw new RunAlreadyActiveError(
+        `${run.projectId} already has a running run for #${run.ticketNumber}`,
+      );
     }
     this.runs.set(run.id, run);
   }
@@ -33,8 +38,8 @@ export class FakeRunRepository implements RunRepository {
     return this.runs.get(runId);
   }
 
-  async findActive(projectId: string): Promise<Run | undefined> {
-    return [...this.runs.values()].find(
+  async listActive(projectId: string): Promise<ReadonlyArray<Run>> {
+    return [...this.runs.values()].filter(
       (run) => run.projectId === projectId && run.state === 'running',
     );
   }

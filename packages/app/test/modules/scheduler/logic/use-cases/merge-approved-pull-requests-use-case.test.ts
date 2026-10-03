@@ -67,7 +67,7 @@ describe('MergeApprovedPullRequestsUseCase', () => {
 
   it('should merge nothing when the ticket has an active run', async () => {
     const { useCase, pullRequestMerges, runner } = buildSubject();
-    runner.activeTicketNumber = 140;
+    runner.activeTicketNumbers = [140];
 
     await useCase.execute('moritz/aisf');
 

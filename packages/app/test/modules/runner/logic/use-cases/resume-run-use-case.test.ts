@@ -152,9 +152,9 @@ describe('ResumeRunUseCase', () => {
     },
   );
 
-  it('should throw RunAlreadyActiveError and resume nothing when another run in the project is running', async () => {
+  it('should throw RunAlreadyActiveError and resume nothing when the ticket already has a running run', async () => {
     await insertEndedRun();
-    await runRepository.insert(buildRun({ id: 'other-run', ticketNumber: 12 }));
+    await runRepository.insert(buildRun({ id: 'other-run' }));
 
     await expect(resumeRun.execute('run-1', 'allow')).rejects.toThrow(RunAlreadyActiveError);
 

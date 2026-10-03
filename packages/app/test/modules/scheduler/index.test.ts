@@ -66,7 +66,7 @@ describe('createSchedulerModule', () => {
   });
 
   it('should report the active run of the ticket when its run is read', async () => {
-    runner.activeTicketNumber = 138;
+    runner.activeTicketNumbers = [138];
 
     const response = await scheduler.routes.request('/projects/moritz/aisf/tickets/138/run');
 
@@ -86,15 +86,15 @@ describe('createSchedulerModule', () => {
     expect(runner.calls).toEqual(['start moritz/aisf #138']);
   });
 
-  it('should answer 409 when an available ticket is posted while another run is active', async () => {
-    runner.activeTicketNumber = 42;
+  it('should answer 409 when an available ticket is posted while it already has a run active', async () => {
+    runner.activeTicketNumbers = [138];
 
     const response = await scheduler.routes.request('/projects/moritz/aisf/tickets/138/runs', {
       method: 'POST',
     });
 
     expect(response.status).toBe(409);
-    expect(await response.json()).toEqual({ message: '#42 is running' });
+    expect(await response.json()).toEqual({ message: '#138 is running' });
   });
 
   it('should answer 409 when the runner reports a run already active', async () => {

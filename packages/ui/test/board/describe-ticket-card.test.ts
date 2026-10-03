@@ -7,11 +7,7 @@ import {
 
 describe('describeTicketCard', () => {
   it('should describe the link, number, title and flags when the ticket is plain', () => {
-    const card = describeTicketCard(
-      buildTicketResponse({ number: 12, title: 'Plain' }),
-      'o/n',
-      undefined,
-    );
+    const card = describeTicketCard(buildTicketResponse({ number: 12, title: 'Plain' }), 'o/n', []);
     expect(card).toEqual({
       href: '#/projects/o/n/tickets/12',
       numberLabel: '#12',
@@ -27,7 +23,7 @@ describe('describeTicketCard', () => {
     const card = describeTicketCard(
       buildTicketResponse({ hitl: true, parent: { number: 3, title: 'Epic' } }),
       'o/n',
-      undefined,
+      [],
     );
     expect(card.parentTitle).toBe('Epic');
     expect(card.hitl).toBe(true);
@@ -43,7 +39,7 @@ describe('describeTicketCard', () => {
         ],
       }),
       'o/n',
-      undefined,
+      [],
     );
     expect(card.blockerLabels).toEqual(['blocked by #2', 'blocked by x/y#3']);
   });
@@ -55,7 +51,7 @@ describe('describeTicketCard', () => {
         conflictingStatuses: ['plan', 'in-progress', 'in-review'],
       }),
       'o/n',
-      undefined,
+      [],
     );
     expect(card.conflictLabels).toEqual(['plan', 'in progress', 'in review']);
   });
@@ -66,21 +62,21 @@ describe('describeTicketCard', () => {
         closingPullRequests: [buildClosingPullRequestResponse({ number: 7 })],
       }),
       'o/n',
-      undefined,
+      [],
     );
     expect(card.pullRequestChips).toEqual([{ label: 'PR #7' }]);
   });
 
   it('should mark the card stuck when its status is stuck', () => {
-    const card = describeTicketCard(buildTicketResponse({ status: 'stuck' }), 'o/n', undefined);
+    const card = describeTicketCard(buildTicketResponse({ status: 'stuck' }), 'o/n', []);
     expect(card.runMarker).toBe('stuck');
   });
 
-  it('should mark the card running when its number is the running ticket', () => {
+  it('should mark the card running when its number is among the running tickets', () => {
     const card = describeTicketCard(
       buildTicketResponse({ number: 56, status: 'in-progress' }),
       'o/n',
-      56,
+      [56, 57],
     );
     expect(card.runMarker).toBe('running');
   });
@@ -89,7 +85,7 @@ describe('describeTicketCard', () => {
     const card = describeTicketCard(
       buildTicketResponse({ number: 43, status: 'stuck' }),
       'o/n',
-      43,
+      [43],
     );
     expect(card.runMarker).toBe('stuck');
   });
@@ -98,14 +94,14 @@ describe('describeTicketCard', () => {
     const card = describeTicketCard(
       buildTicketResponse({ number: 49, status: 'in-progress' }),
       'o/n',
-      56,
+      [56],
     );
     expect(card.runMarker).toBeUndefined();
   });
 
   it('should describe the same card when two tickets differ only in body', () => {
     const describeWith = (body: string) =>
-      describeTicketCard(buildTicketResponse({ number: 12, body }), 'o/n', undefined);
+      describeTicketCard(buildTicketResponse({ number: 12, body }), 'o/n', []);
 
     expect(describeWith('')).toEqual(describeWith('# A long description'));
   });

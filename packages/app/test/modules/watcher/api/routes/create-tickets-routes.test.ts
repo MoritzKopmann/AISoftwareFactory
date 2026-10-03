@@ -39,6 +39,7 @@ describe('createTicketsRoutes', () => {
       const watcher = new FakeWatcher();
       watcher.boards.set('owner/name', {
         projectId: 'owner/name',
+        runningTicketNumbers: [],
         sync: okSync,
         board: {
           rows: [
@@ -63,6 +64,7 @@ describe('createTicketsRoutes', () => {
       const watcher = new FakeWatcher();
       watcher.boards.set('owner/name', {
         projectId: 'owner/name',
+        runningTicketNumbers: [],
         sync: okSync,
         board: {
           rows: [
@@ -84,7 +86,11 @@ describe('createTicketsRoutes', () => {
 
     it('should answer 200 with a pending sync and no board when the first snapshot is not done', async () => {
       const watcher = new FakeWatcher();
-      watcher.boards.set('owner/name', { projectId: 'owner/name', sync: { state: 'pending' } });
+      watcher.boards.set('owner/name', {
+        projectId: 'owner/name',
+        sync: { state: 'pending' },
+        runningTicketNumbers: [],
+      });
 
       const response = await createTestApp(watcher).request('/projects/owner/name/board');
 
@@ -92,6 +98,7 @@ describe('createTicketsRoutes', () => {
       expect(await response.json()).toEqual({
         projectId: 'owner/name',
         sync: { state: 'pending' },
+        runningTicketNumbers: [],
       });
     });
 
@@ -99,6 +106,7 @@ describe('createTicketsRoutes', () => {
       const watcher = new FakeWatcher();
       watcher.boards.set('owner/name', {
         projectId: 'owner/name',
+        runningTicketNumbers: [],
         sync: {
           state: 'failed',
           cause: 'rate-limited',

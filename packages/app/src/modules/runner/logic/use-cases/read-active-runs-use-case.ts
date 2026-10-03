@@ -3,7 +3,7 @@ import type { RunStep } from '../domain/types/run-step.js';
 import type { RecentRunSteps } from '../ports/recent-run-steps.js';
 import type { RunRepository } from '../ports/run-repository.js';
 
-export type ReadActiveRunDependencies = {
+export type ReadActiveRunsDependencies = {
   readonly runRepository: RunRepository;
   readonly recentRunSteps: RecentRunSteps;
 };
@@ -13,14 +13,11 @@ export type ActiveRun = {
   readonly steps: ReadonlyArray<RunStep>;
 };
 
-export class ReadActiveRunUseCase {
-  constructor(private readonly dependencies: ReadActiveRunDependencies) {}
+export class ReadActiveRunsUseCase {
+  constructor(private readonly dependencies: ReadActiveRunsDependencies) {}
 
-  async execute(projectId: string): Promise<ActiveRun | undefined> {
-    const run = await this.dependencies.runRepository.findActive(projectId);
-    if (run === undefined) {
-      return undefined;
-    }
-    return { run, steps: this.dependencies.recentRunSteps.read(run.id) };
+  async execute(projectId: string): Promise<ReadonlyArray<ActiveRun>> {
+    const runs = await this.dependencies.runRepository.listActive(projectId);
+    return runs.map((run) => ({ run, steps: this.dependencies.recentRunSteps.read(run.id) }));
   }
 }

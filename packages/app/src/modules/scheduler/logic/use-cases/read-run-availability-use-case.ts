@@ -18,9 +18,9 @@ export class ReadRunAvailabilityUseCase {
   async execute(projectId: string, ticketNumber: number): Promise<RunAvailability> {
     const { ticketLookup, runner, runsGate, projectLookup } = this.dependencies;
 
-    const [ticket, activeRun, latestRun, project] = await Promise.all([
+    const [ticket, activeRuns, latestRun, project] = await Promise.all([
       ticketLookup.find(projectId, ticketNumber),
-      runner.activeRun(projectId),
+      runner.activeRuns(projectId),
       runner.latestRun(projectId, ticketNumber),
       projectLookup.find(projectId),
     ]);
@@ -28,7 +28,7 @@ export class ReadRunAvailabilityUseCase {
     const lastRunEndedAt = latestRun?.endedAt;
     return determineRunAvailability({
       ...(ticket === undefined ? {} : { ticket }),
-      ...(activeRun === undefined ? {} : { activeRun: activeRun.run }),
+      ticketIsRunning: activeRuns.some(({ run }) => run.ticketNumber === ticketNumber),
       ...(lastRunEndedAt === undefined ? {} : { lastRunEndedAt }),
       runsBlocked: runsGate.check(),
       projectOnboarded: project?.onboarded === true,

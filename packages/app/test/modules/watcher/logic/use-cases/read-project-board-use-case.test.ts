@@ -9,12 +9,12 @@ const watch: RepositoryWatch = {
   sync: { state: 'pending' },
 };
 
-function createSubject(runningTicketNumber: number | undefined) {
+function createSubject(runningTicketNumbers: ReadonlyArray<number>) {
   const requestedProjectIds: string[] = [];
   const activeRunLookup: ActiveRunLookup = {
-    activeRunTicketNumber: async (projectId) => {
+    activeRunTicketNumbers: async (projectId) => {
       requestedProjectIds.push(projectId);
-      return runningTicketNumber;
+      return runningTicketNumbers;
     },
   };
   return { subject: new ReadProjectBoardUseCase({ activeRunLookup }), requestedProjectIds };
@@ -22,26 +22,29 @@ function createSubject(runningTicketNumber: number | undefined) {
 
 describe('ReadProjectBoardUseCase', () => {
   describe('execute', () => {
-    it('should name the running ticket when the project has an active run', async () => {
-      const { subject, requestedProjectIds } = createSubject(139);
+    it('should name every running ticket when the project has active runs', async () => {
+      const { subject, requestedProjectIds } = createSubject([139, 140]);
 
       const projectBoard = await subject.execute(watch);
 
       expect(projectBoard).toEqual({
         projectId: 'owner/name',
         sync: { state: 'pending' },
-        runningTicketNumber: 139,
+        runningTicketNumbers: [139, 140],
       });
       expect(requestedProjectIds).toEqual(['owner/name']);
     });
 
-    it('should leave runningTicketNumber out when the project has no active run', async () => {
-      const { subject } = createSubject(undefined);
+    it('should name no running tickets when the project has no active run', async () => {
+      const { subject } = createSubject([]);
 
       const projectBoard = await subject.execute(watch);
 
-      expect(projectBoard).toEqual({ projectId: 'owner/name', sync: { state: 'pending' } });
-      expect(projectBoard).not.toHaveProperty('runningTicketNumber');
+      expect(projectBoard).toEqual({
+        projectId: 'owner/name',
+        sync: { state: 'pending' },
+        runningTicketNumbers: [],
+      });
     });
   });
 });

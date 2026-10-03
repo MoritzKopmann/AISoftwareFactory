@@ -229,7 +229,7 @@ function buildSchedulerModule(
         }
       },
       findRun: runner.findRun,
-      activeRun: runner.activeRun,
+      activeRuns: runner.activeRuns,
       latestRun: runner.latestRun,
       settle: runner.settle,
       sessionLog: runner.sessionLog,
@@ -294,7 +294,8 @@ const skills = buildSkillsModule(config, pluginDirectory);
 const projects = buildProjectsModule(database, eventBus, skills, logger);
 // The watcher is built before the runner, which needs watcher.ticket, so the lookup binds late.
 const watcher = buildWatcherModule(config, eventBus, projects, {
-  activeRunTicketNumber: async (projectId) => (await runner.activeRun(projectId))?.run.ticketNumber,
+  activeRunTicketNumbers: async (projectId) =>
+    (await runner.activeRuns(projectId)).map(({ run }) => run.ticketNumber),
 });
 const findings = buildFindingsModule(database, projects);
 const runner = buildRunnerModule(

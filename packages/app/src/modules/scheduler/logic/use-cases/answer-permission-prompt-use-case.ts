@@ -34,8 +34,9 @@ export class AnswerPermissionPromptUseCase {
         `Run ${runId} is not the latest run of #${ticketNumber}`,
       );
     }
-    if ((await runner.activeRun(projectId)) !== undefined) {
-      throw new PermissionNotAnswerableError(`Another run is active in ${projectId}`);
+    const activeRuns = await runner.activeRuns(projectId);
+    if (activeRuns.some((active) => active.run.ticketNumber === ticketNumber)) {
+      throw new PermissionNotAnswerableError(`#${ticketNumber} already has an active run`);
     }
     const project = await projectLookup.find(projectId);
     if (project === undefined) {

@@ -17,12 +17,12 @@ export type TicketCardDescription = {
 
 function describeRunMarker(
   ticket: TicketResponse,
-  runningTicketNumber: number | undefined,
+  runningTicketNumbers: ReadonlyArray<number>,
 ): RunMarker | undefined {
   if (ticket.status === 'stuck') {
     return 'stuck';
   }
-  if (ticket.number === runningTicketNumber) {
+  if (runningTicketNumbers.includes(ticket.number)) {
     return 'running';
   }
   return undefined;
@@ -31,7 +31,7 @@ function describeRunMarker(
 export function describeTicketCard(
   ticket: TicketResponse,
   projectId: string,
-  runningTicketNumber: number | undefined,
+  runningTicketNumbers: ReadonlyArray<number>,
 ): TicketCardDescription {
   const blockerLabels = ticket.blockedBy
     .filter((blocker) => blocker.open)
@@ -40,7 +40,7 @@ export function describeTicketCard(
         ? `blocked by #${blocker.number}`
         : `blocked by ${blocker.repository}#${blocker.number}`,
     );
-  const runMarker = describeRunMarker(ticket, runningTicketNumber);
+  const runMarker = describeRunMarker(ticket, runningTicketNumbers);
   return {
     href: `#/projects/${projectId}/tickets/${ticket.number}`,
     numberLabel: `#${ticket.number}`,

@@ -22,7 +22,7 @@ function buildRow(
 }
 
 function buildBoard(rows: BoardRowResponse[]): ProjectBoardResponse {
-  return { projectId: 'o/n', sync: okSync, board: { rows } };
+  return { projectId: 'o/n', sync: okSync, board: { rows }, runningTicketNumbers: [] };
 }
 
 function answered(response: ProjectBoardResponse): BoardState {
@@ -32,16 +32,16 @@ function answered(response: ProjectBoardResponse): BoardState {
 describe('describeBoard', () => {
   it('should be loading without a banner or an updated time before the first answer', () => {
     const description = describeBoard(initialBoardState, 'o/n', now);
-    expect(description).toEqual({ loading: true, rows: [] });
+    expect(description).toEqual({ loading: true, rows: [], runningTicketNumbers: [] });
   });
 
   it('should be loading without an updated time when the sync is pending', () => {
     const description = describeBoard(
-      answered({ projectId: 'o/n', sync: { state: 'pending' } }),
+      answered({ projectId: 'o/n', sync: { state: 'pending' }, runningTicketNumbers: [] }),
       'o/n',
       now,
     );
-    expect(description).toEqual({ loading: true, rows: [] });
+    expect(description).toEqual({ loading: true, rows: [], runningTicketNumbers: [] });
   });
 
   it('should take the checked time as the updated time when the sync is ok', () => {
@@ -55,6 +55,7 @@ describe('describeBoard', () => {
     const description = describeBoard(
       answered({
         projectId: 'o/n',
+        runningTicketNumbers: [],
         sync: {
           state: 'failed',
           cause: 'unavailable',
@@ -77,6 +78,7 @@ describe('describeBoard', () => {
     const description = describeBoard(
       answered({
         projectId: 'o/n',
+        runningTicketNumbers: [],
         sync: { state: 'failed', cause: 'auth', message: 'Run gh auth login.', failedAt: 'f' },
       }),
       'o/n',
@@ -119,6 +121,7 @@ describe('describeBoard', () => {
   it('should show the request banner instead of the sync banner when both apply', () => {
     const failedSync: ProjectBoardResponse = {
       projectId: 'o/n',
+      runningTicketNumbers: [],
       sync: { state: 'failed', cause: 'auth', message: 'm', failedAt: 'f' },
       board: { rows: [buildRow('ready', 1)] },
     };
@@ -197,12 +200,12 @@ describe('describeBoard', () => {
     expect(description.rows[0]?.truncated).toBe(false);
   });
 
-  it('should pass the running ticket number through when the board has a live run', () => {
+  it('should pass the running ticket numbers through when the board has live runs', () => {
     const description = describeBoard(
-      answered({ ...buildBoard([buildRow('in-progress', 2)]), runningTicketNumber: 2 }),
+      answered({ ...buildBoard([buildRow('in-progress', 2)]), runningTicketNumbers: [2, 3] }),
       'o/n',
       now,
     );
-    expect(description.runningTicketNumber).toBe(2);
+    expect(description.runningTicketNumbers).toEqual([2, 3]);
   });
 });

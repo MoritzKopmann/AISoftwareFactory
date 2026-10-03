@@ -82,7 +82,7 @@ export class FakePullRequestMerges implements PullRequestMerges {
 
 export class FakeRunnerPort implements RunnerPort {
   readonly calls: string[] = [];
-  activeTicketNumber: number | undefined;
+  activeTicketNumbers: ReadonlyArray<number> = [];
   activeSteps: ReadonlyArray<RunStep> = [];
   latest: LatestRun | undefined;
   transcript: SessionLog = { kind: 'no-session' };
@@ -117,17 +117,15 @@ export class FakeRunnerPort implements RunnerPort {
     return { id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' };
   }
 
-  async activeRun(): Promise<ActiveTicketRun | undefined> {
-    return this.activeTicketNumber === undefined
-      ? undefined
-      : {
-          run: {
-            id: 'run-1',
-            ticketNumber: this.activeTicketNumber,
-            startedAt: '2026-09-29T09:00:00.000Z',
-          },
-          steps: this.activeSteps,
-        };
+  async activeRuns(): Promise<ReadonlyArray<ActiveTicketRun>> {
+    return this.activeTicketNumbers.map((ticketNumber) => ({
+      run: {
+        id: 'run-1',
+        ticketNumber,
+        startedAt: '2026-09-29T09:00:00.000Z',
+      },
+      steps: this.activeSteps,
+    }));
   }
 
   async latestRun(): Promise<LatestRun | undefined> {

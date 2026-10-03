@@ -80,9 +80,9 @@ describe('AnswerPermissionPromptUseCase', () => {
       },
     ],
     [
-      'another run is active in the project',
+      'the ticket already has an active run',
       (subject: ReturnType<typeof buildSubject>) => {
-        subject.runner.activeTicketNumber = 12;
+        subject.runner.activeTicketNumbers = [147];
       },
     ],
   ])('should refuse and write and resume nothing when %s', async (_situation, arrange) => {

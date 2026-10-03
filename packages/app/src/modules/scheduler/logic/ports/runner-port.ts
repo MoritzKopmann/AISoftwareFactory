@@ -12,7 +12,7 @@ export interface RunnerPort {
   }): Promise<StartedRun>;
   resume(runId: string, decision: PermissionDecision): Promise<StartedRun>;
   findRun(runId: string): Promise<RunRecord | undefined>;
-  activeRun(projectId: string): Promise<ActiveTicketRun | undefined>;
+  activeRuns(projectId: string): Promise<ReadonlyArray<ActiveTicketRun>>;
   latestRun(projectId: string, ticketNumber: number): Promise<LatestRun | undefined>;
   settle(runId: string): Promise<void>;
   sessionLog(runId: string): Promise<SessionLog>;
