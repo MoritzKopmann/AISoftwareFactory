@@ -136,7 +136,9 @@ export class SqliteRunRepository implements RunRepository {
         );
     } catch (error) {
       if (isUniqueConstraintViolation(error)) {
-        throw new RunAlreadyActiveError(`${run.projectId} already has a running run`);
+        throw new RunAlreadyActiveError(
+          `${run.projectId} already has a running run for #${run.ticketNumber}`,
+        );
       }
       throw error;
     }
@@ -155,18 +157,19 @@ export class SqliteRunRepository implements RunRepository {
     return row === undefined ? undefined : toRun(row);
   }
 
-  async findActive(projectId: string): Promise<Run | undefined> {
-    const row = this.database
+  async listActive(projectId: string): Promise<ReadonlyArray<Run>> {
+    const rows = this.database
       .prepare(
         `
         ${selectRunColumns}
         WHERE project_id = ?
           AND state = 'running'
+        ORDER BY started_at
       `,
       )
-      .get(projectId) as unknown as RunRow | undefined;
+      .all(projectId) as unknown as ReadonlyArray<RunRow>;
 
-    return row === undefined ? undefined : toRun(row);
+    return rows.map(toRun);
   }
 
   async findLatest(projectId: string, ticketNumber: number): Promise<Run | undefined> {

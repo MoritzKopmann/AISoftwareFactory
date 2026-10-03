@@ -1,3 +1,3 @@
 export interface ActiveRunLookup {
-  activeRunTicketNumber(projectId: string): Promise<number | undefined>;
+  activeRunTicketNumbers(projectId: string): Promise<ReadonlyArray<number>>;
 }

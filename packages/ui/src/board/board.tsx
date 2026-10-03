@@ -71,11 +71,11 @@ function ClosedNote({ projectId, truncated }: { projectId: string; truncated: bo
 function BoardRow({
   row,
   projectId,
-  runningTicketNumber,
+  runningTicketNumbers,
 }: {
   row: BoardRowDescription;
   projectId: string;
-  runningTicketNumber: number | undefined;
+  runningTicketNumbers: ReadonlyArray<number>;
 }) {
   const isEmpty = row.tickets.length === 0;
   const cards = (
@@ -83,7 +83,7 @@ function BoardRow({
       {row.tickets.map((ticket) => (
         <TicketCard
           key={ticket.number}
-          {...describeTicketCard(ticket, projectId, runningTicketNumber)}
+          {...describeTicketCard(ticket, projectId, runningTicketNumbers)}
         />
       ))}
     </div>
@@ -124,11 +124,11 @@ function BoardRow({
 export function Board({
   rows,
   projectId,
-  runningTicketNumber,
+  runningTicketNumbers,
 }: {
   rows: ReadonlyArray<BoardRowDescription>;
   projectId: string;
-  runningTicketNumber: number | undefined;
+  runningTicketNumbers: ReadonlyArray<number>;
 }) {
   return (
     <div className="board">
@@ -137,7 +137,7 @@ export function Board({
           key={row.key}
           row={row}
           projectId={projectId}
-          runningTicketNumber={runningTicketNumber}
+          runningTicketNumbers={runningTicketNumbers}
         />
       ))}
     </div>

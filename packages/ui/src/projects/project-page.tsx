@@ -67,7 +67,7 @@ function RegisteredProjectPage({ project }: { readonly project: ProjectResponse 
               <Board
                 rows={board.rows}
                 projectId={project.id}
-                runningTicketNumber={board.runningTicketNumber}
+                runningTicketNumbers={board.runningTicketNumbers}
               />
             )}
           </>

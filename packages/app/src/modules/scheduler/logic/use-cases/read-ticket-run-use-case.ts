@@ -16,15 +16,16 @@ export class ReadTicketRunUseCase {
   async execute(projectId: string, ticketNumber: number): Promise<TicketRun> {
     const { readRunAvailability, runner } = this.dependencies;
 
-    const [availability, activeRun, latestRun] = await Promise.all([
+    const [availability, activeRuns, latestRun] = await Promise.all([
       readRunAvailability(projectId, ticketNumber),
-      runner.activeRun(projectId),
+      runner.activeRuns(projectId),
       runner.latestRun(projectId, ticketNumber),
     ]);
 
+    const activeRun = activeRuns.find(({ run }) => run.ticketNumber === ticketNumber);
     return {
       availability,
-      ...(activeRun?.run.ticketNumber === ticketNumber
+      ...(activeRun !== undefined
         ? {
             activeRun: {
               id: activeRun.run.id,

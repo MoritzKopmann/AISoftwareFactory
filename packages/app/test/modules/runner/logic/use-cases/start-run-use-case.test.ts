@@ -141,13 +141,21 @@ describe('StartRunUseCase', () => {
     });
   });
 
-  it('should throw RunAlreadyActiveError and start nothing when another run in the project is running', async () => {
-    await runRepository.insert(buildRun({ id: 'other-run', ticketNumber: 12 }));
+  it('should throw RunAlreadyActiveError and start nothing when the ticket already has a running run', async () => {
+    await runRepository.insert(buildRun({ id: 'other-run' }));
 
     await expect(startRun.execute(startRequest)).rejects.toThrow(RunAlreadyActiveError);
 
     expect(worktrees.ensuredSpecs).toEqual([]);
     expect(agentSessions.startedSpecs).toEqual([]);
+  });
+
+  it('should start the run when another ticket of the project is running', async () => {
+    await runRepository.insert(buildRun({ id: 'other-run', ticketNumber: 12 }));
+
+    await startRun.execute(startRequest);
+
+    expect(agentSessions.startedSpecs).toHaveLength(1);
   });
 
   it('should throw RunTargetNotFoundError and insert nothing when the project or ticket is unknown', async () => {

@@ -11,12 +11,9 @@ export class ReadProjectBoardUseCase {
   constructor(private readonly dependencies: ReadProjectBoardDependencies) {}
 
   async execute(watch: RepositoryWatch): Promise<ProjectBoard> {
-    const runningTicketNumber = await this.dependencies.activeRunLookup.activeRunTicketNumber(
+    const runningTicketNumbers = await this.dependencies.activeRunLookup.activeRunTicketNumbers(
       watch.projectId,
     );
-    return {
-      ...buildProjectBoard(watch),
-      ...(runningTicketNumber === undefined ? {} : { runningTicketNumber }),
-    };
+    return { ...buildProjectBoard(watch), runningTicketNumbers };
   }
 }

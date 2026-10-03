@@ -6,11 +6,13 @@ const firstResponse: ProjectBoardResponse = {
   projectId: 'o/n',
   sync: { state: 'ok', checkedAt: 'first', snapshotTakenAt: 'first' },
   board: { rows: [] },
+  runningTicketNumbers: [],
 };
 const secondResponse: ProjectBoardResponse = {
   projectId: 'o/n',
   sync: { state: 'ok', checkedAt: 'second', snapshotTakenAt: 'second' },
   board: { rows: [] },
+  runningTicketNumbers: [],
 };
 
 describe('foldBoardOutcome', () => {

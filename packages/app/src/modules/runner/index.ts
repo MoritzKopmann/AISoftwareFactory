@@ -26,9 +26,9 @@ import type { Worktrees } from './logic/ports/worktrees.js';
 import { FinishRunUseCase } from './logic/use-cases/finish-run-use-case.js';
 import { LaunchRunSessionUseCase } from './logic/use-cases/launch-run-session-use-case.js';
 import {
-  ReadActiveRunUseCase,
+  ReadActiveRunsUseCase,
   type ActiveRun,
-} from './logic/use-cases/read-active-run-use-case.js';
+} from './logic/use-cases/read-active-runs-use-case.js';
 import { ReadLatestRunUseCase } from './logic/use-cases/read-latest-run-use-case.js';
 import { ReadRunUseCase } from './logic/use-cases/read-run-use-case.js';
 import { ReadSessionLogUseCase } from './logic/use-cases/read-session-log-use-case.js';
@@ -47,7 +47,7 @@ export type { RunStage } from './logic/domain/types/run-stage.js';
 export type { RunStep } from './logic/domain/types/run-step.js';
 export type { SessionLog } from './logic/domain/types/session-log.js';
 export type { RunTool, RunToolResult } from './logic/domain/types/run-tool.js';
-export type { ActiveRun } from './logic/use-cases/read-active-run-use-case.js';
+export type { ActiveRun } from './logic/use-cases/read-active-runs-use-case.js';
 export type { StartRunRequest } from './logic/use-cases/start-run-use-case.js';
 export {
   RunAlreadyActiveError,
@@ -77,7 +77,7 @@ export type RunnerModule = {
   readonly start: (request: StartRunRequest) => Promise<Run>;
   readonly resume: (runId: string, decision: PermissionDecision) => Promise<Run>;
   readonly findRun: (runId: string) => Promise<Run | undefined>;
-  readonly activeRun: (projectId: string) => Promise<ActiveRun | undefined>;
+  readonly activeRuns: (projectId: string) => Promise<ReadonlyArray<ActiveRun>>;
   readonly latestRun: (projectId: string, ticketNumber: number) => Promise<Run | undefined>;
   readonly settle: (runId: string) => Promise<void>;
   readonly sessionLog: (runId: string) => Promise<SessionLog>;
@@ -117,7 +117,7 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
   });
   const readRun = new ReadRunUseCase({ runRepository });
   const stopRun = new StopRunUseCase({ runRepository, finishRun });
-  const readActiveRun = new ReadActiveRunUseCase({ runRepository, recentRunSteps });
+  const readActiveRuns = new ReadActiveRunsUseCase({ runRepository, recentRunSteps });
   const readLatestRun = new ReadLatestRunUseCase({ runRepository });
   const readSessionLog = new ReadSessionLogUseCase({
     runRepository,
@@ -135,7 +135,7 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
     start: (request) => startRun.execute(request),
     resume: (runId, decision) => resumeRun.execute(runId, decision),
     findRun: (runId) => readRun.execute(runId),
-    activeRun: (projectId) => readActiveRun.execute(projectId),
+    activeRuns: (projectId) => readActiveRuns.execute(projectId),
     latestRun: (projectId, ticketNumber) => readLatestRun.execute(projectId, ticketNumber),
     settle: (runId) => settleRun.execute(runId),
     sessionLog: (runId) => readSessionLog.execute(runId),

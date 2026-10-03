@@ -2,7 +2,7 @@ import type { RunAvailability } from '../types/run-availability.js';
 import type { RunAvailabilityInput } from '../types/run-availability-input.js';
 
 export function determineRunAvailability(input: RunAvailabilityInput): RunAvailability {
-  const { ticket, activeRun, runsBlocked, projectOnboarded, lastRunEndedAt } = input;
+  const { ticket, ticketIsRunning, runsBlocked, projectOnboarded, lastRunEndedAt } = input;
   if (
     ticket === undefined ||
     ticket.status !== 'ready' ||
@@ -12,8 +12,8 @@ export function determineRunAvailability(input: RunAvailabilityInput): RunAvaila
   ) {
     return { kind: 'absent' };
   }
-  if (activeRun !== undefined) {
-    return { kind: 'disabled', reason: `#${activeRun.ticketNumber} is running` };
+  if (ticketIsRunning) {
+    return { kind: 'disabled', reason: `#${ticket.number} is running` };
   }
   if (runsBlocked.blocked) {
     return { kind: 'disabled', reason: runsBlocked.reason };

@@ -65,4 +65,14 @@ export const migrations: ReadonlyArray<Migration> = [
         ON findings (project_id, ticket_number);
     `,
   },
+  {
+    version: 5,
+    name: 'runs-one-running-per-ticket',
+    sql: `
+      DROP INDEX runs_one_running_per_project;
+      CREATE UNIQUE INDEX runs_one_running_per_ticket
+        ON runs (project_id, ticket_number)
+        WHERE state = 'running';
+    `,
+  },
 ];

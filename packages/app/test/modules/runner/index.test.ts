@@ -109,8 +109,8 @@ describe('createRunnerModule', () => {
     });
   });
 
-  it('should fail with RunAlreadyActiveError when a start comes while the project has a running run', async () => {
-    await runRepository.insert(buildRun({ id: 'other', ticketNumber: 12 }));
+  it('should fail with RunAlreadyActiveError when a start comes while the ticket has a running run', async () => {
+    await runRepository.insert(buildRun({ id: 'other' }));
 
     await expect(runner.start(startRequest)).rejects.toThrow(RunAlreadyActiveError);
     expect(agentSessions.startedSpecs).toEqual([]);
@@ -125,16 +125,16 @@ describe('createRunnerModule', () => {
     expect(events.emittedEvents[0]).toMatchObject({ payload: { ending: { kind: 'stopped' } } });
   });
 
-  it('should return the running run with its steps when activeRun is asked', async () => {
+  it('should return the running run with its steps when activeRuns is asked', async () => {
     const run = await runner.start(startRequest);
     agentSessions.push('id-2', { kind: 'step', step: { at: 'a', summary: 'Read package.json' } });
 
     await vi.waitFor(async () =>
-      expect((await runner.activeRun('moritz/aisf'))?.steps).toEqual([
+      expect((await runner.activeRuns('moritz/aisf'))[0]?.steps).toEqual([
         { at: 'a', summary: 'Read package.json' },
       ]),
     );
-    expect((await runner.activeRun('moritz/aisf'))?.run).toEqual(run);
+    expect((await runner.activeRuns('moritz/aisf'))[0]?.run).toEqual(run);
   });
 
   it("should return the ticket's latest run when latestRun is asked", async () => {

@@ -27,7 +27,7 @@ describe('ReadTicketRunUseCase', () => {
 
   it('should return the active run with its steps when the active run is this ticket', async () => {
     const runner = new FakeRunnerPort();
-    runner.activeTicketNumber = 138;
+    runner.activeTicketNumbers = [138];
     runner.activeSteps = [{ at: '2026-09-29T09:01:00.000Z', summary: 'Read the ticket' }];
 
     expect(await buildUseCase(runner).execute('moritz/aisf', 138)).toEqual({
@@ -42,7 +42,7 @@ describe('ReadTicketRunUseCase', () => {
 
   it('should leave out the active run when the active run is another ticket', async () => {
     const runner = new FakeRunnerPort();
-    runner.activeTicketNumber = 42;
+    runner.activeTicketNumbers = [42];
 
     const ticketRun = await buildUseCase(runner).execute('moritz/aisf', 138);
 

@@ -36,12 +36,12 @@ describe('StartTicketRunUseCase', () => {
     expect(runner.calls).toEqual(['start moritz/aisf #138']);
   });
 
-  it('should throw RunNotAvailableError with the reason and start nothing when another run is active', async () => {
+  it('should throw RunNotAvailableError with the reason and start nothing when the ticket already has a run active', async () => {
     const runner = new FakeRunnerPort();
-    runner.activeTicketNumber = 42;
+    runner.activeTicketNumbers = [138];
 
     await expect(buildUseCase(runner).execute('moritz/aisf', 138)).rejects.toThrow(
-      new RunNotAvailableError('#42 is running'),
+      new RunNotAvailableError('#138 is running'),
     );
     expect(runner.calls).toEqual([]);
   });

@@ -23,7 +23,7 @@ export type BoardDescription = {
   readonly emptyMessage?: string;
   readonly loading: boolean;
   readonly rows: ReadonlyArray<BoardRowDescription>;
-  readonly runningTicketNumber?: number;
+  readonly runningTicketNumbers: ReadonlyArray<number>;
 };
 
 function describeRow(row: BoardRowResponse): BoardRowDescription {
@@ -78,7 +78,7 @@ export function describeBoard(state: BoardState, projectId: string, now: Date): 
   const shared = { ...bannerPart, ...updatedAtPart };
   const board = response?.board;
   if (board === undefined) {
-    return { ...shared, loading: true, rows: [] };
+    return { ...shared, loading: true, rows: [], runningTicketNumbers: [] };
   }
   if (board.rows.every((row) => row.totalCount === 0)) {
     return {
@@ -86,13 +86,13 @@ export function describeBoard(state: BoardState, projectId: string, now: Date): 
       emptyMessage: `No tickets in ${projectId} yet.`,
       loading: false,
       rows: [],
+      runningTicketNumbers: [],
     };
   }
-  const runningTicketNumber = response?.runningTicketNumber;
   return {
     ...shared,
     loading: false,
     rows: board.rows.map(describeRow),
-    ...(runningTicketNumber === undefined ? {} : { runningTicketNumber }),
+    runningTicketNumbers: response?.runningTicketNumbers ?? [],
   };
 }

@@ -15,7 +15,7 @@ const pollIntervalMilliseconds = 30_000;
 const snapshotIntervalMilliseconds = 300_000;
 const registered = { projectId: 'owner/name', repository: { owner: 'owner', name: 'name' } };
 
-function createSubject(runningTicketNumber?: number) {
+function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
   const events = new TypedEventBus<AisfEventMap>();
   const issueFeeds = new FakeIssueFeeds();
   const ticketSource = new FakeTicketSource({
@@ -34,7 +34,7 @@ function createSubject(runningTicketNumber?: number) {
     events,
     subscriber: events,
     registeredRepositories: new FakeRegisteredRepositories([registered]),
-    activeRunLookup: { activeRunTicketNumber: async () => runningTicketNumber },
+    activeRunLookup: { activeRunTicketNumbers: async () => runningTicketNumbers },
     pollIntervalMilliseconds,
     snapshotIntervalMilliseconds,
   });
@@ -80,24 +80,24 @@ describe('createWatcherModule', () => {
       expect(await response.json()).toMatchObject({ projectId: 'owner/name' });
     });
 
-    it('should name the running ticket on the board when the project has an active run', async () => {
-      const { watcher } = createSubject(139);
+    it('should name the running tickets on the board when the project has active runs', async () => {
+      const { watcher } = createSubject([139, 140]);
       await watcher.start();
       watcher.stop();
 
       const response = await watcher.routes.request('/projects/owner/name/board');
 
-      expect(await response.json()).toMatchObject({ runningTicketNumber: 139 });
+      expect(await response.json()).toMatchObject({ runningTicketNumbers: [139, 140] });
     });
 
-    it('should leave runningTicketNumber out of the board when the project has no active run', async () => {
+    it('should name no running tickets on the board when the project has no active run', async () => {
       const { watcher } = createSubject();
       await watcher.start();
       watcher.stop();
 
       const response = await watcher.routes.request('/projects/owner/name/board');
 
-      expect(await response.json()).not.toHaveProperty('runningTicketNumber');
+      expect(await response.json()).toMatchObject({ runningTicketNumbers: [] });
     });
 
     it('should serve a ticket under /projects/:owner/:name/tickets/:number when it is in the snapshot', async () => {
@@ -293,6 +293,7 @@ describe('createWatcherModule', () => {
       expect(await readBoard(watcher, 'owner/name')).toEqual({
         projectId: 'owner/name',
         sync: { state: 'pending' },
+        runningTicketNumbers: [],
       });
     });
   });

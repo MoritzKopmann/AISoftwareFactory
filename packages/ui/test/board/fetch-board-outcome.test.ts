@@ -2,7 +2,11 @@ import type { ProjectBoardResponse } from '@aisf/app/api-schemas/tickets-schemas
 import { describe, expect, it } from 'vitest';
 import { fetchBoardOutcome } from '../../src/board/fetch-board-outcome.js';
 
-const response: ProjectBoardResponse = { projectId: 'o/n', sync: { state: 'pending' } };
+const response: ProjectBoardResponse = {
+  projectId: 'o/n',
+  sync: { state: 'pending' },
+  runningTicketNumbers: [],
+};
 
 function answerWith(status: number, body: unknown = response): () => Promise<Response> {
   return () => Promise.resolve(new Response(JSON.stringify(body), { status }));

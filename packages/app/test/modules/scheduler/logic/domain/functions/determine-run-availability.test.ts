@@ -15,6 +15,7 @@ const readyLeaf: SchedulableTicket = {
 function buildInput(overrides: Partial<RunAvailabilityInput> = {}): RunAvailabilityInput {
   return {
     ticket: readyLeaf,
+    ticketIsRunning: false,
     runsBlocked: { blocked: false },
     projectOnboarded: true,
     ...overrides,
@@ -28,6 +29,7 @@ describe('determineRunAvailability', () => {
 
   it('should be absent when the ticket is unknown', () => {
     const input: RunAvailabilityInput = {
+      ticketIsRunning: false,
       runsBlocked: { blocked: false },
       projectOnboarded: true,
     };
@@ -48,12 +50,12 @@ describe('determineRunAvailability', () => {
     expect(determineRunAvailability(buildInput({ ticket }))).toEqual({ kind: 'absent' });
   });
 
-  it('should be disabled naming the running ticket when another run is active in the project', () => {
-    const input = buildInput({ activeRun: { ticketNumber: 7 } });
+  it('should be disabled naming the ticket when it already has a run active', () => {
+    const input = buildInput({ ticketIsRunning: true });
 
     expect(determineRunAvailability(input)).toEqual({
       kind: 'disabled',
-      reason: '#7 is running',
+      reason: '#42 is running',
     });
   });
 
@@ -90,10 +92,10 @@ describe('determineRunAvailability', () => {
     expect(determineRunAvailability(input)).toEqual({ kind: 'available' });
   });
 
-  it('should be absent rather than disabled when an ineligible ticket has another run active', () => {
+  it('should be absent rather than disabled when an ineligible ticket has a run active', () => {
     const input = buildInput({
       ticket: { ...readyLeaf, hitl: true },
-      activeRun: { ticketNumber: 7 },
+      ticketIsRunning: true,
     });
 
     expect(determineRunAvailability(input)).toEqual({ kind: 'absent' });
