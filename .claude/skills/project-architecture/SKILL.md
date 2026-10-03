@@ -184,7 +184,7 @@ interface RunRepository {
 
 // Deep: domain-level
 interface RunRepository {
-  findActive(projectId: ProjectId): Promise<Run | undefined>;
+  listActive(projectId: ProjectId): Promise<ReadonlyArray<Run>>;
   save(run: Run): Promise<void>;
 }
 ```
@@ -255,7 +255,6 @@ if (response.status === 304) return previousPage;
 - **No central Store module.** No module owns another module's data.
 - **No import that reaches past another module's `index.ts`** (`modules/x/logic/…` from `modules/y`).
 - **No `new` of a concrete adapter outside `main.ts`.** No service locator, no global singletons.
-- **No app write to tickets or pull requests** outside the scheduler's settle and merge use cases and findings' create-ticket use case. Named exception: the create-only label sync in `projects`.
 - **No second process:** no daemon plus separate UI process, and no process per project.
 - **No persistence besides `aisf.db`:** no JSON state files, no native SQLite binding.
 - **Rejected stacks stay rejected:** htmx, Fastify, Svelte, Docker, a single binary.
@@ -269,7 +268,7 @@ Confirm-page lanes, left to right: **UI** · **api** · **logic** · **infra** �
 
 ## UI
 
-**Yes.** Plans that touch these surfaces cover their empty, loading, error and too-much-data states:
+The user-facing surfaces:
 
 - **The browser app** (`packages/ui`, a React SPA): project board, ticket pages, "Needs you", run transcripts, Known bugs, settings.
 - **Bridge pages**: the interview and confirm pages sessions show under `.aisf/artifacts`, built from the `<aisf-*>` kit elements.
