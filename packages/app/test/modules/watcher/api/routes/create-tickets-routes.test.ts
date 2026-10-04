@@ -157,6 +157,20 @@ describe('createTicketsRoutes', () => {
       expect(watcher.ticketRequests).toEqual([{ projectId: 'owner/name', number: 7 }]);
     });
 
+    it('should answer 200 with the ticket types when the ticket has types', async () => {
+      const watcher = new FakeWatcher();
+      watcher.tickets.set('owner/name#42', {
+        projectId: 'owner/name',
+        sync: okSync,
+        ticket: buildTicket({ number: 42, types: ['spike'] }),
+      });
+
+      const response = await createTestApp(watcher).request('/projects/owner/name/tickets/42');
+
+      const body = projectTicketResponseSchema.parse(await response.json());
+      expect(body.ticket?.types).toEqual(['spike']);
+    });
+
     it('should answer 200 with the body when the ticket has one', async () => {
       const watcher = new FakeWatcher();
       watcher.tickets.set('owner/name#7', {

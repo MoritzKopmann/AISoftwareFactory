@@ -37,7 +37,6 @@ describe('createRunnerModule', () => {
   const startRequest = {
     projectId: 'moritz/aisf',
     ticketNumber: 137,
-    stage: 'implement',
     mode: 'afk',
   } as const;
 
@@ -54,6 +53,7 @@ describe('createRunnerModule', () => {
         checkoutPath: '/checkouts/aisf',
         repositoryName: 'aisf',
         ticketTitle: 'The runner',
+        types: [],
       }),
       recentRunSteps: new FakeRecentRunSteps(),
       sessionTranscripts,

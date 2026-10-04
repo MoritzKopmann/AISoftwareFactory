@@ -53,6 +53,7 @@ describe('FetchGraphQLTicketSource', () => {
         status: 'planned',
         conflictingStatuses: [],
         hitl: false,
+        types: ['enhancement'],
         subIssueNumbers: [13, 14],
         blockedBy: [],
         closingPullRequests: [],
@@ -66,6 +67,7 @@ describe('FetchGraphQLTicketSource', () => {
         status: 'in-review',
         conflictingStatuses: [],
         hitl: true,
+        types: [],
         parent: { number: 12, title: 'Epic: Watch a project' },
         subIssueNumbers: [],
         blockedBy: [
@@ -300,6 +302,14 @@ describe('FetchGraphQLTicketSource', () => {
       const ticket = await createSource(scriptedFetch).ticket(repository, 8);
 
       expect(ticket?.closingPullRequests[1]).toMatchObject({ number: 23, approved: false });
+    });
+
+    it('should read the ticket types from its type labels when a ticket is read', async () => {
+      const scriptedFetch = new ScriptedFetch([answer('graphql-ticket.json')]);
+
+      const ticket = await createSource(scriptedFetch).ticket(repository, 8);
+
+      expect(ticket?.types).toEqual(['spike']);
     });
 
     it('should read the pull request as not approved when only the issue carries the approved label', async () => {

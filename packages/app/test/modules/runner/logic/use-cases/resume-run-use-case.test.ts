@@ -223,11 +223,26 @@ describe('ResumeRunUseCase', () => {
         expect(runRepository.runs.get('id-1')).toEqual(resumed);
         expect(agentSessions.resumedSpecs).toHaveLength(1);
         expect(agentSessions.resumedSpecs[0]?.prompt).toBe(
-          buildCheckpointResumePrompt(137, 'Check the page', 'Looks right'),
+          buildCheckpointResumePrompt(
+            137,
+            'Check the page',
+            'Looks right',
+            'aisf:implement-ticket',
+          ),
         );
         expect(agentSessions.resumedSpecs[0]).not.toHaveProperty('allowedCall');
       },
     );
+
+    it('should tell a spike run to carry on with aisf:spike when it resumes after a checkpoint', async () => {
+      await insertEndedRun({ stage: 'spike', ending: checkpointEnding });
+
+      await resumeRun.execute('run-1', answer);
+
+      expect(agentSessions.resumedSpecs[0]?.prompt).toContain(
+        'Carry on with aisf:spike for #137 from its human checkpoint.',
+      );
+    });
 
     it.each([
       ['a permission-needed ending', { ending: permissionNeeded }],

@@ -35,7 +35,7 @@ function describeEnding(ending: Exclude<RunEnding, { kind: 'parked' | 'checkpoin
     case 'permission-needed':
       return `The run needs permission for ${ending.toolName} with input ${JSON.stringify(ending.toolInput)}`;
     case 'finished':
-      return 'The run finished without opening a pull request';
+      return 'The run finished without completing the ticket';
     case 'stopped':
       return 'The run was stopped';
     case 'crashed':

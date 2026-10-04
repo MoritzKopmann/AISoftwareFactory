@@ -1,1 +1,1 @@
-export type RunStage = 'implement';
+export type RunStage = 'implement' | 'spike';

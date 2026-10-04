@@ -147,7 +147,7 @@ describe('describeRunPanel', () => {
     [
       'finished',
       { kind: 'finished' },
-      'Run ended: the session finished without opening a pull request.',
+      'Run ended: the session finished without completing the ticket.',
     ],
     ['parked', { kind: 'parked', blockerNumber: 42 }, 'Run ended: parked until #42 is done.'],
   ])('should state the reason when the run ended as %s', (_kind, ending, note) => {
