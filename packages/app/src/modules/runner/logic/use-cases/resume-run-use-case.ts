@@ -1,4 +1,5 @@
 import type { Clock } from '../../../../shared/clock/clock.js';
+import { stageSkills } from '../domain/constants/stage-skills.js';
 import { buildCheckpointResumePrompt } from '../domain/functions/build-checkpoint-resume-prompt.js';
 import { buildResumePrompt } from '../domain/functions/build-resume-prompt.js';
 import type { LaunchRunSession } from '../domain/types/launch-run-session.js';
@@ -39,7 +40,12 @@ export class ResumeRunUseCase {
     } else if (ending.kind === 'checkpoint' && answer.kind === 'checkpoint') {
       launch = {
         kind: 'resume',
-        prompt: buildCheckpointResumePrompt(previousRun.ticketNumber, ending.request, answer.text),
+        prompt: buildCheckpointResumePrompt(
+          previousRun.ticketNumber,
+          ending.request,
+          answer.text,
+          stageSkills[previousRun.stage],
+        ),
       };
     } else {
       throw new RunNotResumableError(`Run ${runId} cannot take a ${answer.kind} answer`);

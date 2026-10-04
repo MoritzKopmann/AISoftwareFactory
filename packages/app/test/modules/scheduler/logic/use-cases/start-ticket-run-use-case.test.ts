@@ -46,6 +46,16 @@ describe('StartTicketRunUseCase', () => {
     expect(runner.calls).toEqual([]);
   });
 
+  it('should throw RunNotAvailableError and start nothing when the ticket is a ui ticket and not a spike', async () => {
+    const runner = new FakeRunnerPort();
+    const ticketLookup = new FakeTicketLookup({ ...readyLeaf, types: ['ui'] });
+
+    await expect(buildUseCase(runner, ticketLookup).execute('moritz/aisf', 138)).rejects.toThrow(
+      RunNotAvailableError,
+    );
+    expect(runner.calls).toEqual([]);
+  });
+
   it('should throw RunNotAvailableError and start nothing when the ticket is not runnable', async () => {
     const runner = new FakeRunnerPort();
     const ticketLookup = new FakeTicketLookup({ ...readyLeaf, hasOpenBlocker: true });

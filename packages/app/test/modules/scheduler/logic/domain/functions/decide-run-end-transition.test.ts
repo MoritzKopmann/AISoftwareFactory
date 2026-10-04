@@ -49,7 +49,7 @@ describe('decideRunEndTransition', () => {
   });
 
   it.each<[RunEnding, string]>([
-    [{ kind: 'finished' }, 'The run finished without opening a pull request'],
+    [{ kind: 'finished' }, 'The run finished without completing the ticket'],
     [{ kind: 'stopped' }, 'The run was stopped'],
     [{ kind: 'crashed', reason: 'boom' }, 'The run crashed: boom'],
     [{ kind: 'usage-limit', reason: 'limit hit' }, 'The run hit the usage limit: limit hit'],

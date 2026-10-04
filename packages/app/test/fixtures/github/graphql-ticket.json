@@ -10,7 +10,13 @@
         "state": "CLOSED",
         "updatedAt": "2026-09-28T08:41:09Z",
         "body": "Ticket body",
-        "labels": { "nodes": [{ "name": "status: in-review" }, { "name": "approved" }] },
+        "labels": {
+          "nodes": [
+            { "name": "status: in-review" },
+            { "name": "type: spike" },
+            { "name": "approved" }
+          ]
+        },
         "parent": { "number": 12, "title": "Epic: Watch a project" },
         "subIssues": { "nodes": [] },
         "blockedBy": { "nodes": [] },

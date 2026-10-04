@@ -8,7 +8,8 @@ export function determineRunAvailability(input: RunAvailabilityInput): RunAvaila
     ticket.status !== 'ready' ||
     !ticket.isLeaf ||
     ticket.hasOpenBlocker ||
-    ticket.hitl
+    ticket.hitl ||
+    (ticket.types.includes('ui') && !ticket.types.includes('spike'))
   ) {
     return { kind: 'absent' };
   }

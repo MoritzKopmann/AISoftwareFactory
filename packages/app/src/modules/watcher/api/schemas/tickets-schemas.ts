@@ -15,6 +15,9 @@ export const ticketStatusSchema = z.enum([
 ]);
 export type TicketStatusResponse = z.infer<typeof ticketStatusSchema>;
 
+export const ticketTypeSchema = z.enum(['bug', 'enhancement', 'task', 'spike', 'ui']);
+export type TicketTypeResponse = z.infer<typeof ticketTypeSchema>;
+
 export const ticketResponseSchema = z.object({
   number: z.number(),
   title: z.string(),
@@ -23,6 +26,7 @@ export const ticketResponseSchema = z.object({
   status: ticketStatusSchema,
   conflictingStatuses: z.array(ticketStatusSchema),
   hitl: z.boolean(),
+  types: z.array(ticketTypeSchema),
   parent: z.object({ number: z.number(), title: z.string() }).optional(),
   subIssueNumbers: z.array(z.number()),
   blockedBy: z.array(z.object({ repository: z.string(), number: z.number(), open: z.boolean() })),

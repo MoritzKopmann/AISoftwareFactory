@@ -26,6 +26,7 @@ export function buildTicketResponse(overrides: Partial<TicketResponse> = {}): Ti
     status: 'ready',
     conflictingStatuses: [],
     hitl: false,
+    types: [],
     subIssueNumbers: [],
     blockedBy: [],
     closingPullRequests: [],

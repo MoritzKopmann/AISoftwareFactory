@@ -2,8 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { buildCheckpointResumePrompt } from '../../../../../../src/modules/runner/logic/domain/functions/build-checkpoint-resume-prompt.js';
 
 describe('buildCheckpointResumePrompt', () => {
+  it('should carry on with the given skill when the run is a spike', () => {
+    const prompt = buildCheckpointResumePrompt(42, 'Check', 'Fine', 'aisf:spike');
+
+    expect(prompt).toContain('Carry on with aisf:spike for #42 from its human checkpoint.');
+  });
+
   it('should return the exact prompt text when request and answer are single lines', () => {
-    const prompt = buildCheckpointResumePrompt(228, 'Open the board', 'Looks right');
+    const prompt = buildCheckpointResumePrompt(
+      228,
+      'Open the board',
+      'Looks right',
+      'aisf:implement-ticket',
+    );
 
     expect(prompt).toBe(
       [
@@ -26,6 +37,7 @@ describe('buildCheckpointResumePrompt', () => {
       228,
       'Run the app\n\nOpen the board',
       'It failed:\nno chip',
+      'aisf:implement-ticket',
     );
 
     expect(prompt).toContain('Your request:\n> Run the app\n> \n> Open the board\n\n');

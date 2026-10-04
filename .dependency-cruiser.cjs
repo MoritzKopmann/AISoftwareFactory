@@ -3,7 +3,7 @@ const moduleIndexFile = `${modulesRoot}/[^/]+/index\\.ts$`;
 const logicRoot = `${modulesRoot}/[^/]+/logic`;
 const domainRoot = `${logicRoot}/domain`;
 const sharedRoot = '^packages/app/src/shared/';
-const sharedDomainConcepts = '^packages/app/src/shared/ticket-status/';
+const sharedDomainConcepts = '^packages/app/src/shared/(ticket-status|ticket-type)/';
 const mainFile = '^packages/app/src/main\\.ts$';
 
 /** @type {import('dependency-cruiser').IConfiguration} */

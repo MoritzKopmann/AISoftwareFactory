@@ -90,7 +90,7 @@ function endingNote(ending: RunEndingResponse): string | undefined {
     case 'escalated':
       return `Run ended: ${ending.reason}`;
     case 'finished':
-      return 'Run ended: the session finished without opening a pull request.';
+      return 'Run ended: the session finished without completing the ticket.';
     case 'parked':
       return `Run ended: parked until #${ending.blockerNumber} is done.`;
   }

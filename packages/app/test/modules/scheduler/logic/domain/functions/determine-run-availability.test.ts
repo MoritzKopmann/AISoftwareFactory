@@ -7,6 +7,7 @@ const readyLeaf: SchedulableTicket = {
   number: 42,
   status: 'ready',
   hitl: false,
+  types: [],
   isLeaf: true,
   hasOpenBlocker: false,
   snapshotTakenAt: '2026-09-29T10:00:00.000Z',
@@ -39,6 +40,7 @@ describe('determineRunAvailability', () => {
 
   it.each<[string, Partial<SchedulableTicket>]>([
     ['is hitl', { hitl: true }],
+    ['is a ui ticket and not a spike', { types: ['ui'] }],
     ['has an open blocker', { hasOpenBlocker: true }],
     ['is not a leaf', { isLeaf: false }],
     ['is in-progress', { status: 'in-progress' }],
@@ -48,6 +50,12 @@ describe('determineRunAvailability', () => {
     const ticket = { ...readyLeaf, ...ticketOverrides };
 
     expect(determineRunAvailability(buildInput({ ticket }))).toEqual({ kind: 'absent' });
+  });
+
+  it('should be available when the ticket is labelled both ui and spike', () => {
+    const ticket: SchedulableTicket = { ...readyLeaf, types: ['ui', 'spike'] };
+
+    expect(determineRunAvailability(buildInput({ ticket }))).toEqual({ kind: 'available' });
   });
 
   it('should be disabled naming the ticket when it already has a run active', () => {

@@ -8,6 +8,7 @@ import { WorktreeSetupFailedError } from '../../../../../src/modules/runner/logi
 import { FinishRunUseCase } from '../../../../../src/modules/runner/logic/use-cases/finish-run-use-case.js';
 import { LaunchRunSessionUseCase } from '../../../../../src/modules/runner/logic/use-cases/launch-run-session-use-case.js';
 import { StartRunUseCase } from '../../../../../src/modules/runner/logic/use-cases/start-run-use-case.js';
+import type { TicketType } from '../../../../../src/shared/ticket-type/ticket-type.js';
 import { FakeClock } from '../../../../fakes/fake-clock.js';
 import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
 import {
@@ -34,7 +35,6 @@ describe('StartRunUseCase', () => {
   const startRequest = {
     projectId: 'moritz/aisf',
     ticketNumber: 137,
-    stage: 'implement',
     mode: 'afk',
   } as const;
 
@@ -65,6 +65,7 @@ describe('StartRunUseCase', () => {
     checkoutPath: '/checkouts/aisf',
     repositoryName: 'aisf',
     ticketTitle: 'The runner takes a ticket',
+    types: [] as ReadonlyArray<TicketType>,
   };
 
   function endingOf(runId: string): RunEnding | undefined {
@@ -140,6 +141,23 @@ describe('StartRunUseCase', () => {
       model: 'sonnet',
     });
   });
+
+  it.each<[string, ReadonlyArray<TicketType>, 'spike' | 'implement', string, string]>([
+    ['a spike', ['spike'], 'spike', '/aisf:spike 137', 'opus'],
+    ['both ui and spike', ['ui', 'spike'], 'spike', '/aisf:spike 137', 'opus'],
+    ['another type', ['enhancement'], 'implement', '/aisf:implement-ticket 137', 'sonnet'],
+    ['no type', [], 'implement', '/aisf:implement-ticket 137', 'sonnet'],
+  ])(
+    'should save the stage, prompt and model of the matching skill when the ticket is %s',
+    async (_name, types, stage, prompt, model) => {
+      startRun = buildStartRun(new FakeRunTargets({ ...target, types }));
+
+      const run = await startRun.execute(startRequest);
+
+      expect(run.stage).toBe(stage);
+      expect(agentSessions.startedSpecs[0]).toMatchObject({ prompt, model });
+    },
+  );
 
   it('should throw RunAlreadyActiveError and start nothing when the ticket already has a running run', async () => {
     await runRepository.insert(buildRun({ id: 'other-run' }));

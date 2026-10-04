@@ -179,6 +179,7 @@ function buildRunnerModule(
           checkoutPath: project.checkoutPath,
           repositoryName: project.repository.name,
           ticketTitle: projectTicket.ticket.title,
+          types: projectTicket.ticket.types,
         };
       },
     },
@@ -207,7 +208,7 @@ function buildSchedulerModule(
     runner: {
       start: async ({ projectId, ticketNumber }) => {
         try {
-          return await runner.start({ projectId, ticketNumber, stage: 'implement', mode: 'afk' });
+          return await runner.start({ projectId, ticketNumber, mode: 'afk' });
         } catch (error) {
           if (error instanceof RunnerRunAlreadyActiveError) {
             throw new RunAlreadyActiveError(error.message);
@@ -247,6 +248,7 @@ function buildSchedulerModule(
           number: ticket.number,
           status: ticket.status,
           hitl: ticket.hitl,
+          types: ticket.types,
           isLeaf: ticket.subIssueNumbers.length === 0,
           hasOpenBlocker: ticket.blockedBy.some((blocker) => blocker.open),
           ...(snapshotTakenAt === undefined ? {} : { snapshotTakenAt }),

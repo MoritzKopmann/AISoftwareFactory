@@ -10,6 +10,7 @@ export function buildCheckpointResumePrompt(
   ticketNumber: number,
   request: string,
   answerText: string,
+  skill: string,
 ): string {
   return [
     `Your aisf_checkpoint call for #${ticketNumber} was delivered, and a human has answered it.`,
@@ -21,6 +22,6 @@ export function buildCheckpointResumePrompt(
     "The human's answer:",
     quote(answerText),
     '',
-    `Carry on with aisf:implement-ticket for #${ticketNumber} from its human checkpoint.`,
+    `Carry on with ${skill} for #${ticketNumber} from its human checkpoint.`,
   ].join('\n');
 }

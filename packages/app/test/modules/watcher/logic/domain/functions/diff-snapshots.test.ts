@@ -48,6 +48,13 @@ describe('diffSnapshots', () => {
     expect(diffSnapshots(previous, current).changedTicketNumbers).toEqual([1]);
   });
 
+  it('should name a ticket as changed when its types differ', () => {
+    const previous = snapshotOf([buildTicket({ number: 1, types: [] })]);
+    const current = snapshotOf([buildTicket({ number: 1, types: ['spike'] })]);
+
+    expect(diffSnapshots(previous, current).changedTicketNumbers).toEqual([1]);
+  });
+
   it('should name a ticket as changed when a nested field differs', () => {
     const previous = snapshotOf([buildTicket({ number: 1 })]);
     const current = snapshotOf([
