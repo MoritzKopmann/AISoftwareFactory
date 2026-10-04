@@ -439,6 +439,9 @@
   .s-flow {
     color: var(--info);
   }
+  .s-hitl {
+    color: var(--hitl);
+  }
   .s-done {
     color: var(--ok);
   }
@@ -1547,6 +1550,12 @@
           <td>plan, planned, ready, in-progress, in-review</td>
         </tr>
         <tr>
+          <td>Waits for a human</td>
+          <td class="mono">--hitl</td>
+          <td><span class="shape s-hitl">●</span> filled circle, no pulse</td>
+          <td>waiting</td>
+        </tr>
+        <tr>
           <td>Error</td>
           <td class="mono">--danger</td>
           <td><span class="shape s-danger">■</span> square</td>
@@ -1584,7 +1593,8 @@
       </li>
       <li>
         <b>The hitl flag</b> means "runs as an interactive session": a chip with a purple border and
-        no shape, because it is a flag, not a status. Purple means only this.
+        no shape, because it is a flag, not a status. Purple means a human is in the loop: the HITL
+        flag, hitl moments, and the waiting status. Waiting has a shape; the flag has none.
       </li>
       <li>
         <b>Needs you</b> is not a status. It is a shell and list concern, marked by its reason:
@@ -1607,6 +1617,9 @@
           <span class="chip flow"><span class="shape s-flow" aria-hidden="true">●</span>Ready</span>
           <span class="chip flow"
             ><span class="shape s-flow pulse" aria-hidden="true">●</span>In progress</span
+          >
+          <span class="chip hitl"
+            ><span class="shape s-hitl" aria-hidden="true">●</span>Waiting</span
           >
           <span class="chip flow"
             ><span class="shape s-flow" aria-hidden="true">●</span>In review</span
