@@ -247,7 +247,6 @@ function buildSchedulerModule(
         return {
           number: ticket.number,
           status: ticket.status,
-          hitl: ticket.hitl,
           types: ticket.types,
           isLeaf: ticket.subIssueNumbers.length === 0,
           hasOpenBlocker: ticket.blockedBy.some((blocker) => blocker.open),

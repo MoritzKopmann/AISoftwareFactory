@@ -32,14 +32,6 @@ describe('ReadRunAvailabilityUseCase', () => {
     expect(await useCase.execute('moritz/aisf', 138)).toEqual({ kind: 'absent' });
   });
 
-  it('should be absent when the ticket is hitl', async () => {
-    const useCase = buildUseCase({
-      ticketLookup: new FakeTicketLookup({ ...readyLeaf, hitl: true }),
-    });
-
-    expect(await useCase.execute('moritz/aisf', 138)).toEqual({ kind: 'absent' });
-  });
-
   it('should be disabled naming the ticket when it already has a run active', async () => {
     const runner = new FakeRunnerPort();
     runner.activeTicketNumbers = [138];
