@@ -841,6 +841,96 @@ details:not([open]) .t-hide {
   gap: 2px;
 }
 
+.ckpt {
+  display: grid;
+  gap: 12px;
+  max-width: 720px;
+  padding: 14px 16px 14px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: inset 4px 0 0 var(--hitl);
+}
+
+.ckpt h2 {
+  font-family: var(--font-ui);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.ckpt .explainer {
+  color: var(--text);
+}
+
+.ckpt .field {
+  display: grid;
+  gap: 6px;
+}
+
+.ckpt .request {
+  margin: 0;
+  max-height: 240px;
+  overflow: auto;
+  padding: 10px 12px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font: 14px / 1.5 var(--font-ui);
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ckpt .answer {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  padding: 8px 10px;
+  font: var(--text-size) / var(--line) var(--font-ui);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+
+.ckpt .answer[readonly] {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.ckpt .answer.over {
+  border-color: var(--warn);
+}
+
+.ckpt .fieldfoot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.ckpt .hint.at {
+  color: var(--warn);
+}
+
+.ckpt .count {
+  font: 500 12px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.ckpt .count.at {
+  color: var(--warn);
+  font-weight: 700;
+}
+
+.ckpt .actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
 .sessionlog {
   max-width: 720px;
   min-width: 0;
