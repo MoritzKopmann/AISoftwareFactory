@@ -6,9 +6,12 @@ import {
   type PermissionAnswer,
   type PermissionDecision,
 } from './describe-permission-prompt.js';
+import { describeResetAction, settleResetState, type ResetState } from './describe-reset-action.js';
 import { describeRunBar, settleStartState, type StartState } from './describe-run-bar.js';
 import { describeRunPanel } from './describe-run-panel.js';
 import { PermissionPrompt } from './permission-prompt.js';
+import { ResetAction } from './reset-action.js';
+import { resetTicket } from './reset-ticket.js';
 import { RunBar } from './run-bar.js';
 import { RunPanel } from './run-panel.js';
 import { shouldRereadTicket } from './should-reread-ticket.js';
@@ -28,15 +31,22 @@ export function RunSection({ projectId, number, ticketStatus, onTicketStale }: R
   const [start, setStart] = useState<StartState>({ kind: 'idle' });
   const [stoppingRunId, setStoppingRunId] = useState<string | undefined>(undefined);
   const [permissionAnswer, setPermissionAnswer] = useState<PermissionAnswer>({ kind: 'idle' });
+  const [reset, setReset] = useState<ResetState>({ kind: 'idle' });
   const activeRunId = ticketRun.response?.activeRun?.id;
+  const resetting = reset.kind === 'resetting';
 
+  // The ticket is served from the Watcher's snapshot, so a reset shows only after a later read.
   useEffect(() => {
-    if (shouldRereadTicket(ticketRun.response, ticketStatus)) onTicketStale();
-  }, [ticketRun.response, ticketStatus, onTicketStale]);
+    if (resetting || shouldRereadTicket(ticketRun.response, ticketStatus)) onTicketStale();
+  }, [ticketRun.response, ticketStatus, onTicketStale, resetting]);
 
   useEffect(() => {
     setStart((current) => settleStartState(current, ticketRun.response));
   }, [ticketRun.response]);
+
+  useEffect(() => {
+    setReset((current) => settleResetState(current, ticketRun.response, ticketStatus));
+  }, [ticketRun.response, ticketStatus]);
 
   const run = async () => {
     setStart({ kind: 'starting' });
@@ -60,6 +70,15 @@ export function RunSection({ projectId, number, ticketStatus, onTicketStale }: R
     if (outcome.kind === 'failed') setPermissionAnswer({ ...outcome, runId });
   };
 
+  const resetToReady = async () => {
+    setReset({ kind: 'resetting' });
+    const outcome = await resetTicket(projectId, number, (url, requestInit) =>
+      fetch(url, requestInit),
+    );
+    if (outcome.kind === 'failed') setReset(outcome);
+    else onTicketStale();
+  };
+
   const prompt = describePermissionPrompt(ticketRun.response, ticketStatus, permissionAnswer);
 
   const panel = describeRunPanel(
@@ -74,7 +93,7 @@ export function RunSection({ projectId, number, ticketStatus, onTicketStale }: R
   return (
     <>
       <RunBar
-        description={describeRunBar(ticketRun.response, start, number)}
+        description={describeRunBar(ticketRun.response, ticketStatus, start, number)}
         onRun={() => void run()}
       />
       <PermissionPrompt
@@ -88,6 +107,10 @@ export function RunSection({ projectId, number, ticketStatus, onTicketStale }: R
         onStop={() => {
           if (activeRunId !== undefined) void stop(activeRunId);
         }}
+      />
+      <ResetAction
+        description={describeResetAction(ticketRun.response, ticketStatus, reset, number)}
+        onReset={() => void resetToReady()}
       />
     </>
   );

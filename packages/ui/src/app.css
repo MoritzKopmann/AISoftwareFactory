@@ -272,6 +272,13 @@ a.ext::after {
   justify-items: start;
 }
 
+.reset {
+  display: grid;
+  gap: 6px;
+  max-width: 720px;
+  justify-items: start;
+}
+
 .runline {
   display: flex;
   flex-wrap: wrap;
