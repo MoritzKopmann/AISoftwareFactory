@@ -1,4 +1,6 @@
 import type { TicketRunResponse } from '@aisf/app/api-schemas/runs-schemas.js';
+import type { TicketStatusResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
+import { isResettable } from './is-resettable.js';
 import type { StartRunOutcome } from './start-ticket-run.js';
 
 export type StartState =
@@ -42,6 +44,7 @@ export function settleStartState(
 
 export function describeRunBar(
   response: TicketRunResponse | undefined,
+  ticketStatus: TicketStatusResponse,
   start: StartState,
   number: number,
 ): RunBarDescription {
@@ -59,7 +62,14 @@ export function describeRunBar(
   const { availability } = response;
   switch (availability.kind) {
     case 'absent':
-      return { kind: 'hidden' };
+      return ticketStatus === 'in-progress' && isResettable(response, ticketStatus)
+        ? {
+            kind: 'shown',
+            button: 'disabled',
+            pressable: false,
+            reason: 'Ticket is in progress, but no run is active on it.',
+          }
+        : { kind: 'hidden' };
     case 'disabled':
       return {
         kind: 'shown',
