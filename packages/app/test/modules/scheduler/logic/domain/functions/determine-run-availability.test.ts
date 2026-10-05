@@ -6,7 +6,6 @@ import type { SchedulableTicket } from '../../../../../../src/modules/scheduler/
 const readyLeaf: SchedulableTicket = {
   number: 42,
   status: 'ready',
-  hitl: false,
   types: [],
   isLeaf: true,
   hasOpenBlocker: false,
@@ -39,7 +38,6 @@ describe('determineRunAvailability', () => {
   });
 
   it.each<[string, Partial<SchedulableTicket>]>([
-    ['is hitl', { hitl: true }],
     ['is a ui ticket and not a spike', { types: ['ui'] }],
     ['has an open blocker', { hasOpenBlocker: true }],
     ['is not a leaf', { isLeaf: false }],
@@ -100,9 +98,15 @@ describe('determineRunAvailability', () => {
     expect(determineRunAvailability(input)).toEqual({ kind: 'available' });
   });
 
+  it('should be disabled naming the running ticket when a hitl leaf has a run active', () => {
+    const input = buildInput({ ticket: { ...readyLeaf, number: 7 }, ticketIsRunning: true });
+
+    expect(determineRunAvailability(input)).toEqual({ kind: 'disabled', reason: '#7 is running' });
+  });
+
   it('should be absent rather than disabled when an ineligible ticket has a run active', () => {
     const input = buildInput({
-      ticket: { ...readyLeaf, hitl: true },
+      ticket: { ...readyLeaf, hasOpenBlocker: true },
       ticketIsRunning: true,
     });
 

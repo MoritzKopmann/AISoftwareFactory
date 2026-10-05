@@ -4,7 +4,6 @@ import type { TicketType } from '../../../../../shared/ticket-type/ticket-type.j
 export type SchedulableTicket = {
   readonly number: number;
   readonly status: TicketStatus;
-  readonly hitl: boolean;
   readonly types: ReadonlyArray<TicketType>;
   readonly isLeaf: boolean;
   readonly hasOpenBlocker: boolean;

@@ -25,7 +25,6 @@ export const repository: RepositoryReference = { owner: 'moritz', name: 'aisf' }
 export const readyLeaf: SchedulableTicket = {
   number: 138,
   status: 'ready',
-  hitl: false,
   types: [],
   isLeaf: true,
   hasOpenBlocker: false,
