@@ -1,6 +1,9 @@
 import type { TicketStatusResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
 import { useEffect, useState } from 'react';
+import { answerCheckpoint } from './answer-checkpoint.js';
 import { answerPermissionPrompt } from './answer-permission-prompt.js';
+import { CheckpointPrompt } from './checkpoint-prompt.js';
+import { describeCheckpointPrompt, type CheckpointAnswer } from './describe-checkpoint-prompt.js';
 import {
   describePermissionPrompt,
   type PermissionAnswer,
@@ -9,6 +12,7 @@ import {
 import { describeResetAction, settleResetState, type ResetState } from './describe-reset-action.js';
 import { describeRunBar, settleStartState, type StartState } from './describe-run-bar.js';
 import { describeRunPanel } from './describe-run-panel.js';
+import { editCheckpointDraft } from './edit-checkpoint-draft.js';
 import { PermissionPrompt } from './permission-prompt.js';
 import { ResetAction } from './reset-action.js';
 import { resetTicket } from './reset-ticket.js';
@@ -31,6 +35,7 @@ export function RunSection({ projectId, number, ticketStatus, onTicketStale }: R
   const [start, setStart] = useState<StartState>({ kind: 'idle' });
   const [stoppingRunId, setStoppingRunId] = useState<string | undefined>(undefined);
   const [permissionAnswer, setPermissionAnswer] = useState<PermissionAnswer>({ kind: 'idle' });
+  const [checkpointAnswer, setCheckpointAnswer] = useState<CheckpointAnswer | undefined>(undefined);
   const [reset, setReset] = useState<ResetState>({ kind: 'idle' });
   const activeRunId = ticketRun.response?.activeRun?.id;
   const resetting = reset.kind === 'resetting';
@@ -70,6 +75,14 @@ export function RunSection({ projectId, number, ticketStatus, onTicketStale }: R
     if (outcome.kind === 'failed') setPermissionAnswer({ ...outcome, runId });
   };
 
+  const sendCheckpointAnswer = async (runId: string, draft: string) => {
+    setCheckpointAnswer({ runId, draft, send: { kind: 'sending' } });
+    const outcome = await answerCheckpoint(runId, draft, (url, requestInit) =>
+      fetch(url, requestInit),
+    );
+    if (outcome.kind === 'failed') setCheckpointAnswer({ runId, draft, send: outcome });
+  };
+
   const resetToReady = async () => {
     setReset({ kind: 'resetting' });
     const outcome = await resetTicket(projectId, number, (url, requestInit) =>
@@ -80,6 +93,12 @@ export function RunSection({ projectId, number, ticketStatus, onTicketStale }: R
   };
 
   const prompt = describePermissionPrompt(ticketRun.response, ticketStatus, permissionAnswer);
+
+  const checkpointPrompt = describeCheckpointPrompt(
+    ticketRun.response,
+    ticketStatus,
+    checkpointAnswer,
+  );
 
   const panel = describeRunPanel(
     {
@@ -100,6 +119,21 @@ export function RunSection({ projectId, number, ticketStatus, onTicketStale }: R
         description={prompt}
         onAnswer={(decision) => {
           if (prompt.kind === 'shown') void answer(prompt.runId, decision);
+        }}
+      />
+      <CheckpointPrompt
+        description={checkpointPrompt}
+        onDraftChange={(draft) => {
+          if (checkpointPrompt.kind === 'shown') {
+            setCheckpointAnswer((current) =>
+              editCheckpointDraft(current, checkpointPrompt.runId, draft),
+            );
+          }
+        }}
+        onSend={() => {
+          if (checkpointPrompt.kind === 'shown') {
+            void sendCheckpointAnswer(checkpointPrompt.runId, checkpointPrompt.draft);
+          }
         }}
       />
       <RunPanel
