@@ -23,7 +23,7 @@ Drive a ready leaf to a PR. Argument: ticket number. If none, ask.
   One exception: a `hitl` leaf whose spec names no code change. You close it yourself in §10.
 - **Never weaken a test**, and never push or touch a PR while red.
 - Everything else is your call. No check-ins or confirmations. A choice the ticket leaves
-  open, or a contradiction in it, is a decision: make it, list it under `## Decisions made`.
+  open, or a contradiction in it, is a decision: make it, list it in the PR's Merge danger.
 
 ## Stop points
 
@@ -124,7 +124,7 @@ Every run. Launch one `aisf:review-code` agent whose prompt is **the spec, verba
 else** (on a one-PR ticket: the `## Spec` section). It returns:
 
 - **Fixed** → nothing to do.
-- **Deviates from spec** → each under `## Decisions made`. A `contract` one also gets a comment
+- **Deviates from spec** → each in the PR's Merge danger. A `contract` one also gets a comment
   on every sibling the spec names for it: old name and shape, new one, the rule.
 - **Unresolved** → **escalate `spec`**.
 
@@ -155,7 +155,7 @@ Invoke `aisf:review-simplicity`.
 - **Applied** → re-run §5.
 - **Architecture (must-fix)** → fix, re-run §5, invoke again. A judgement call → **escalate
   `spec`**.
-- **Bugs/gaps** → don't fix. Carry them to `## Known bugs`.
+- **Bugs/gaps** → don't fix. Carry them to the PR's Merge danger.
 
 ## 9. Commit
 
@@ -166,23 +166,12 @@ Invoke `aisf:commit`. Its `refs #<n>` must be this leaf, never the parent.
 A `hitl` leaf whose spec names no code change: post the §7 evidence as a ticket comment
 through `aisf:github-issue`, then `gh issue close <n>`. No push, no PR. Stop here.
 
-Otherwise `git push -u origin HEAD`. Never force, never the default branch. Reuse an existing PR;
-otherwise `gh pr create` against the default branch, title `<type>(<scope>): <ticket title>`
-as `aisf:commit` chose, not draft. Check its base afterwards. Body:
-
-    ## Summary
-    What changed and why. Two or three lines.
-
-    ## Acceptance criteria
-    - [x] Each criterion — its evidence from §7.
-
-    ## Decisions made
-    Open choices, spec deviations (§6), `aisf:tdd` untestable skips with their proof. Omit if none.
-
-    ## Known bugs
-    Lines from §8, or `Findings reported through the app: N`. Omit if none.
-
-    Closes #<n>
+Otherwise `git push -u origin HEAD`. Never force, never the default branch. Write the body with
+`aisf:pr` from the branch diff and the §7 evidence, then append `Closes #<n>`. `<x>` is the
+ticket's `priority:` label. Reuse an existing PR: `gh pr edit <pr> --body-file <tmp>
+--add-label "priority: <x>"`. Otherwise `gh pr create --body-file <tmp> --label "priority: <x>"`
+against the default branch, title `<type>(<scope>): <ticket title>` as `aisf:commit` chose, not
+draft. Check its base afterwards.
 
 Then guarded `in-progress → in-review`. **Never skip it: it makes the ticket findable.**
 

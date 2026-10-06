@@ -125,10 +125,9 @@ side in the PR without anyone checking out the branch. Stop the dev server.
 
 ## 7. The PR
 
-The PR body follows `aisf:implement-ticket` §10, with two additions: a `## Design` section
-(`Mock: <ticket's mock URL>`, `Built: <render URL from step 6>`) after `## Summary`, and
-`## Known deviations` (every unresolved difference from the mock, and why; omit if none)
-before `Closes #<n>`. Report as §10 does, plus the render URL.
+The PR body follows `aisf:implement-ticket` §10. Evidence shows Before = the ticket's mock URL,
+After = the render URL from step 6. Merge danger lists every unresolved difference from the mock,
+and why. Report as §10 does, plus the render URL.
 
 **What you are giving up.** There is no visual regression net, and nothing checks the
 assembled page against the design once the components land.
