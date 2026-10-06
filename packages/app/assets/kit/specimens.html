@@ -137,6 +137,15 @@
       >
     </section>
     <section class="specimen">
+      <h2>Frozen confirm, reopened</h2>
+      <aisf-round number="11" frozen="reopen"
+        ><aisf-confirm
+          ><aisf-task number="1" heading="Plan one" hitl>Scope.</aisf-task>
+          <p>Prose.</p></aisf-confirm
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
       <h2>Too much data</h2>
       <aisf-round number="9"
         ><aisf-question name="m1" heading="Question 1"
@@ -280,7 +289,7 @@
         .addEventListener('click', () =>
           document.documentElement.setAttribute('data-theme', 'dark'),
         );
-      // Other text and Discuss note cannot be written in markup: fill them as a human would.
+      // Other text, Discuss note and a frozen note cannot be written in markup: fill them as a human would.
       function fill(name, selector, value) {
         const field = document.querySelector('aisf-question[name="' + name + '"] ' + selector);
         field.value = value;
@@ -290,6 +299,9 @@
         queueMicrotask(() => {
           fill('other', '.aisf-other-text', 'Something else entirely');
           fill('discuss', '.aisf-discuss-note', 'Let us talk about the trade-off');
+          const reopened = document.querySelector('aisf-round[frozen="reopen"]');
+          reopened.querySelector('.aisf-confirm-note').value = 'Split task 4 first';
+          reopened.freeze('reopen');
         }),
       );
     </script>
