@@ -8,6 +8,8 @@ export type StartState =
   | { readonly kind: 'starting' }
   | Extract<StartRunOutcome, { kind: 'failed' }>;
 
+export type RunSkill = 'spike' | 'implement-ticket';
+
 type RunBarError = { readonly message: string; readonly detail?: string };
 
 export type RunBarDescription =
@@ -47,6 +49,7 @@ export function describeRunBar(
   ticketStatus: TicketStatusResponse,
   start: StartState,
   number: number,
+  runSkill: RunSkill,
 ): RunBarDescription {
   if (response === undefined || response.activeRun !== undefined) {
     return { kind: 'hidden' };
@@ -85,7 +88,7 @@ export function describeRunBar(
         pressable: true,
         ...(start.kind === 'failed'
           ? describeError(start)
-          : { hint: `Runs implement-ticket on #${number} in its own worktree.` }),
+          : { hint: `Runs ${runSkill} on #${number} in its own worktree.` }),
       };
   }
 }

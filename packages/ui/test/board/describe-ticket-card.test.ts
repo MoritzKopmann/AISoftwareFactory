@@ -13,6 +13,7 @@ describe('describeTicketCard', () => {
       numberLabel: '#12',
       title: 'Plain',
       hitl: false,
+      spike: false,
       blockerLabels: [],
       conflictLabels: [],
       pullRequestChips: [],
@@ -27,6 +28,11 @@ describe('describeTicketCard', () => {
     );
     expect(card.parentTitle).toBe('Epic');
     expect(card.hitl).toBe(true);
+  });
+
+  it('should flag a spike when the ticket types include spike', () => {
+    const card = describeTicketCard(buildTicketResponse({ types: ['spike'] }), 'o/n', []);
+    expect(card.spike).toBe(true);
   });
 
   it('should list only open blockers, qualified when in another repository', () => {

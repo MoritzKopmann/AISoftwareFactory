@@ -181,6 +181,7 @@ function LoadedTicket({
         projectId={projectId}
         number={number}
         ticketStatus={description.status}
+        runSkill={description.runSkill}
         onTicketStale={onTicketStale}
       />
       <dl className="facts">
