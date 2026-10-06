@@ -90,6 +90,6 @@ One short block for the calling skill's final report:
 - **Bugs/gaps** — if the `aisf_report_finding` tool is available, report each finding through
   it (`kind` bug or gap, `file:line`, `summary`, the ticket `#n` from the `aisf/<n>-*` branch)
   and give only the count here. Otherwise list one line each — `kind` `file:line` — what —
-  and the caller puts them in the PR body under `## Known bugs`.
+  and the caller puts them in the PR's Merge danger.
 
 Nothing found in a category → omit that line.

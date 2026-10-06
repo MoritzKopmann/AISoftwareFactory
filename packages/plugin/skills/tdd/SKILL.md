@@ -45,7 +45,7 @@ Test names, file names and where a test lives follow `project-testing`
 
 Only the kinds of change that `project-testing` `## Mechanics` declares not unit-testable may
 skip Red, and each uses the proof that section names for it instead of a failing test.
-Record every skip, with the proof used, in the PR's `## Decisions made`. Anything not
+Record every skip, with the proof used, in the PR's Evidence. Anything not
 declared there gets a failing test first.
 
 ## Integration

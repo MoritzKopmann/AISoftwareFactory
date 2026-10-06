@@ -30,5 +30,6 @@ Every work-list item gets evidence too.
    body gets one PR comment quoting it.
 2. **Never resolve a thread.** That is the reviewer's call.
 3. Re-request review from each reviewer who requested changes.
-4. Update the PR body if evidence or decisions changed.
+4. Rewrite the PR body with `aisf:pr` from the whole branch diff (`origin/main...HEAD`), keep
+   `Closes #<n>`, then `gh pr edit <pr> --body-file <tmp>`.
 5. Guarded `in-progress → in-review`.
