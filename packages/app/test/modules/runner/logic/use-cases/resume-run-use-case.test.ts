@@ -13,6 +13,7 @@ import {
   buildRun,
   FakeAgentSessions,
   FakeRecentRunSteps,
+  FakeRunAnswerWaits,
   FakeRunRepository,
   SequentialIdentifiers,
 } from '../../fakes/fake-runner-ports.js';
@@ -53,11 +54,19 @@ describe('ResumeRunUseCase', () => {
     const clock = new FakeClock('2026-09-29T11:00:00.000Z');
     const events = new FakeEventPublisher();
     const finishRun = (runId: string, ending: RunEnding) =>
-      new FinishRunUseCase({ runRepository, agentSessions, clock, events }).execute(runId, ending);
+      new FinishRunUseCase({
+        runRepository,
+        agentSessions,
+        runAnswerWaits: new FakeRunAnswerWaits(),
+        clock,
+        events,
+      }).execute(runId, ending);
     const launchRunSession = new LaunchRunSessionUseCase({
       agentSessions,
       recentRunSteps,
+      runRepository,
       finishRun,
+      waitForRunAnswer: async () => '',
       tools: [],
       logger,
     });

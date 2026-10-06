@@ -183,4 +183,100 @@ describe('SqliteRunRepository', () => {
       expect((await repository.findById('run-1'))?.state).toBe('running');
     });
   });
+
+  describe('waiting', () => {
+    const since = '2026-09-29T10:05:00.000Z';
+    const wait = { kind: 'checkpoint', request: 'Check the page' } as const;
+
+    it('should store the wait and return it on the run when the run has none', async () => {
+      await repository.insert(buildRun());
+
+      const outcome = await repository.recordWait('run-1', wait, since);
+
+      expect(outcome).toBe('recorded');
+      expect(await repository.findById('run-1')).toEqual(
+        buildRun({ waitingFor: wait, waitingSince: since }),
+      );
+    });
+
+    it('should keep the artifactId on the wait when the wait has one', async () => {
+      await repository.insert(buildRun());
+
+      await repository.recordWait('run-1', { ...wait, artifactId: 'confirm-plan' }, since);
+
+      expect((await repository.findById('run-1'))?.waitingFor).toEqual({
+        ...wait,
+        artifactId: 'confirm-plan',
+      });
+    });
+
+    it('should refuse and keep the first wait when the run already waits', async () => {
+      await repository.insert(buildRun());
+      await repository.recordWait('run-1', wait, since);
+
+      const outcome = await repository.recordWait('run-1', { ...wait, request: 'Other' }, since);
+
+      expect(outcome).toBe('refused');
+      expect((await repository.findById('run-1'))?.waitingFor?.request).toBe('Check the page');
+    });
+
+    it('should refuse when the run has ended', async () => {
+      await repository.insert(buildRun());
+      await repository.recordEnding('run-1', { kind: 'finished' }, since);
+
+      expect(await repository.recordWait('run-1', wait, since)).toBe('refused');
+    });
+
+    it('should clear the wait and keep the run running when clearWait runs', async () => {
+      await repository.insert(buildRun());
+      await repository.recordWait('run-1', { ...wait, artifactId: 'confirm-plan' }, since);
+
+      await repository.clearWait('run-1');
+
+      expect(await repository.findById('run-1')).toEqual(buildRun());
+    });
+
+    it('should clear the wait and keep the artifactId on a checkpoint ending when the ending carries it', async () => {
+      await repository.insert(buildRun());
+      await repository.recordWait('run-1', { ...wait, artifactId: 'confirm-plan' }, since);
+
+      await repository.recordEnding(
+        'run-1',
+        { kind: 'checkpoint', request: 'Check the page', artifactId: 'confirm-plan' },
+        since,
+      );
+
+      const run = await repository.findById('run-1');
+      expect(run?.ending).toEqual({
+        kind: 'checkpoint',
+        request: 'Check the page',
+        artifactId: 'confirm-plan',
+      });
+      expect(run).not.toHaveProperty('waitingFor');
+      expect(run).not.toHaveProperty('waitingSince');
+    });
+
+    it('should clear the artifactId when a non-checkpoint ending is recorded', async () => {
+      await repository.insert(buildRun());
+      await repository.recordWait('run-1', { ...wait, artifactId: 'confirm-plan' }, since);
+
+      await repository.recordEnding('run-1', { kind: 'stopped' }, since);
+
+      const row = database
+        .prepare('SELECT checkpoint_artifact_id FROM runs WHERE id = ?')
+        .get('run-1');
+      expect(row).toEqual({ checkpoint_artifact_id: null });
+    });
+
+    it('should return a checkpoint ending without artifactId when none was stored', async () => {
+      await repository.insert(buildRun());
+
+      await repository.recordEnding('run-1', { kind: 'checkpoint', request: 'Check' }, since);
+
+      expect((await repository.findById('run-1'))?.ending).toEqual({
+        kind: 'checkpoint',
+        request: 'Check',
+      });
+    });
+  });
 });

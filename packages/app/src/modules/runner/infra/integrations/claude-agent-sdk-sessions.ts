@@ -15,6 +15,7 @@ export type ClaudeAgentSdkSessionsOptions = {
   readonly claudeExecutablePath: string;
   readonly pluginDirectory: string;
   readonly now: () => string;
+  readonly toolCallTimeoutMilliseconds: number;
 };
 
 export class ClaudeAgentSdkSessions implements AgentSessions {
@@ -71,6 +72,7 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
               name: appToolServerName,
               version: '1.0.0',
               alwaysLoad: true,
+              timeout: this.options.toolCallTimeoutMilliseconds,
               tools: spec.tools.map((sessionTool) =>
                 tool(
                   sessionTool.name,

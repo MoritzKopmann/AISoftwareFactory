@@ -15,6 +15,7 @@ import {
   buildRun,
   FakeAgentSessions,
   FakeRecentRunSteps,
+  FakeRunAnswerWaits,
   FakeRunRepository,
   FakeRunTargets,
   FakeWorktrees,
@@ -41,11 +42,19 @@ describe('StartRunUseCase', () => {
   function buildStartRun(runTargets = new FakeRunTargets(target)): StartRunUseCase {
     const clock = new FakeClock('2026-09-29T10:00:00.000Z');
     const finishRun = (runId: string, ending: RunEnding) =>
-      new FinishRunUseCase({ runRepository, agentSessions, clock, events }).execute(runId, ending);
+      new FinishRunUseCase({
+        runRepository,
+        agentSessions,
+        runAnswerWaits: new FakeRunAnswerWaits(),
+        clock,
+        events,
+      }).execute(runId, ending);
     const launchRunSession = new LaunchRunSessionUseCase({
       agentSessions,
       recentRunSteps,
+      runRepository,
       finishRun,
+      waitForRunAnswer: async () => '',
       tools,
       logger,
     });

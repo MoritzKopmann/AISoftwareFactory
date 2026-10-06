@@ -3,6 +3,7 @@ import { join } from 'node:path';
 const defaultPort = 4317;
 const defaultWatcherPollIntervalMilliseconds = 30_000;
 const defaultWatcherSnapshotIntervalMilliseconds = 300_000;
+const defaultLiveAnswerWindowMilliseconds = 3_600_000;
 
 export type Config = {
   readonly homeDirectory: string;
@@ -13,6 +14,7 @@ export type Config = {
   readonly port: number;
   readonly watcherPollIntervalMilliseconds: number;
   readonly watcherSnapshotIntervalMilliseconds: number;
+  readonly liveAnswerWindowMilliseconds: number;
 };
 
 export type LoadConfigOptions = {
@@ -38,6 +40,10 @@ export function loadConfig(options: LoadConfigOptions): Config {
     watcherSnapshotIntervalMilliseconds: Number(
       options.environment['AISF_WATCHER_SNAPSHOT_INTERVAL_MILLISECONDS'] ??
         defaultWatcherSnapshotIntervalMilliseconds,
+    ),
+    liveAnswerWindowMilliseconds: Number(
+      options.environment['AISF_LIVE_ANSWER_WINDOW_MILLISECONDS'] ??
+        defaultLiveAnswerWindowMilliseconds,
     ),
   };
 }

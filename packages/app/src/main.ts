@@ -21,6 +21,7 @@ import { createSkillsModule, type SkillsModule } from './modules/skills/index.js
 import { ClaudeAgentSdkSessionTranscripts } from './modules/runner/infra/integrations/claude-agent-sdk-session-transcripts.js';
 import { ClaudeAgentSdkSessions } from './modules/runner/infra/integrations/claude-agent-sdk-sessions.js';
 import { GitCliWorktrees } from './modules/runner/infra/integrations/git-cli-worktrees.js';
+import { InMemoryRunAnswerWaits } from './modules/runner/infra/integrations/in-memory-run-answer-waits.js';
 import { InMemoryRecentRunSteps } from './modules/runner/infra/integrations/in-memory-recent-run-steps.js';
 import { RandomUuidIdentifiers } from './modules/runner/infra/integrations/random-uuid-identifiers.js';
 import { SqliteRunRepository } from './modules/runner/infra/repositories/sqlite-run-repository.js';
@@ -149,6 +150,8 @@ function buildFindingsModule(database: DatabaseSync, projects: ProjectsModule): 
   });
 }
 
+const toolCallTimeoutMarginMilliseconds = 600_000;
+
 function buildRunnerModule(
   config: Config,
   database: DatabaseSync,
@@ -166,6 +169,8 @@ function buildRunnerModule(
       claudeExecutablePath,
       pluginDirectory: config.pluginMirrorDirectory,
       now: () => clock.now(),
+      toolCallTimeoutMilliseconds:
+        config.liveAnswerWindowMilliseconds + toolCallTimeoutMarginMilliseconds,
     }),
     worktrees: new GitCliWorktrees(),
     runTargets: {
@@ -186,6 +191,8 @@ function buildRunnerModule(
     recentRunSteps: new InMemoryRecentRunSteps(),
     sessionTranscripts: new ClaudeAgentSdkSessionTranscripts(),
     identifiers: new RandomUuidIdentifiers(),
+    runAnswerWaits: new InMemoryRunAnswerWaits(),
+    liveAnswerWindowMilliseconds: config.liveAnswerWindowMilliseconds,
     clock,
     events,
     worktreesDirectory: config.worktreesDirectory,
@@ -216,9 +223,9 @@ function buildSchedulerModule(
           throw error;
         }
       },
-      resume: async (runId, answer) => {
+      answer: async (runId, answer) => {
         try {
-          return await runner.resume(runId, answer);
+          return await runner.answer(runId, answer);
         } catch (error) {
           if (error instanceof RunnerRunAlreadyActiveError) {
             throw new RunAlreadyActiveError(error.message);

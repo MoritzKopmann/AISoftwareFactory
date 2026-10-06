@@ -8,6 +8,7 @@ const runContext = {
   worktreePath: '/worktrees/aisf/137',
 };
 
+import { textResult } from '../../fakes/text-result.js';
 describe('createParkTool', () => {
   it('should be named aisf_park', () => {
     expect(createParkTool().name).toBe('aisf_park');
@@ -16,13 +17,15 @@ describe('createParkTool', () => {
   it('should return a parked ending with the blocker number when the input is valid', async () => {
     const result = await createParkTool().execute({ blocker: 42 }, runContext);
 
-    expect(result.ending).toEqual({ kind: 'parked', blockerNumber: 42 });
+    expect(textResult(result).ending).toEqual({ kind: 'parked', blockerNumber: 42 });
   });
 
   it('should tell the session to end its turn when it records the park', async () => {
     const result = await createParkTool().execute({ blocker: 42 }, runContext);
 
-    expect(result.text).toBe('Park recorded. The run ends now: stop working and end your turn.');
+    expect(textResult(result).text).toBe(
+      'Park recorded. The run ends now: stop working and end your turn.',
+    );
   });
 
   it('should reject when the blocker is not a positive whole number', async () => {

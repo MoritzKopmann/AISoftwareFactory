@@ -3,6 +3,7 @@ import type { Run } from '../../logic/domain/types/run.js';
 import type { RunEnding } from '../../logic/domain/types/run-ending.js';
 import type { RunMode } from '../../logic/domain/types/run-mode.js';
 import type { RunStage } from '../../logic/domain/types/run-stage.js';
+import type { RunWait } from '../../logic/domain/types/run-wait.js';
 import { RunAlreadyActiveError } from '../../logic/errors/run-already-active-error.js';
 import type { RunRepository } from '../../logic/ports/run-repository.js';
 
@@ -22,6 +23,10 @@ type RunRow = {
   readonly blocker_number: number | null;
   readonly tool_name: string | null;
   readonly tool_input: string | null;
+  readonly waiting_kind: string | null;
+  readonly waiting_request: string | null;
+  readonly waiting_since: string | null;
+  readonly checkpoint_artifact_id: string | null;
   readonly started_at: string;
   readonly ended_at: string | null;
 };
@@ -43,6 +48,10 @@ const selectRunColumns = `
     blocker_number,
     tool_name,
     tool_input,
+    waiting_kind,
+    waiting_request,
+    waiting_since,
+    checkpoint_artifact_id,
     started_at,
     ended_at
   FROM runs
@@ -65,7 +74,11 @@ function toEnding(row: RunRow): RunEnding | undefined {
     case 'parked':
       return { kind: 'parked', blockerNumber: Number(row.blocker_number) };
     case 'checkpoint':
-      return { kind: 'checkpoint', request: String(row.ending_reason) };
+      return {
+        kind: 'checkpoint',
+        request: String(row.ending_reason),
+        ...(row.checkpoint_artifact_id === null ? {} : { artifactId: row.checkpoint_artifact_id }),
+      };
     case 'crashed':
       return { kind: 'crashed', reason: String(row.ending_reason) };
     case 'usage-limit':
@@ -84,8 +97,20 @@ function endingReason(ending: RunEnding): string | null {
   return ending.kind === 'checkpoint' ? ending.request : null;
 }
 
+function toWait(row: RunRow): RunWait | undefined {
+  if (row.waiting_kind === null) {
+    return undefined;
+  }
+  return {
+    kind: 'checkpoint',
+    request: String(row.waiting_request),
+    ...(row.checkpoint_artifact_id === null ? {} : { artifactId: row.checkpoint_artifact_id }),
+  };
+}
+
 function toRun(row: RunRow): Run {
   const ending = toEnding(row);
+  const waitingFor = toWait(row);
   return {
     id: row.id,
     projectId: row.project_id,
@@ -96,6 +121,8 @@ function toRun(row: RunRow): Run {
     worktreePath: row.worktree_path,
     branchName: row.branch_name,
     state: row.state as Run['state'],
+    ...(waitingFor === undefined ? {} : { waitingFor }),
+    ...(row.waiting_since === null ? {} : { waitingSince: row.waiting_since }),
     ...(ending === undefined ? {} : { ending }),
     startedAt: row.started_at,
     ...(row.ended_at === null ? {} : { endedAt: row.ended_at }),
@@ -225,6 +252,10 @@ export class SqliteRunRepository implements RunRepository {
           blocker_number = ?,
           tool_name = ?,
           tool_input = ?,
+          waiting_kind = NULL,
+          waiting_request = NULL,
+          waiting_since = NULL,
+          checkpoint_artifact_id = ?,
           ended_at = ?
         WHERE id = ?
           AND state = 'running'
@@ -237,11 +268,51 @@ export class SqliteRunRepository implements RunRepository {
         ending.kind === 'parked' ? ending.blockerNumber : null,
         ending.kind === 'permission-needed' ? ending.toolName : null,
         ending.kind === 'permission-needed' ? JSON.stringify(ending.toolInput) : null,
+        ending.kind === 'checkpoint' ? (ending.artifactId ?? null) : null,
         endedAt,
         runId,
       );
 
     return result.changes === 0 ? 'already-ended' : 'recorded';
+  }
+
+  async recordWait(
+    runId: string,
+    wait: RunWait,
+    waitingSince: string,
+  ): Promise<'recorded' | 'refused'> {
+    const result = this.database
+      .prepare(
+        `
+        UPDATE runs
+        SET waiting_kind = ?,
+          waiting_request = ?,
+          waiting_since = ?,
+          checkpoint_artifact_id = ?
+        WHERE id = ?
+          AND state = 'running'
+          AND waiting_kind IS NULL
+      `,
+      )
+      .run(wait.kind, wait.request, waitingSince, wait.artifactId ?? null, runId);
+
+    return result.changes === 0 ? 'refused' : 'recorded';
+  }
+
+  async clearWait(runId: string): Promise<void> {
+    this.database
+      .prepare(
+        `
+        UPDATE runs
+        SET waiting_kind = NULL,
+          waiting_request = NULL,
+          waiting_since = NULL,
+          checkpoint_artifact_id = NULL
+        WHERE id = ?
+          AND state = 'running'
+      `,
+      )
+      .run(runId);
   }
 
   async markSettled(runId: string, settledAt: string): Promise<void> {

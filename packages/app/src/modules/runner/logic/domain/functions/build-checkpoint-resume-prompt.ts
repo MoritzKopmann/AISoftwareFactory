@@ -13,8 +13,8 @@ export function buildCheckpointResumePrompt(
   skill: string,
 ): string {
   return [
-    `Your aisf_checkpoint call for #${ticketNumber} was delivered, and a human has answered it.`,
-    'The tool result that says the call was interrupted is how the app pauses a run at its checkpoint, not a failure. Do not verify or retry that call, and do not call aisf_checkpoint again for this request.',
+    `Your call for a human at #${ticketNumber} was delivered, and a human has answered it.`,
+    'The tool result that says the call was interrupted is how the app pauses a run, not a failure. Do not verify or retry that call, and do not call it again for this request.',
     '',
     'Your request:',
     quote(request),

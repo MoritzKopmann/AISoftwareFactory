@@ -79,4 +79,19 @@ describe('loadConfig', () => {
     expect(config.watcherPollIntervalMilliseconds).toBe(1000);
     expect(config.watcherSnapshotIntervalMilliseconds).toBe(2000);
   });
+
+  it('should default the live answer window to one hour when the variable is unset', () => {
+    const config = loadConfig({ environment: {}, userHomeDirectory: '/home/someone' });
+
+    expect(config.liveAnswerWindowMilliseconds).toBe(3_600_000);
+  });
+
+  it('should use the live answer window variable when it is set', () => {
+    const config = loadConfig({
+      environment: { AISF_LIVE_ANSWER_WINDOW_MILLISECONDS: '60000' },
+      userHomeDirectory: '/home/someone',
+    });
+
+    expect(config.liveAnswerWindowMilliseconds).toBe(60_000);
+  });
 });

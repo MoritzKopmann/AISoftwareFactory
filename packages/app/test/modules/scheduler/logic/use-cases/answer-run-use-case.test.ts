@@ -59,7 +59,7 @@ describe('AnswerRunUseCase', () => {
 
     expect(resumedRun).toEqual({ id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' });
     expect(ticketStatusWrites.calls).toEqual(['readStatus', 'setStatus #147 -> in-progress']);
-    expect(runner.calls).toContain(`resume run-1 ${JSON.stringify(checkpointAnswer)}`);
+    expect(runner.calls).toContain(`answer run-1 ${JSON.stringify(checkpointAnswer)}`);
   });
 
   it.each(['allow', 'deny'] as const)(
@@ -72,7 +72,7 @@ describe('AnswerRunUseCase', () => {
       expect(resumedRun).toEqual({ id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' });
       expect(ticketStatusWrites.calls).toEqual(['readStatus', 'setStatus #147 -> in-progress']);
       expect(runner.calls).toContain(
-        `resume run-1 ${JSON.stringify({ kind: 'permission', decision })}`,
+        `answer run-1 ${JSON.stringify({ kind: 'permission', decision })}`,
       );
     },
   );
@@ -119,7 +119,7 @@ describe('AnswerRunUseCase', () => {
     expect(subject.ticketStatusWrites.calls.filter((call) => call.startsWith('setStatus'))).toEqual(
       [],
     );
-    expect(subject.runner.calls.filter((call) => call.startsWith('resume'))).toEqual([]);
+    expect(subject.runner.calls.filter((call) => call.startsWith('answer'))).toEqual([]);
   });
 
   it('should refuse and write nothing when the project is unknown', async () => {
@@ -135,7 +135,7 @@ describe('AnswerRunUseCase', () => {
   it('should put the ticket back to stuck and rethrow when the runner cannot resume', async () => {
     const { useCase, ticketStatusWrites, runner } = buildSubject();
     const failure = new Error('worktree is gone');
-    runner.resumeFailure = failure;
+    runner.answerFailure = failure;
 
     await expect(useCase.execute('run-1', allowAnswer)).rejects.toBe(failure);
 
@@ -156,8 +156,8 @@ describe('AnswerRunUseCase', () => {
     async (decision) => {
       const { useCase, runner, events } = buildSubject();
       let eventsSeenAtResume = -1;
-      const resume = runner.resume.bind(runner);
-      runner.resume = async (runId, resumeAnswer) => {
+      const resume = runner.answer.bind(runner);
+      runner.answer = async (runId, resumeAnswer) => {
         eventsSeenAtResume = events.emittedEvents.length;
         return resume(runId, resumeAnswer);
       };
@@ -172,7 +172,7 @@ describe('AnswerRunUseCase', () => {
   it('should announce the rollback after the in-progress write when the runner cannot resume', async () => {
     const { useCase, runner, events } = buildSubject();
     const failure = new Error('worktree is gone');
-    runner.resumeFailure = failure;
+    runner.answerFailure = failure;
 
     await expect(useCase.execute('run-1', allowAnswer)).rejects.toBe(failure);
 
@@ -199,7 +199,7 @@ describe('AnswerRunUseCase', () => {
     await expect(useCase.execute('run-1', allowAnswer)).rejects.toBe(failure);
 
     expect(events.emittedEvents).toEqual([]);
-    expect(runner.calls.filter((call) => call.startsWith('resume'))).toEqual([]);
+    expect(runner.calls.filter((call) => call.startsWith('answer'))).toEqual([]);
   });
 
   it.each<[string, RunAnswer]>([['a checkpoint answer to a permission run', checkpointAnswer]])(
@@ -212,7 +212,7 @@ describe('AnswerRunUseCase', () => {
       expect(
         subject.ticketStatusWrites.calls.filter((call) => call.startsWith('setStatus')),
       ).toEqual([]);
-      expect(subject.runner.calls.filter((call) => call.startsWith('resume'))).toEqual([]);
+      expect(subject.runner.calls.filter((call) => call.startsWith('answer'))).toEqual([]);
     },
   );
 
@@ -226,7 +226,7 @@ describe('AnswerRunUseCase', () => {
     expect(subject.ticketStatusWrites.calls.filter((call) => call.startsWith('setStatus'))).toEqual(
       [],
     );
-    expect(subject.runner.calls.filter((call) => call.startsWith('resume'))).toEqual([]);
+    expect(subject.runner.calls.filter((call) => call.startsWith('answer'))).toEqual([]);
   });
 
   it('should refuse and write nothing when a checkpoint answer comes before the ticket is waiting', async () => {
@@ -240,7 +240,7 @@ describe('AnswerRunUseCase', () => {
     expect(subject.ticketStatusWrites.calls.filter((call) => call.startsWith('setStatus'))).toEqual(
       [],
     );
-    expect(subject.runner.calls.filter((call) => call.startsWith('resume'))).toEqual([]);
+    expect(subject.runner.calls.filter((call) => call.startsWith('answer'))).toEqual([]);
   });
 
   it('should refuse a checkpoint answer when the run has no ending', async () => {
@@ -274,7 +274,7 @@ describe('AnswerRunUseCase', () => {
     );
 
     expect(subject.ticketStatusWrites.calls).toEqual([]);
-    expect(subject.runner.calls.filter((call) => call.startsWith('resume'))).toEqual([]);
+    expect(subject.runner.calls.filter((call) => call.startsWith('answer'))).toEqual([]);
   });
 
   it('should refuse a checkpoint answer when the project is unknown', async () => {
@@ -290,7 +290,7 @@ describe('AnswerRunUseCase', () => {
   it('should put the ticket back to waiting and rethrow when a checkpoint resume fails', async () => {
     const { useCase, ticketStatusWrites, runner } = buildSubject(undefined, checkpointRun);
     const failure = new Error('worktree is gone');
-    runner.resumeFailure = failure;
+    runner.answerFailure = failure;
 
     await expect(useCase.execute('run-1', checkpointAnswer)).rejects.toBe(failure);
 
@@ -303,7 +303,7 @@ describe('AnswerRunUseCase', () => {
 
   it('should announce waiting rollback events when a checkpoint resume fails', async () => {
     const { useCase, runner, events } = buildSubject(undefined, checkpointRun);
-    runner.resumeFailure = new Error('worktree is gone');
+    runner.answerFailure = new Error('worktree is gone');
 
     await expect(useCase.execute('run-1', checkpointAnswer)).rejects.toThrow();
 
