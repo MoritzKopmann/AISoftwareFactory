@@ -1,0 +1,149 @@
+aisf-round {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  max-width: 760px;
+  margin: 0 auto 32px;
+}
+
+/* The elements render no round number, so the label is drawn from the attribute. */
+aisf-round::before {
+  content: 'Round ' attr(number);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-strong);
+  color: var(--muted);
+  font: 700 13px/1 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: var(--label-spacing);
+}
+
+aisf-round[frozen]::before {
+  border-bottom-style: dashed;
+}
+
+/* Selected by content: a bare `frozen` attribute becomes frozen="confirm" even on a questions round. */
+aisf-round[frozen]:not(:has(aisf-confirm))::before {
+  content: 'Round ' attr(number) ' · answered';
+}
+
+aisf-round[frozen]:has(aisf-confirm)::before {
+  content: 'Round ' attr(number) ' · decided';
+}
+
+.aisf-notice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+
+.aisf-notice::before {
+  font: 500 11px/18px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: var(--label-spacing);
+  white-space: nowrap;
+}
+
+.aisf-notice-busy {
+  box-shadow: inset 4px 0 0 var(--warn);
+}
+
+.aisf-notice-busy::before {
+  content: 'Busy';
+  color: var(--warn);
+}
+
+.aisf-notice-closed {
+  box-shadow: inset 4px 0 0 var(--muted);
+}
+
+.aisf-notice-closed::before {
+  content: 'Closed';
+  color: var(--muted);
+}
+
+.aisf-notice-unsaved {
+  box-shadow: inset 4px 0 0 var(--danger);
+}
+
+.aisf-notice-unsaved::before {
+  content: 'Not saved';
+  color: var(--danger);
+}
+
+.aisf-submit,
+.aisf-accept-all,
+.aisf-confirm-button,
+.aisf-reopen-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 14px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  font: 600 13px/1.2 var(--font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.aisf-submit,
+.aisf-confirm-button {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+:is(.aisf-submit, .aisf-accept-all, .aisf-confirm-button, .aisf-reopen-button):hover:not(
+    :disabled
+  ) {
+  border-color: var(--text);
+}
+
+:is(.aisf-submit, .aisf-accept-all, .aisf-confirm-button, .aisf-reopen-button):disabled {
+  background: var(--surface-2);
+  color: var(--muted);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+
+@media (pointer: coarse) {
+  .aisf-submit,
+  .aisf-accept-all,
+  .aisf-confirm-button,
+  .aisf-reopen-button {
+    min-height: 44px;
+  }
+}
+
+.aisf-other-text,
+.aisf-discuss-note,
+.aisf-confirm-note {
+  min-width: 0;
+  width: 100%;
+  padding: 6px 8px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font: 400 var(--text-size) / var(--line) var(--font-ui);
+}
+
+.aisf-frozen-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  align-items: baseline;
+  min-width: 0;
+}
