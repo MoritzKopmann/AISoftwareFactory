@@ -1,0 +1,123 @@
+aisf-task {
+  position: relative;
+  display: block;
+  margin-top: -1px;
+  padding: 12px 120px 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+/* Rows share borders: cancel the confirm block's 14px gap plus the shared 1px line. */
+aisf-confirm > aisf-task {
+  margin-top: 0;
+}
+
+aisf-confirm > aisf-task + aisf-task {
+  margin-top: -15px;
+}
+
+aisf-task[hitl] {
+  background: color-mix(in srgb, var(--hitl) 7%, var(--surface));
+}
+
+.aisf-task-head {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  margin-bottom: 2px;
+}
+
+.aisf-task-number {
+  min-width: 3ch;
+  color: var(--muted);
+  font: 500 12px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.aisf-task-heading {
+  font-weight: 700;
+}
+
+aisf-task .hitl-reason {
+  color: var(--muted);
+  font-size: var(--text-size-sm);
+}
+
+aisf-task[hitl] .hitl-reason {
+  color: var(--hitl);
+}
+
+.aisf-task-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin-top: 6px;
+  color: var(--muted);
+  font: 400 12px/1.4 var(--font-mono);
+}
+
+.aisf-hitl-switch {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 4px 10px 4px 6px;
+  background: var(--surface);
+  color: var(--muted);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font: 500 11px/18px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: var(--label-spacing);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* The track, with the knob drawn as its background. */
+.aisf-hitl-switch::before {
+  content: '';
+  flex: none;
+  width: 26px;
+  height: 14px;
+  border: 1px solid currentColor;
+  background: linear-gradient(currentColor, currentColor) 2px 50% / 8px 8px no-repeat;
+}
+
+.aisf-hitl-switch[aria-checked='true'] {
+  color: var(--hitl);
+  border-color: var(--hitl);
+}
+
+.aisf-hitl-switch[aria-checked='true']::before {
+  background-color: color-mix(in srgb, var(--hitl) 18%, transparent);
+  background-position: calc(100% - 2px) 50%;
+}
+
+.aisf-hitl-switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+@media (pointer: coarse) {
+  .aisf-hitl-switch {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 520px) {
+  aisf-task {
+    padding-right: 14px;
+  }
+
+  /* Block-level, so it takes its own line even in a row without details. */
+  .aisf-hitl-switch {
+    position: static;
+    display: flex;
+    width: fit-content;
+    margin-top: 8px;
+  }
+}
