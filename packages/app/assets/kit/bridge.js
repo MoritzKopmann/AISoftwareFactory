@@ -13,7 +13,11 @@
   /** @type {number | undefined} */
   let loadedVersion;
 
-  /** @param {StatusEvent} event */
+  /**
+   * Internal, called by `receive`. Marks the page with the status for its CSS
+   * (`data-aisf-status`) and makes it inert while closed.
+   * @param {StatusEvent} event
+   */
   function showStatus(event) {
     document.documentElement.setAttribute('data-aisf-status', event.status);
     if (document.body === null) {
@@ -23,7 +27,11 @@
     document.body.toggleAttribute('inert', event.status === 'closed');
   }
 
-  /** @param {StatusEvent} event */
+  /**
+   * Internal, called by `poll` with each `_status` answer. Reloads the page on a
+   * new version; otherwise shows a changed status and tells the listeners.
+   * @param {StatusEvent} event
+   */
   function receive(event) {
     if (loadedVersion !== undefined && event.version !== loadedVersion) {
       location.reload();
@@ -41,6 +49,7 @@
     }
   }
 
+  /** Internal, started once on load. Asks the app for `_status` every few seconds, forever. */
   async function poll() {
     try {
       const response = await fetch('./_status');
@@ -54,6 +63,7 @@
   }
 
   const state = {
+    /** For page code: loads the saved draft (`null` if none), to restore the page's inputs on open. */
     async load() {
       const response = await fetch('./_state');
       if (!response.ok) {
@@ -61,7 +71,11 @@
       }
       return response.json();
     },
-    /** @param {unknown} value */
+    /**
+     * For page code: saves any JSON value as the draft, so the human's input
+     * survives a reload or an app restart.
+     * @param {unknown} value
+     */
     async save(value) {
       const response = await fetch('./_state', {
         method: 'PUT',
@@ -75,6 +89,8 @@
   };
 
   /**
+   * For page code: registers a listener for status changes, e.g. to show
+   * "the session is busy". A late listener gets the current status at once.
    * @param {'status'} event
    * @param {(event: StatusEvent) => void} listener
    */
