@@ -2,6 +2,7 @@
 @import './styles/question.css';
 @import './styles/action-bar.css';
 @import './styles/confirm.css';
+@import './styles/task.css';
 
 @font-face {
   font-family: 'Atkinson Hyperlegible Next';
