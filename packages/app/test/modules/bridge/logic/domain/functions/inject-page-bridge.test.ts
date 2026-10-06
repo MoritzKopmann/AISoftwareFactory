@@ -6,7 +6,7 @@ describe('injectPageBridge', () => {
     const html = injectPageBridge('<!doctype html><html><head><title>x</title></head></html>', 'N');
 
     expect(html).toContain(
-      '<head><link rel="stylesheet" href="/aisf/kit.css"><script nonce="N" src="/aisf/bridge.js"></script><title>',
+      '<head><link rel="stylesheet" href="/aisf/kit.css"><script nonce="N" src="/aisf/bridge.js"></script><script type="module" nonce="N" src="/aisf/kit.js"></script><title>',
     );
   });
 
@@ -17,7 +17,7 @@ describe('injectPageBridge', () => {
     );
 
     const scripts = html.match(/<script[^>]*>/gi) ?? [];
-    expect(scripts).toHaveLength(3);
+    expect(scripts).toHaveLength(4);
     for (const script of scripts) {
       expect(script).toContain('nonce="N"');
     }

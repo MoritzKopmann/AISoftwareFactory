@@ -102,8 +102,11 @@ describe('createPageRoutes', () => {
       expect(response.headers.get('Content-Type')).toContain('text/html');
       expect(html).toContain('href="/aisf/kit.css"');
       expect(html).toContain('src="/aisf/bridge.js"');
+      expect(html).toContain(
+        `src="/aisf/bridge.js"></script><script type="module" nonce="${nonce}" src="/aisf/kit.js">`,
+      );
       const scripts = html.match(/<script[^>]*>/g) ?? [];
-      expect(scripts).toHaveLength(3);
+      expect(scripts).toHaveLength(4);
       for (const script of scripts) {
         expect(script).toContain(`nonce="${nonce}"`);
       }

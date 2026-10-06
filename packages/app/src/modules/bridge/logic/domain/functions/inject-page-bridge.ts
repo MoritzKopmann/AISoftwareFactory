@@ -1,9 +1,9 @@
 const bridgeTags = (nonce: string): string =>
-  `<link rel="stylesheet" href="/aisf/kit.css"><script nonce="${nonce}" src="/aisf/bridge.js"></script>`;
+  `<link rel="stylesheet" href="/aisf/kit.css"><script nonce="${nonce}" src="/aisf/bridge.js"></script><script type="module" nonce="${nonce}" src="/aisf/kit.js"></script>`;
 
 const openingTagPatterns = [/<head(?=[\s>/])[^>]*>/i, /<html(?=[\s>/])[^>]*>/i, /<!doctype[^>]*>/i];
 
-/** Stamps every script with the nonce and adds the kit stylesheet and bridge script. */
+/** Stamps every script with the nonce and adds the kit stylesheet, bridge script and kit module. */
 export function injectPageBridge(html: string, nonce: string): string {
   const stamped = html.replace(/<script(?=[\s>/])/gi, `<script nonce="${nonce}"`);
   const tags = bridgeTags(nonce);
