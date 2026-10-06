@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <title>aisf kit specimens</title>
+    <link rel="stylesheet" href="/aisf/kit.css" />
+    <script type="module" src="/aisf/kit.js"></script>
+  </head>
+  <body>
+    <h1>aisf kit specimens</h1>
+    <p>
+      Every element and figure class, in every state. Loads kit.css and kit.js, no bridge script:
+      nothing saves or sends.
+    </p>
+    <p><button id="theme-light">Light</button> <button id="theme-dark">Dark</button></p>
+    <section class="specimen">
+      <h2>Empty</h2>
+      <aisf-round number="1"
+        ><aisf-question name="window" heading="Which window?" assumes="a1"
+          ><aisf-context kind="code" path="src/a.ts" line="3"
+            >const a = 1; const b = 2; const c = a + b; console.log(c); export { c };</aisf-context
+          ><aisf-context kind="mockup"><button>Mockup button</button></aisf-context
+          ><aisf-context kind="diagram"
+            ><svg width="120" height="40">
+              <rect width="120" height="40" fill="none" stroke="currentColor" /></svg></aisf-context
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ><aisf-question name="w2" heading="Second question"
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
+      <h2>Answered (card, Other text, Discuss note)</h2>
+      <aisf-round number="2"
+        ><aisf-question name="card" heading="Picked a card" assumes="a1"
+          ><aisf-card selected value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ><aisf-question name="other" heading="Typed an Other answer"
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ><aisf-question name="discuss" heading="Wants to discuss"
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
+      <h2>Saving</h2>
+      <aisf-round number="3" saving
+        ><aisf-question name="s1" heading="Sending"
+          ><aisf-card selected value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen" data-aisf-status="busy">
+      <h2>Busy</h2>
+      <aisf-round number="4"
+        ><aisf-question name="b1" heading="Busy page"
+          ><aisf-card selected value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen" data-aisf-status="closed">
+      <h2>Closed</h2>
+      <aisf-round number="5"
+        ><aisf-question name="c1" heading="Closed page"
+          ><aisf-card selected value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
+      <h2>Draft not saved</h2>
+      <aisf-round number="6" draft-not-saved
+        ><aisf-question name="d1" heading="Unsaved"
+          ><aisf-card selected value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
+      <h2>Frozen round</h2>
+      <aisf-round number="1" frozen
+        ><aisf-question name="f1" heading="Frozen decision" assumes="a1"
+          ><aisf-card selected value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ><aisf-question name="f2" heading="Second frozen"
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card selected value="two">Option two</aisf-card></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
+      <h2>Confirm, empty</h2>
+      <aisf-round number="7"
+        ><aisf-confirm
+          ><aisf-meta label="Risk">Low</aisf-meta><aisf-meta label="Effort">Two days</aisf-meta
+          ><aisf-figure caption="How it behaves"
+            ><div class="aisf-lane">
+              <span class="aisf-node aisf-node-new">New</span><span class="aisf-arrow">→</span
+              ><span class="aisf-node aisf-node-changed">Changed</span
+              ><span class="aisf-arrow">→</span
+              ><span class="aisf-node aisf-node-untouched">Untouched</span
+              ><span class="aisf-stop">stop</span>
+            </div>
+            <div>
+              <button class="aisf-switch" aria-pressed="true">pressed</button>
+              <button class="aisf-switch" aria-pressed="false">not pressed</button>
+              <output class="aisf-readout">42 ms</output>
+            </div></aisf-figure
+          ><aisf-tree-node round="1" question="First question" resolution="Chose one" assumes="a1"
+            ><aisf-tree-node
+              round="2"
+              question="Follow-up"
+              resolution="Rejected idea"
+              rejected
+              fact="It is slow"
+            ></aisf-tree-node></aisf-tree-node
+          ><aisf-task number="1" heading="Plan one" files="a.ts" risk="low" hitl
+            >Scope. Human checks it.</aisf-task
+          ><aisf-task number="2" heading="Plan two" blocked-by="1">Scope.</aisf-task>
+          <p>Prose about the plan.</p></aisf-confirm
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
+      <h2>Frozen confirm</h2>
+      <aisf-round number="8" frozen
+        ><aisf-confirm
+          ><aisf-task number="1" heading="Plan one" hitl>Scope.</aisf-task>
+          <p>Prose.</p></aisf-confirm
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
+      <h2>Too much data</h2>
+      <aisf-round number="9"
+        ><aisf-question name="m1" heading="Question 1"
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ><aisf-question name="m2" heading="Question 2"
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ><aisf-question name="m3" heading="Question 3"
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ><aisf-question name="m4" heading="Question 4"
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ><aisf-question name="m5" heading="Question 5"
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ><aisf-question name="m6" heading="Question 6"
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ><aisf-question name="m7" heading="Question 7"
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ><aisf-question name="m8" heading="Question 8"
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ><aisf-question name="m9" heading="Question 9"
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ><aisf-question name="m10" heading="Question 10"
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ><aisf-question name="m11" heading="Question 11"
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ><aisf-context kind="code" path="src/long.ts" line="40"
+          >const line1 = 1; const line2 = 2; const line3 = 3; const line4 = 4; const line5 = 5;
+          const line6 = 6; const line7 = 7; const line8 = 8; const line9 = 9; const line10 = 10;
+          const line11 = 11; const line12 = 12; const line13 = 13; const line14 = 14; const line15 =
+          15; const line16 = 16; const line17 = 17; const line18 = 18; const line19 = 19; const
+          line20 = 20; const line21 = 21; const line22 = 22; const line23 = 23; const line24 = 24;
+          const line25 = 25; const line26 = 26; const line27 = 27; const line28 = 28; const line29 =
+          29; const line30 = 30; const line31 = 31; const line32 = 32; const line33 = 33; const
+          line34 = 34; const line35 = 35; const line36 = 36; const line37 = 37; const line38 = 38;
+          const line39 = 39; const line40 = 40; const line41 = 41; const line42 = 42; const line43 =
+          43; const line44 = 44; const line45 = 45; const line46 = 46; const line47 = 47; const
+          line48 = 48; const line49 = 49; const line50 = 50; const line51 = 51; const line52 = 52;
+          const line53 = 53; const line54 = 54; const line55 = 55; const line56 = 56; const line57 =
+          57; const line58 = 58; const line59 = 59; const line60 = 60; const line61 = 61; const
+          line62 = 62; const line63 = 63; const line64 = 64; const line65 = 65; const line66 = 66;
+          const line67 = 67; const line68 = 68; const line69 = 69; const line70 = 70; const line71 =
+          71; const line72 = 72; const line73 = 73; const line74 = 74; const line75 = 75; const
+          line76 = 76; const line77 = 77; const line78 = 78; const line79 = 79; const line80 =
+          80;</aisf-context
+        ><aisf-question name="long" heading="Long free text"
+          ><p>
+            A very long free text. A very long free text. A very long free text. A very long free
+            text. A very long free text. A very long free text. A very long free text. A very long
+            free text. A very long free text. A very long free text. A very long free text. A very
+            long free text. A very long free text. A very long free text. A very long free text. A
+            very long free text. A very long free text. A very long free text. A very long free
+            text. A very long free text. A very long free text. A very long free text. A very long
+            free text. A very long free text. A very long free text. A very long free text. A very
+            long free text. A very long free text. A very long free text. A very long free text. A
+            very long free text. A very long free text. A very long free text. A very long free
+            text. A very long free text. A very long free text. A very long free text. A very long
+            free text. A very long free text. A very long free text. A very long free text. A very
+            long free text. A very long free text. A very long free text. A very long free text. A
+            very long free text. A very long free text. A very long free text. A very long free
+            text. A very long free text. A very long free text. A very long free text. A very long
+            free text. A very long free text. A very long free text. A very long free text. A very
+            long free text. A very long free text. A very long free text. A very long free text.
+          </p>
+          <aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ></aisf-round
+      ><aisf-round number="10"
+        ><aisf-confirm
+          ><aisf-task number="1" heading="Task 1" files="src/f1.ts" risk="low"
+            >Scope of task 1. <span class="hitl-reason">Needs a human look.</span></aisf-task
+          ><aisf-task number="2" heading="Task 2" blocked-by="1" files="src/f2.ts" risk="low"
+            >Scope of task 2. <span class="hitl-reason">Needs a human look.</span></aisf-task
+          ><aisf-task number="3" heading="Task 3" blocked-by="2" files="src/f3.ts" risk="low"
+            >Scope of task 3. <span class="hitl-reason">Needs a human look.</span></aisf-task
+          ><aisf-task number="4" heading="Task 4" blocked-by="3" files="src/f4.ts" risk="low" hitl
+            >Scope of task 4. <span class="hitl-reason">Needs a human look.</span></aisf-task
+          ><aisf-task number="5" heading="Task 5" blocked-by="4" files="src/f5.ts" risk="low"
+            >Scope of task 5. <span class="hitl-reason">Needs a human look.</span></aisf-task
+          ><aisf-task number="6" heading="Task 6" blocked-by="5" files="src/f6.ts" risk="low"
+            >Scope of task 6. <span class="hitl-reason">Needs a human look.</span></aisf-task
+          ><aisf-task number="7" heading="Task 7" blocked-by="6" files="src/f7.ts" risk="low"
+            >Scope of task 7. <span class="hitl-reason">Needs a human look.</span></aisf-task
+          ><aisf-task number="8" heading="Task 8" blocked-by="7" files="src/f8.ts" risk="low" hitl
+            >Scope of task 8. <span class="hitl-reason">Needs a human look.</span></aisf-task
+          ><aisf-task number="9" heading="Task 9" blocked-by="8" files="src/f9.ts" risk="low"
+            >Scope of task 9. <span class="hitl-reason">Needs a human look.</span></aisf-task
+          ><aisf-task number="10" heading="Task 10" blocked-by="9" files="src/f10.ts" risk="low"
+            >Scope of task 10. <span class="hitl-reason">Needs a human look.</span></aisf-task
+          ><aisf-task number="11" heading="Task 11" blocked-by="10" files="src/f11.ts" risk="low"
+            >Scope of task 11. <span class="hitl-reason">Needs a human look.</span></aisf-task
+          ><aisf-task
+            number="12"
+            heading="Task 12"
+            blocked-by="11"
+            files="src/f12.ts"
+            risk="low"
+            hitl
+            >Scope of task 12. <span class="hitl-reason">Needs a human look.</span></aisf-task
+          ><aisf-task number="13" heading="Task 13" blocked-by="12" files="src/f13.ts" risk="low"
+            >Scope of task 13. <span class="hitl-reason">Needs a human look.</span></aisf-task
+          >
+          <p>
+            A very long free text. A very long free text. A very long free text. A very long free
+            text. A very long free text. A very long free text. A very long free text. A very long
+            free text. A very long free text. A very long free text. A very long free text. A very
+            long free text. A very long free text. A very long free text. A very long free text. A
+            very long free text. A very long free text. A very long free text. A very long free
+            text. A very long free text. A very long free text. A very long free text. A very long
+            free text. A very long free text. A very long free text. A very long free text. A very
+            long free text. A very long free text. A very long free text. A very long free text. A
+            very long free text. A very long free text. A very long free text. A very long free
+            text. A very long free text. A very long free text. A very long free text. A very long
+            free text. A very long free text. A very long free text. A very long free text. A very
+            long free text. A very long free text. A very long free text. A very long free text. A
+            very long free text. A very long free text. A very long free text. A very long free
+            text. A very long free text. A very long free text. A very long free text. A very long
+            free text. A very long free text. A very long free text. A very long free text. A very
+            long free text. A very long free text. A very long free text. A very long free text.
+          </p></aisf-confirm
+        ></aisf-round
+      >
+    </section>
+    <script type="module">
+      document
+        .getElementById('theme-light')
+        .addEventListener('click', () =>
+          document.documentElement.setAttribute('data-theme', 'light'),
+        );
+      document
+        .getElementById('theme-dark')
+        .addEventListener('click', () =>
+          document.documentElement.setAttribute('data-theme', 'dark'),
+        );
+      // Other text and Discuss note cannot be written in markup: fill them as a human would.
+      function fill(name, selector, value) {
+        const field = document.querySelector('aisf-question[name="' + name + '"] ' + selector);
+        field.value = value;
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      customElements.whenDefined('aisf-round').then(() =>
+        queueMicrotask(() => {
+          fill('other', '.aisf-other-text', 'Something else entirely');
+          fill('discuss', '.aisf-discuss-note', 'Let us talk about the trade-off');
+        }),
+      );
+    </script>
+  </body>
+</html>
