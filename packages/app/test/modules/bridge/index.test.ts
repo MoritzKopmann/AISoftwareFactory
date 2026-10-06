@@ -3,6 +3,7 @@ import { createBridgeModule, type BridgeModule } from '../../../src/modules/brid
 import { FakeClock } from '../../fakes/fake-clock.js';
 import { buildArtifact } from './fakes/build-artifact.js';
 import { FakeArtifactFiles } from './fakes/fake-artifact-files.js';
+import { FakeCheckpointAnswers } from './fakes/fake-checkpoint-answers.js';
 import { FakeTicketRunLookup } from './fakes/fake-ticket-run-lookup.js';
 import { InMemoryArtifactRepository } from './fakes/in-memory-artifact-repository.js';
 
@@ -19,6 +20,7 @@ describe('createBridgeModule', () => {
       artifactRepository,
       artifactFiles,
       ticketRunLookup: new FakeTicketRunLookup(),
+      checkpointAnswers: new FakeCheckpointAnswers(),
       identifiers: { next: () => 'T' },
       clock: new FakeClock('2026-10-06T10:00:00.000Z'),
     });

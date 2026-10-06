@@ -1,11 +1,15 @@
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 import { NONCE, secureHeaders } from 'hono/secure-headers';
 import { getMimeType } from 'hono/utils/mime';
+import { pageEventBodySchema } from '../schemas/page-events-schemas.js';
 import { ArtifactNotFoundError } from '../../logic/errors/artifact-not-found-error.js';
+import { PageBusyError } from '../../logic/errors/page-busy-error.js';
+import { PageClosedError } from '../../logic/errors/page-closed-error.js';
 import type { ReadPageAssetUseCase } from '../../logic/use-cases/read-page-asset-use-case.js';
 import type { ReadPageStateUseCase } from '../../logic/use-cases/read-page-state-use-case.js';
 import type { ReadPageStatusUseCase } from '../../logic/use-cases/read-page-status-use-case.js';
 import type { ReadPageUseCase } from '../../logic/use-cases/read-page-use-case.js';
+import type { SubmitPageEventUseCase } from '../../logic/use-cases/submit-page-event-use-case.js';
 import type { WritePageStateUseCase } from '../../logic/use-cases/write-page-state-use-case.js';
 
 export type PageRoutesUseCases = {
@@ -14,7 +18,10 @@ export type PageRoutesUseCases = {
   readonly readStatus: ReadPageStatusUseCase;
   readonly readState: ReadPageStateUseCase;
   readonly writeState: WritePageStateUseCase;
+  readonly submitEvent: SubmitPageEventUseCase;
 };
+
+const maxEventBytes = 32 * 1024;
 
 const loopbackHostPattern = /^(127\.0\.0\.1|localhost)(:\d+)?$/i;
 
@@ -116,6 +123,36 @@ export function createPageRoutes(useCases: PageRoutesUseCases): Hono {
         }
         await useCases.writeState.execute(context.req.param('token'), state);
         return context.body(null, 204);
+      }),
+    )
+    .post('/:token/_events', (context) =>
+      answerOrNotFound(context, async () => {
+        const raw = await context.req.text();
+        if (Buffer.byteLength(raw) > maxEventBytes) {
+          return context.json({ message: 'The event is too large' }, 413);
+        }
+        let json: unknown;
+        try {
+          json = JSON.parse(raw);
+        } catch {
+          return context.json({ message: 'The event must be JSON' }, 400);
+        }
+        const parsed = pageEventBodySchema.safeParse(json);
+        if (!parsed.success) {
+          return context.json({ message: 'The event is malformed' }, 400);
+        }
+        try {
+          await useCases.submitEvent.execute(context.req.param('token'), parsed.data);
+        } catch (error) {
+          if (error instanceof PageBusyError) {
+            return context.json({ status: 'busy' }, 409);
+          }
+          if (error instanceof PageClosedError) {
+            return context.json({ status: 'closed' }, 409);
+          }
+          throw error;
+        }
+        return context.body(null, 201);
       }),
     )
     .get('/:token/*', (context) =>

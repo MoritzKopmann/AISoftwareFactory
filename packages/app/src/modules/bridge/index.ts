@@ -9,6 +9,7 @@ import { createShowArtifactTool } from './api/tools/create-show-artifact-tool.js
 import type { TicketLatestRun } from './logic/domain/types/ticket-latest-run.js';
 import type { ArtifactFiles } from './logic/ports/artifact-files.js';
 import type { ArtifactRepository } from './logic/ports/artifact-repository.js';
+import type { CheckpointAnswers } from './logic/ports/checkpoint-answers.js';
 import type { TicketRunLookup } from './logic/ports/ticket-run-lookup.js';
 import { ListTicketArtifactsUseCase } from './logic/use-cases/list-ticket-artifacts-use-case.js';
 import { PublishArtifactUseCase } from './logic/use-cases/publish-artifact-use-case.js';
@@ -16,15 +17,18 @@ import { ReadPageAssetUseCase } from './logic/use-cases/read-page-asset-use-case
 import { ReadPageStateUseCase } from './logic/use-cases/read-page-state-use-case.js';
 import { ReadPageStatusUseCase } from './logic/use-cases/read-page-status-use-case.js';
 import { ReadPageUseCase } from './logic/use-cases/read-page-use-case.js';
+import { SubmitPageEventUseCase } from './logic/use-cases/submit-page-event-use-case.js';
 import { WritePageStateUseCase } from './logic/use-cases/write-page-state-use-case.js';
 
-export type { TicketLatestRun, TicketRunLookup };
+export { PageBusyError } from './logic/errors/page-busy-error.js';
+export type { CheckpointAnswers, TicketLatestRun, TicketRunLookup };
 
 export type BridgeModuleDependencies = {
   readonly kitDirectory: string;
   readonly artifactRepository: ArtifactRepository;
   readonly artifactFiles: ArtifactFiles;
   readonly ticketRunLookup: TicketRunLookup;
+  readonly checkpointAnswers: CheckpointAnswers;
   readonly identifiers: Identifiers;
   readonly clock: Clock;
 };
@@ -37,7 +41,14 @@ export type BridgeModule = {
 };
 
 export function createBridgeModule(dependencies: BridgeModuleDependencies): BridgeModule {
-  const { artifactRepository, artifactFiles, ticketRunLookup, identifiers, clock } = dependencies;
+  const {
+    artifactRepository,
+    artifactFiles,
+    ticketRunLookup,
+    checkpointAnswers,
+    identifiers,
+    clock,
+  } = dependencies;
 
   const publishArtifact = new PublishArtifactUseCase({
     artifactRepository,
@@ -59,6 +70,11 @@ export function createBridgeModule(dependencies: BridgeModuleDependencies): Brid
       readStatus: new ReadPageStatusUseCase({ artifactRepository, ticketRunLookup }),
       readState: new ReadPageStateUseCase({ artifactRepository, artifactFiles }),
       writeState: new WritePageStateUseCase({ artifactRepository, artifactFiles }),
+      submitEvent: new SubmitPageEventUseCase({
+        artifactRepository,
+        ticketRunLookup,
+        checkpointAnswers,
+      }),
     }),
     routes: new Hono().route('/projects', createTicketArtifactsRoutes(listTicketArtifacts)),
   };

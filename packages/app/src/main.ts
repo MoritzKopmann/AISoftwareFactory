@@ -4,7 +4,12 @@ import { fileURLToPath } from 'node:url';
 import type { DatabaseSync } from 'node:sqlite';
 import { FileSystemArtifactFiles } from './modules/bridge/infra/integrations/file-system-artifact-files.js';
 import { SqliteArtifactRepository } from './modules/bridge/infra/repositories/sqlite-artifact-repository.js';
-import { createBridgeModule, type BridgeModule } from './modules/bridge/index.js';
+import {
+  createBridgeModule,
+  PageBusyError,
+  type BridgeModule,
+  type CheckpointAnswers,
+} from './modules/bridge/index.js';
 import { GhCliTicketCreator } from './modules/findings/infra/integrations/gh-cli-ticket-creator.js';
 import { SqliteFindingRepository } from './modules/findings/infra/repositories/sqlite-finding-repository.js';
 import { createFindingsModule, type FindingsModule } from './modules/findings/index.js';
@@ -72,6 +77,7 @@ function buildBridgeModule(
   kitDirectory: string,
   database: DatabaseSync,
   runner: Pick<RunnerModule, 'latestRun'>,
+  checkpointAnswers: CheckpointAnswers,
 ): BridgeModule {
   return createBridgeModule({
     kitDirectory,
@@ -80,6 +86,7 @@ function buildBridgeModule(
     ticketRunLookup: {
       latest: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber),
     },
+    checkpointAnswers,
     identifiers: new RandomUuidIdentifiers(),
     clock: new SystemClock(),
   });
@@ -321,9 +328,24 @@ const watcher = buildWatcherModule(config, eventBus, projects, {
 });
 const findings = buildFindingsModule(database, projects);
 // The bridge needs runner.latestRun and the runner needs the bridge tools, so the lookup binds late.
-const bridge: BridgeModule = buildBridgeModule(kitDirectory, database, {
-  latestRun: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber),
-});
+// The same goes for scheduler.answer, which delivers a page's event.
+const bridge: BridgeModule = buildBridgeModule(
+  kitDirectory,
+  database,
+  { latestRun: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber) },
+  {
+    answer: async (runId, text) => {
+      try {
+        await scheduler.answer(runId, { kind: 'checkpoint', text });
+      } catch (error) {
+        if (error instanceof RunNotAnswerableError || error instanceof RunAlreadyActiveError) {
+          throw new PageBusyError(error.message);
+        }
+        throw error;
+      }
+    },
+  },
+);
 const runner = buildRunnerModule(
   config,
   database,
