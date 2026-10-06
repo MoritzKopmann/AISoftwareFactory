@@ -142,7 +142,8 @@ Through `aisf:github-issue`, in this order, each step needs the numbers from the
   what is out of scope. Labels: `type: enhancement`, `priority:` (inherited, else `medium`),
   `status: planned` once it has children (a parent is never implemented). Given an existing
   parent, extend its body instead of replacing it.
-- **Each component**: created with `--parent`, `--blocked-by` and `status: ready`. Title is
+- **Each component**: created with `--parent`, `--blocked-by` and labels `type: ui`,
+  `priority:` (the parent's) and `status: ready` (not `backlog`: the design exists). Title is
   the outcome, not the class name. Body: **Context** (one sentence), **Design** (mock URL and
   design doc), **Landing zone**, **Description** (the step 4 checklist and its prose),
   **Wiring** (per `project-architecture`), **Scope** with an **Out** list, **Acceptance
