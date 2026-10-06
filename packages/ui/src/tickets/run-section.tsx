@@ -1,9 +1,17 @@
 import type { TicketStatusResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
+import type { TicketArtifactsResponse } from '@aisf/app/api-schemas/artifacts-schemas.js';
 import { useEffect, useState } from 'react';
+import { poll } from '../shared/poll.js';
+import { ArtifactLinks } from './artifact-links.js';
 import { answerCheckpoint } from './answer-checkpoint.js';
 import { answerPermissionPrompt } from './answer-permission-prompt.js';
 import { CheckpointPrompt } from './checkpoint-prompt.js';
-import { describeCheckpointPrompt, type CheckpointAnswer } from './describe-checkpoint-prompt.js';
+import { describeArtifactLinks } from './describe-artifact-links.js';
+import {
+  describeCheckpointPrompt,
+  settleCheckpointAnswer,
+  type CheckpointAnswer,
+} from './describe-checkpoint-prompt.js';
 import {
   describePermissionPrompt,
   type PermissionAnswer,
@@ -18,6 +26,7 @@ import {
 } from './describe-run-bar.js';
 import { describeRunPanel } from './describe-run-panel.js';
 import { editCheckpointDraft } from './edit-checkpoint-draft.js';
+import { fetchTicketArtifacts } from './fetch-ticket-artifacts.js';
 import { PermissionPrompt } from './permission-prompt.js';
 import { ResetAction } from './reset-action.js';
 import { resetTicket } from './reset-ticket.js';
@@ -26,6 +35,7 @@ import { RunPanel } from './run-panel.js';
 import { shouldRereadTicket } from './should-reread-ticket.js';
 import { startTicketRun } from './start-ticket-run.js';
 import { stopTicketRun } from './stop-ticket-run.js';
+import { ticketRunPollIntervalMilliseconds } from './ticket-run-poll-interval-milliseconds.js';
 import { useTicketRun } from './use-ticket-run.js';
 
 type RunSectionProps = {
@@ -49,6 +59,7 @@ export function RunSection({
   const [permissionAnswer, setPermissionAnswer] = useState<PermissionAnswer>({ kind: 'idle' });
   const [checkpointAnswer, setCheckpointAnswer] = useState<CheckpointAnswer | undefined>(undefined);
   const [reset, setReset] = useState<ResetState>({ kind: 'idle' });
+  const [artifacts, setArtifacts] = useState<TicketArtifactsResponse | undefined>(undefined);
   const activeRunId = ticketRun.response?.activeRun?.id;
   const resetting = reset.kind === 'resetting';
 
@@ -56,6 +67,22 @@ export function RunSection({
   useEffect(() => {
     if (resetting || shouldRereadTicket(ticketRun.response, ticketStatus)) onTicketStale();
   }, [ticketRun.response, ticketStatus, onTicketStale, resetting]);
+
+  useEffect(() => {
+    setCheckpointAnswer((current) => settleCheckpointAnswer(current, ticketRun.response));
+  }, [ticketRun.response]);
+
+  // A failed read keeps the links from the last answer.
+  useEffect(() => {
+    setArtifacts(undefined);
+    return poll(
+      () => fetchTicketArtifacts(projectId, number, (url) => fetch(url)),
+      (outcome) => {
+        if (outcome.kind === 'answer') setArtifacts(outcome.response);
+      },
+      ticketRunPollIntervalMilliseconds,
+    );
+  }, [projectId, number]);
 
   useEffect(() => {
     setStart((current) => settleStartState(current, ticketRun.response));
@@ -148,6 +175,7 @@ export function RunSection({
           }
         }}
       />
+      <ArtifactLinks links={describeArtifactLinks(artifacts)} />
       <RunPanel
         description={panel}
         onStop={() => {

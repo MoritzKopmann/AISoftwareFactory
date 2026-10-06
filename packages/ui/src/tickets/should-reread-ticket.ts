@@ -7,7 +7,9 @@ export function shouldRereadTicket(
   ticketStatus: TicketStatusResponse,
 ): boolean {
   if (response?.activeRun !== undefined) {
-    return ticketStatus !== 'in-progress';
+    return (
+      ticketStatus !== (response.activeRun.waitingFor === undefined ? 'in-progress' : 'waiting')
+    );
   }
   if (response?.lastRun?.ending.kind === 'permission-needed') {
     return ticketStatus !== 'stuck' && ticketStatus !== 'closed';

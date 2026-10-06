@@ -7,6 +7,7 @@ const ignoreStop = () => undefined;
 
 const live: Extract<RunPanelDescription, { kind: 'live' }> = {
   kind: 'live',
+  waiting: false,
   startedLabel: 'Started 4 min ago',
   stop: { label: 'Stop', pressable: true },
   steps: [
@@ -72,5 +73,22 @@ describe('RunPanel', () => {
     expect(markup).toMatch(/role="status"[^>]*>Run ended: you pressed Stop.</);
     expect(markup).not.toContain('<button');
     expect(markup).not.toContain('<ol');
+  });
+});
+
+describe('RunPanel while waiting', () => {
+  it('should show Waiting for you with the hitl mark, no pulse and a pressable Stop when the run waits', () => {
+    const markup = render({ ...live, waiting: true });
+    expect(markup).toContain('Waiting for you');
+    expect(markup).toContain('s-hitl');
+    expect(markup).not.toContain('pulse');
+    expect(markup).not.toContain('Running');
+    expect(markup).toMatch(/<button[^>]*>Stop<\/button>/);
+  });
+
+  it('should keep the pulsing Running header when the run works', () => {
+    const markup = render({ ...live, waiting: false });
+    expect(markup).toContain('Running');
+    expect(markup).toContain('pulse');
   });
 });

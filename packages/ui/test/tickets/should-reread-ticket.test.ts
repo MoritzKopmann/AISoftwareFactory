@@ -78,3 +78,27 @@ describe('shouldRereadTicket', () => {
     expect(shouldRereadTicket(permissionStop, 'closed')).toBe(false);
   });
 });
+
+describe('shouldRereadTicket during a live wait', () => {
+  const waitingRun: TicketRunResponse = {
+    ...ended,
+    activeRun: {
+      id: 'run-2',
+      startedAt: '2026-09-30T09:50:00Z',
+      steps: [],
+      waitingFor: { kind: 'checkpoint', request: 'Pick A or B' },
+    },
+  };
+
+  it('should not re-read when the run waits and the ticket shows waiting', () => {
+    expect(shouldRereadTicket(waitingRun, 'waiting')).toBe(false);
+  });
+
+  it('should re-read when the run waits and the ticket still shows in progress', () => {
+    expect(shouldRereadTicket(waitingRun, 'in-progress')).toBe(true);
+  });
+
+  it('should re-read when the run works and the ticket shows waiting', () => {
+    expect(shouldRereadTicket(live, 'waiting')).toBe(true);
+  });
+});

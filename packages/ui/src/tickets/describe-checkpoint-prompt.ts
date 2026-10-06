@@ -53,27 +53,47 @@ function describeHeldSend(ticketStatus: TicketStatusResponse, draft: string): st
   return undefined;
 }
 
+type ShownWait = { readonly runId: string; readonly request: string };
+
+function findShownWait(response: TicketRunResponse | undefined): ShownWait | undefined {
+  const activeRun = response?.activeRun;
+  if (activeRun !== undefined) {
+    return activeRun.waitingFor === undefined
+      ? undefined
+      : { runId: activeRun.id, request: activeRun.waitingFor.request };
+  }
+  const lastRun = response?.lastRun;
+  return lastRun?.ending.kind === 'checkpoint'
+    ? { runId: lastRun.id, request: lastRun.ending.request }
+    : undefined;
+}
+
+// An answer belongs to one wait. Once the poll shows its run past that wait, the answer is stale.
+export function settleCheckpointAnswer(
+  answer: CheckpointAnswer | undefined,
+  response: TicketRunResponse | undefined,
+): CheckpointAnswer | undefined {
+  if (answer === undefined || response === undefined) return answer;
+  return findShownWait(response)?.runId === answer.runId ? answer : undefined;
+}
+
 export function describeCheckpointPrompt(
   response: TicketRunResponse | undefined,
   ticketStatus: TicketStatusResponse,
   answer: CheckpointAnswer | undefined,
 ): CheckpointPromptDescription {
-  const lastRun = response?.lastRun;
-  if (
-    response?.activeRun !== undefined ||
-    lastRun === undefined ||
-    lastRun.ending.kind !== 'checkpoint'
-  ) {
+  const wait = findShownWait(response);
+  if (wait === undefined) {
     return { kind: 'hidden' };
   }
-  const runAnswer = answer?.runId === lastRun.id ? answer : undefined;
+  const runAnswer = answer?.runId === wait.runId ? answer : undefined;
   const draft = runAnswer?.draft ?? '';
   const atLimit = draft.length >= checkpointAnswerCharacterLimit;
   const limitText = groupThousands(checkpointAnswerCharacterLimit);
   const prompt = {
     kind: 'shown',
-    runId: lastRun.id,
-    request: lastRun.ending.request,
+    runId: wait.runId,
+    request: wait.request,
     draft,
     counterText: `${groupThousands(draft.length)} / ${limitText}`,
     hint: atLimit

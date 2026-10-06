@@ -4,6 +4,7 @@ import {
   describeCheckpointPrompt,
   type CheckpointAnswer,
   type CheckpointSend,
+  settleCheckpointAnswer,
 } from '../../src/tickets/describe-checkpoint-prompt.js';
 
 const idle: TicketRunResponse = { availability: { kind: 'absent' } };
@@ -192,4 +193,72 @@ describe('describeCheckpointPrompt', () => {
       });
     },
   );
+});
+
+const waiting: TicketRunResponse = {
+  ...idle,
+  activeRun: {
+    id: 'run-7',
+    startedAt: '2026-10-04T09:11:00Z',
+    steps: [],
+    waitingFor: { kind: 'checkpoint', request: 'Pick A or B' },
+  },
+};
+
+describe('describeCheckpointPrompt for a live wait', () => {
+  it('should show the live request for the active run when the ticket is waiting', () => {
+    const description = describeCheckpointPrompt(waiting, 'waiting', {
+      runId: 'run-7',
+      draft: 'A',
+      send: { kind: 'idle' },
+    });
+    expect(description).toMatchObject({
+      kind: 'shown',
+      runId: 'run-7',
+      request: 'Pick A or B',
+      draft: 'A',
+      pressable: true,
+    });
+  });
+
+  it('should lock Send with the catching-up reason when the ticket is still in progress', () => {
+    expect(describeCheckpointPrompt(waiting, 'in-progress', undefined)).toMatchObject({
+      kind: 'shown',
+      pressable: false,
+      reason:
+        'Waiting for GitHub to show the ticket as waiting. Send unlocks then, usually within 30 s.',
+    });
+  });
+
+  it('should prefer the live request over the last run ending', () => {
+    const both: TicketRunResponse = { ...endedWith(checkpoint), ...waiting };
+    expect(describeCheckpointPrompt(both, 'waiting', undefined)).toMatchObject({
+      runId: 'run-7',
+      request: 'Pick A or B',
+    });
+  });
+});
+
+describe('settleCheckpointAnswer', () => {
+  const sent: CheckpointAnswer = { runId: 'run-7', draft: 'A', send: { kind: 'sending' } };
+
+  it('should keep the answer when the poll has not answered yet', () => {
+    expect(settleCheckpointAnswer(sent, undefined)).toBe(sent);
+  });
+
+  it('should keep the answer while its run still waits', () => {
+    expect(settleCheckpointAnswer(sent, waiting)).toBe(sent);
+  });
+
+  it('should clear the answer when its run works on without a wait', () => {
+    const working: TicketRunResponse = {
+      ...idle,
+      activeRun: { id: 'run-7', startedAt: '2026-10-04T09:11:00Z', steps: [] },
+    };
+    expect(settleCheckpointAnswer(sent, working)).toBeUndefined();
+  });
+
+  it('should return undefined when there is no answer', () => {
+    expect(settleCheckpointAnswer(undefined, waiting)).toBeUndefined();
+  });
 });
