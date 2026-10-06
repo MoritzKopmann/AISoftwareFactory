@@ -21,6 +21,7 @@ describe('createApp', () => {
     const response = await createApp({
       staticDirectory,
       kitRoutes: new Hono(),
+      pageRoutes: new Hono(),
       apiRoutes: [],
     }).request('/health');
 
@@ -32,6 +33,7 @@ describe('createApp', () => {
     const response = await createApp({
       staticDirectory,
       kitRoutes: new Hono(),
+      pageRoutes: new Hono(),
       apiRoutes: [],
     }).request('/');
 
@@ -45,6 +47,7 @@ describe('createApp', () => {
     const response = await createApp({
       staticDirectory,
       kitRoutes,
+      pageRoutes: new Hono(),
       apiRoutes: [],
     }).request('/aisf/kit.css');
 
@@ -60,10 +63,24 @@ describe('createApp', () => {
     const app = createApp({
       staticDirectory,
       kitRoutes: new Hono(),
+      pageRoutes: new Hono(),
       apiRoutes: [skillsRoutes, projectsRoutes],
     });
 
     expect(await (await app.request('/api/skills/status')).json()).toEqual({ state: 'passed' });
     expect(await (await app.request('/api/projects')).json()).toEqual([]);
+  });
+
+  it('should route /a to the page routes ahead of the static fallback when the app is running', async () => {
+    const pageRoutes = new Hono().get('/T/', (context) => context.text('page T'));
+
+    const response = await createApp({
+      staticDirectory,
+      kitRoutes: new Hono(),
+      pageRoutes,
+      apiRoutes: [],
+    }).request('/a/T/');
+
+    expect(await response.text()).toBe('page T');
   });
 });

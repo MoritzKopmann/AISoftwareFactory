@@ -10,7 +10,7 @@ import type { ResumeSessionSpec } from '../../../../src/modules/runner/logic/dom
 import type { SessionSpec } from '../../../../src/modules/runner/logic/domain/types/session-spec.js';
 import type { WorktreeSpec } from '../../../../src/modules/runner/logic/domain/types/worktree-spec.js';
 import type { AgentSessions } from '../../../../src/modules/runner/logic/ports/agent-sessions.js';
-import type { Identifiers } from '../../../../src/modules/runner/logic/ports/identifiers.js';
+import type { Identifiers } from '../../../../src/shared/identifiers/identifiers.js';
 import type { RecentRunSteps } from '../../../../src/modules/runner/logic/ports/recent-run-steps.js';
 import type {
   RunAnswerWaitOutcome,

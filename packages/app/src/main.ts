@@ -2,6 +2,8 @@
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import type { DatabaseSync } from 'node:sqlite';
+import { FileSystemArtifactFiles } from './modules/bridge/infra/integrations/file-system-artifact-files.js';
+import { SqliteArtifactRepository } from './modules/bridge/infra/repositories/sqlite-artifact-repository.js';
 import { createBridgeModule, type BridgeModule } from './modules/bridge/index.js';
 import { GhCliTicketCreator } from './modules/findings/infra/integrations/gh-cli-ticket-creator.js';
 import { SqliteFindingRepository } from './modules/findings/infra/repositories/sqlite-finding-repository.js';
@@ -23,7 +25,7 @@ import { ClaudeAgentSdkSessions } from './modules/runner/infra/integrations/clau
 import { GitCliWorktrees } from './modules/runner/infra/integrations/git-cli-worktrees.js';
 import { InMemoryRunAnswerWaits } from './modules/runner/infra/integrations/in-memory-run-answer-waits.js';
 import { InMemoryRecentRunSteps } from './modules/runner/infra/integrations/in-memory-recent-run-steps.js';
-import { RandomUuidIdentifiers } from './modules/runner/infra/integrations/random-uuid-identifiers.js';
+import { RandomUuidIdentifiers } from './shared/identifiers/random-uuid-identifiers.js';
 import { SqliteRunRepository } from './modules/runner/infra/repositories/sqlite-run-repository.js';
 import {
   createRunnerModule,
@@ -66,8 +68,21 @@ import { openDatabase } from './shared/db/open-database.js';
 import { runMigrations } from './shared/db/run-migrations.js';
 import { consoleLogSink, createLogger, type Logger } from './shared/logger/create-logger.js';
 
-function buildBridgeModule(kitDirectory: string): BridgeModule {
-  return createBridgeModule({ kitDirectory });
+function buildBridgeModule(
+  kitDirectory: string,
+  database: DatabaseSync,
+  runner: Pick<RunnerModule, 'latestRun'>,
+): BridgeModule {
+  return createBridgeModule({
+    kitDirectory,
+    artifactRepository: new SqliteArtifactRepository(database),
+    artifactFiles: new FileSystemArtifactFiles(),
+    ticketRunLookup: {
+      latest: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber),
+    },
+    identifiers: new RandomUuidIdentifiers(),
+    clock: new SystemClock(),
+  });
 }
 
 function buildProjectsModule(
@@ -297,7 +312,6 @@ const database = openDatabase(config.databasePath);
 runMigrations(database, migrations);
 const eventBus = new TypedEventBus<AisfEventMap>();
 
-const bridge = buildBridgeModule(kitDirectory);
 const skills = buildSkillsModule(config, pluginDirectory);
 const projects = buildProjectsModule(database, eventBus, skills, logger);
 // The watcher is built before the runner, which needs watcher.ticket, so the lookup binds late.
@@ -306,6 +320,10 @@ const watcher = buildWatcherModule(config, eventBus, projects, {
     (await runner.activeRuns(projectId)).map(({ run }) => run.ticketNumber),
 });
 const findings = buildFindingsModule(database, projects);
+// The bridge needs runner.latestRun and the runner needs the bridge tools, so the lookup binds late.
+const bridge: BridgeModule = buildBridgeModule(kitDirectory, database, {
+  latestRun: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber),
+});
 const runner = buildRunnerModule(
   config,
   database,
@@ -313,7 +331,7 @@ const runner = buildRunnerModule(
   projects,
   watcher,
   findOnPath('claude') ?? 'claude',
-  findings.tools,
+  [...findings.tools, ...bridge.tools],
   logger,
 );
 const scheduler = buildSchedulerModule(eventBus, projects, skills, watcher, runner, logger);
@@ -336,6 +354,7 @@ const runningServer = await startServer({
   app: createApp({
     staticDirectory,
     kitRoutes: bridge.kitRoutes,
+    pageRoutes: bridge.pageRoutes,
     apiRoutes: [
       projects.routes,
       skills.routes,
@@ -343,6 +362,7 @@ const runningServer = await startServer({
       watcher.routes,
       scheduler.routes,
       runner.routes,
+      bridge.routes,
     ],
   }),
   port: config.port,

@@ -31,4 +31,33 @@ describe('migrations', () => {
       expect(columns.find((column) => column.name === name)).toMatchObject({ notnull: 0 });
     }
   });
+
+  it('should create the artifacts table when migration 7 runs', () => {
+    const columns = database
+      .prepare('PRAGMA table_info(artifacts)')
+      .all() as unknown as ReadonlyArray<{ name: string; pk: number }>;
+
+    expect(columns.map(({ name }) => name)).toEqual([
+      'token',
+      'project_id',
+      'ticket_number',
+      'artifact_id',
+      'title',
+      'directory',
+      'run_id',
+      'version',
+      'published_at',
+    ]);
+    expect(columns.find(({ name }) => name === 'token')?.pk).toBe(1);
+  });
+
+  it('should refuse a second artifact row when the project, ticket and artifact id repeat', () => {
+    const insert = database.prepare(
+      `INSERT INTO artifacts (token, project_id, ticket_number, artifact_id, title, directory, run_id, version, published_at)
+       VALUES (?, 'o/n', 7, 'plan', 't', '/d', 'r1', 1, '2026-10-06T10:00:00.000Z')`,
+    );
+    insert.run('T');
+
+    expect(() => insert.run('U')).toThrow(/UNIQUE constraint failed/);
+  });
 });

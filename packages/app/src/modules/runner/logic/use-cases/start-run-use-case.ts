@@ -9,7 +9,7 @@ import type { LaunchRunSession } from '../domain/types/launch-run-session.js';
 import type { Run } from '../domain/types/run.js';
 import type { RunMode } from '../domain/types/run-mode.js';
 import { RunTargetNotFoundError } from '../errors/run-target-not-found-error.js';
-import type { Identifiers } from '../ports/identifiers.js';
+import type { Identifiers } from '../../../../shared/identifiers/identifiers.js';
 import type { RunRepository } from '../ports/run-repository.js';
 import type { RunTargets } from '../ports/run-targets.js';
 import type { Worktrees } from '../ports/worktrees.js';

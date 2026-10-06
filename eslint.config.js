@@ -12,7 +12,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['packages/ui/**'],
+    files: ['packages/ui/**', 'packages/app/assets/kit/**'],
     languageOptions: {
       globals: { ...globals.browser },
     },
