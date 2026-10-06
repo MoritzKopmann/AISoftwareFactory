@@ -24,8 +24,8 @@ export class AnswerRunUseCase {
     if (run === undefined) {
       throw new RunNotAnswerableError(`Run ${runId} is unknown`);
     }
-    const awaitedStatus =
-      run.ending === undefined ? undefined : awaitedStatusFor(run.ending, answer);
+    const awaited = run.waitingFor ?? run.ending;
+    const awaitedStatus = awaited === undefined ? undefined : awaitedStatusFor(awaited, answer);
     if (awaitedStatus === undefined) {
       throw new RunNotAnswerableError(`Run ${runId} cannot take this answer`);
     }
@@ -34,10 +34,6 @@ export class AnswerRunUseCase {
     const latestRun = await runner.latestRun(projectId, ticketNumber);
     if (latestRun?.id !== runId) {
       throw new RunNotAnswerableError(`Run ${runId} is not the latest run of #${ticketNumber}`);
-    }
-    const activeRuns = await runner.activeRuns(projectId);
-    if (activeRuns.length > 0) {
-      throw new RunNotAnswerableError(`${projectId} already has an active run`);
     }
     const project = await projectLookup.find(projectId);
     if (project === undefined) {

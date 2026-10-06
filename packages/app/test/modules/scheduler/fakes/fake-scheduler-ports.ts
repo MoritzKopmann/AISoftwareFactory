@@ -12,6 +12,7 @@ import type { ReviewedTicket } from '../../../../src/modules/scheduler/logic/dom
 import type { ReviewedTicketLookup } from '../../../../src/modules/scheduler/logic/ports/reviewed-ticket-lookup.js';
 import type { ActiveTicketRun } from '../../../../src/modules/scheduler/logic/domain/types/active-ticket-run.js';
 import type { LatestRun } from '../../../../src/modules/scheduler/logic/domain/types/latest-run.js';
+import type { RunWait } from '../../../../src/modules/scheduler/logic/domain/types/run-wait.js';
 import type { RunAnswer } from '../../../../src/modules/scheduler/logic/domain/types/run-answer.js';
 import type { RunRecord } from '../../../../src/modules/scheduler/logic/domain/types/run-record.js';
 import type { SessionLog } from '../../../../src/modules/scheduler/logic/domain/types/session-log.js';
@@ -84,6 +85,7 @@ export class FakeRunnerPort implements RunnerPort {
   readonly calls: string[] = [];
   activeTicketNumbers: ReadonlyArray<number> = [];
   activeSteps: ReadonlyArray<RunStep> = [];
+  activeWaitingFor: RunWait | undefined;
   latest: LatestRun | undefined;
   transcript: SessionLog = { kind: 'no-session' };
   record: RunRecord | undefined;
@@ -123,6 +125,7 @@ export class FakeRunnerPort implements RunnerPort {
         id: 'run-1',
         ticketNumber,
         startedAt: '2026-09-29T09:00:00.000Z',
+        ...(this.activeWaitingFor === undefined ? {} : { waitingFor: this.activeWaitingFor }),
       },
       steps: this.activeSteps,
     }));

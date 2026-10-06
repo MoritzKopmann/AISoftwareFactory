@@ -29,6 +29,14 @@ function toTicketRunResponse({ availability, activeRun, lastRun }: TicketRun): T
             id: activeRun.id,
             startedAt: activeRun.startedAt,
             steps: [...activeRun.steps],
+            ...(activeRun.waitingFor === undefined
+              ? {}
+              : {
+                  waitingFor: {
+                    kind: activeRun.waitingFor.kind,
+                    request: activeRun.waitingFor.request,
+                  },
+                }),
           },
         }),
     ...(lastRun === undefined ? {} : { lastRun }),

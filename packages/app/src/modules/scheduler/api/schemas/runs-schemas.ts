@@ -63,7 +63,12 @@ export type CheckpointAnswerRequest = z.infer<typeof checkpointAnswerRequestSche
 
 export const ticketRunResponseSchema = z.object({
   availability: runAvailabilityResponseSchema,
-  activeRun: startedRunResponseSchema.extend({ steps: z.array(runStepResponseSchema) }).optional(),
+  activeRun: startedRunResponseSchema
+    .extend({
+      steps: z.array(runStepResponseSchema),
+      waitingFor: z.object({ kind: z.literal('checkpoint'), request: z.string() }).optional(),
+    })
+    .optional(),
   lastRun: startedRunResponseSchema
     .extend({ endedAt: z.string(), ending: runEndingResponseSchema })
     .optional(),

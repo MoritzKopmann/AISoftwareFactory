@@ -121,6 +121,40 @@ describe('createSchedulerModule', () => {
     expect(await response.json()).toEqual({ message: 'A run is already active' });
   });
 
+  it('should answer a live-waiting run through scheduler.answer like the checkpoint route', async () => {
+    runner.record = {
+      id: 'r1',
+      projectId: 'moritz/aisf',
+      ticketNumber: 7,
+      startedAt: '2026-09-29T09:00:00.000Z',
+      waitingFor: { kind: 'checkpoint', request: 'Pick A or B' },
+    };
+    runner.latest = { id: 'r1', startedAt: '2026-09-29T09:00:00.000Z' };
+    ticketStatusWrites.liveStatus = 'waiting';
+
+    const started = await scheduler.answer('r1', { kind: 'checkpoint', text: 'A' });
+
+    expect(started).toEqual({ id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' });
+    expect(ticketStatusWrites.calls).toContain('setStatus #7 -> in-progress');
+    expect(runner.calls).toContain(
+      `answer r1 ${JSON.stringify({ kind: 'checkpoint', text: 'A' })}`,
+    );
+  });
+
+  it('should mark the ticket waiting when run.waiting is emitted after start', async () => {
+    scheduler.start();
+
+    bus.emit('run.waiting', {
+      runId: 'r1',
+      projectId: 'moritz/aisf',
+      ticketNumber: 7,
+      wait: { kind: 'checkpoint', request: 'Pick A or B' },
+    });
+
+    await vi.waitFor(() => expect(ticketStatusWrites.calls).toContain('setStatus #7 -> waiting'));
+    expect(runner.calls).not.toContain('settle r1');
+  });
+
   describe('POST /runs/:runId/permission', () => {
     function answerWith(ticketStatusWrites: FakeTicketStatusWrites): SchedulerModule {
       runner.record = {

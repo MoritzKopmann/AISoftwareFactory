@@ -2,7 +2,7 @@ import type { RunEndTransition } from '../types/run-end-transition.js';
 import type { RunEnding } from '../types/run-ending.js';
 import type { TicketStatus } from '../../../../../shared/ticket-status/ticket-status.js';
 
-const runningStatuses: ReadonlyArray<TicketStatus> = ['ready', 'in-progress'];
+const runningStatuses: ReadonlyArray<TicketStatus> = ['ready', 'in-progress', 'waiting'];
 
 export function decideRunEndTransition(
   ending: RunEnding,
@@ -15,6 +15,9 @@ export function decideRunEndTransition(
     return { kind: 'none' };
   }
   if (ending.kind === 'checkpoint') {
+    if (liveStatus === 'waiting') {
+      return { kind: 'none' };
+    }
     return {
       kind: 'transition',
       to: 'waiting',

@@ -40,6 +40,25 @@ describe('ReadTicketRunUseCase', () => {
     });
   });
 
+  it('should copy waitingFor when the active run waits live', async () => {
+    const runner = new FakeRunnerPort();
+    runner.activeTicketNumbers = [138];
+    runner.activeWaitingFor = { kind: 'checkpoint', request: 'Pick A or B' };
+
+    const ticketRun = await buildUseCase(runner).execute('moritz/aisf', 138);
+
+    expect(ticketRun.activeRun?.waitingFor).toEqual({ kind: 'checkpoint', request: 'Pick A or B' });
+  });
+
+  it('should leave out waitingFor when the active run is working', async () => {
+    const runner = new FakeRunnerPort();
+    runner.activeTicketNumbers = [138];
+
+    const ticketRun = await buildUseCase(runner).execute('moritz/aisf', 138);
+
+    expect(ticketRun.activeRun).not.toHaveProperty('waitingFor');
+  });
+
   it('should leave out the active run when the active run is another ticket', async () => {
     const runner = new FakeRunnerPort();
     runner.activeTicketNumbers = [42];

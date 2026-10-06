@@ -5,10 +5,13 @@ import type { Logger } from '../../shared/logger/create-logger.js';
 import { createRunAnswerRoutes } from './api/routes/create-run-answer-routes.js';
 import { createRunRoutes } from './api/routes/create-run-routes.js';
 import { subscribeToRunFinished } from './api/subscriptions/subscribe-to-run-finished.js';
+import { subscribeToRunWaiting } from './api/subscriptions/subscribe-to-run-waiting.js';
 import { subscribeToSnapshotChanged } from './api/subscriptions/subscribe-to-snapshot-changed.js';
 import { RunNotAnswerableError } from './logic/errors/run-not-answerable-error.js';
 import { RunAlreadyActiveError } from './logic/errors/run-already-active-error.js';
 import { RunNotAvailableError } from './logic/errors/run-not-available-error.js';
+import type { RunAnswer } from './logic/domain/types/run-answer.js';
+import type { StartedRun } from './logic/domain/types/started-run.js';
 import type { ProjectLookup } from './logic/ports/project-lookup.js';
 import type { PullRequestMerges } from './logic/ports/pull-request-merges.js';
 import type { ReviewedTicketLookup } from './logic/ports/reviewed-ticket-lookup.js';
@@ -23,9 +26,11 @@ import { ReadTicketRunUseCase } from './logic/use-cases/read-ticket-run-use-case
 import { ReadTicketSessionLogUseCase } from './logic/use-cases/read-ticket-session-log-use-case.js';
 import { ResetTicketUseCase } from './logic/use-cases/reset-ticket-use-case.js';
 import { SettleFinishedRunUseCase } from './logic/use-cases/settle-finished-run-use-case.js';
+import { SettleWaitingRunUseCase } from './logic/use-cases/settle-waiting-run-use-case.js';
 import { StartTicketRunUseCase } from './logic/use-cases/start-ticket-run-use-case.js';
 
 export type { PermissionDecision } from './logic/domain/types/permission-decision.js';
+export type { RunAnswer } from './logic/domain/types/run-answer.js';
 export type { RunRecord } from './logic/domain/types/run-record.js';
 export type { RunsBlocked } from './logic/domain/types/runs-blocked.js';
 export type { SchedulableTicket } from './logic/domain/types/schedulable-ticket.js';
@@ -48,6 +53,7 @@ export type SchedulerModuleDependencies = {
 
 export type SchedulerModule = {
   readonly start: () => void;
+  readonly answer: (runId: string, answer: RunAnswer) => Promise<StartedRun>;
   readonly routes: Hono;
 };
 
@@ -89,6 +95,12 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
     events,
     logger,
   });
+  const settleWaitingRun = new SettleWaitingRunUseCase({
+    ticketStatusWrites,
+    projectLookup,
+    events,
+    logger,
+  });
   const answerRun = new AnswerRunUseCase({
     ticketStatusWrites,
     runner,
@@ -122,8 +134,10 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
           answer: (runId, answer) => answerRun.execute(runId, answer),
         }),
       ),
+    answer: (runId, answer) => answerRun.execute(runId, answer),
     start: () => {
       subscribeToRunFinished(subscriber, settleFinishedRun, logger);
+      subscribeToRunWaiting(subscriber, settleWaitingRun, logger);
       subscribeToSnapshotChanged(subscriber, mergeApprovedPullRequests, logger);
     },
   };

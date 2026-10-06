@@ -113,4 +113,28 @@ describe('decideRunEndTransition', () => {
       },
     );
   });
+
+  describe('waiting ticket', () => {
+    it('should move the ticket to stuck when a waiting run was stopped', () => {
+      expect(decideRunEndTransition({ kind: 'stopped' }, 'waiting')).toEqual({
+        kind: 'transition',
+        to: 'stuck',
+        comment: 'The run was stopped',
+      });
+    });
+
+    it('should move the ticket to stuck when a waiting run crashed', () => {
+      expect(decideRunEndTransition({ kind: 'crashed', reason: 'x' }, 'waiting')).toEqual({
+        kind: 'transition',
+        to: 'stuck',
+        comment: 'The run crashed: x',
+      });
+    });
+
+    it('should write nothing when a waiting run parked', () => {
+      expect(decideRunEndTransition({ kind: 'parked', blockerNumber: 3 }, 'waiting')).toEqual({
+        kind: 'none',
+      });
+    });
+  });
 });
