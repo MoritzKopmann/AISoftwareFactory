@@ -1,5 +1,6 @@
 @import './styles/round.css';
 @import './styles/action-bar.css';
+@import './styles/confirm.css';
 
 @font-face {
   font-family: 'Atkinson Hyperlegible Next';
