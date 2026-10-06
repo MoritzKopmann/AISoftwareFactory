@@ -27,15 +27,21 @@ export function RunPanel({ description, onStop }: RunPanelProps) {
       </section>
     );
   }
-  const { startedLabel, stop, banner, steps, emptyMessage } = description;
+  const { waiting, startedLabel, stop, banner, steps, emptyMessage } = description;
   return (
     <section className="runpanel" aria-label="Run">
       <div className="head">
         <span className="lead">
-          <span className="shape s-flow pulse" aria-hidden="true">
-            ●
-          </span>
-          Running
+          {waiting ? (
+            <span className="shape s-hitl" aria-hidden="true">
+              ●
+            </span>
+          ) : (
+            <span className="shape s-flow pulse" aria-hidden="true">
+              ●
+            </span>
+          )}
+          {waiting ? 'Waiting for you' : 'Running'}
         </span>
         <span className="sm">{startedLabel}</span>
         <span className="grow" />

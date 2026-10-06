@@ -48,6 +48,7 @@ describe('describeRunPanel', () => {
 
     expect(describeRunPanel(input({ response: starting }), now)).toEqual({
       kind: 'live',
+      waiting: false,
       startedLabel: 'Started just now',
       stop: { label: 'Stop', pressable: true },
       steps: [],
@@ -198,3 +199,28 @@ function ended(
 ): TicketRunResponse {
   return { ...idle, lastRun: { id: 'run-1', startedAt, endedAt, ending } };
 }
+
+describe('describeRunPanel for a waiting run', () => {
+  const waitingResponse: TicketRunResponse = {
+    ...idle,
+    activeRun: {
+      id: 'run-1',
+      startedAt: localTime(9, 41),
+      steps: [],
+      waitingFor: { kind: 'checkpoint', request: 'Pick A or B' },
+    },
+  };
+
+  it('should describe the live run as waiting with Stop pressable when the run waits', () => {
+    expect(describeRunPanel(input({ response: waitingResponse }), now)).toMatchObject({
+      kind: 'live',
+      waiting: true,
+      stop: { label: 'Stop', pressable: true },
+    });
+  });
+
+  it('should describe the live run as not waiting when it works', () => {
+    const working = live(localTime(9, 41), []);
+    expect(describeRunPanel(input({ response: working }), now)).toMatchObject({ waiting: false });
+  });
+});

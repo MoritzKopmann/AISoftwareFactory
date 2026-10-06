@@ -25,6 +25,7 @@ export type RunPanelStep = {
 
 type LiveRunDescription = {
   readonly kind: 'live';
+  readonly waiting: boolean;
   readonly startedLabel: string;
   readonly stop: {
     readonly label: string;
@@ -53,6 +54,7 @@ function describeLiveRun(
   const lastSteps = activeRun.steps.slice(-shownStepCount);
   return {
     kind: 'live',
+    waiting: activeRun.waitingFor !== undefined,
     startedLabel: `Started ${describeTimeAgo(activeRun.startedAt, now)}`,
     stop: input.stopping
       ? { label: 'Stopping…', pressable: false, announcement: 'Stopping the run' }
