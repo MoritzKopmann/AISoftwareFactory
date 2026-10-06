@@ -10,7 +10,12 @@ import {
   type PermissionDecision,
 } from './describe-permission-prompt.js';
 import { describeResetAction, settleResetState, type ResetState } from './describe-reset-action.js';
-import { describeRunBar, settleStartState, type StartState } from './describe-run-bar.js';
+import {
+  describeRunBar,
+  settleStartState,
+  type RunSkill,
+  type StartState,
+} from './describe-run-bar.js';
 import { describeRunPanel } from './describe-run-panel.js';
 import { editCheckpointDraft } from './edit-checkpoint-draft.js';
 import { PermissionPrompt } from './permission-prompt.js';
@@ -27,10 +32,17 @@ type RunSectionProps = {
   readonly projectId: string;
   readonly number: number;
   readonly ticketStatus: TicketStatusResponse;
+  readonly runSkill: RunSkill;
   readonly onTicketStale: () => void;
 };
 
-export function RunSection({ projectId, number, ticketStatus, onTicketStale }: RunSectionProps) {
+export function RunSection({
+  projectId,
+  number,
+  ticketStatus,
+  runSkill,
+  onTicketStale,
+}: RunSectionProps) {
   const ticketRun = useTicketRun(projectId, number);
   const [start, setStart] = useState<StartState>({ kind: 'idle' });
   const [stoppingRunId, setStoppingRunId] = useState<string | undefined>(undefined);
@@ -112,7 +124,7 @@ export function RunSection({ projectId, number, ticketStatus, onTicketStale }: R
   return (
     <>
       <RunBar
-        description={describeRunBar(ticketRun.response, ticketStatus, start, number)}
+        description={describeRunBar(ticketRun.response, ticketStatus, start, number, runSkill)}
         onRun={() => void run()}
       />
       <PermissionPrompt

@@ -359,6 +359,10 @@ a.ext::after {
   border-color: var(--hitl);
 }
 
+.chip.spike {
+  border-color: var(--accent);
+}
+
 .chip.flow {
   border-color: var(--info);
 }

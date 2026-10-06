@@ -19,6 +19,7 @@ describe('TicketPageView', () => {
           statusMark: { shape: '○', tone: 'neutral', pulses: false },
           url: 'https://github.com/o/n/issues/56',
           body: 'Some body',
+          runSkill: 'implement-ticket',
           pullRequests: [],
         }}
         onRetry={ignore}

@@ -6,6 +6,7 @@ import type {
 } from '@aisf/app/api-schemas/tickets-schemas.js';
 import { describeTicketStatusMark, type StatusMark } from '../board/describe-ticket-status-mark.js';
 import { ticketStatusLabel } from '../board/ticket-status-labels.js';
+import type { RunSkill } from './describe-run-bar.js';
 
 export type TicketPageOutcome =
   | { readonly kind: 'loading' }
@@ -31,6 +32,7 @@ export type TicketPageDescription =
       readonly statusMark: StatusMark;
       readonly url: string;
       readonly body: string;
+      readonly runSkill: RunSkill;
       readonly parent?: {
         readonly href: string;
         readonly numberLabel: string;
@@ -53,6 +55,8 @@ function describeLoadedTicket(ticket: TicketResponse, projectId: string): Ticket
     statusMark: describeTicketStatusMark(ticket.status),
     url: ticket.url,
     body: ticket.body,
+    // Mirrors the runner's runStageFor: a spike ticket runs aisf:spike.
+    runSkill: ticket.types.includes('spike') ? 'spike' : 'implement-ticket',
     ...(ticket.parent === undefined
       ? {}
       : {

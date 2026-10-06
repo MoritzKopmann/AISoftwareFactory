@@ -90,6 +90,7 @@ describe('describeTicketPage', () => {
       statusMark: { shape: '✓', tone: 'done', pulses: false },
       url: 'https://github.com/MoritzKopmann/postkarte/issues/36',
       body: '',
+      runSkill: 'implement-ticket',
       pullRequests: [],
     });
   });
@@ -99,6 +100,22 @@ describe('describeTicketPage', () => {
 
     expect(describeTicketPage(answered(ticket), projectId, 1, now)).toMatchObject({
       body: '## Spec\n\nText',
+    });
+  });
+
+  it('should run the spike skill when the ticket types include spike', () => {
+    const ticket = buildTicketResponse({ types: ['spike'] });
+
+    expect(describeTicketPage(answered(ticket), projectId, 1, now)).toMatchObject({
+      runSkill: 'spike',
+    });
+  });
+
+  it('should run implement-ticket when the ticket types do not include spike', () => {
+    const ticket = buildTicketResponse({ types: ['enhancement'] });
+
+    expect(describeTicketPage(answered(ticket), projectId, 1, now)).toMatchObject({
+      runSkill: 'implement-ticket',
     });
   });
 

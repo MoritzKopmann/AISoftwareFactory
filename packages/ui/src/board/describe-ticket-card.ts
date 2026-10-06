@@ -9,6 +9,7 @@ export type TicketCardDescription = {
   readonly title: string;
   readonly parentTitle?: string;
   readonly hitl: boolean;
+  readonly spike: boolean;
   readonly blockerLabels: ReadonlyArray<string>;
   readonly conflictLabels: ReadonlyArray<string>;
   readonly pullRequestChips: ReadonlyArray<{ readonly label: string }>;
@@ -50,6 +51,7 @@ export function describeTicketCard(
     title: ticket.title,
     ...(ticket.parent === undefined ? {} : { parentTitle: ticket.parent.title }),
     hitl: ticket.hitl,
+    spike: ticket.types.includes('spike'),
     blockerLabels,
     conflictLabels: ticket.conflictingStatuses.map((status) =>
       ticketStatusLabel(status).toLowerCase(),

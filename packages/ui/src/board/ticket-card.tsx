@@ -32,6 +32,7 @@ export function TicketCard({
   title,
   parentTitle,
   hitl,
+  spike,
   blockerLabels,
   conflictLabels,
   pullRequestChips,
@@ -41,6 +42,7 @@ export function TicketCard({
     runMarker !== undefined ||
     conflictLabels.length > 0 ||
     hitl ||
+    spike ||
     blockerLabels.length > 0 ||
     pullRequestChips.length > 0;
   return (
@@ -55,6 +57,7 @@ export function TicketCard({
           {runMarker !== undefined && <RunMarkerChip marker={runMarker} />}
           {conflictLabels.length > 0 && <span>{conflictLabels.join(' · ')}</span>}
           {hitl && <span className="chip hitl">HITL</span>}
+          {spike && <span className="chip spike">SPIKE</span>}
           {blockerLabels.map((label) => (
             <span key={label}>{label}</span>
           ))}
