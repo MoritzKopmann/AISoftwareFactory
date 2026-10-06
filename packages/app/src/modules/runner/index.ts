@@ -18,7 +18,7 @@ import { RunNotResumableError } from './logic/errors/run-not-resumable-error.js'
 import { RunTargetNotFoundError } from './logic/errors/run-target-not-found-error.js';
 import { WorktreeSetupFailedError } from './logic/errors/worktree-setup-failed-error.js';
 import type { AgentSessions } from './logic/ports/agent-sessions.js';
-import type { Identifiers } from './logic/ports/identifiers.js';
+import type { Identifiers } from '../../shared/identifiers/identifiers.js';
 import type { RunAnswerWaits } from './logic/ports/run-answer-waits.js';
 import type { RecentRunSteps } from './logic/ports/recent-run-steps.js';
 import type { RunRepository } from './logic/ports/run-repository.js';

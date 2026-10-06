@@ -85,4 +85,22 @@ export const migrations: ReadonlyArray<Migration> = [
       ALTER TABLE runs ADD COLUMN checkpoint_artifact_id TEXT;
     `,
   },
+  {
+    version: 7,
+    name: 'create-artifacts',
+    sql: `
+      CREATE TABLE artifacts (
+        token TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        ticket_number INTEGER NOT NULL,
+        artifact_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        directory TEXT NOT NULL,
+        run_id TEXT NOT NULL,
+        version INTEGER NOT NULL,
+        published_at TEXT NOT NULL,
+        UNIQUE (project_id, ticket_number, artifact_id)
+      );
+    `,
+  },
 ];

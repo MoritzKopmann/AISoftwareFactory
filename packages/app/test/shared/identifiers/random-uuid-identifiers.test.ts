@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RandomUuidIdentifiers } from '../../../../../src/modules/runner/infra/integrations/random-uuid-identifiers.js';
+import { RandomUuidIdentifiers } from '../../../src/shared/identifiers/random-uuid-identifiers.js';
 
 describe('RandomUuidIdentifiers', () => {
   it('should return a different uuid on every call', () => {

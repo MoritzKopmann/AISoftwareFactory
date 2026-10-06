@@ -5,6 +5,7 @@ import { relative } from 'node:path';
 export type AppOptions = {
   readonly staticDirectory: string;
   readonly kitRoutes: Hono;
+  readonly pageRoutes: Hono;
   readonly apiRoutes: ReadonlyArray<Hono>;
 };
 
@@ -14,7 +15,8 @@ export function createApp(options: AppOptions): Hono {
 
   const app = new Hono()
     .get('/health', (context) => context.json({ status: 'ok' }))
-    .route('/aisf', options.kitRoutes);
+    .route('/aisf', options.kitRoutes)
+    .route('/a', options.pageRoutes);
   for (const routes of options.apiRoutes) {
     app.route('/api', routes);
   }

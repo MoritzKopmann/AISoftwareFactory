@@ -7,7 +7,7 @@ import type { RunAnswer } from '../domain/types/run-answer.js';
 import type { SessionLaunch } from '../domain/types/session-launch.js';
 import type { Run } from '../domain/types/run.js';
 import { RunNotResumableError } from '../errors/run-not-resumable-error.js';
-import type { Identifiers } from '../ports/identifiers.js';
+import type { Identifiers } from '../../../../shared/identifiers/identifiers.js';
 import type { RunRepository } from '../ports/run-repository.js';
 
 export type ResumeRunDependencies = {
