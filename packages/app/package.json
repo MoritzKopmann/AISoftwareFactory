@@ -11,7 +11,8 @@
     "./api-schemas/tickets-schemas.js": "./src/modules/watcher/api/schemas/tickets-schemas.ts",
     "./api-schemas/runs-schemas.js": "./src/modules/scheduler/api/schemas/runs-schemas.ts",
     "./api-schemas/findings-schemas.js": "./src/modules/findings/api/schemas/findings-schemas.ts",
-    "./api-schemas/artifacts-schemas.js": "./src/modules/bridge/api/schemas/artifacts-schemas.ts"
+    "./api-schemas/artifacts-schemas.js": "./src/modules/bridge/api/schemas/artifacts-schemas.ts",
+    "./api-schemas/page-events-schemas.js": "./src/modules/bridge/api/schemas/page-events-schemas.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.kit.json",

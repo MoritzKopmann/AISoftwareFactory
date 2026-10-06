@@ -102,6 +102,43 @@
     if (lastEvent !== undefined) listener(lastEvent);
   }
 
-  /** @type {any} */ (window).aisf = { state, on };
+  /**
+   * Internal, called by `send` on a 409 closed. Closes the page like a `closed`
+   * poll would, without waiting for the next poll.
+   */
+  function markClosed() {
+    /** @type {StatusEvent} */
+    const event = { status: 'closed', version: lastEvent?.version ?? 0 };
+    lastEvent = event;
+    showStatus(event);
+    for (const listener of listeners) listener(event);
+  }
+
+  /**
+   * For page code: sends the human's Submit, Confirm or Reopen to the waiting
+   * session. Resolves `{ok: true}` once delivered, or `{ok: false, status}` when
+   * the page is `busy` (keep the draft, retry) or `closed`. Rejects on any other
+   * failure.
+   * @param {{ kind: 'submit' | 'confirm' | 'reopen', round: number, payload: unknown }} event
+   * @returns {Promise<{ ok: true } | { ok: false, status: 'busy' | 'closed' }>}
+   */
+  async function send(event) {
+    const response = await fetch('./_events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind: event.kind, round: event.round, payload: event.payload }),
+    });
+    if (response.ok) {
+      return { ok: true };
+    }
+    if (response.status === 409) {
+      const { status } = /** @type {{ status: 'busy' | 'closed' }} */ (await response.json());
+      if (status === 'closed') markClosed();
+      return { ok: false, status };
+    }
+    throw new Error(`Sending the event failed: ${response.status}`);
+  }
+
+  /** @type {any} */ (window).aisf = { state, on, send };
   void poll();
 })();

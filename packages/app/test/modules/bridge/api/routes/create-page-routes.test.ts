@@ -5,24 +5,31 @@ import type { DatabaseSync } from 'node:sqlite';
 import { Hono } from 'hono';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createPageRoutes } from '../../../../../src/modules/bridge/api/routes/create-page-routes.js';
+import { PageBusyError } from '../../../../../src/modules/bridge/logic/errors/page-busy-error.js';
 import { FileSystemArtifactFiles } from '../../../../../src/modules/bridge/infra/integrations/file-system-artifact-files.js';
 import { SqliteArtifactRepository } from '../../../../../src/modules/bridge/infra/repositories/sqlite-artifact-repository.js';
 import type { TicketLatestRun } from '../../../../../src/modules/bridge/logic/domain/types/ticket-latest-run.js';
 import { ReadPageAssetUseCase } from '../../../../../src/modules/bridge/logic/use-cases/read-page-asset-use-case.js';
 import { ReadPageStateUseCase } from '../../../../../src/modules/bridge/logic/use-cases/read-page-state-use-case.js';
 import { ReadPageStatusUseCase } from '../../../../../src/modules/bridge/logic/use-cases/read-page-status-use-case.js';
+import { SubmitPageEventUseCase } from '../../../../../src/modules/bridge/logic/use-cases/submit-page-event-use-case.js';
 import { ReadPageUseCase } from '../../../../../src/modules/bridge/logic/use-cases/read-page-use-case.js';
 import { WritePageStateUseCase } from '../../../../../src/modules/bridge/logic/use-cases/write-page-state-use-case.js';
 import { migrations } from '../../../../../src/shared/db/migrations.js';
 import { openDatabase } from '../../../../../src/shared/db/open-database.js';
 import { runMigrations } from '../../../../../src/shared/db/run-migrations.js';
+import { FakeCheckpointAnswers } from '../../fakes/fake-checkpoint-answers.js';
 import { FakeTicketRunLookup } from '../../fakes/fake-ticket-run-lookup.js';
 
 const host = '127.0.0.1:4000';
 const origin = 'http://127.0.0.1:4000';
 const validHeaders = { Host: host, Origin: origin };
 
-function buildApp(database: DatabaseSync, ticketRunLookup: FakeTicketRunLookup): Hono {
+function buildApp(
+  database: DatabaseSync,
+  ticketRunLookup: FakeTicketRunLookup,
+  checkpointAnswers: FakeCheckpointAnswers,
+): Hono {
   const artifactRepository = new SqliteArtifactRepository(database);
   const artifactFiles = new FileSystemArtifactFiles();
   return new Hono().route(
@@ -33,6 +40,11 @@ function buildApp(database: DatabaseSync, ticketRunLookup: FakeTicketRunLookup):
       readStatus: new ReadPageStatusUseCase({ artifactRepository, ticketRunLookup }),
       readState: new ReadPageStateUseCase({ artifactRepository, artifactFiles }),
       writeState: new WritePageStateUseCase({ artifactRepository, artifactFiles }),
+      submitEvent: new SubmitPageEventUseCase({
+        artifactRepository,
+        ticketRunLookup,
+        checkpointAnswers,
+      }),
     }),
   );
 }
@@ -42,6 +54,7 @@ describe('createPageRoutes', () => {
   let directory: string;
   let database: DatabaseSync;
   let ticketRunLookup: FakeTicketRunLookup;
+  let checkpointAnswers: FakeCheckpointAnswers;
   let app: Hono;
 
   beforeEach(async () => {
@@ -68,7 +81,8 @@ describe('createPageRoutes', () => {
       publishedAt: '2026-10-06T10:00:00.000Z',
     });
     ticketRunLookup = new FakeTicketRunLookup();
-    app = buildApp(database, ticketRunLookup);
+    checkpointAnswers = new FakeCheckpointAnswers();
+    app = buildApp(database, ticketRunLookup, checkpointAnswers);
   });
 
   afterEach(() => {
@@ -236,10 +250,144 @@ describe('createPageRoutes', () => {
         body: '{"answers":{"q1":"yes"}}',
       });
 
-      const restarted = buildApp(database, ticketRunLookup);
+      const restarted = buildApp(database, ticketRunLookup, checkpointAnswers);
       const response = await restarted.request('/a/T/_state', { headers: { Host: host } });
 
       expect(await response.text()).toBe('{"answers":{"q1":"yes"}}');
+    });
+  });
+
+  describe('POST /:token/_events', () => {
+    const waiting: TicketLatestRun = {
+      id: 'r1',
+      state: 'running',
+      waitingFor: { artifactId: 'plan' },
+    };
+
+    function post(body: string, headers: Record<string, string> = validHeaders, token = 'T') {
+      return app.request(`/a/${token}/_events`, { method: 'POST', headers, body });
+    }
+
+    const submit = JSON.stringify({ kind: 'submit', round: 2, payload: { a: 1 } });
+
+    it('should answer 201 and deliver one tagged event when the run waits on the page', async () => {
+      ticketRunLookup.latestRun = waiting;
+
+      const response = await post(submit);
+
+      expect(response.status).toBe(201);
+      expect(checkpointAnswers.calls).toEqual([
+        { runId: 'r1', text: '<aisf-event artifact=plan kind=submit round=2>{"a":1}</aisf-event>' },
+      ]);
+    });
+
+    it('should deliver a confirm with its own kind when the run waits on the page', async () => {
+      ticketRunLookup.latestRun = waiting;
+
+      const response = await post(
+        JSON.stringify({ kind: 'confirm', round: 3, payload: { confirmed: true } }),
+      );
+
+      expect(response.status).toBe(201);
+      expect(checkpointAnswers.calls).toEqual([
+        {
+          runId: 'r1',
+          text: '<aisf-event artifact=plan kind=confirm round=3>{"confirmed":true}</aisf-event>',
+        },
+      ]);
+    });
+
+    it('should answer 201 when the run ended at a checkpoint on the page', async () => {
+      ticketRunLookup.latestRun = {
+        id: 'r1',
+        state: 'ended',
+        ending: { kind: 'checkpoint', artifactId: 'plan' },
+      };
+
+      expect((await post(submit)).status).toBe(201);
+      expect(checkpointAnswers.calls).toHaveLength(1);
+    });
+
+    it('should answer 409 closed and deliver nothing when the run ended other than at a checkpoint', async () => {
+      ticketRunLookup.latestRun = { id: 'r1', state: 'ended', ending: { kind: 'done' } };
+
+      const response = await post(submit);
+
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ status: 'closed' });
+      expect(checkpointAnswers.calls).toEqual([]);
+    });
+
+    it('should answer 409 closed when the same submit is posted again after delivery', async () => {
+      ticketRunLookup.latestRun = waiting;
+      await post(submit);
+      ticketRunLookup.latestRun = { id: 'r1', state: 'running' };
+
+      const response = await post(submit);
+
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ status: 'closed' });
+      expect(checkpointAnswers.calls).toHaveLength(1);
+    });
+
+    it('should answer 409 busy and deliver nothing when another run is running', async () => {
+      ticketRunLookup.latestRun = { id: 'r2', state: 'running' };
+
+      const response = await post(submit);
+
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ status: 'busy' });
+      expect(checkpointAnswers.calls).toEqual([]);
+    });
+
+    it('should answer 409 busy when the scheduler refuses the answer', async () => {
+      ticketRunLookup.latestRun = waiting;
+      checkpointAnswers.failure = new PageBusyError('refused');
+
+      const response = await post(submit);
+
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ status: 'busy' });
+    });
+
+    it('should answer 413 and deliver nothing when the body is over 32 KB', async () => {
+      ticketRunLookup.latestRun = waiting;
+
+      const response = await post(
+        JSON.stringify({ kind: 'submit', round: 1, payload: 'x'.repeat(32 * 1024) }),
+      );
+
+      expect(response.status).toBe(413);
+      expect(checkpointAnswers.calls).toEqual([]);
+    });
+
+    it.each([
+      ['no round', '{"kind":"submit","payload":1}'],
+      ['a non-integer round', '{"kind":"submit","round":1.5,"payload":1}'],
+      ['a round below 1', '{"kind":"submit","round":0,"payload":1}'],
+      ['another kind', '{"kind":"delete","round":1,"payload":1}'],
+      ['no payload', '{"kind":"submit","round":1}'],
+      ['no JSON', 'not json'],
+    ])('should answer 400 and deliver nothing when the body has %s', async (_name, body) => {
+      ticketRunLookup.latestRun = waiting;
+
+      const response = await post(body);
+
+      expect(response.status).toBe(400);
+      expect(checkpointAnswers.calls).toEqual([]);
+    });
+
+    it('should answer 404 when the token is unknown', async () => {
+      expect((await post(submit, validHeaders, 'unknown-token')).status).toBe(404);
+    });
+
+    it('should answer 403 and deliver nothing when the Origin is foreign', async () => {
+      ticketRunLookup.latestRun = waiting;
+
+      const response = await post(submit, { Host: host, Origin: 'https://evil.example' });
+
+      expect(response.status).toBe(403);
+      expect(checkpointAnswers.calls).toEqual([]);
     });
   });
 
