@@ -1,0 +1,259 @@
+aisf-question {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+
+aisf-question > p {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+/* Leaves room for the answered mark. */
+.aisf-question-heading {
+  padding-right: 96px;
+  line-height: 1.35;
+}
+
+aisf-question[answered]::after,
+.aisf-suggested-tag {
+  font: 500 11px/18px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: var(--label-spacing);
+  white-space: nowrap;
+}
+
+/* A word, not only a colour. */
+aisf-question[answered]::after {
+  content: '✓ Answered';
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  color: var(--ok);
+}
+
+.aisf-question-assumes,
+.aisf-summary-assumes {
+  color: var(--muted);
+  font: 400 12px/1.4 var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.aisf-choices {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.aisf-choices[hidden] {
+  display: none;
+}
+
+.aisf-card-radio,
+.aisf-other-radio,
+.aisf-discuss-radio {
+  appearance: none;
+  flex: none;
+  display: grid;
+  place-content: center;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  background: var(--surface);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+:is(.aisf-card-radio, .aisf-other-radio, .aisf-discuss-radio):checked {
+  border-color: var(--accent);
+}
+
+:is(.aisf-card-radio, .aisf-other-radio, .aisf-discuss-radio):checked::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+aisf-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+aisf-card:hover {
+  border-color: var(--border-strong);
+}
+
+/* The whole card shows focus, not the small radio. */
+aisf-card:has(.aisf-card-radio:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+aisf-card .aisf-card-radio:focus-visible {
+  outline: none;
+}
+
+aisf-card[selected] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.aisf-card-choice {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-height: 44px;
+  padding: 11px 12px;
+  cursor: pointer;
+}
+
+.aisf-card-body {
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.aisf-suggested-tag {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 12px 12px 0 0;
+  padding: 0 6px;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.aisf-card-why {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin-top: -6px;
+  padding: 0 12px 11px 40px;
+  color: var(--muted);
+  font-size: var(--text-size-sm);
+  line-height: var(--line-sm);
+}
+
+.aisf-card-why::before {
+  content: 'why · ';
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: var(--label-spacing);
+}
+
+/* Other and Discuss are dashed, so the human's own answer reads apart from the proposals. */
+.aisf-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: center;
+  min-width: 0;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.aisf-choice:has(input[type='radio']:checked) {
+  background: var(--accent-soft);
+  border-style: solid;
+  border-color: var(--accent);
+}
+
+.aisf-choice-label {
+  font-weight: 600;
+}
+
+.aisf-other-text {
+  flex: 1 1 200px;
+  width: auto;
+  min-height: 32px;
+}
+
+.aisf-discuss-note {
+  flex: 1 1 100%;
+  min-height: 72px;
+  resize: vertical;
+}
+
+.aisf-choice-discuss:not(:has(.aisf-discuss-radio:checked)) .aisf-discuss-note {
+  display: none;
+}
+
+/* Locked: the element disables every input while saving, busy or closed. */
+.aisf-choices:has(input:disabled) {
+  opacity: 0.6;
+}
+
+.aisf-choices:has(input:disabled) :is(.aisf-card-choice, .aisf-choice, input) {
+  cursor: not-allowed;
+}
+
+aisf-round[frozen] aisf-question {
+  gap: 0;
+  padding: 10px 14px;
+  background: transparent;
+  border-color: var(--border);
+}
+
+aisf-round[frozen] aisf-question > :not(.aisf-frozen-summary),
+aisf-round[frozen] aisf-question::after {
+  display: none;
+}
+
+.aisf-summary-decision {
+  flex: 1 1 220px;
+  min-width: 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.aisf-summary-answer {
+  flex: 2 1 260px;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.aisf-summary-answer::before {
+  content: '→ ';
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.aisf-summary-assumes {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+@media (max-width: 520px) {
+  aisf-question {
+    padding: 12px;
+  }
+
+  .aisf-question-heading {
+    padding-right: 0;
+  }
+
+  /* Above the heading: no room beside it. */
+  aisf-question[answered]::after {
+    position: static;
+    order: -1;
+  }
+}
