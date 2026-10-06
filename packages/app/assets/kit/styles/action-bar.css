@@ -1,0 +1,78 @@
+/* Sticky inside the round, so it stays at the viewport bottom yet never covers the last card. */
+.aisf-action-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 -6px 12px -8px color-mix(in srgb, var(--text) 30%, transparent);
+}
+
+.aisf-answered-count {
+  margin-right: auto;
+  color: var(--muted);
+  font-family: var(--label-font);
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  line-height: 18px;
+  text-transform: var(--label-transform);
+  letter-spacing: var(--label-spacing);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.aisf-answered-count::after {
+  content: ' answered';
+}
+
+aisf-round[saving] .aisf-answered-count {
+  color: var(--accent);
+}
+
+aisf-round[saving] .aisf-answered-count::after {
+  content: ' · sending…';
+}
+
+aisf-round[saving] .aisf-action-bar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent) 0 0 / 40% 100%
+    no-repeat;
+  animation: aisf-sending 1.2s linear infinite;
+}
+
+@keyframes aisf-sending {
+  from {
+    background-position: -40% 0;
+  }
+  to {
+    background-position: 140% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  aisf-round[saving] .aisf-action-bar::before {
+    animation: none;
+    background-size: 100% 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .aisf-answered-count {
+    flex: 1 1 100%;
+  }
+
+  .aisf-action-bar > button {
+    flex: 1 1 auto;
+  }
+}
