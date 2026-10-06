@@ -31,6 +31,9 @@ export class ReadTicketRunUseCase {
               id: activeRun.run.id,
               startedAt: activeRun.run.startedAt,
               steps: activeRun.steps,
+              ...(activeRun.run.waitingFor === undefined
+                ? {}
+                : { waitingFor: activeRun.run.waitingFor }),
             },
           }
         : {}),

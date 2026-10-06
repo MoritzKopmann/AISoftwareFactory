@@ -62,6 +62,96 @@ describe('AnswerRunUseCase', () => {
     expect(runner.calls).toContain(`answer run-1 ${JSON.stringify(checkpointAnswer)}`);
   });
 
+  describe('live wait', () => {
+    const liveRun: RunRecord = {
+      id: 'run-1',
+      projectId: 'moritz/aisf',
+      ticketNumber: 147,
+      startedAt: '2026-09-29T09:00:00.000Z',
+      waitingFor: { kind: 'checkpoint', request: 'Pick A or B' },
+    };
+
+    it('should set in-progress, announce it and return the run runner.answer returned when the run waits live', async () => {
+      const { useCase, ticketStatusWrites, runner, events } = buildSubject(undefined, liveRun);
+
+      const result = await useCase.execute('run-1', checkpointAnswer);
+
+      expect(result).toEqual({ id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' });
+      expect(ticketStatusWrites.calls).toEqual(['readStatus', 'setStatus #147 -> in-progress']);
+      expect(runner.calls.filter((call) => call.startsWith('answer'))).toEqual([
+        `answer run-1 ${JSON.stringify(checkpointAnswer)}`,
+      ]);
+      expect(events.emittedEvents).toEqual([written('waiting', 'in-progress')]);
+    });
+
+    it('should answer two waiting runs of one project when each is active', async () => {
+      const first = buildSubject(undefined, liveRun);
+      first.runner.activeTicketNumbers = [147, 148];
+      const second = buildSubject(undefined, {
+        ...liveRun,
+        id: 'run-2',
+        ticketNumber: 148,
+      });
+      second.runner.activeTicketNumbers = [147, 148];
+
+      await expect(first.useCase.execute('run-1', checkpointAnswer)).resolves.toBeDefined();
+      await expect(second.useCase.execute('run-2', checkpointAnswer)).resolves.toBeDefined();
+    });
+
+    it('should refuse and write nothing when the run neither ended nor waits', async () => {
+      const working: RunRecord = {
+        id: liveRun.id,
+        projectId: liveRun.projectId,
+        ticketNumber: liveRun.ticketNumber,
+        startedAt: liveRun.startedAt,
+      };
+      const subject = buildSubject(undefined, working);
+
+      await expect(subject.useCase.execute('run-1', checkpointAnswer)).rejects.toThrow(
+        RunNotAnswerableError,
+      );
+
+      expect(subject.ticketStatusWrites.calls.filter((c) => c.startsWith('setStatus'))).toEqual([]);
+      expect(subject.runner.calls.filter((c) => c.startsWith('answer'))).toEqual([]);
+    });
+
+    it('should refuse and write nothing when a permission answer meets a live checkpoint wait', async () => {
+      const subject = buildSubject(undefined, liveRun);
+
+      await expect(subject.useCase.execute('run-1', allowAnswer)).rejects.toThrow(
+        RunNotAnswerableError,
+      );
+
+      expect(subject.ticketStatusWrites.calls.filter((c) => c.startsWith('setStatus'))).toEqual([]);
+      expect(subject.runner.calls.filter((c) => c.startsWith('answer'))).toEqual([]);
+    });
+
+    it('should refuse with a not-waiting message when the ticket is still in-progress', async () => {
+      const subject = buildSubject(undefined, liveRun);
+      subject.ticketStatusWrites.liveStatus = 'in-progress';
+
+      await expect(subject.useCase.execute('run-1', checkpointAnswer)).rejects.toThrow(
+        '#147 is not waiting',
+      );
+
+      expect(subject.ticketStatusWrites.calls.filter((c) => c.startsWith('setStatus'))).toEqual([]);
+    });
+
+    it('should restore waiting and rethrow when delivery fails', async () => {
+      const { useCase, runner, events, ticketStatusWrites } = buildSubject(undefined, liveRun);
+      const failure = new RunNotAnswerableError('expired');
+      runner.answerFailure = failure;
+
+      await expect(useCase.execute('run-1', checkpointAnswer)).rejects.toBe(failure);
+
+      expect(ticketStatusWrites.liveStatus).toBe('waiting');
+      expect(events.emittedEvents).toEqual([
+        written('waiting', 'in-progress'),
+        written('in-progress', 'waiting'),
+      ]);
+    });
+  });
+
   it.each(['allow', 'deny'] as const)(
     'should set the ticket in-progress, then resume the run when the decision is %s',
     async (decision) => {
@@ -100,12 +190,6 @@ describe('AnswerRunUseCase', () => {
       'a newer run exists for the ticket',
       (subject: ReturnType<typeof buildSubject>) => {
         subject.runner.latest = { id: 'run-9', startedAt: '2026-09-29T10:00:00.000Z' };
-      },
-    ],
-    [
-      'the ticket already has an active run',
-      (subject: ReturnType<typeof buildSubject>) => {
-        subject.runner.activeTicketNumbers = [147];
       },
     ],
   ])('should refuse and write and resume nothing when %s', async (_situation, arrange) => {
@@ -264,7 +348,6 @@ describe('AnswerRunUseCase', () => {
       (s: ReturnType<typeof buildSubject>) =>
         (s.runner.latest = { id: 'run-9', startedAt: '2026-09-29T10:00:00.000Z' }),
     ],
-    ['active run', (s: ReturnType<typeof buildSubject>) => (s.runner.activeTicketNumbers = [200])],
   ])('should refuse a checkpoint answer when there is a %s', async (_name, arrange) => {
     const subject = buildSubject(undefined, checkpointRun);
     arrange(subject);

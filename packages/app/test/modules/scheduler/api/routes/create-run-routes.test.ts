@@ -109,6 +109,50 @@ describe('createRunRoutes', () => {
       });
     });
 
+    it('should expose waitingFor without artifactId when the active run waits', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.ticketRun = {
+        availability: { kind: 'disabled', reason: '#7 is running' },
+        activeRun: {
+          id: 'run-1',
+          startedAt,
+          steps: [],
+          waitingFor: {
+            kind: 'checkpoint',
+            request: 'Answer on the page Plan',
+            artifactId: 'plan',
+          },
+        },
+      };
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/7/run',
+      );
+
+      const body = ticketRunResponseSchema.parse(await response.json());
+      expect(body.activeRun?.waitingFor).toEqual({
+        kind: 'checkpoint',
+        request: 'Answer on the page Plan',
+      });
+      expect(body.activeRun?.waitingFor).not.toHaveProperty('artifactId');
+    });
+
+    it('should expose no waitingFor key when the active run is working', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.ticketRun = {
+        availability: { kind: 'disabled', reason: '#7 is running' },
+        activeRun: { id: 'run-1', startedAt, steps: [] },
+      };
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/7/run',
+      );
+
+      expect(ticketRunResponseSchema.parse(await response.json()).activeRun).not.toHaveProperty(
+        'waitingFor',
+      );
+    });
+
     it('should answer the last run with its ending when the ticket run has one', async () => {
       const ticketRuns = new FakeTicketRuns();
       ticketRuns.ticketRun = {
