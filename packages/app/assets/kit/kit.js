@@ -9,11 +9,14 @@ import { AisfRoundElement } from './elements/aisf-round-element.js';
 import { AisfTaskElement } from './elements/aisf-task-element.js';
 import { AisfTreeNodeElement } from './elements/aisf-tree-node-element.js';
 
-/** Tag name to element class. */
+/**
+ * Tag name to element class. A card comes before its question: the question renders its cards
+ * on upgrade.
+ */
 export const registry = {
   'aisf-round': AisfRoundElement,
-  'aisf-question': AisfQuestionElement,
   'aisf-card': AisfCardElement,
+  'aisf-question': AisfQuestionElement,
   'aisf-context': AisfContextElement,
   'aisf-confirm': AisfConfirmElement,
   'aisf-meta': AisfMetaElement,
