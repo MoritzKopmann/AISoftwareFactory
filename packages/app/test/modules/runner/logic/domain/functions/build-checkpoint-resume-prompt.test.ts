@@ -18,8 +18,8 @@ describe('buildCheckpointResumePrompt', () => {
 
     expect(prompt).toBe(
       [
-        'Your aisf_checkpoint call for #228 was delivered, and a human has answered it.',
-        'The tool result that says the call was interrupted is how the app pauses a run at its checkpoint, not a failure. Do not verify or retry that call, and do not call aisf_checkpoint again for this request.',
+        'Your call for a human at #228 was delivered, and a human has answered it.',
+        'The tool result that says the call was interrupted is how the app pauses a run, not a failure. Do not verify or retry that call, and do not call it again for this request.',
         '',
         'Your request:',
         '> Open the board',
@@ -30,6 +30,14 @@ describe('buildCheckpointResumePrompt', () => {
         'Carry on with aisf:implement-ticket for #228 from its human checkpoint.',
       ].join('\n'),
     );
+  });
+
+  it('should name no tool when it builds the prompt', () => {
+    const prompt = buildCheckpointResumePrompt(228, 'Check the page', 'Looks good', 'aisf:spike');
+
+    expect(prompt).not.toContain('aisf_');
+    expect(prompt).toContain('> Check the page');
+    expect(prompt).toContain('> Looks good');
   });
 
   it('should quote every line, empty ones included, when request and answer span lines', () => {

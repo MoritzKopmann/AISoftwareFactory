@@ -10,7 +10,7 @@ export type RunEnding =
       readonly toolInput: Readonly<Record<string, unknown>>;
     }
   | { readonly kind: 'parked'; readonly blockerNumber: number }
-  | { readonly kind: 'checkpoint'; readonly request: string }
+  | { readonly kind: 'checkpoint'; readonly request: string; readonly artifactId?: string }
   | { readonly kind: 'finished' }
   | { readonly kind: 'stopped' }
   | { readonly kind: 'crashed'; readonly reason: string }

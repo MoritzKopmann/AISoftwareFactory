@@ -88,7 +88,7 @@ export class FakeRunnerPort implements RunnerPort {
   transcript: SessionLog = { kind: 'no-session' };
   record: RunRecord | undefined;
   startFailure: Error | undefined;
-  resumeFailure: Error | undefined;
+  answerFailure: Error | undefined;
 
   async start(request: {
     projectId: string;
@@ -106,13 +106,13 @@ export class FakeRunnerPort implements RunnerPort {
     return this.record;
   }
 
-  async resume(
+  async answer(
     runId: string,
     answer: RunAnswer,
   ): Promise<{ readonly id: string; readonly startedAt: string }> {
-    this.calls.push(`resume ${runId} ${JSON.stringify(answer)}`);
-    if (this.resumeFailure !== undefined) {
-      throw this.resumeFailure;
+    this.calls.push(`answer ${runId} ${JSON.stringify(answer)}`);
+    if (this.answerFailure !== undefined) {
+      throw this.answerFailure;
     }
     return { id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' };
   }

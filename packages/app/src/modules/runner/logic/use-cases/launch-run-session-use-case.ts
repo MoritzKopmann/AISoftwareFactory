@@ -7,13 +7,17 @@ import type { RunTool } from '../domain/types/run-tool.js';
 import type { SessionEvent } from '../domain/types/session-event.js';
 import type { SessionLaunch } from '../domain/types/session-launch.js';
 import type { SessionTool } from '../domain/types/session-tool.js';
+import type { RunWait } from '../domain/types/run-wait.js';
 import type { AgentSessions } from '../ports/agent-sessions.js';
 import type { RecentRunSteps } from '../ports/recent-run-steps.js';
+import type { RunRepository } from '../ports/run-repository.js';
 
 export type LaunchRunSessionDependencies = {
   readonly agentSessions: AgentSessions;
   readonly recentRunSteps: RecentRunSteps;
+  readonly runRepository: RunRepository;
   readonly finishRun: FinishRun;
+  readonly waitForRunAnswer: (run: Run, wait: RunWait) => Promise<string>;
   readonly tools: ReadonlyArray<RunTool>;
   readonly logger: Logger;
 };
@@ -54,7 +58,14 @@ export class LaunchRunSessionUseCase {
       description: tool.description,
       inputShape: tool.inputShape,
       execute: async (input) => {
+        const currentRun = await this.dependencies.runRepository.findById(run.id);
+        if (currentRun?.state !== 'running') {
+          return 'This run has ended. The tool did not run. End your turn.';
+        }
         const result = await tool.execute(input, runContext);
+        if ('wait' in result) {
+          return this.dependencies.waitForRunAnswer(run, result.wait);
+        }
         if (result.ending !== undefined) {
           await this.dependencies.finishRun(run.id, result.ending);
         }

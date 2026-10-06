@@ -10,6 +10,7 @@ const runContext = {
   worktreePath: '/worktrees/aisf/141',
 };
 
+import { textResult } from '../../../runner/fakes/text-result.js';
 describe('createReportFindingTool', () => {
   let findingRepository: InMemoryFindingRepository;
   let tool: ReturnType<typeof createReportFindingTool>;
@@ -45,8 +46,8 @@ describe('createReportFindingTool', () => {
       runContext,
     );
 
-    expect(result.ending).toBeUndefined();
-    expect(result.text).toBe('Finding recorded.');
+    expect(textResult(result).ending).toBeUndefined();
+    expect(textResult(result).text).toBe('Finding recorded.');
   });
 
   it('should reject when the kind is neither bug nor gap', async () => {

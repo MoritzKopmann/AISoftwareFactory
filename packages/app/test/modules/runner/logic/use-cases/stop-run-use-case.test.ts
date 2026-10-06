@@ -4,21 +4,29 @@ import { FinishRunUseCase } from '../../../../../src/modules/runner/logic/use-ca
 import { StopRunUseCase } from '../../../../../src/modules/runner/logic/use-cases/stop-run-use-case.js';
 import { FakeClock } from '../../../../fakes/fake-clock.js';
 import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
-import { buildRun, FakeAgentSessions, FakeRunRepository } from '../../fakes/fake-runner-ports.js';
+import {
+  buildRun,
+  FakeAgentSessions,
+  FakeRunAnswerWaits,
+  FakeRunRepository,
+} from '../../fakes/fake-runner-ports.js';
 
 describe('StopRunUseCase', () => {
   let runRepository: FakeRunRepository;
   let agentSessions: FakeAgentSessions;
+  let runAnswerWaits: FakeRunAnswerWaits;
   let events: FakeEventPublisher;
   let stopRun: StopRunUseCase;
 
   beforeEach(() => {
     runRepository = new FakeRunRepository();
     agentSessions = new FakeAgentSessions();
+    runAnswerWaits = new FakeRunAnswerWaits();
     events = new FakeEventPublisher();
     const finishRun = new FinishRunUseCase({
       runRepository,
       agentSessions,
+      runAnswerWaits,
       clock: new FakeClock('2026-09-29T11:00:00.000Z'),
       events,
     });
@@ -46,5 +54,21 @@ describe('StopRunUseCase', () => {
     await runRepository.insert(buildRun({ state: 'ended', ending: { kind: 'finished' } }));
 
     await expect(stopRun.execute('run-1')).rejects.toThrow(RunNotActiveError);
+  });
+
+  it('should end a waiting run stopped, release the held call and stop the session', async () => {
+    await runRepository.insert(
+      buildRun({
+        waitingFor: { kind: 'checkpoint', request: 'Check', artifactId: 'confirm-plan' },
+        waitingSince: '2026-09-29T10:05:00.000Z',
+      }),
+    );
+    const outcome = runAnswerWaits.wait('run-1', 1000);
+
+    await stopRun.execute('run-1');
+
+    expect(runRepository.runs.get('run-1')?.ending).toEqual({ kind: 'stopped' });
+    expect(await outcome).toEqual({ kind: 'cancelled' });
+    expect(agentSessions.stoppedSessionIds).toEqual(['session-1']);
   });
 });

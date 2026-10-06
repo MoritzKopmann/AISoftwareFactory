@@ -10,7 +10,7 @@ export interface RunnerPort {
     readonly projectId: string;
     readonly ticketNumber: number;
   }): Promise<StartedRun>;
-  resume(runId: string, answer: RunAnswer): Promise<StartedRun>;
+  answer(runId: string, answer: RunAnswer): Promise<StartedRun>;
   findRun(runId: string): Promise<RunRecord | undefined>;
   activeRuns(projectId: string): Promise<ReadonlyArray<ActiveTicketRun>>;
   latestRun(projectId: string, ticketNumber: number): Promise<LatestRun | undefined>;

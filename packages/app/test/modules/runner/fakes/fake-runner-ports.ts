@@ -1,6 +1,7 @@
 import { RunAlreadyActiveError } from '../../../../src/modules/runner/logic/errors/run-already-active-error.js';
 import type { Run } from '../../../../src/modules/runner/logic/domain/types/run.js';
 import type { RunEnding } from '../../../../src/modules/runner/logic/domain/types/run-ending.js';
+import type { RunWait } from '../../../../src/modules/runner/logic/domain/types/run-wait.js';
 import type { RunStep } from '../../../../src/modules/runner/logic/domain/types/run-step.js';
 import type { SessionLogEntry } from '../../../../src/modules/runner/logic/domain/types/session-log-entry.js';
 import type { RunTarget } from '../../../../src/modules/runner/logic/domain/types/run-target.js';
@@ -11,10 +12,21 @@ import type { WorktreeSpec } from '../../../../src/modules/runner/logic/domain/t
 import type { AgentSessions } from '../../../../src/modules/runner/logic/ports/agent-sessions.js';
 import type { Identifiers } from '../../../../src/modules/runner/logic/ports/identifiers.js';
 import type { RecentRunSteps } from '../../../../src/modules/runner/logic/ports/recent-run-steps.js';
+import type {
+  RunAnswerWaitOutcome,
+  RunAnswerWaits,
+} from '../../../../src/modules/runner/logic/ports/run-answer-waits.js';
 import type { RunRepository } from '../../../../src/modules/runner/logic/ports/run-repository.js';
 import type { RunTargets } from '../../../../src/modules/runner/logic/ports/run-targets.js';
 import type { SessionTranscripts } from '../../../../src/modules/runner/logic/ports/session-transcripts.js';
 import type { Worktrees } from '../../../../src/modules/runner/logic/ports/worktrees.js';
+
+function withoutWait(run: Run): Run {
+  const copy: { -readonly [Key in keyof Run]: Run[Key] } = { ...run };
+  delete copy.waitingFor;
+  delete copy.waitingSince;
+  return copy;
+}
 
 export class FakeRunRepository implements RunRepository {
   readonly runs = new Map<string, Run>();
@@ -63,8 +75,28 @@ export class FakeRunRepository implements RunRepository {
     if (run === undefined || run.state !== 'running') {
       return 'already-ended';
     }
-    this.runs.set(runId, { ...run, state: 'ended', ending, endedAt });
+    this.runs.set(runId, { ...withoutWait(run), state: 'ended', ending, endedAt });
     return 'recorded';
+  }
+
+  async recordWait(
+    runId: string,
+    wait: RunWait,
+    waitingSince: string,
+  ): Promise<'recorded' | 'refused'> {
+    const run = this.runs.get(runId);
+    if (run === undefined || run.state !== 'running' || run.waitingFor !== undefined) {
+      return 'refused';
+    }
+    this.runs.set(runId, { ...run, waitingFor: wait, waitingSince });
+    return 'recorded';
+  }
+
+  async clearWait(runId: string): Promise<void> {
+    const run = this.runs.get(runId);
+    if (run !== undefined) {
+      this.runs.set(runId, withoutWait(run));
+    }
   }
 
   async markSettled(runId: string): Promise<void> {
@@ -72,6 +104,46 @@ export class FakeRunRepository implements RunRepository {
     if (run !== undefined) {
       this.runs.set(runId, { ...run, state: 'settled' });
     }
+  }
+}
+
+export class FakeRunAnswerWaits implements RunAnswerWaits {
+  readonly windowsByRunId = new Map<string, number>();
+  readonly cancelledRunIds: string[] = [];
+  private readonly settlersByRunId = new Map<string, (outcome: RunAnswerWaitOutcome) => void>();
+
+  wait(runId: string, windowMilliseconds: number): Promise<RunAnswerWaitOutcome> {
+    this.windowsByRunId.set(runId, windowMilliseconds);
+    return new Promise((resolve) => {
+      this.settlersByRunId.set(runId, resolve);
+    });
+  }
+
+  deliver(runId: string, text: string): boolean {
+    return this.settle(runId, { kind: 'answered', text });
+  }
+
+  cancel(runId: string): void {
+    this.cancelledRunIds.push(runId);
+    this.settle(runId, { kind: 'cancelled' });
+  }
+
+  expire(runId: string): void {
+    this.settle(runId, { kind: 'expired' });
+  }
+
+  isWaiting(runId: string): boolean {
+    return this.settlersByRunId.has(runId);
+  }
+
+  private settle(runId: string, outcome: RunAnswerWaitOutcome): boolean {
+    const settler = this.settlersByRunId.get(runId);
+    if (settler === undefined) {
+      return false;
+    }
+    this.settlersByRunId.delete(runId);
+    settler(outcome);
+    return true;
   }
 }
 

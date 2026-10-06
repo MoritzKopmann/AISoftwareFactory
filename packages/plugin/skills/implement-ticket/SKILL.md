@@ -39,8 +39,10 @@ The only times to involve a human. Mode is **AFK** when the `aisf_escalate` tool
 | **checkpoint**: the human checkpoint of a `hitl` leaf (§7) | `aisf_checkpoint({request})`              | ask in chat               |
 
 `reason`: what you tried, the output, the decision needed. AFK: escalate and park end the run.
-Checkpoint pauses it: the app resumes this same session with the human's answer. Hand-run
-carries on with the answer; the human says give up → `aisf:github-issue` _Hand-run stuck_.
+Checkpoint waits: the human's answer arrives as the `aisf_checkpoint` tool result, so carry on
+from it. An "interrupted" or refused result means the app resumes this session with a prompt
+that carries the answer. Never call the tool again for the same request. Hand-run carries on
+with the answer; the human says give up → `aisf:github-issue` _Hand-run stuck_.
 Never call an `aisf_*` tool that isn't present.
 
 `request`: what the human must do or judge, the worktree path, the exact commands to run, and
@@ -139,9 +141,10 @@ Every criterion gets evidence:
   - An answer that confirms is the evidence.
   - A defect inside Scope → fix it, then checkpoint again with a new `request`.
   - Anything else → **escalate `spec`**, quoting the answer.
-  - An "interrupted" result from `aisf_checkpoint` (`is_error: true`, "The tool call was
-    interrupted … retry if needed") is the pause, not a failure. Never call the tool again for
-    the same request.
+  - The human's answer arrives as the `aisf_checkpoint` tool result. Carry on from it.
+  - An "interrupted" or refused result (`is_error: true`, "The tool call was interrupted …
+    retry if needed") means the app resumes this session with a prompt that carries the
+    answer. It is the pause, not a failure. Never call the tool again for the same request.
 
 A gap → back to §4.
 

@@ -18,10 +18,7 @@ export function createCheckpointTool(): RunTool {
     inputShape,
     execute: async (input) => {
       const { request } = inputSchema.parse(input);
-      return {
-        text: 'Checkpoint request recorded. The run pauses now: stop working and end your turn.',
-        ending: { kind: 'checkpoint', request },
-      };
+      return { wait: { kind: 'checkpoint', request } };
     },
   };
 }

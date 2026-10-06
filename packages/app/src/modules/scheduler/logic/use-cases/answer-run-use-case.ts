@@ -55,7 +55,7 @@ export class AnswerRunUseCase {
       to: 'in-progress',
     });
     try {
-      return await runner.resume(runId, answer);
+      return await runner.answer(runId, answer);
     } catch (error) {
       await ticketStatusWrites.setStatus(project.repository, ticketNumber, awaitedStatus);
       events.emit('ticket.status-written', {

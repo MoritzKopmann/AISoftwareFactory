@@ -75,4 +75,14 @@ export const migrations: ReadonlyArray<Migration> = [
         WHERE state = 'running';
     `,
   },
+  {
+    version: 6,
+    name: 'runs-waiting',
+    sql: `
+      ALTER TABLE runs ADD COLUMN waiting_kind TEXT;
+      ALTER TABLE runs ADD COLUMN waiting_request TEXT;
+      ALTER TABLE runs ADD COLUMN waiting_since TEXT;
+      ALTER TABLE runs ADD COLUMN checkpoint_artifact_id TEXT;
+    `,
+  },
 ];

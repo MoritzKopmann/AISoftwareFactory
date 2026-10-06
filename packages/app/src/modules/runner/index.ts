@@ -19,11 +19,13 @@ import { RunTargetNotFoundError } from './logic/errors/run-target-not-found-erro
 import { WorktreeSetupFailedError } from './logic/errors/worktree-setup-failed-error.js';
 import type { AgentSessions } from './logic/ports/agent-sessions.js';
 import type { Identifiers } from './logic/ports/identifiers.js';
+import type { RunAnswerWaits } from './logic/ports/run-answer-waits.js';
 import type { RecentRunSteps } from './logic/ports/recent-run-steps.js';
 import type { RunRepository } from './logic/ports/run-repository.js';
 import type { RunTargets } from './logic/ports/run-targets.js';
 import type { SessionTranscripts } from './logic/ports/session-transcripts.js';
 import type { Worktrees } from './logic/ports/worktrees.js';
+import { DeliverRunAnswerUseCase } from './logic/use-cases/deliver-run-answer-use-case.js';
 import { FinishRunUseCase } from './logic/use-cases/finish-run-use-case.js';
 import { LaunchRunSessionUseCase } from './logic/use-cases/launch-run-session-use-case.js';
 import {
@@ -38,11 +40,13 @@ import { ResumeRunUseCase } from './logic/use-cases/resume-run-use-case.js';
 import { SettleRunUseCase } from './logic/use-cases/settle-run-use-case.js';
 import { StartRunUseCase, type StartRunRequest } from './logic/use-cases/start-run-use-case.js';
 import { StopRunUseCase } from './logic/use-cases/stop-run-use-case.js';
+import { WaitForRunAnswerUseCase } from './logic/use-cases/wait-for-run-answer-use-case.js';
 
 export type { PermissionDecision } from './logic/domain/types/permission-decision.js';
 export type { RunAnswer } from './logic/domain/types/run-answer.js';
 export type { Run } from './logic/domain/types/run.js';
 export type { RunContext } from './logic/domain/types/run-context.js';
+export type { RunWait } from './logic/domain/types/run-wait.js';
 export type { RunEnding } from './logic/domain/types/run-ending.js';
 export type { RunMode } from './logic/domain/types/run-mode.js';
 export type { RunStage } from './logic/domain/types/run-stage.js';
@@ -67,6 +71,8 @@ export type RunnerModuleDependencies = {
   readonly recentRunSteps: RecentRunSteps;
   readonly sessionTranscripts: SessionTranscripts;
   readonly identifiers: Identifiers;
+  readonly runAnswerWaits: RunAnswerWaits;
+  readonly liveAnswerWindowMilliseconds: number;
   readonly clock: Clock;
   readonly events: EventPublisher;
   readonly worktreesDirectory: string;
@@ -77,7 +83,7 @@ export type RunnerModuleDependencies = {
 export type RunnerModule = {
   readonly routes: Hono;
   readonly start: (request: StartRunRequest) => Promise<Run>;
-  readonly resume: (runId: string, answer: RunAnswer) => Promise<Run>;
+  readonly answer: (runId: string, answer: RunAnswer) => Promise<Run>;
   readonly findRun: (runId: string) => Promise<Run | undefined>;
   readonly activeRuns: (projectId: string) => Promise<ReadonlyArray<ActiveRun>>;
   readonly latestRun: (projectId: string, ticketNumber: number) => Promise<Run | undefined>;
@@ -88,14 +94,31 @@ export type RunnerModule = {
 };
 
 export function createRunnerModule(dependencies: RunnerModuleDependencies): RunnerModule {
-  const { runRepository, agentSessions, recentRunSteps, clock, events } = dependencies;
+  const { runRepository, agentSessions, recentRunSteps, runAnswerWaits, clock, events } =
+    dependencies;
 
-  const finishRunUseCase = new FinishRunUseCase({ runRepository, agentSessions, clock, events });
+  const finishRunUseCase = new FinishRunUseCase({
+    runRepository,
+    agentSessions,
+    runAnswerWaits,
+    clock,
+    events,
+  });
   const finishRun: FinishRun = (runId, ending) => finishRunUseCase.execute(runId, ending);
+  const waitForRunAnswer = new WaitForRunAnswerUseCase({
+    runRepository,
+    runAnswerWaits,
+    clock,
+    events,
+    finishRun,
+    windowMilliseconds: dependencies.liveAnswerWindowMilliseconds,
+  });
   const launchRunSessionUseCase = new LaunchRunSessionUseCase({
     agentSessions,
     recentRunSteps,
+    runRepository,
     finishRun,
+    waitForRunAnswer: (run, wait) => waitForRunAnswer.execute(run, wait),
     tools: [
       createEscalateTool(),
       createParkTool(),
@@ -122,6 +145,11 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
     clock,
     launchRunSession,
   });
+  const deliverRunAnswer = new DeliverRunAnswerUseCase({
+    runRepository,
+    runAnswerWaits,
+    resumeRun: (runId, answer) => resumeRun.execute(runId, answer),
+  });
   const readRun = new ReadRunUseCase({ runRepository });
   const stopRun = new StopRunUseCase({ runRepository, finishRun });
   const readActiveRuns = new ReadActiveRunsUseCase({ runRepository, recentRunSteps });
@@ -140,7 +168,7 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
   return {
     routes: new Hono().route('/runs', createStopRunRoutes(stopRun)),
     start: (request) => startRun.execute(request),
-    resume: (runId, answer) => resumeRun.execute(runId, answer),
+    answer: (runId, answer) => deliverRunAnswer.execute(runId, answer),
     findRun: (runId) => readRun.execute(runId),
     activeRuns: (projectId) => readActiveRuns.execute(projectId),
     latestRun: (projectId, ticketNumber) => readLatestRun.execute(projectId, ticketNumber),

@@ -170,7 +170,7 @@ describe('createSchedulerModule', () => {
       expect(response.status).toBe(201);
       expect(ticketStatusWrites.liveStatus).toBe('in-progress');
       expect(runner.calls).toContain(
-        `resume run-1 ${JSON.stringify({ kind: 'permission', decision: 'allow' })}`,
+        `answer run-1 ${JSON.stringify({ kind: 'permission', decision: 'allow' })}`,
       );
     });
 
@@ -180,7 +180,7 @@ describe('createSchedulerModule', () => {
       const response = await postAnswer(answerWith(ticketStatusWrites));
 
       expect(response.status).toBe(409);
-      expect(runner.calls.filter((call) => call.startsWith('resume'))).toEqual([]);
+      expect(runner.calls.filter((call) => call.startsWith('answer'))).toEqual([]);
     });
   });
 

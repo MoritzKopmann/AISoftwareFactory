@@ -8,6 +8,7 @@ const runContext = {
   worktreePath: '/worktrees/aisf/137',
 };
 
+import { textResult } from '../../fakes/text-result.js';
 describe('createEscalateTool', () => {
   it('should be named aisf_escalate', () => {
     expect(createEscalateTool().name).toBe('aisf_escalate');
@@ -19,7 +20,7 @@ describe('createEscalateTool', () => {
       runContext,
     );
 
-    expect(result.ending).toEqual({
+    expect(textResult(result).ending).toEqual({
       kind: 'escalated',
       escalation: 'spec',
       reason: 'AC 2 is unprovable',
@@ -32,7 +33,7 @@ describe('createEscalateTool', () => {
       runContext,
     );
 
-    expect(result.text).toBe(
+    expect(textResult(result).text).toBe(
       'Escalation recorded. The run ends now: stop working and end your turn.',
     );
   });

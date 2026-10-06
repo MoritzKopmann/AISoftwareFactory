@@ -13,19 +13,12 @@ describe('createCheckpointTool', () => {
     expect(createCheckpointTool().name).toBe('aisf_checkpoint');
   });
 
-  it('should return a checkpoint ending with the request when the input is valid', async () => {
+  it('should return a wait with the request when the input is valid', async () => {
     const request = 'Open http://localhost:5173 and confirm the board shows Waiting';
 
     const result = await createCheckpointTool().execute({ request }, runContext);
 
-    expect(result.ending).toEqual({ kind: 'checkpoint', request });
-  });
-
-  it('should tell the session the request is recorded and the run pauses when it ends the run', async () => {
-    const result = await createCheckpointTool().execute({ request: 'Check' }, runContext);
-
-    expect(result.text).toContain('recorded');
-    expect(result.text).toContain('pauses');
+    expect(result).toEqual({ wait: { kind: 'checkpoint', request } });
   });
 
   it('should describe when to use it, the pause, the public comment and the no-secrets rule', () => {
@@ -53,6 +46,6 @@ describe('createCheckpointTool', () => {
 
     const result = await createCheckpointTool().execute({ request }, runContext);
 
-    expect(result.ending).toEqual({ kind: 'checkpoint', request });
+    expect(result).toEqual({ wait: { kind: 'checkpoint', request } });
   });
 });

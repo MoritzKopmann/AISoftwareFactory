@@ -3,7 +3,12 @@ import { FinishRunUseCase } from '../../../../../src/modules/runner/logic/use-ca
 import { RecoverInterruptedRunsUseCase } from '../../../../../src/modules/runner/logic/use-cases/recover-interrupted-runs-use-case.js';
 import { FakeClock } from '../../../../fakes/fake-clock.js';
 import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
-import { buildRun, FakeAgentSessions, FakeRunRepository } from '../../fakes/fake-runner-ports.js';
+import {
+  buildRun,
+  FakeAgentSessions,
+  FakeRunAnswerWaits,
+  FakeRunRepository,
+} from '../../fakes/fake-runner-ports.js';
 
 describe('RecoverInterruptedRunsUseCase', () => {
   let runRepository: FakeRunRepository;
@@ -16,6 +21,7 @@ describe('RecoverInterruptedRunsUseCase', () => {
     const finishRun = new FinishRunUseCase({
       runRepository,
       agentSessions: new FakeAgentSessions(),
+      runAnswerWaits: new FakeRunAnswerWaits(),
       clock: new FakeClock('2026-09-29T12:00:00.000Z'),
       events,
     });
@@ -71,5 +77,18 @@ describe('RecoverInterruptedRunsUseCase', () => {
     await recoverInterruptedRuns.execute();
 
     expect(events.emittedEvents).toEqual([]);
+  });
+
+  it('should end a waiting run as a checkpoint when the app restarts', async () => {
+    await runRepository.insert(
+      buildRun({ waitingFor: { kind: 'checkpoint', request: 'Check the page' } }),
+    );
+
+    await recoverInterruptedRuns.execute();
+
+    expect(runRepository.runs.get('run-1')?.ending).toEqual({
+      kind: 'checkpoint',
+      request: 'Check the page',
+    });
   });
 });

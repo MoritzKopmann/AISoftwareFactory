@@ -13,6 +13,7 @@ import {
   buildRun,
   FakeAgentSessions,
   FakeRecentRunSteps,
+  FakeRunAnswerWaits,
   FakeRunRepository,
   FakeRunTargets,
   FakeSessionTranscripts,
@@ -23,6 +24,7 @@ import {
 describe('createRunnerModule', () => {
   let runRepository: FakeRunRepository;
   let agentSessions: FakeAgentSessions;
+  let runAnswerWaits: FakeRunAnswerWaits;
   let sessionTranscripts: FakeSessionTranscripts;
   let events: FakeEventPublisher;
   let runner: RunnerModule;
@@ -44,6 +46,7 @@ describe('createRunnerModule', () => {
     runRepository = new FakeRunRepository();
     sessionTranscripts = new FakeSessionTranscripts();
     agentSessions = new FakeAgentSessions();
+    runAnswerWaits = new FakeRunAnswerWaits();
     events = new FakeEventPublisher();
     runner = createRunnerModule({
       runRepository,
@@ -58,6 +61,8 @@ describe('createRunnerModule', () => {
       recentRunSteps: new FakeRecentRunSteps(),
       sessionTranscripts,
       identifiers: new SequentialIdentifiers(),
+      runAnswerWaits,
+      liveAnswerWindowMilliseconds: 3_600_000,
       clock: new FakeClock('2026-09-29T10:00:00.000Z'),
       events,
       worktreesDirectory: '/worktrees',
@@ -110,15 +115,22 @@ describe('createRunnerModule', () => {
     });
   });
 
-  it('should end the run as checkpoint and emit run.finished when the session calls aisf_checkpoint', async () => {
+  it('should wait, then end the run as checkpoint and emit run.finished when the window passes after aisf_checkpoint', async () => {
     await runner.start(startRequest);
     const checkpoint = agentSessions.startedSpecs[0]?.tools.find(
       (tool) => tool.name === 'aisf_checkpoint',
     );
 
-    await checkpoint?.execute({ request: 'Check the page' });
+    const held = checkpoint?.execute({ request: 'Check the page' });
+    await vi.waitFor(() => expect(runAnswerWaits.isWaiting('id-1')).toBe(true));
+    runAnswerWaits.expire('id-1');
+    await held;
 
-    expect(events.emittedEvents).toEqual([
+    expect(events.emittedEvents.map((event) => event.name)).toEqual([
+      'run.waiting',
+      'run.finished',
+    ]);
+    expect(events.emittedEvents.slice(1)).toEqual([
       {
         name: 'run.finished',
         payload: {
@@ -178,7 +190,7 @@ describe('createRunnerModule', () => {
     });
   });
 
-  it('should resume the session with the app tools hosted when resume is called on a run needing permission', async () => {
+  it('should resume the session with the app tools hosted when answer is called on a run needing permission', async () => {
     await runRepository.insert(
       buildRun({
         id: 'stuck-run',
@@ -187,7 +199,7 @@ describe('createRunnerModule', () => {
       }),
     );
 
-    const resumed = await runner.resume('stuck-run', { kind: 'permission', decision: 'allow' });
+    const resumed = await runner.answer('stuck-run', { kind: 'permission', decision: 'allow' });
 
     expect(resumed.sessionId).toBe('session-1');
     expect(agentSessions.resumedSpecs[0]?.tools.map((tool) => tool.name)).toEqual([
@@ -198,13 +210,13 @@ describe('createRunnerModule', () => {
     ]);
   });
 
-  it('should fail with RunNotResumableError when resume is called on a run that did not need permission', async () => {
+  it('should fail with RunNotResumableError when answer is called on a run that did not need permission', async () => {
     await runRepository.insert(
       buildRun({ id: 'done-run', state: 'settled', ending: { kind: 'finished' } }),
     );
 
     await expect(
-      runner.resume('done-run', { kind: 'permission', decision: 'allow' }),
+      runner.answer('done-run', { kind: 'permission', decision: 'allow' }),
     ).rejects.toThrow(RunNotResumableError);
   });
 
@@ -217,7 +229,7 @@ describe('createRunnerModule', () => {
       }),
     );
 
-    const resumed = await runner.resume('waiting-run', { kind: 'checkpoint', text: 'Looks right' });
+    const resumed = await runner.answer('waiting-run', { kind: 'checkpoint', text: 'Looks right' });
 
     expect(resumed.sessionId).toBe('session-1');
     expect(agentSessions.resumedSpecs[0]?.tools.map((tool) => tool.name)).toContain(
@@ -233,12 +245,15 @@ describe('createRunnerModule', () => {
         ending: { kind: 'checkpoint', request: 'Check the page' },
       }),
     );
-    await runner.resume('run-1', { kind: 'checkpoint', text: 'It failed: the chip is missing' });
+    await runner.answer('run-1', { kind: 'checkpoint', text: 'It failed: the chip is missing' });
     const checkpoint = agentSessions.resumedSpecs[0]?.tools.find(
       (tool) => tool.name === 'aisf_checkpoint',
     );
 
-    await checkpoint?.execute({ request: 'Check the page again' });
+    const held = checkpoint?.execute({ request: 'Check the page again' });
+    await vi.waitFor(() => expect(runAnswerWaits.isWaiting('id-1')).toBe(true));
+    runAnswerWaits.expire('id-1');
+    await held;
 
     expect((await runner.findRun('id-1'))?.ending).toEqual({
       kind: 'checkpoint',
@@ -248,6 +263,36 @@ describe('createRunnerModule', () => {
       kind: 'checkpoint',
       request: 'Check the page',
     });
+  });
+
+  it('should hand a live checkpoint answer to the held call and return the waiting run when answer is called', async () => {
+    const run = await runner.start(startRequest);
+    const checkpoint = agentSessions.startedSpecs[0]?.tools.find(
+      (tool) => tool.name === 'aisf_checkpoint',
+    );
+    const held = checkpoint?.execute({ request: 'Check the page' });
+    await vi.waitFor(() => expect(runAnswerWaits.isWaiting(run.id)).toBe(true));
+
+    const answered = await runner.answer(run.id, { kind: 'checkpoint', text: 'Looks good' });
+
+    expect(await held).toBe('Looks good');
+    expect(answered.id).toBe(run.id);
+    expect(agentSessions.resumedSpecs).toEqual([]);
+  });
+
+  it('should refuse every tool call and record nothing when the run was stopped', async () => {
+    const run = await runner.start(startRequest);
+    await runRepository.recordEnding(run.id, { kind: 'stopped' }, '2026-09-29T10:01:00.000Z');
+    const tools = agentSessions.startedSpecs[0]?.tools ?? [];
+    const eventCount = events.emittedEvents.length;
+
+    const results = await Promise.all(
+      tools.map((tool) => tool.execute({ request: 'x', kind: 'red', reason: 'x', blocker: 1 })),
+    );
+
+    expect(results.every((text) => text.includes('has ended'))).toBe(true);
+    expect(runRepository.runs.get(run.id)?.ending).toEqual({ kind: 'stopped' });
+    expect(events.emittedEvents).toHaveLength(eventCount);
   });
 
   it('should return the run when findRun is asked for a known run id', async () => {
