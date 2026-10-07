@@ -31,7 +31,8 @@ Rules:
   Include the error and edge cases the plan names. Work with no behaviour (a migration, a config
   key, wiring) gets one plain observable outcome, never a command: "the `runs` table exists
   after migration". A criterion that needs the running app or a real external write: only on a
-  `hitl` sub-issue.
+  `hitl` sub-issue. A check a scenario can state (a function, route or component result) is a
+  scenario, even when it also shows in the app.
 - **A `hitl` spec names its human checkpoint**: the scenario where the human acts or judges,
   and what they act on, and the worktree path and the exact commands the human runs. Every
   other step must run without them. A `hitl` leaf with no code change says so in its spec, and
