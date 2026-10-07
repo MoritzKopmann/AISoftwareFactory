@@ -14,11 +14,11 @@ import type { TicketRunLookup } from './logic/ports/ticket-run-lookup.js';
 import { ListTicketArtifactsUseCase } from './logic/use-cases/list-ticket-artifacts-use-case.js';
 import { PublishArtifactUseCase } from './logic/use-cases/publish-artifact-use-case.js';
 import { ReadPageAssetUseCase } from './logic/use-cases/read-page-asset-use-case.js';
-import { ReadPageStateUseCase } from './logic/use-cases/read-page-state-use-case.js';
+import { ReadPageUserInputStateUseCase } from './logic/use-cases/read-page-user-input-state-use-case.js';
 import { ReadPageStatusUseCase } from './logic/use-cases/read-page-status-use-case.js';
 import { ReadPageUseCase } from './logic/use-cases/read-page-use-case.js';
 import { SubmitPageEventUseCase } from './logic/use-cases/submit-page-event-use-case.js';
-import { WritePageStateUseCase } from './logic/use-cases/write-page-state-use-case.js';
+import { WritePageUserInputStateUseCase } from './logic/use-cases/write-page-user-input-state-use-case.js';
 
 export { PageBusyError } from './logic/errors/page-busy-error.js';
 export type { CheckpointAnswers, TicketLatestRun, TicketRunLookup };
@@ -68,8 +68,11 @@ export function createArtifactsModule(dependencies: ArtifactsModuleDependencies)
       readPage: new ReadPageUseCase({ artifactRepository, artifactFiles }),
       readAsset: new ReadPageAssetUseCase({ artifactRepository, artifactFiles }),
       readStatus: new ReadPageStatusUseCase({ artifactRepository, ticketRunLookup }),
-      readState: new ReadPageStateUseCase({ artifactRepository, artifactFiles }),
-      writeState: new WritePageStateUseCase({ artifactRepository, artifactFiles }),
+      readUserInputState: new ReadPageUserInputStateUseCase({ artifactRepository, artifactFiles }),
+      writeUserInputState: new WritePageUserInputStateUseCase({
+        artifactRepository,
+        artifactFiles,
+      }),
       submitEvent: new SubmitPageEventUseCase({
         artifactRepository,
         ticketRunLookup,

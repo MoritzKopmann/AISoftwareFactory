@@ -13,7 +13,7 @@ export class FakeAisf {
   saveFails = false;
   private listeners: Array<(event: StatusEvent) => void> = [];
 
-  readonly state = {
+  readonly userInputState = {
     load: async (): Promise<unknown> => this.draft,
     save: async (value: unknown): Promise<void> => {
       if (this.saveFails) throw new Error('not reachable');

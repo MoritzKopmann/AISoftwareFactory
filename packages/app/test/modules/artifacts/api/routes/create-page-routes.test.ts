@@ -10,11 +10,11 @@ import { FileSystemArtifactFiles } from '../../../../../src/modules/artifacts/in
 import { SqliteArtifactRepository } from '../../../../../src/modules/artifacts/infra/repositories/sqlite-artifact-repository.js';
 import type { TicketLatestRun } from '../../../../../src/modules/artifacts/logic/domain/types/ticket-latest-run.js';
 import { ReadPageAssetUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/read-page-asset-use-case.js';
-import { ReadPageStateUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/read-page-state-use-case.js';
+import { ReadPageUserInputStateUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/read-page-user-input-state-use-case.js';
 import { ReadPageStatusUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/read-page-status-use-case.js';
 import { SubmitPageEventUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/submit-page-event-use-case.js';
 import { ReadPageUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/read-page-use-case.js';
-import { WritePageStateUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/write-page-state-use-case.js';
+import { WritePageUserInputStateUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/write-page-user-input-state-use-case.js';
 import { migrations } from '../../../../../src/shared/db/migrations.js';
 import { openDatabase } from '../../../../../src/shared/db/open-database.js';
 import { runMigrations } from '../../../../../src/shared/db/run-migrations.js';
@@ -38,8 +38,11 @@ function buildApp(
       readPage: new ReadPageUseCase({ artifactRepository, artifactFiles }),
       readAsset: new ReadPageAssetUseCase({ artifactRepository, artifactFiles }),
       readStatus: new ReadPageStatusUseCase({ artifactRepository, ticketRunLookup }),
-      readState: new ReadPageStateUseCase({ artifactRepository, artifactFiles }),
-      writeState: new WritePageStateUseCase({ artifactRepository, artifactFiles }),
+      readUserInputState: new ReadPageUserInputStateUseCase({ artifactRepository, artifactFiles }),
+      writeUserInputState: new WritePageUserInputStateUseCase({
+        artifactRepository,
+        artifactFiles,
+      }),
       submitEvent: new SubmitPageEventUseCase({
         artifactRepository,
         ticketRunLookup,
@@ -162,8 +165,8 @@ describe('createPageRoutes', () => {
       ['GET', '/a/unknown/'],
       ['GET', '/a/unknown/app.js'],
       ['GET', '/a/unknown/_status'],
-      ['GET', '/a/unknown/_state'],
-      ['PUT', '/a/unknown/_state'],
+      ['GET', '/a/unknown/_user-input-state'],
+      ['PUT', '/a/unknown/_user-input-state'],
     ])('should answer 404 when %s %s is requested', async (method, path) => {
       const response = await app.request(path, {
         method,
@@ -176,7 +179,7 @@ describe('createPageRoutes', () => {
   });
 
   describe('Host check', () => {
-    it.each(['/a/T/', '/a/T/app.js', '/a/T/_status', '/a/T/_state'])(
+    it.each(['/a/T/', '/a/T/app.js', '/a/T/_status', '/a/T/_user-input-state'])(
       'should answer 403 when %s has a foreign Host',
       async (path) => {
         const response = await app.request(path, { headers: { Host: 'evil.example:4000' } });
@@ -199,9 +202,9 @@ describe('createPageRoutes', () => {
     );
   });
 
-  describe('PUT /:token/_state', () => {
+  describe('PUT /:token/_user-input-state', () => {
     const put = (headers: Record<string, string>, body = '{"q":1}') =>
-      app.request('/a/T/_state', {
+      app.request('/a/T/_user-input-state', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...headers },
         body,
@@ -213,7 +216,7 @@ describe('createPageRoutes', () => {
         const response = await put(headers);
 
         expect(response.status).toBe(403);
-        expect(() => readFileSync(join(directory, 'state.json'))).toThrow();
+        expect(() => readFileSync(join(directory, 'user-input-state.json'))).toThrow();
       },
     );
 
@@ -221,14 +224,14 @@ describe('createPageRoutes', () => {
       const response = await put(validHeaders);
 
       expect(response.status).toBeLessThan(300);
-      expect(readFileSync(join(directory, 'state.json'), 'utf8')).toBe('{"q":1}');
+      expect(readFileSync(join(directory, 'user-input-state.json'), 'utf8')).toBe('{"q":1}');
     });
 
     it('should answer 400 and keep the state when the body is not JSON', async () => {
       const response = await put(validHeaders, 'not json');
 
       expect(response.status).toBe(400);
-      expect(() => readFileSync(join(directory, 'state.json'))).toThrow();
+      expect(() => readFileSync(join(directory, 'user-input-state.json'))).toThrow();
     });
 
     it('should store the state when the page is busy', async () => {
@@ -238,23 +241,25 @@ describe('createPageRoutes', () => {
     });
   });
 
-  describe('GET /:token/_state', () => {
+  describe('GET /:token/_user-input-state', () => {
     it('should answer null when no draft was stored', async () => {
-      const response = await app.request('/a/T/_state', { headers: { Host: host } });
+      const response = await app.request('/a/T/_user-input-state', { headers: { Host: host } });
 
       expect(response.status).toBe(200);
       expect(await response.text()).toBe('null');
     });
 
     it('should answer the stored draft when a new app instance serves the same files', async () => {
-      await app.request('/a/T/_state', {
+      await app.request('/a/T/_user-input-state', {
         method: 'PUT',
         headers: { ...validHeaders, 'Content-Type': 'application/json' },
         body: '{"answers":{"q1":"yes"}}',
       });
 
       const restarted = buildApp(database, ticketRunLookup, checkpointAnswers);
-      const response = await restarted.request('/a/T/_state', { headers: { Host: host } });
+      const response = await restarted.request('/a/T/_user-input-state', {
+        headers: { Host: host },
+      });
 
       expect(await response.text()).toBe('{"answers":{"q1":"yes"}}');
     });

@@ -17,11 +17,11 @@ export class FakeArtifactFiles implements ArtifactFiles {
     return content === undefined ? undefined : new TextEncoder().encode(content);
   }
 
-  async readState(directory: string): Promise<string | undefined> {
-    return this.files.get(`${directory}/state.json`);
+  async readUserInputState(directory: string): Promise<string | undefined> {
+    return this.files.get(`${directory}/user-input-state.json`);
   }
 
-  async writeState(directory: string, state: string): Promise<void> {
-    this.files.set(`${directory}/state.json`, state);
+  async writeUserInputState(directory: string, userInputState: string): Promise<void> {
+    this.files.set(`${directory}/user-input-state.json`, userInputState);
   }
 }

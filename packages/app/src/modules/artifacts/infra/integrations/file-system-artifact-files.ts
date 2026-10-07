@@ -4,7 +4,7 @@ import { join, sep } from 'node:path';
 import type { ArtifactFiles } from '../../logic/ports/artifact-files.js';
 
 const indexName = 'index.html';
-const stateName = 'state.json';
+const userInputStateFileName = 'user-input-state.json';
 
 async function readTextOrUndefined(path: string): Promise<string | undefined> {
   try {
@@ -41,13 +41,13 @@ export class FileSystemArtifactFiles implements ArtifactFiles {
     }
   }
 
-  readState(directory: string): Promise<string | undefined> {
-    return readTextOrUndefined(join(directory, stateName));
+  readUserInputState(directory: string): Promise<string | undefined> {
+    return readTextOrUndefined(join(directory, userInputStateFileName));
   }
 
-  async writeState(directory: string, state: string): Promise<void> {
-    const temporaryPath = join(directory, `.${stateName}.${randomUUID()}.tmp`);
-    await writeFile(temporaryPath, state, 'utf8');
-    await rename(temporaryPath, join(directory, stateName));
+  async writeUserInputState(directory: string, userInputState: string): Promise<void> {
+    const temporaryPath = join(directory, `.${userInputStateFileName}.${randomUUID()}.tmp`);
+    await writeFile(temporaryPath, userInputState, 'utf8');
+    await rename(temporaryPath, join(directory, userInputStateFileName));
   }
 }

@@ -2,20 +2,21 @@ import { ArtifactNotFoundError } from '../errors/artifact-not-found-error.js';
 import type { ArtifactFiles } from '../ports/artifact-files.js';
 import type { ArtifactRepository } from '../ports/artifact-repository.js';
 
-export type WritePageStateDependencies = {
+export type ReadPageUserInputStateDependencies = {
   readonly artifactRepository: ArtifactRepository;
   readonly artifactFiles: ArtifactFiles;
 };
 
-export class WritePageStateUseCase {
-  constructor(private readonly dependencies: WritePageStateDependencies) {}
+export class ReadPageUserInputStateUseCase {
+  constructor(private readonly dependencies: ReadPageUserInputStateDependencies) {}
 
-  async execute(token: string, state: string): Promise<void> {
+  /** The stored draft as JSON text, or `null` when nothing was saved. */
+  async execute(token: string): Promise<string> {
     const { artifactRepository, artifactFiles } = this.dependencies;
     const artifact = await artifactRepository.findByToken(token);
     if (artifact === undefined) {
       throw new ArtifactNotFoundError('Unknown page');
     }
-    await artifactFiles.writeState(artifact.directory, state);
+    return (await artifactFiles.readUserInputState(artifact.directory)) ?? 'null';
   }
 }
