@@ -135,7 +135,8 @@ sub-issue may depend on an earlier one but must not need a sibling half-done.
 Per sub-issue: **Title** (the outcome) · **Scope** (one sentence, in and out) · **Blocked-by** ·
 **Proves** (which acceptance criteria) · **`hitl`** proposed or not, with its human checkpoint:
 what the human does or judges. Nothing before it may need them. A criterion that needs the
-running app or a real external write goes to a `hitl` sub-issue only.
+running app or a real external write goes to a `hitl` sub-issue only. A check a scenario can
+state is a scenario, never the checkpoint.
 
 Two splits have no umbrella:
 

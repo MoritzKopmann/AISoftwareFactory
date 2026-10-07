@@ -46,7 +46,9 @@ with the answer; the human says give up → `aisf:github-issue` _Hand-run stuck_
 Never call an `aisf_*` tool that isn't present.
 
 `request`: what the human must do or judge, the worktree path, the exact commands to run, and
-the answer expected. It becomes a public comment on the ticket, so it holds no secrets.
+the answer expected. It becomes a public comment on the ticket, so it holds no secrets. It
+holds only what no test or command proves: never a check a passing test already asserts, never
+a command you can run yourself.
 
 ## 0. Precondition
 
