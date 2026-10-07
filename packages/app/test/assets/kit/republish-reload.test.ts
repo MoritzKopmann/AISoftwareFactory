@@ -3,20 +3,20 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Hono } from 'hono';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createPageRoutes } from '../../../src/modules/bridge/api/routes/create-page-routes.js';
-import type { TicketLatestRun } from '../../../src/modules/bridge/logic/domain/types/ticket-latest-run.js';
-import { PublishArtifactUseCase } from '../../../src/modules/bridge/logic/use-cases/publish-artifact-use-case.js';
-import { ReadPageAssetUseCase } from '../../../src/modules/bridge/logic/use-cases/read-page-asset-use-case.js';
-import { ReadPageStateUseCase } from '../../../src/modules/bridge/logic/use-cases/read-page-state-use-case.js';
-import { ReadPageStatusUseCase } from '../../../src/modules/bridge/logic/use-cases/read-page-status-use-case.js';
-import { ReadPageUseCase } from '../../../src/modules/bridge/logic/use-cases/read-page-use-case.js';
-import { SubmitPageEventUseCase } from '../../../src/modules/bridge/logic/use-cases/submit-page-event-use-case.js';
-import { WritePageStateUseCase } from '../../../src/modules/bridge/logic/use-cases/write-page-state-use-case.js';
+import { createPageRoutes } from '../../../src/modules/artifacts/api/routes/create-page-routes.js';
+import type { TicketLatestRun } from '../../../src/modules/artifacts/logic/domain/types/ticket-latest-run.js';
+import { PublishArtifactUseCase } from '../../../src/modules/artifacts/logic/use-cases/publish-artifact-use-case.js';
+import { ReadPageAssetUseCase } from '../../../src/modules/artifacts/logic/use-cases/read-page-asset-use-case.js';
+import { ReadPageStateUseCase } from '../../../src/modules/artifacts/logic/use-cases/read-page-state-use-case.js';
+import { ReadPageStatusUseCase } from '../../../src/modules/artifacts/logic/use-cases/read-page-status-use-case.js';
+import { ReadPageUseCase } from '../../../src/modules/artifacts/logic/use-cases/read-page-use-case.js';
+import { SubmitPageEventUseCase } from '../../../src/modules/artifacts/logic/use-cases/submit-page-event-use-case.js';
+import { WritePageStateUseCase } from '../../../src/modules/artifacts/logic/use-cases/write-page-state-use-case.js';
 import { FakeClock } from '../../fakes/fake-clock.js';
-import { FakeArtifactFiles } from '../../modules/bridge/fakes/fake-artifact-files.js';
-import { FakeCheckpointAnswers } from '../../modules/bridge/fakes/fake-checkpoint-answers.js';
-import { FakeTicketRunLookup } from '../../modules/bridge/fakes/fake-ticket-run-lookup.js';
-import { InMemoryArtifactRepository } from '../../modules/bridge/fakes/in-memory-artifact-repository.js';
+import { FakeArtifactFiles } from '../../modules/artifacts/fakes/fake-artifact-files.js';
+import { FakeCheckpointAnswers } from '../../modules/artifacts/fakes/fake-checkpoint-answers.js';
+import { FakeTicketRunLookup } from '../../modules/artifacts/fakes/fake-ticket-run-lookup.js';
+import { InMemoryArtifactRepository } from '../../modules/artifacts/fakes/in-memory-artifact-repository.js';
 
 const bridgeSource = readFileSync(
   resolve(import.meta.dirname, '../../../assets/kit/bridge.js'),
