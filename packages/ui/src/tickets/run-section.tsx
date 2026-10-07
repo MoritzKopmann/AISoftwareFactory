@@ -14,8 +14,10 @@ import {
 } from './describe-checkpoint-prompt.js';
 import {
   describePermissionPrompt,
+  settlePermissionAnswer,
   type PermissionAnswer,
   type PermissionDecision,
+  type PermissionWait,
 } from './describe-permission-prompt.js';
 import { describeResetAction, settleResetState, type ResetState } from './describe-reset-action.js';
 import {
@@ -69,6 +71,10 @@ export function RunSection({
   }, [ticketRun.response, ticketStatus, onTicketStale, resetting]);
 
   useEffect(() => {
+    setPermissionAnswer((current) => settlePermissionAnswer(current, ticketRun.response));
+  }, [ticketRun.response]);
+
+  useEffect(() => {
     setCheckpointAnswer((current) => settleCheckpointAnswer(current, ticketRun.response));
   }, [ticketRun.response]);
 
@@ -106,12 +112,12 @@ export function RunSection({
     if (outcome.kind === 'failed') setStoppingRunId(undefined);
   };
 
-  const answer = async (runId: string, decision: PermissionDecision) => {
-    setPermissionAnswer({ kind: 'answering', runId, decision });
-    const outcome = await answerPermissionPrompt(runId, decision, (url, requestInit) =>
+  const answer = async (wait: PermissionWait, decision: PermissionDecision) => {
+    setPermissionAnswer({ kind: 'answering', wait, decision });
+    const outcome = await answerPermissionPrompt(wait.runId, decision, (url, requestInit) =>
       fetch(url, requestInit),
     );
-    if (outcome.kind === 'failed') setPermissionAnswer({ ...outcome, runId });
+    if (outcome.kind === 'failed') setPermissionAnswer({ ...outcome, wait });
   };
 
   const sendCheckpointAnswer = async (runId: string, draft: string) => {
@@ -157,7 +163,15 @@ export function RunSection({
       <PermissionPrompt
         description={prompt}
         onAnswer={(decision) => {
-          if (prompt.kind === 'shown') void answer(prompt.runId, decision);
+          if (prompt.kind === 'shown') {
+            void answer(
+              {
+                runId: prompt.runId,
+                ...(prompt.waitingSince === undefined ? {} : { waitingSince: prompt.waitingSince }),
+              },
+              decision,
+            );
+          }
         }}
       />
       <CheckpointPrompt

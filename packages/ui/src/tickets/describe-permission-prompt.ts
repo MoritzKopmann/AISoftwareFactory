@@ -6,12 +6,19 @@ import type { TicketStatusResponse } from '@aisf/app/api-schemas/tickets-schemas
 
 export type PermissionDecision = PermissionAnswerRequest['decision'];
 
+// A live wait is told apart by its start time. The fallback wait has none: one per run.
+export type PermissionWait = { readonly runId: string; readonly waitingSince?: string };
+
 export type PermissionAnswer =
   | { readonly kind: 'idle' }
-  | { readonly kind: 'answering'; readonly runId: string; readonly decision: PermissionDecision }
+  | {
+      readonly kind: 'answering';
+      readonly wait: PermissionWait;
+      readonly decision: PermissionDecision;
+    }
   | {
       readonly kind: 'failed';
-      readonly runId: string;
+      readonly wait: PermissionWait;
       readonly message: string;
       readonly status?: number;
     };
@@ -23,6 +30,7 @@ export type PermissionPromptDescription =
   | {
       readonly kind: 'shown';
       readonly runId: string;
+      readonly waitingSince?: string;
       readonly toolName: string;
       readonly inputText: string;
       readonly guidance: boolean;
@@ -40,28 +48,62 @@ function describeToolInput(toolName: string, toolInput: Readonly<Record<string, 
   return JSON.stringify(toolInput, undefined, 2);
 }
 
+type ShownWait = PermissionWait & {
+  readonly toolName: string;
+  readonly toolInput: Readonly<Record<string, unknown>>;
+};
+
+function findShownWait(response: TicketRunResponse | undefined): ShownWait | undefined {
+  const activeRun = response?.activeRun;
+  if (activeRun !== undefined) {
+    const { waitingFor } = activeRun;
+    return waitingFor?.kind !== 'permission-needed'
+      ? undefined
+      : {
+          runId: activeRun.id,
+          ...(activeRun.waitingSince === undefined ? {} : { waitingSince: activeRun.waitingSince }),
+          toolName: waitingFor.toolName,
+          toolInput: waitingFor.toolInput,
+        };
+  }
+  const lastRun = response?.lastRun;
+  return lastRun?.ending.kind === 'permission-needed'
+    ? { runId: lastRun.id, toolName: lastRun.ending.toolName, toolInput: lastRun.ending.toolInput }
+    : undefined;
+}
+
+function isSameWait(left: PermissionWait, right: PermissionWait): boolean {
+  return left.runId === right.runId && left.waitingSince === right.waitingSince;
+}
+
+// An answer belongs to one wait. Once the poll shows a different wait or none, it is stale.
+export function settlePermissionAnswer(
+  answer: PermissionAnswer,
+  response: TicketRunResponse | undefined,
+): PermissionAnswer {
+  if (answer.kind === 'idle' || response === undefined) return answer;
+  const wait = findShownWait(response);
+  return wait !== undefined && isSameWait(wait, answer.wait) ? answer : { kind: 'idle' };
+}
+
 export function describePermissionPrompt(
   response: TicketRunResponse | undefined,
   ticketStatus: TicketStatusResponse,
   answer: PermissionAnswer,
 ): PermissionPromptDescription {
-  const lastRun = response?.lastRun;
-  if (
-    response?.activeRun !== undefined ||
-    lastRun === undefined ||
-    lastRun.ending.kind !== 'permission-needed' ||
-    ticketStatus !== 'stuck'
-  ) {
+  const wait = findShownWait(response);
+  if (wait === undefined || ticketStatus !== 'waiting') {
     return { kind: 'hidden' };
   }
-  const { toolName, toolInput } = lastRun.ending;
+  const { toolName, toolInput } = wait;
   const prompt = {
     kind: 'shown',
-    runId: lastRun.id,
+    runId: wait.runId,
+    ...(wait.waitingSince === undefined ? {} : { waitingSince: wait.waitingSince }),
     toolName,
     inputText: describeToolInput(toolName, toolInput),
   } as const;
-  if (answer.kind === 'idle' || answer.runId !== lastRun.id) {
+  if (answer.kind === 'idle' || !isSameWait(answer.wait, wait)) {
     return { ...prompt, guidance: true, pressable: true };
   }
   if (answer.kind === 'answering') {
