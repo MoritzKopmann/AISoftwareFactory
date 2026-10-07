@@ -7,11 +7,11 @@ import { createPageRoutes } from '../../../src/modules/artifacts/api/routes/crea
 import type { TicketLatestRun } from '../../../src/modules/artifacts/logic/domain/types/ticket-latest-run.js';
 import { PublishArtifactUseCase } from '../../../src/modules/artifacts/logic/use-cases/publish-artifact-use-case.js';
 import { ReadPageAssetUseCase } from '../../../src/modules/artifacts/logic/use-cases/read-page-asset-use-case.js';
-import { ReadPageStateUseCase } from '../../../src/modules/artifacts/logic/use-cases/read-page-state-use-case.js';
+import { ReadPageUserInputStateUseCase } from '../../../src/modules/artifacts/logic/use-cases/read-page-user-input-state-use-case.js';
 import { ReadPageStatusUseCase } from '../../../src/modules/artifacts/logic/use-cases/read-page-status-use-case.js';
 import { ReadPageUseCase } from '../../../src/modules/artifacts/logic/use-cases/read-page-use-case.js';
 import { SubmitPageEventUseCase } from '../../../src/modules/artifacts/logic/use-cases/submit-page-event-use-case.js';
-import { WritePageStateUseCase } from '../../../src/modules/artifacts/logic/use-cases/write-page-state-use-case.js';
+import { WritePageUserInputStateUseCase } from '../../../src/modules/artifacts/logic/use-cases/write-page-user-input-state-use-case.js';
 import { FakeClock } from '../../fakes/fake-clock.js';
 import { FakeArtifactFiles } from '../../modules/artifacts/fakes/fake-artifact-files.js';
 import { FakeCheckpointAnswers } from '../../modules/artifacts/fakes/fake-checkpoint-answers.js';
@@ -59,8 +59,14 @@ describe('a republished page', () => {
         readPage: new ReadPageUseCase({ artifactRepository, artifactFiles }),
         readAsset: new ReadPageAssetUseCase({ artifactRepository, artifactFiles }),
         readStatus: new ReadPageStatusUseCase({ artifactRepository, ticketRunLookup }),
-        readState: new ReadPageStateUseCase({ artifactRepository, artifactFiles }),
-        writeState: new WritePageStateUseCase({ artifactRepository, artifactFiles }),
+        readUserInputState: new ReadPageUserInputStateUseCase({
+          artifactRepository,
+          artifactFiles,
+        }),
+        writeUserInputState: new WritePageUserInputStateUseCase({
+          artifactRepository,
+          artifactFiles,
+        }),
         submitEvent: new SubmitPageEventUseCase({
           artifactRepository,
           ticketRunLookup,

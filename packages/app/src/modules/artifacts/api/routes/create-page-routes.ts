@@ -6,18 +6,18 @@ import { ArtifactNotFoundError } from '../../logic/errors/artifact-not-found-err
 import { PageBusyError } from '../../logic/errors/page-busy-error.js';
 import { PageClosedError } from '../../logic/errors/page-closed-error.js';
 import type { ReadPageAssetUseCase } from '../../logic/use-cases/read-page-asset-use-case.js';
-import type { ReadPageStateUseCase } from '../../logic/use-cases/read-page-state-use-case.js';
+import type { ReadPageUserInputStateUseCase } from '../../logic/use-cases/read-page-user-input-state-use-case.js';
 import type { ReadPageStatusUseCase } from '../../logic/use-cases/read-page-status-use-case.js';
 import type { ReadPageUseCase } from '../../logic/use-cases/read-page-use-case.js';
 import type { SubmitPageEventUseCase } from '../../logic/use-cases/submit-page-event-use-case.js';
-import type { WritePageStateUseCase } from '../../logic/use-cases/write-page-state-use-case.js';
+import type { WritePageUserInputStateUseCase } from '../../logic/use-cases/write-page-user-input-state-use-case.js';
 
 export type PageRoutesUseCases = {
   readonly readPage: ReadPageUseCase;
   readonly readAsset: ReadPageAssetUseCase;
   readonly readStatus: ReadPageStatusUseCase;
-  readonly readState: ReadPageStateUseCase;
-  readonly writeState: WritePageStateUseCase;
+  readonly readUserInputState: ReadPageUserInputStateUseCase;
+  readonly writeUserInputState: WritePageUserInputStateUseCase;
   readonly submitEvent: SubmitPageEventUseCase;
 };
 
@@ -107,21 +107,23 @@ export function createPageRoutes(useCases: PageRoutesUseCases): Hono {
         context.json(await useCases.readStatus.execute(context.req.param('token'))),
       ),
     )
-    .get('/:token/_state', (context) =>
+    .get('/:token/_user-input-state', (context) =>
       answerOrNotFound(context, async () => {
-        const state = await useCases.readState.execute(context.req.param('token'));
-        return context.body(state, 200, { 'Content-Type': 'application/json' });
+        const userInputState = await useCases.readUserInputState.execute(
+          context.req.param('token'),
+        );
+        return context.body(userInputState, 200, { 'Content-Type': 'application/json' });
       }),
     )
-    .put('/:token/_state', (context) =>
+    .put('/:token/_user-input-state', (context) =>
       answerOrNotFound(context, async () => {
-        const state = await context.req.text();
+        const userInputState = await context.req.text();
         try {
-          JSON.parse(state);
+          JSON.parse(userInputState);
         } catch {
-          return context.json({ message: 'The state must be JSON' }, 400);
+          return context.json({ message: 'The user input state must be JSON' }, 400);
         }
-        await useCases.writeState.execute(context.req.param('token'), state);
+        await useCases.writeUserInputState.execute(context.req.param('token'), userInputState);
         return context.body(null, 204);
       }),
     )

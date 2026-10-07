@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ArtifactNotFoundError } from '../../../../../src/modules/artifacts/logic/errors/artifact-not-found-error.js';
 import { ReadPageAssetUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/read-page-asset-use-case.js';
-import { ReadPageStateUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/read-page-state-use-case.js';
+import { ReadPageUserInputStateUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/read-page-user-input-state-use-case.js';
 import { injectPageBridge } from '../../../../../src/modules/artifacts/logic/domain/functions/inject-page-bridge.js';
 import { ReadPageUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/read-page-use-case.js';
-import { WritePageStateUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/write-page-state-use-case.js';
+import { WritePageUserInputStateUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/write-page-user-input-state-use-case.js';
 import { buildArtifact } from '../../fakes/build-artifact.js';
 import { FakeArtifactFiles } from '../../fakes/fake-artifact-files.js';
 import { InMemoryArtifactRepository } from '../../fakes/in-memory-artifact-repository.js';
@@ -63,29 +63,29 @@ describe('page file use cases', () => {
     });
   });
 
-  describe('ReadPageStateUseCase', () => {
+  describe('ReadPageUserInputStateUseCase', () => {
     it('should return null when no draft was stored', async () => {
-      expect(await new ReadPageStateUseCase(dependencies).execute('T')).toBe('null');
+      expect(await new ReadPageUserInputStateUseCase(dependencies).execute('T')).toBe('null');
     });
 
     it('should return the stored draft when one exists', async () => {
-      await new WritePageStateUseCase(dependencies).execute('T', '{"a":1}');
+      await new WritePageUserInputStateUseCase(dependencies).execute('T', '{"a":1}');
 
-      expect(await new ReadPageStateUseCase(dependencies).execute('T')).toBe('{"a":1}');
+      expect(await new ReadPageUserInputStateUseCase(dependencies).execute('T')).toBe('{"a":1}');
     });
 
     it('should throw when the token is unknown', async () => {
-      await expect(new ReadPageStateUseCase(dependencies).execute('nope')).rejects.toThrow(
+      await expect(new ReadPageUserInputStateUseCase(dependencies).execute('nope')).rejects.toThrow(
         ArtifactNotFoundError,
       );
     });
   });
 
-  describe('WritePageStateUseCase', () => {
+  describe('WritePageUserInputStateUseCase', () => {
     it('should store nothing and throw when the token is unknown', async () => {
-      await expect(new WritePageStateUseCase(dependencies).execute('nope', '{}')).rejects.toThrow(
-        ArtifactNotFoundError,
-      );
+      await expect(
+        new WritePageUserInputStateUseCase(dependencies).execute('nope', '{}'),
+      ).rejects.toThrow(ArtifactNotFoundError);
       expect(artifactFiles.files.size).toBe(0);
     });
   });

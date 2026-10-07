@@ -31,7 +31,7 @@ The page CSP is `script-src 'self' 'nonce-…'`.
 - No inline `on*=` handler attributes. The CSP blocks them. Use `addEventListener`.
 - No `eval`, no `new Function`. The CSP blocks them.
 - A script file in the artifact directory also loads: `<script src="figure.js"></script>`.
-- Scripts draw figures only. They never call `aisf.send` or `aisf.state`. They may call
+- Scripts draw figures only. They never call `aisf.send` or `aisf.userInputState`. They may call
   `aisf.on('status', …)`.
 
 ## Styling figures

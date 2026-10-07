@@ -62,10 +62,10 @@
     setTimeout(poll, pollIntervalMilliseconds);
   }
 
-  const state = {
+  const userInputState = {
     /** For page code: loads the saved draft (`null` if none), to restore the page's inputs on open. */
     async load() {
-      const response = await fetch('./_state');
+      const response = await fetch('./_user-input-state');
       if (!response.ok) {
         throw new Error(`Loading the draft failed: ${response.status}`);
       }
@@ -77,7 +77,7 @@
      * @param {unknown} value
      */
     async save(value) {
-      const response = await fetch('./_state', {
+      const response = await fetch('./_user-input-state', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(value),
@@ -139,6 +139,6 @@
     throw new Error(`Sending the event failed: ${response.status}`);
   }
 
-  /** @type {any} */ (window).aisf = { state, on, send };
+  /** @type {any} */ (window).aisf = { userInputState, on, send };
   void poll();
 })();

@@ -69,17 +69,17 @@ describe('FileSystemArtifactFiles', () => {
     });
   });
 
-  describe('readState and writeState', () => {
+  describe('readUserInputState and writeUserInputState', () => {
     it('should return undefined when no state was written', async () => {
-      expect(await files.readState(directory)).toBeUndefined();
+      expect(await files.readUserInputState(directory)).toBeUndefined();
     });
 
     it('should return the written text and leave no temp file when state is written twice', async () => {
-      await files.writeState(directory, '{"a":1}');
-      await files.writeState(directory, '{"a":2}');
+      await files.writeUserInputState(directory, '{"a":1}');
+      await files.writeUserInputState(directory, '{"a":2}');
 
-      expect(await files.readState(directory)).toBe('{"a":2}');
-      expect(readdirSync(directory)).toEqual(['state.json']);
+      expect(await files.readUserInputState(directory)).toBe('{"a":2}');
+      expect(readdirSync(directory)).toEqual(['user-input-state.json']);
     });
   });
 });
