@@ -2,14 +2,14 @@
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import type { DatabaseSync } from 'node:sqlite';
-import { FileSystemArtifactFiles } from './modules/bridge/infra/integrations/file-system-artifact-files.js';
-import { SqliteArtifactRepository } from './modules/bridge/infra/repositories/sqlite-artifact-repository.js';
+import { FileSystemArtifactFiles } from './modules/artifacts/infra/integrations/file-system-artifact-files.js';
+import { SqliteArtifactRepository } from './modules/artifacts/infra/repositories/sqlite-artifact-repository.js';
 import {
-  createBridgeModule,
+  createArtifactsModule,
   PageBusyError,
-  type BridgeModule,
+  type ArtifactsModule,
   type CheckpointAnswers,
-} from './modules/bridge/index.js';
+} from './modules/artifacts/index.js';
 import { GhCliTicketCreator } from './modules/findings/infra/integrations/gh-cli-ticket-creator.js';
 import { SqliteFindingRepository } from './modules/findings/infra/repositories/sqlite-finding-repository.js';
 import { createFindingsModule, type FindingsModule } from './modules/findings/index.js';
@@ -73,13 +73,13 @@ import { openDatabase } from './shared/db/open-database.js';
 import { runMigrations } from './shared/db/run-migrations.js';
 import { consoleLogSink, createLogger, type Logger } from './shared/logger/create-logger.js';
 
-function buildBridgeModule(
+function buildArtifactsModule(
   kitDirectory: string,
   database: DatabaseSync,
   runner: Pick<RunnerModule, 'latestRun'>,
   checkpointAnswers: CheckpointAnswers,
-): BridgeModule {
-  return createBridgeModule({
+): ArtifactsModule {
+  return createArtifactsModule({
     kitDirectory,
     artifactRepository: new SqliteArtifactRepository(database),
     artifactFiles: new FileSystemArtifactFiles(),
@@ -327,9 +327,9 @@ const watcher = buildWatcherModule(config, eventBus, projects, {
     (await runner.activeRuns(projectId)).map(({ run }) => run.ticketNumber),
 });
 const findings = buildFindingsModule(database, projects);
-// The bridge needs runner.latestRun and the runner needs the bridge tools, so the lookup binds late.
+// The artifacts module needs runner.latestRun and the runner needs its tools, so the lookup binds late.
 // The same goes for scheduler.answer, which delivers a page's event.
-const bridge: BridgeModule = buildBridgeModule(
+const artifacts: ArtifactsModule = buildArtifactsModule(
   kitDirectory,
   database,
   { latestRun: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber) },
@@ -353,7 +353,7 @@ const runner = buildRunnerModule(
   projects,
   watcher,
   findOnPath('claude') ?? 'claude',
-  [...findings.tools, ...bridge.tools],
+  [...findings.tools, ...artifacts.tools],
   logger,
 );
 const scheduler = buildSchedulerModule(eventBus, projects, skills, watcher, runner, logger);
@@ -375,8 +375,8 @@ try {
 const runningServer = await startServer({
   app: createApp({
     staticDirectory,
-    kitRoutes: bridge.kitRoutes,
-    pageRoutes: bridge.pageRoutes,
+    kitRoutes: artifacts.kitRoutes,
+    pageRoutes: artifacts.pageRoutes,
     apiRoutes: [
       projects.routes,
       skills.routes,
@@ -384,7 +384,7 @@ const runningServer = await startServer({
       watcher.routes,
       scheduler.routes,
       runner.routes,
-      bridge.routes,
+      artifacts.routes,
     ],
   }),
   port: config.port,
