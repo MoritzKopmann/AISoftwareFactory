@@ -195,9 +195,9 @@ describe('createSchedulerModule', () => {
       );
     }
 
-    it('should set the ticket in-progress, resume the run and answer 201 when the ticket is stuck', async () => {
+    it('should set the ticket in-progress, resume the run and answer 201 when the ticket is waiting', async () => {
       const ticketStatusWrites = new FakeTicketStatusWrites();
-      ticketStatusWrites.liveStatus = 'stuck';
+      ticketStatusWrites.liveStatus = 'waiting';
 
       const response = await postAnswer(answerWith(ticketStatusWrites));
 
@@ -208,7 +208,7 @@ describe('createSchedulerModule', () => {
       );
     });
 
-    it('should answer 409 and resume nothing when the ticket is not stuck', async () => {
+    it('should answer 409 and resume nothing when the ticket is not waiting', async () => {
       const ticketStatusWrites = new FakeTicketStatusWrites();
 
       const response = await postAnswer(answerWith(ticketStatusWrites));
@@ -267,7 +267,7 @@ describe('createSchedulerModule', () => {
     });
 
     await vi.waitFor(() =>
-      expect(listener).toHaveBeenCalledWith(expect.objectContaining({ to: 'stuck' })),
+      expect(listener).toHaveBeenCalledWith(expect.objectContaining({ to: 'waiting' })),
     );
   });
 });

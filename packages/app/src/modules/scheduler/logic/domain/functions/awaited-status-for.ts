@@ -4,7 +4,7 @@ import type { RunEnding } from '../types/run-ending.js';
 
 export function awaitedStatusFor(ending: RunEnding, answer: RunAnswer): TicketStatus | undefined {
   if (ending.kind === 'permission-needed' && answer.kind === 'permission') {
-    return 'stuck';
+    return 'waiting';
   }
   if (ending.kind === 'checkpoint' && answer.kind === 'checkpoint') {
     return 'waiting';

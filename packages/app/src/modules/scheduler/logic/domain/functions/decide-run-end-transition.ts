@@ -14,15 +14,11 @@ export function decideRunEndTransition(
   if (!runningStatuses.includes(liveStatus)) {
     return { kind: 'none' };
   }
-  if (ending.kind === 'checkpoint') {
+  if (ending.kind === 'checkpoint' || ending.kind === 'permission-needed') {
     if (liveStatus === 'waiting') {
       return { kind: 'none' };
     }
-    return {
-      kind: 'transition',
-      to: 'waiting',
-      comment: `The run reached its human checkpoint and waits for an answer on the ticket page:\n\n${ending.request}`,
-    };
+    return { kind: 'transition', to: 'waiting', comment: describeEnding(ending) };
   }
   return {
     kind: 'transition',
@@ -31,12 +27,14 @@ export function decideRunEndTransition(
   };
 }
 
-function describeEnding(ending: Exclude<RunEnding, { kind: 'parked' | 'checkpoint' }>): string {
+function describeEnding(ending: Exclude<RunEnding, { kind: 'parked' }>): string {
   switch (ending.kind) {
-    case 'escalated':
-      return `The run escalated (${ending.escalation}): ${ending.reason}`;
+    case 'checkpoint':
+      return `The run reached its human checkpoint and waits for an answer on the ticket page:\n\n${ending.request}`;
     case 'permission-needed':
       return `The run needs permission for ${ending.toolName} with input ${JSON.stringify(ending.toolInput)}`;
+    case 'escalated':
+      return `The run escalated (${ending.escalation}): ${ending.reason}`;
     case 'finished':
       return 'The run finished without completing the ticket';
     case 'stopped':

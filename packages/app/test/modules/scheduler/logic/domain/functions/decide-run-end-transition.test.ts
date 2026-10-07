@@ -22,22 +22,33 @@ describe('decideRunEndTransition', () => {
   );
 
   it.each<TicketStatus>(['ready', 'in-progress'])(
-    'should move the ticket to stuck naming the tool call when a permission is needed while it is %s',
+    'should move the ticket to waiting naming the tool call when a permission is needed while it is %s',
     (liveStatus) => {
       const ending: RunEnding = {
         kind: 'permission-needed',
         toolName: 'Bash',
-        toolInput: { command: 'rm -rf build' },
+        toolInput: { command: 'date' },
       };
 
-      const transition = decideRunEndTransition(ending, liveStatus);
-
-      expect(transition).toMatchObject({ kind: 'transition', to: 'stuck' });
-      const comment = transition.kind === 'transition' ? transition.comment : undefined;
-      expect(comment).toContain('Bash');
-      expect(comment).toContain('rm -rf build');
+      expect(decideRunEndTransition(ending, liveStatus)).toEqual({
+        kind: 'transition',
+        to: 'waiting',
+        comment: 'The run needs permission for Bash with input {"command":"date"}',
+      });
     },
   );
+
+  it('should write nothing when a permission is needed while the ticket is already waiting', () => {
+    const ending: RunEnding = { kind: 'permission-needed', toolName: 'Bash', toolInput: {} };
+
+    expect(decideRunEndTransition(ending, 'waiting')).toEqual({ kind: 'none' });
+  });
+
+  it('should write nothing when a permission is needed while the ticket is stuck', () => {
+    const ending: RunEnding = { kind: 'permission-needed', toolName: 'Bash', toolInput: {} };
+
+    expect(decideRunEndTransition(ending, 'stuck')).toEqual({ kind: 'none' });
+  });
 
   it('should return the ticket to ready without a comment when the run parked while it is in-progress', () => {
     const ending: RunEnding = { kind: 'parked', blockerNumber: 12 };

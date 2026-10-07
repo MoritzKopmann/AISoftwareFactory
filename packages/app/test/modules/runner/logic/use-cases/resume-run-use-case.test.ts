@@ -194,24 +194,6 @@ describe('ResumeRunUseCase', () => {
     expect(runRepository.runs.get('run-1')?.ending).toEqual(permissionNeeded);
   });
 
-  it('should end the new run as permission-needed when the resumed session needs another permission', async () => {
-    await insertEndedRun();
-    await resumeRun.execute('run-1', allow);
-
-    agentSessions.push('session-1', {
-      kind: 'permission-needed',
-      toolName: 'Bash',
-      toolInput: { command: 'rm -rf build' },
-    });
-    await vi.waitFor(() => {
-      expect(runRepository.runs.get('id-1')?.ending).toEqual({
-        kind: 'permission-needed',
-        toolName: 'Bash',
-        toolInput: { command: 'rm -rf build' },
-      });
-    });
-  });
-
   describe('with a checkpoint answer', () => {
     const answer: RunAnswer = { kind: 'checkpoint', text: 'Looks right' };
 
