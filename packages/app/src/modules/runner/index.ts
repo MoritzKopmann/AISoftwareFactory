@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { EventPublisher } from '../../shared/bus/event-publisher.js';
 import type { Clock } from '../../shared/clock/clock.js';
 import type { Logger } from '../../shared/logger/create-logger.js';
+import { createRunLogRoutes } from './api/routes/create-run-log-routes.js';
 import { createStopRunRoutes } from './api/routes/create-stop-run-routes.js';
 import { createCheckpointTool } from './api/tools/create-checkpoint-tool.js';
 import { createEscalateTool } from './api/tools/create-escalate-tool.js';
@@ -10,7 +11,6 @@ import type { FinishRun } from './logic/domain/types/finish-run.js';
 import type { LaunchRunSession } from './logic/domain/types/launch-run-session.js';
 import type { RunAnswer } from './logic/domain/types/run-answer.js';
 import type { Run } from './logic/domain/types/run.js';
-import type { SessionLog } from './logic/domain/types/session-log.js';
 import type { RunTool } from './logic/domain/types/run-tool.js';
 import { RunAlreadyActiveError } from './logic/errors/run-already-active-error.js';
 import { RunNotActiveError } from './logic/errors/run-not-active-error.js';
@@ -23,7 +23,7 @@ import type { RunAnswerWaits } from './logic/ports/run-answer-waits.js';
 import type { RecentRunSteps } from './logic/ports/recent-run-steps.js';
 import type { RunRepository } from './logic/ports/run-repository.js';
 import type { RunTargets } from './logic/ports/run-targets.js';
-import type { SessionTranscripts } from './logic/ports/session-transcripts.js';
+import type { RunTranscripts } from './logic/ports/run-transcripts.js';
 import type { Worktrees } from './logic/ports/worktrees.js';
 import { DeliverRunAnswerUseCase } from './logic/use-cases/deliver-run-answer-use-case.js';
 import { FinishRunUseCase } from './logic/use-cases/finish-run-use-case.js';
@@ -34,7 +34,7 @@ import {
 } from './logic/use-cases/read-active-runs-use-case.js';
 import { ReadLatestRunUseCase } from './logic/use-cases/read-latest-run-use-case.js';
 import { ReadRunUseCase } from './logic/use-cases/read-run-use-case.js';
-import { ReadSessionLogUseCase } from './logic/use-cases/read-session-log-use-case.js';
+import { ReadTicketRunLogUseCase } from './logic/use-cases/read-ticket-run-log-use-case.js';
 import { RecoverInterruptedRunsUseCase } from './logic/use-cases/recover-interrupted-runs-use-case.js';
 import { ResumeRunUseCase } from './logic/use-cases/resume-run-use-case.js';
 import { SettleRunUseCase } from './logic/use-cases/settle-run-use-case.js';
@@ -52,7 +52,6 @@ export type { RunEnding } from './logic/domain/types/run-ending.js';
 export type { RunMode } from './logic/domain/types/run-mode.js';
 export type { RunStage } from './logic/domain/types/run-stage.js';
 export type { RunStep } from './logic/domain/types/run-step.js';
-export type { SessionLog } from './logic/domain/types/session-log.js';
 export type { RunTool, RunToolResult } from './logic/domain/types/run-tool.js';
 export type { ActiveRun } from './logic/use-cases/read-active-runs-use-case.js';
 export type { StartRunRequest } from './logic/use-cases/start-run-use-case.js';
@@ -70,7 +69,7 @@ export type RunnerModuleDependencies = {
   readonly worktrees: Worktrees;
   readonly runTargets: RunTargets;
   readonly recentRunSteps: RecentRunSteps;
-  readonly sessionTranscripts: SessionTranscripts;
+  readonly runTranscripts: RunTranscripts;
   readonly identifiers: Identifiers;
   readonly runAnswerWaits: RunAnswerWaits;
   readonly liveAnswerWindowMilliseconds: number;
@@ -89,7 +88,6 @@ export type RunnerModule = {
   readonly activeRuns: (projectId: string) => Promise<ReadonlyArray<ActiveRun>>;
   readonly latestRun: (projectId: string, ticketNumber: number) => Promise<Run | undefined>;
   readonly settle: (runId: string) => Promise<void>;
-  readonly sessionLog: (runId: string) => Promise<SessionLog>;
   readonly recover: () => Promise<void>;
   readonly abortSessions: () => void;
 };
@@ -155,9 +153,9 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
   const stopRun = new StopRunUseCase({ runRepository, finishRun });
   const readActiveRuns = new ReadActiveRunsUseCase({ runRepository, recentRunSteps });
   const readLatestRun = new ReadLatestRunUseCase({ runRepository });
-  const readSessionLog = new ReadSessionLogUseCase({
+  const readTicketRunLog = new ReadTicketRunLogUseCase({
     runRepository,
-    sessionTranscripts: dependencies.sessionTranscripts,
+    runTranscripts: dependencies.runTranscripts,
   });
   const settleRun = new SettleRunUseCase({ runRepository, clock });
   const recoverInterruptedRuns = new RecoverInterruptedRunsUseCase({
@@ -167,14 +165,15 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
   });
 
   return {
-    routes: new Hono().route('/runs', createStopRunRoutes(stopRun)),
+    routes: new Hono()
+      .route('/runs', createStopRunRoutes(stopRun))
+      .route('/projects', createRunLogRoutes(readTicketRunLog)),
     start: (request) => startRun.execute(request),
     answer: (runId, answer) => deliverRunAnswer.execute(runId, answer),
     findRun: (runId) => readRun.execute(runId),
     activeRuns: (projectId) => readActiveRuns.execute(projectId),
     latestRun: (projectId, ticketNumber) => readLatestRun.execute(projectId, ticketNumber),
     settle: (runId) => settleRun.execute(runId),
-    sessionLog: (runId) => readSessionLog.execute(runId),
     recover: () => recoverInterruptedRuns.execute(),
     abortSessions: () => agentSessions.stopAll(),
   };

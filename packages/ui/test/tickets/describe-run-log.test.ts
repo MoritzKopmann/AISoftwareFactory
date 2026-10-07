@@ -1,8 +1,8 @@
-import type { SessionLogResponse } from '@aisf/app/api-schemas/runs-schemas.js';
+import type { RunLogResponse } from '@aisf/app/api-schemas/run-log-schemas.js';
 import { describe, expect, it } from 'vitest';
-import { describeSessionLog } from '../../src/tickets/describe-session-log.js';
+import { describeRunLog } from '../../src/tickets/describe-run-log.js';
 
-function found(entryCount: number, total: number): SessionLogResponse {
+function found(entryCount: number, total: number): RunLogResponse {
   return {
     kind: 'found',
     entries: Array.from({ length: entryCount }, (_, position) => ({
@@ -12,19 +12,19 @@ function found(entryCount: number, total: number): SessionLogResponse {
   };
 }
 
-function describeAnswer(response: SessionLogResponse) {
-  return describeSessionLog({ kind: 'answer', response });
+function describeAnswer(response: RunLogResponse) {
+  return describeRunLog({ kind: 'answer', response });
 }
 
-describe('describeSessionLog', () => {
+describe('describeRunLog', () => {
   it('should describe a closed section when the log is closed', () => {
-    expect(describeSessionLog({ kind: 'closed' })).toEqual({ kind: 'closed' });
+    expect(describeRunLog({ kind: 'closed' })).toEqual({ kind: 'closed' });
   });
 
   it('should describe loading with its announcement when the log is waiting for the route', () => {
-    expect(describeSessionLog({ kind: 'loading' })).toEqual({
+    expect(describeRunLog({ kind: 'loading' })).toEqual({
       kind: 'loading',
-      loadingLabel: 'Loading the session log…',
+      loadingLabel: 'Loading the run log…',
     });
   });
 
@@ -72,17 +72,17 @@ describe('describeSessionLog', () => {
   });
 
   it("should say it can't reach aisf with the error's message as the detail when the request failed", () => {
-    expect(describeSessionLog({ kind: 'request-failed', message: 'Failed to fetch' })).toEqual({
+    expect(describeRunLog({ kind: 'request-failed', message: 'Failed to fetch' })).toEqual({
       kind: 'failed',
-      message: "Couldn't load the session log. Can't reach aisf.",
+      message: "Couldn't load the run log. Can't reach aisf.",
       detail: 'Failed to fetch',
     });
   });
 
   it('should name the status the route answered with the status alone as the detail when the route answered an error', () => {
-    expect(describeSessionLog({ kind: 'answered-error', status: 500 })).toEqual({
+    expect(describeRunLog({ kind: 'answered-error', status: 500 })).toEqual({
       kind: 'failed',
-      message: "Couldn't load the session log. The session log route answered 500.",
+      message: "Couldn't load the run log. The run log route answered 500.",
       detail: '500',
     });
   });

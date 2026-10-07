@@ -5,7 +5,7 @@ import { TicketPageView } from '../../src/tickets/ticket-page.js';
 const ignore = () => undefined;
 
 describe('TicketPageView', () => {
-  it('should end with the collapsed description after the session log when the ticket is loaded', () => {
+  it('should end with the collapsed description after the run log when the ticket is loaded', () => {
     const markup = renderToStaticMarkup(
       <TicketPageView
         projectId="o/n"
@@ -27,7 +27,7 @@ describe('TicketPageView', () => {
       />,
     );
     expect(markup).toMatch(
-      /<details class="row sessionlog"><summary.*<\/summary><\/details><details class="row ticket-body"><summary.*<\/summary>.*<\/details><\/main>$/,
+      /<details class="row runlog"><summary.*<\/summary><\/details><details class="row ticket-body"><summary.*<\/summary>.*<\/details><\/main>$/,
     );
   });
 });

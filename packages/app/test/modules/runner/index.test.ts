@@ -7,6 +7,8 @@ import {
   type RunnerModule,
   type RunTool,
 } from '../../../src/modules/runner/index.js';
+import { runLogResponseSchema } from '../../../src/modules/runner/api/schemas/run-log-schemas.js';
+import { TranscriptNotFoundError } from '../../../src/modules/runner/logic/errors/transcript-not-found-error.js';
 import { FakeClock } from '../../fakes/fake-clock.js';
 import { FakeEventPublisher } from '../../fakes/fake-event-publisher.js';
 import {
@@ -16,7 +18,7 @@ import {
   FakeRunAnswerWaits,
   FakeRunRepository,
   FakeRunTargets,
-  FakeSessionTranscripts,
+  FakeRunTranscripts,
   FakeWorktrees,
   SequentialIdentifiers,
 } from './fakes/fake-runner-ports.js';
@@ -25,7 +27,7 @@ describe('createRunnerModule', () => {
   let runRepository: FakeRunRepository;
   let agentSessions: FakeAgentSessions;
   let runAnswerWaits: FakeRunAnswerWaits;
-  let sessionTranscripts: FakeSessionTranscripts;
+  let runTranscripts: FakeRunTranscripts;
   let events: FakeEventPublisher;
   let runner: RunnerModule;
 
@@ -44,7 +46,7 @@ describe('createRunnerModule', () => {
 
   beforeEach(() => {
     runRepository = new FakeRunRepository();
-    sessionTranscripts = new FakeSessionTranscripts();
+    runTranscripts = new FakeRunTranscripts();
     agentSessions = new FakeAgentSessions();
     runAnswerWaits = new FakeRunAnswerWaits();
     events = new FakeEventPublisher();
@@ -59,7 +61,7 @@ describe('createRunnerModule', () => {
         types: [],
       }),
       recentRunSteps: new FakeRecentRunSteps(),
-      sessionTranscripts,
+      runTranscripts,
       identifiers: new SequentialIdentifiers(),
       runAnswerWaits,
       liveAnswerWindowMilliseconds: 3_600_000,
@@ -179,14 +181,44 @@ describe('createRunnerModule', () => {
     expect(await runner.latestRun('moritz/aisf', 137)).toEqual(run);
   });
 
-  it("should return the run's transcript entries when sessionLog is asked", async () => {
-    await runRepository.insert(buildRun({ state: 'ended', ending: { kind: 'finished' } }));
-    sessionTranscripts.entries = [{ summary: 'Read: ticket' }];
+  describe('GET /projects/:owner/:name/tickets/:number/run-log', () => {
+    it('should answer the entries with the total when the ticket has a run', async () => {
+      await runRepository.insert(buildRun({ state: 'ended', ending: { kind: 'finished' } }));
+      runTranscripts.entries = [{ summary: 'Read: ticket' }];
 
-    expect(await runner.sessionLog('run-1')).toEqual({
-      kind: 'found',
-      entries: [{ summary: 'Read: ticket' }],
-      total: 1,
+      const response = await runner.routes.request('/projects/moritz/aisf/tickets/137/run-log');
+
+      expect(response.status).toBe(200);
+      expect(runLogResponseSchema.parse(await response.json())).toEqual({
+        kind: 'found',
+        entries: [{ summary: 'Read: ticket' }],
+        total: 1,
+      });
+    });
+
+    it('should answer no session when the ticket has no run', async () => {
+      const response = await runner.routes.request('/projects/moritz/aisf/tickets/137/run-log');
+
+      expect(response.status).toBe(200);
+      expect(runLogResponseSchema.parse(await response.json())).toEqual({ kind: 'no-session' });
+    });
+
+    it('should answer transcript not found when the transcript is gone', async () => {
+      await runRepository.insert(buildRun({ state: 'ended', ending: { kind: 'finished' } }));
+      runTranscripts.failure = new TranscriptNotFoundError('session-1');
+
+      const response = await runner.routes.request('/projects/moritz/aisf/tickets/137/run-log');
+
+      expect(response.status).toBe(200);
+      expect(runLogResponseSchema.parse(await response.json())).toEqual({
+        kind: 'transcript-not-found',
+      });
+    });
+
+    it('should answer 400 when the ticket number is not a positive integer', async () => {
+      const response = await runner.routes.request('/projects/moritz/aisf/tickets/abc/run-log');
+
+      expect(response.status).toBe(400);
     });
   });
 

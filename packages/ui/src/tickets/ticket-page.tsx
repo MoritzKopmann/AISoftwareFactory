@@ -8,7 +8,7 @@ import {
 } from './describe-ticket-page.js';
 import { outcomeAfterRefresh } from './outcome-after-refresh.js';
 import { RunSection } from './run-section.js';
-import { SessionLog } from './session-log.js';
+import { RunLog } from './run-log.js';
 import { TicketBodySection } from './ticket-body-section.js';
 
 type TicketPageProps = {
@@ -214,7 +214,7 @@ function LoadedTicket({
         )}
       </dl>
       <KnownBugs projectId={projectId} ticketNumber={number} />
-      <SessionLog projectId={projectId} number={number} />
+      <RunLog projectId={projectId} number={number} />
       <TicketBodySection body={description.body} />
     </>
   );

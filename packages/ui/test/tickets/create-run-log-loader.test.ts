@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { createSessionLogLoader } from '../../src/tickets/create-session-log-loader.js';
-import type { SessionLogState } from '../../src/tickets/describe-session-log.js';
-import type { SessionLogOutcome } from '../../src/tickets/fetch-session-log.js';
+import { createRunLogLoader } from '../../src/tickets/create-run-log-loader.js';
+import type { RunLogState } from '../../src/tickets/describe-run-log.js';
+import type { RunLogOutcome } from '../../src/tickets/fetch-run-log.js';
 
-const noSession: SessionLogOutcome = { kind: 'answer', response: { kind: 'no-session' } };
-const transcriptNotFound: SessionLogOutcome = {
+const noSession: RunLogOutcome = { kind: 'answer', response: { kind: 'no-session' } };
+const transcriptNotFound: RunLogOutcome = {
   kind: 'answer',
   response: { kind: 'transcript-not-found' },
 };
 
-function createFakes(outcomes: ReadonlyArray<SessionLogOutcome> = [noSession]) {
-  const shown: SessionLogState[] = [];
+function createFakes(outcomes: ReadonlyArray<RunLogOutcome> = [noSession]) {
+  const shown: RunLogState[] = [];
   let readCount = 0;
-  const loader = createSessionLogLoader(
+  const loader = createRunLogLoader(
     () => {
       const outcome = outcomes[readCount] ?? noSession;
       readCount += 1;
@@ -23,7 +23,7 @@ function createFakes(outcomes: ReadonlyArray<SessionLogOutcome> = [noSession]) {
   return { loader, shown, readCount: () => readCount };
 }
 
-describe('createSessionLogLoader', () => {
+describe('createRunLogLoader', () => {
   it('should fetch nothing when the log has not been opened', () => {
     const { shown, readCount } = createFakes();
     expect(readCount()).toBe(0);
@@ -65,7 +65,7 @@ describe('createSessionLogLoader', () => {
   });
 
   it('should show loading and fetch again when Retry is pressed after a failed fetch', async () => {
-    const failed: SessionLogOutcome = { kind: 'request-failed', message: 'Failed to fetch' };
+    const failed: RunLogOutcome = { kind: 'request-failed', message: 'Failed to fetch' };
     const { loader, shown, readCount } = createFakes([failed, noSession]);
     await loader.toggle(true);
     await loader.retry();

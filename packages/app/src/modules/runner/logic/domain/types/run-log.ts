@@ -1,9 +1,9 @@
-import type { SessionLogEntry } from './session-log-entry.js';
+import type { RunLogEntry } from './run-log-entry.js';
 
-export type SessionLog =
+export type RunLog =
   | {
       readonly kind: 'found';
-      readonly entries: ReadonlyArray<SessionLogEntry>;
+      readonly entries: ReadonlyArray<RunLogEntry>;
       readonly total: number;
     }
   | { readonly kind: 'no-session' }
