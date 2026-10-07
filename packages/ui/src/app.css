@@ -935,7 +935,7 @@ details:not([open]) .t-hide {
   gap: 8px 12px;
 }
 
-.sessionlog {
+.runlog {
   max-width: 720px;
   min-width: 0;
 }

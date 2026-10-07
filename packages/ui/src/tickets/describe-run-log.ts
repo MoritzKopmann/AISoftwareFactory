@@ -1,10 +1,10 @@
-import type { SessionLogResponse } from '@aisf/app/api-schemas/runs-schemas.js';
-import type { SessionLogOutcome } from './fetch-session-log.js';
+import type { RunLogResponse } from '@aisf/app/api-schemas/run-log-schemas.js';
+import type { RunLogOutcome } from './fetch-run-log.js';
 
-export type SessionLogState =
-  { readonly kind: 'closed' } | { readonly kind: 'loading' } | SessionLogOutcome;
+export type RunLogState =
+  { readonly kind: 'closed' } | { readonly kind: 'loading' } | RunLogOutcome;
 
-export type SessionLogDescription =
+export type RunLogDescription =
   | { readonly kind: 'closed' }
   | { readonly kind: 'loading'; readonly loadingLabel: string }
   | {
@@ -16,7 +16,7 @@ export type SessionLogDescription =
   | { readonly kind: 'message'; readonly message: string }
   | { readonly kind: 'failed'; readonly message: string; readonly detail: string };
 
-function describeAnswer(response: SessionLogResponse): SessionLogDescription {
+function describeAnswer(response: RunLogResponse): RunLogDescription {
   switch (response.kind) {
     case 'no-session':
       return { kind: 'message', message: 'No session yet. A run on this ticket starts one.' };
@@ -46,24 +46,24 @@ function describeAnswer(response: SessionLogResponse): SessionLogDescription {
   }
 }
 
-export function describeSessionLog(state: SessionLogState): SessionLogDescription {
+export function describeRunLog(state: RunLogState): RunLogDescription {
   switch (state.kind) {
     case 'closed':
       return { kind: 'closed' };
     case 'loading':
-      return { kind: 'loading', loadingLabel: 'Loading the session log…' };
+      return { kind: 'loading', loadingLabel: 'Loading the run log…' };
     case 'answer':
       return describeAnswer(state.response);
     case 'request-failed':
       return {
         kind: 'failed',
-        message: "Couldn't load the session log. Can't reach aisf.",
+        message: "Couldn't load the run log. Can't reach aisf.",
         detail: state.message,
       };
     case 'answered-error':
       return {
         kind: 'failed',
-        message: `Couldn't load the session log. The session log route answered ${state.status}.`,
+        message: `Couldn't load the run log. The run log route answered ${state.status}.`,
         detail: String(state.status),
       };
   }

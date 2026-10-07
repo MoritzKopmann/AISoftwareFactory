@@ -25,7 +25,7 @@ import { EnvironmentCredentialSource } from './modules/skills/infra/integrations
 import { FileSystemPluginMirror } from './modules/skills/infra/integrations/file-system-plugin-mirror.js';
 import { FileSystemSlotReader } from './modules/skills/infra/integrations/file-system-slot-reader.js';
 import { createSkillsModule, type SkillsModule } from './modules/skills/index.js';
-import { ClaudeAgentSdkSessionTranscripts } from './modules/runner/infra/integrations/claude-agent-sdk-session-transcripts.js';
+import { ClaudeAgentSdkRunTranscripts } from './modules/runner/infra/integrations/claude-agent-sdk-run-transcripts.js';
 import { ClaudeAgentSdkSessions } from './modules/runner/infra/integrations/claude-agent-sdk-sessions.js';
 import { GitCliWorktrees } from './modules/runner/infra/integrations/git-cli-worktrees.js';
 import { InMemoryRunAnswerWaits } from './modules/runner/infra/integrations/in-memory-run-answer-waits.js';
@@ -211,7 +211,7 @@ function buildRunnerModule(
       },
     },
     recentRunSteps: new InMemoryRecentRunSteps(),
-    sessionTranscripts: new ClaudeAgentSdkSessionTranscripts(),
+    runTranscripts: new ClaudeAgentSdkRunTranscripts(),
     identifiers: new RandomUuidIdentifiers(),
     runAnswerWaits: new InMemoryRunAnswerWaits(),
     liveAnswerWindowMilliseconds: config.liveAnswerWindowMilliseconds,
@@ -262,7 +262,6 @@ function buildSchedulerModule(
       activeRuns: runner.activeRuns,
       latestRun: runner.latestRun,
       settle: runner.settle,
-      sessionLog: runner.sessionLog,
     },
     ticketLookup: {
       find: async (projectId, ticketNumber) => {

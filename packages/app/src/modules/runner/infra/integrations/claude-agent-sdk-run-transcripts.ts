@@ -1,12 +1,12 @@
 import type { SDKAssistantMessage } from '@anthropic-ai/claude-agent-sdk';
 import { getSessionMessages } from '@anthropic-ai/claude-agent-sdk';
-import type { SessionLogEntry } from '../../logic/domain/types/session-log-entry.js';
+import type { RunLogEntry } from '../../logic/domain/types/run-log-entry.js';
 import { TranscriptNotFoundError } from '../../logic/errors/transcript-not-found-error.js';
-import type { SessionTranscripts } from '../../logic/ports/session-transcripts.js';
+import type { RunTranscripts } from '../../logic/ports/run-transcripts.js';
 import { describeAssistantMessage } from './map-sdk-message.js';
 
-export class ClaudeAgentSdkSessionTranscripts implements SessionTranscripts {
-  async read(sessionId: string, worktreePath: string): Promise<ReadonlyArray<SessionLogEntry>> {
+export class ClaudeAgentSdkRunTranscripts implements RunTranscripts {
+  async read(sessionId: string, worktreePath: string): Promise<ReadonlyArray<RunLogEntry>> {
     const messages = await getSessionMessages(sessionId, { dir: worktreePath });
     // The SDK answers an empty list for a transcript it cannot find.
     if (messages.length === 0) {

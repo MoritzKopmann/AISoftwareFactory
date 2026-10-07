@@ -1,15 +1,15 @@
-import type { SessionLogState } from './describe-session-log.js';
-import type { SessionLogOutcome } from './fetch-session-log.js';
+import type { RunLogState } from './describe-run-log.js';
+import type { RunLogOutcome } from './fetch-run-log.js';
 
-export type SessionLogLoader = {
+export type RunLogLoader = {
   readonly toggle: (open: boolean) => Promise<void>;
   readonly retry: () => Promise<void>;
 };
 
-export function createSessionLogLoader(
-  read: () => Promise<SessionLogOutcome>,
-  show: (state: SessionLogState) => void,
-): SessionLogLoader {
+export function createRunLogLoader(
+  read: () => Promise<RunLogOutcome>,
+  show: (state: RunLogState) => void,
+): RunLogLoader {
   let latestRequestNumber = 0;
 
   const load = async () => {

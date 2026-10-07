@@ -2,7 +2,7 @@ import { copyFile, mkdir, mkdtemp, realpath, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { ClaudeAgentSdkSessionTranscripts } from '../../../../../src/modules/runner/infra/integrations/claude-agent-sdk-session-transcripts.js';
+import { ClaudeAgentSdkRunTranscripts } from '../../../../../src/modules/runner/infra/integrations/claude-agent-sdk-run-transcripts.js';
 import { TranscriptNotFoundError } from '../../../../../src/modules/runner/logic/errors/transcript-not-found-error.js';
 
 const fixturePath = new URL(
@@ -11,7 +11,7 @@ const fixturePath = new URL(
 );
 const sessionId = '5b0f1c62-7f0e-4d3a-9d0b-2c1f6a8e4b71';
 
-describe('ClaudeAgentSdkSessionTranscripts', () => {
+describe('ClaudeAgentSdkRunTranscripts', () => {
   let temporaryDirectory: string;
   let claudeConfigDirectory: string;
   let worktreePath: string;
@@ -48,7 +48,7 @@ describe('ClaudeAgentSdkSessionTranscripts', () => {
   it('should describe the assistant steps in the wording of the running panel when the transcript exists', async () => {
     await recordTranscript();
 
-    const entries = await new ClaudeAgentSdkSessionTranscripts().read(sessionId, worktreePath);
+    const entries = await new ClaudeAgentSdkRunTranscripts().read(sessionId, worktreePath);
 
     expect(entries).toEqual([
       { summary: "I'll read the ticket first." },
@@ -59,7 +59,7 @@ describe('ClaudeAgentSdkSessionTranscripts', () => {
 
   it('should throw transcript not found when Claude Code has no transcript for the session', async () => {
     await expect(
-      new ClaudeAgentSdkSessionTranscripts().read(sessionId, worktreePath),
+      new ClaudeAgentSdkRunTranscripts().read(sessionId, worktreePath),
     ).rejects.toBeInstanceOf(TranscriptNotFoundError);
   });
 });
