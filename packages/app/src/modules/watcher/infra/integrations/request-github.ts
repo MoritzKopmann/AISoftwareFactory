@@ -1,7 +1,7 @@
 import { GitHubAuthError } from '../../logic/errors/github-auth-error.js';
 import { GitHubRateLimitedError } from '../../logic/errors/github-rate-limited-error.js';
 import { GitHubRequestError } from '../../logic/errors/github-request-error.js';
-import type { GitHubToken } from '../../logic/ports/github-token.js';
+import type { GitHubToken } from './github-token.js';
 
 export type RequestGitHubDependencies = {
   readonly fetch: typeof fetch;

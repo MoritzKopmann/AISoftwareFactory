@@ -6,6 +6,7 @@ import type { TicketRun } from '../../logic/domain/types/ticket-run.js';
 import { RunAlreadyActiveError } from '../../logic/errors/run-already-active-error.js';
 import { RunNotAvailableError } from '../../logic/errors/run-not-available-error.js';
 import { TicketNotResettableError } from '../../logic/errors/ticket-not-resettable-error.js';
+import { TicketWriteFailedError } from '../../logic/errors/ticket-write-failed-error.js';
 import type { SessionLogResponse, TicketRunResponse } from '../schemas/runs-schemas.js';
 
 export type TicketRuns = {
@@ -104,6 +105,9 @@ export function createRunRoutes(ticketRuns: TicketRuns): Hono {
       } catch (error) {
         if (error instanceof TicketNotResettableError) {
           return context.json({ message: error.message }, 409);
+        }
+        if (error instanceof TicketWriteFailedError) {
+          return context.json({ message: error.message }, 502);
         }
         throw error;
       }

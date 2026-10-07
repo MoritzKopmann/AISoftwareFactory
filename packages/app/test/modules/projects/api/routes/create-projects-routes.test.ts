@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import { createProjectsRoutes } from '../../../../../src/modules/projects/api/routes/create-projects-routes.js';
 import { CheckoutNotARepositoryError } from '../../../../../src/modules/projects/logic/errors/checkout-not-a-repository-error.js';
-import { GitHubCliError } from '../../../../../src/modules/projects/logic/errors/github-cli-error.js';
+import { LabelSyncFailedError } from '../../../../../src/modules/projects/logic/errors/label-sync-failed-error.js';
+import { RepositoryResolutionFailedError } from '../../../../../src/modules/projects/logic/errors/repository-resolution-failed-error.js';
 import { AddProjectUseCase } from '../../../../../src/modules/projects/logic/use-cases/add-project-use-case.js';
 import { ListProjectsUseCase } from '../../../../../src/modules/projects/logic/use-cases/list-projects-use-case.js';
 import { FakeClock } from '../../../../fakes/fake-clock.js';
@@ -104,9 +105,19 @@ describe('createProjectsRoutes', () => {
     expect(await response.json()).toEqual({ message: 'Pick the folder that contains .git' });
   });
 
-  it('should answer 502 with a message when the gh CLI fails', async () => {
+  it('should answer 502 with a message when the repository cannot be resolved', async () => {
+    const { app, repositoryResolver } = createSubject();
+    repositoryResolver.failure = new RepositoryResolutionFailedError('gh repo view failed');
+
+    const response = await postProject(app);
+
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({ message: 'gh repo view failed' });
+  });
+
+  it('should answer 502 with a message when the label sync fails', async () => {
     const { app, labelSync } = createSubject();
-    labelSync.failure = new GitHubCliError('gh: authentication required');
+    labelSync.failure = new LabelSyncFailedError('gh: authentication required');
 
     const response = await postProject(app);
 

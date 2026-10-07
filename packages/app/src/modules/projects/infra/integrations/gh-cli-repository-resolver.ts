@@ -1,7 +1,9 @@
 import { existsSync, realpathSync } from 'node:fs';
+import { GhCommandFailedError } from '../../../../shared/github/gh-command-failed-error.js';
+import { runGhCommand } from '../../../../shared/github/run-gh-command.js';
 import { runProcess } from '../../../../shared/process/run-process.js';
 import { CheckoutNotARepositoryError } from '../../logic/errors/checkout-not-a-repository-error.js';
-import { GitHubCliError } from '../../logic/errors/github-cli-error.js';
+import { RepositoryResolutionFailedError } from '../../logic/errors/repository-resolution-failed-error.js';
 import type {
   RepositoryReference,
   RepositoryResolver,
@@ -40,18 +42,21 @@ export class GhCliRepositoryResolver implements RepositoryResolver {
       throw new CheckoutNotARepositoryError('The origin remote is not on github.com');
     }
 
-    const repoView = await runProcess('gh', ['repo', 'view', originUrl, '--json', 'owner,name'], {
-      timeoutMilliseconds: commandTimeoutMilliseconds,
-    });
-    if (repoView.exitCode !== 0) {
-      throw new GitHubCliError(repoView.standardError.trim() || 'gh repo view failed');
+    let repoView: string;
+    try {
+      repoView = await runGhCommand(['repo', 'view', originUrl, '--json', 'owner,name']);
+    } catch (error) {
+      if (error instanceof GhCommandFailedError) {
+        throw new RepositoryResolutionFailedError(error.message);
+      }
+      throw error;
     }
 
     let repoViewResponse: RepoViewResponse;
     try {
-      repoViewResponse = JSON.parse(repoView.standardOutput) as RepoViewResponse;
+      repoViewResponse = JSON.parse(repoView) as RepoViewResponse;
     } catch {
-      throw new GitHubCliError('gh repo view returned unreadable output');
+      throw new RepositoryResolutionFailedError('gh repo view returned unreadable output');
     }
 
     return { owner: repoViewResponse.owner.login, name: repoViewResponse.name };

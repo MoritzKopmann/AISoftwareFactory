@@ -1,5 +1,5 @@
 import type { RepositoryReference } from '../../logic/domain/types/repository-reference.js';
-import type { GitHubToken } from '../../logic/ports/github-token.js';
+import type { GitHubToken } from './github-token.js';
 import type { IssueFeeds } from '../../logic/ports/issue-feeds.js';
 import { requestGitHub } from './request-github.js';
 

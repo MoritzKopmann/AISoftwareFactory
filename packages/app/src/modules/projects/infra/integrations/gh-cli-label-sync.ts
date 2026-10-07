@@ -1,51 +1,44 @@
-import { runProcess, type ProcessResult } from '../../../../shared/process/run-process.js';
+import { GhCommandFailedError } from '../../../../shared/github/gh-command-failed-error.js';
+import { runGhCommand } from '../../../../shared/github/run-gh-command.js';
 import { aisfLabels } from '../../logic/domain/constants/aisf-labels.js';
 import { findMissingLabels } from '../../logic/domain/functions/find-missing-labels.js';
-import { GitHubCliError } from '../../logic/errors/github-cli-error.js';
+import { LabelSyncFailedError } from '../../logic/errors/label-sync-failed-error.js';
 import type { LabelSync } from '../../logic/ports/label-sync.js';
 import type { RepositoryReference } from '../../logic/ports/repository-resolver.js';
 
-const commandTimeoutMilliseconds = 30_000;
 const labelListLimit = 1000;
 
 type LabelListEntry = { readonly name: string };
 
-async function runGh(argumentList: ReadonlyArray<string>): Promise<ProcessResult> {
+async function runGh(
+  argumentList: ReadonlyArray<string>,
+  repository: RepositoryReference,
+): Promise<string> {
   try {
-    return await runProcess('gh', argumentList, {
-      timeoutMilliseconds: commandTimeoutMilliseconds,
-    });
+    return await runGhCommand(argumentList, { repository });
   } catch (error) {
-    throw new GitHubCliError(error instanceof Error ? error.message : String(error));
+    if (error instanceof GhCommandFailedError) {
+      throw new LabelSyncFailedError(error.message);
+    }
+    throw error;
   }
 }
 
 export class GhCliLabelSync implements LabelSync {
   async sync(repository: RepositoryReference): Promise<void> {
-    const repositorySlug = `${repository.owner}/${repository.name}`;
-
-    const labelList = await runGh([
-      'label',
-      'list',
-      '--repo',
-      repositorySlug,
-      '--json',
-      'name',
-      '-L',
-      String(labelListLimit),
-    ]);
-    if (labelList.exitCode !== 0) {
-      throw new GitHubCliError(labelList.standardError.trim() || 'gh label list failed');
-    }
+    const labelList = await runGh(
+      ['label', 'list', '--json', 'name', '-L', String(labelListLimit)],
+      repository,
+    );
 
     let parsedLabelList: unknown;
     try {
-      parsedLabelList = JSON.parse(labelList.standardOutput);
+      parsedLabelList = JSON.parse(labelList);
     } catch {
-      throw new GitHubCliError('gh label list returned unreadable output');
+      throw new LabelSyncFailedError('gh label list returned unreadable output');
     }
     if (!Array.isArray(parsedLabelList)) {
-      throw new GitHubCliError('gh label list returned unreadable output');
+      throw new LabelSyncFailedError('gh label list returned unreadable output');
     }
     const existingLabels = parsedLabelList as ReadonlyArray<LabelListEntry>;
 
@@ -55,20 +48,10 @@ export class GhCliLabelSync implements LabelSync {
     );
 
     for (const label of missingLabels) {
-      const labelCreate = await runGh([
-        'label',
-        'create',
-        label.name,
-        '--repo',
-        repositorySlug,
-        '-c',
-        label.color,
-        '-d',
-        label.description,
-      ]);
-      if (labelCreate.exitCode !== 0) {
-        throw new GitHubCliError(labelCreate.standardError.trim() || 'gh label create failed');
-      }
+      await runGh(
+        ['label', 'create', label.name, '-c', label.color, '-d', label.description],
+        repository,
+      );
     }
   }
 }

@@ -12,6 +12,7 @@ import {
 import type { SessionLog } from '../../../../../src/modules/scheduler/logic/domain/types/session-log.js';
 import type { TicketRun } from '../../../../../src/modules/scheduler/logic/domain/types/ticket-run.js';
 import { RunAlreadyActiveError } from '../../../../../src/modules/scheduler/logic/errors/run-already-active-error.js';
+import { TicketWriteFailedError } from '../../../../../src/modules/scheduler/logic/errors/ticket-write-failed-error.js';
 import { TicketNotResettableError } from '../../../../../src/modules/scheduler/logic/errors/ticket-not-resettable-error.js';
 import { RunNotAvailableError } from '../../../../../src/modules/scheduler/logic/errors/run-not-available-error.js';
 
@@ -393,6 +394,19 @@ describe('createRunRoutes', () => {
 
       expect(response.status).toBe(409);
       expect(await response.json()).toEqual({ message: '#138 is not stuck or in progress' });
+    });
+
+    it('should answer 502 with the message when the ticket write fails', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.resetFailure = new TicketWriteFailedError('gh issue edit failed');
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/moritz/aisf/tickets/138/reset',
+        { method: 'POST' },
+      );
+
+      expect(response.status).toBe(502);
+      expect(await response.json()).toEqual({ message: 'gh issue edit failed' });
     });
 
     it('should answer 400 and not reset when the ticket number is bad', async () => {

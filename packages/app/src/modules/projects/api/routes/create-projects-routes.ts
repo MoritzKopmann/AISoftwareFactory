@@ -1,8 +1,9 @@
 import { Hono } from 'hono';
 import { CheckoutNotARepositoryError } from '../../logic/errors/checkout-not-a-repository-error.js';
-import { GitHubCliError } from '../../logic/errors/github-cli-error.js';
+import { LabelSyncFailedError } from '../../logic/errors/label-sync-failed-error.js';
 import { PluginInstallFailedError } from '../../logic/errors/plugin-install-failed-error.js';
 import { ProjectAlreadyAddedError } from '../../logic/errors/project-already-added-error.js';
+import { RepositoryResolutionFailedError } from '../../logic/errors/repository-resolution-failed-error.js';
 import type { AddProjectUseCase } from '../../logic/use-cases/add-project-use-case.js';
 import type { ListProjectsUseCase } from '../../logic/use-cases/list-projects-use-case.js';
 import { addProjectRequestSchema } from '../schemas/projects-schemas.js';
@@ -33,7 +34,11 @@ export function createProjectsRoutes(
         if (error instanceof CheckoutNotARepositoryError) {
           return context.json({ message: error.message }, 422);
         }
-        if (error instanceof GitHubCliError || error instanceof PluginInstallFailedError) {
+        if (
+          error instanceof RepositoryResolutionFailedError ||
+          error instanceof LabelSyncFailedError ||
+          error instanceof PluginInstallFailedError
+        ) {
           return context.json({ message: error.message }, 502);
         }
         throw error;

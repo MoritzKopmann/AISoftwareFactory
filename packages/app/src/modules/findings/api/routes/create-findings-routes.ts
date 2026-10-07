@@ -3,6 +3,7 @@ import { ticketNumberParameterSchema } from '../../../../shared/http/ticket-numb
 import type { Finding } from '../../logic/domain/types/finding.js';
 import { FindingNotFoundError } from '../../logic/errors/finding-not-found-error.js';
 import { FindingNotOpenError } from '../../logic/errors/finding-not-open-error.js';
+import { TicketCreationFailedError } from '../../logic/errors/ticket-creation-failed-error.js';
 import type { CreateTicketFromFindingUseCase } from '../../logic/use-cases/create-ticket-from-finding-use-case.js';
 import type { DismissFindingUseCase } from '../../logic/use-cases/dismiss-finding-use-case.js';
 import type { ListFindingsUseCase } from '../../logic/use-cases/list-findings-use-case.js';
@@ -29,6 +30,9 @@ async function answerWithFinding(
     }
     if (error instanceof FindingNotOpenError) {
       return context.json({ message: error.message }, 409);
+    }
+    if (error instanceof TicketCreationFailedError) {
+      return context.json({ message: error.message }, 502);
     }
     throw error;
   }

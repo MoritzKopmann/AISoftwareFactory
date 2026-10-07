@@ -1,8 +1,8 @@
+import { GhCommandFailedError } from '../../../../shared/github/gh-command-failed-error.js';
+import { runGhCommand } from '../../../../shared/github/run-gh-command.js';
 import { runProcess } from '../../../../shared/process/run-process.js';
 import { GitHubAuthError } from '../../logic/errors/github-auth-error.js';
-import type { GitHubToken } from '../../logic/ports/github-token.js';
-
-const commandTimeoutMilliseconds = 30_000;
+import type { GitHubToken } from './github-token.js';
 
 export class GhCliGitHubToken implements GitHubToken {
   private cachedToken: string | undefined;
@@ -22,20 +22,18 @@ export class GhCliGitHubToken implements GitHubToken {
   }
 
   private async readFromGitHubCli(): Promise<string> {
-    let result;
+    let standardOutput: string;
     try {
-      result = await this.runCommand('gh', ['auth', 'token'], {
-        timeoutMilliseconds: commandTimeoutMilliseconds,
-      });
+      standardOutput = await runGhCommand(['auth', 'token'], { runCommand: this.runCommand });
     } catch (error) {
-      throw new GitHubAuthError(
-        `gh auth token could not run (${String(error)}): run gh auth login`,
-      );
+      if (error instanceof GhCommandFailedError) {
+        throw new GitHubAuthError(`gh auth token failed (${error.message}): run gh auth login`);
+      }
+      throw error;
     }
-    const token = result.standardOutput.trim();
-    if (result.exitCode !== 0 || token === '') {
-      const detail = result.standardError.trim() || `exit code ${result.exitCode}`;
-      throw new GitHubAuthError(`gh auth token failed (${detail}): run gh auth login`);
+    const token = standardOutput.trim();
+    if (token === '') {
+      throw new GitHubAuthError('gh auth token failed (no token printed): run gh auth login');
     }
     return token;
   }

@@ -3,6 +3,7 @@ import type { RunAnswer } from '../../logic/domain/types/run-answer.js';
 import type { StartedRun } from '../../logic/domain/types/started-run.js';
 import { RunAlreadyActiveError } from '../../logic/errors/run-already-active-error.js';
 import { RunNotAnswerableError } from '../../logic/errors/run-not-answerable-error.js';
+import { TicketWriteFailedError } from '../../logic/errors/ticket-write-failed-error.js';
 import {
   checkpointAnswerRequestSchema,
   permissionAnswerRequestSchema,
@@ -19,6 +20,9 @@ export function createRunAnswerRoutes(runAnswers: RunAnswers): Hono {
     } catch (error) {
       if (error instanceof RunNotAnswerableError || error instanceof RunAlreadyActiveError) {
         return context.json({ message: error.message }, 409);
+      }
+      if (error instanceof TicketWriteFailedError) {
+        return context.json({ message: error.message }, 502);
       }
       throw error;
     }

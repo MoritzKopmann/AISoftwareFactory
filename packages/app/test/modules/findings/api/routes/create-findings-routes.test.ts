@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createFindingsRoutes } from '../../../../../src/modules/findings/api/routes/create-findings-routes.js';
 import { findingsResponseSchema } from '../../../../../src/modules/findings/api/schemas/findings-schemas.js';
+import { TicketCreationFailedError } from '../../../../../src/modules/findings/logic/errors/ticket-creation-failed-error.js';
 import { CreateTicketFromFindingUseCase } from '../../../../../src/modules/findings/logic/use-cases/create-ticket-from-finding-use-case.js';
 import { DismissFindingUseCase } from '../../../../../src/modules/findings/logic/use-cases/dismiss-finding-use-case.js';
 import { ListFindingsUseCase } from '../../../../../src/modules/findings/logic/use-cases/list-findings-use-case.js';
@@ -121,6 +122,18 @@ describe('createFindingsRoutes', () => {
       });
 
       expect(response.status).toBe(409);
+    });
+
+    it('should answer 502 with the message when gh fails', async () => {
+      await findingRepository.insert(newFinding(141));
+      ticketCreator.error = new TicketCreationFailedError('gh issue create failed');
+
+      const response = await app.request('/projects/moritz/aisf/findings/1/ticket', {
+        method: 'POST',
+      });
+
+      expect(response.status).toBe(502);
+      expect(await response.json()).toEqual({ message: 'gh issue create failed' });
     });
 
     it('should answer 400 when the finding id is not a positive integer', async () => {

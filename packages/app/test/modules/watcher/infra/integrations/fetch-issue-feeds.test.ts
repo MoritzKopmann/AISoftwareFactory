@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { FetchIssueFeeds } from '../../../../../src/modules/watcher/infra/integrations/fetch-issue-feeds.js';
-import { FakeGitHubToken, ScriptedFetch } from '../../fakes/fake-watcher-ports.js';
+import { FakeGitHubToken } from '../../fakes/fake-github-token.js';
+import { ScriptedFetch } from '../../fakes/fake-watcher-ports.js';
 
 const repository = { owner: 'octo', name: 'hello' };
 const issuesFeedUrl =

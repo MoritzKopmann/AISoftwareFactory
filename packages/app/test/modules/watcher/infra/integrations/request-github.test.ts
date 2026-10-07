@@ -3,7 +3,8 @@ import { requestGitHub } from '../../../../../src/modules/watcher/infra/integrat
 import { GitHubAuthError } from '../../../../../src/modules/watcher/logic/errors/github-auth-error.js';
 import { GitHubRateLimitedError } from '../../../../../src/modules/watcher/logic/errors/github-rate-limited-error.js';
 import { GitHubRequestError } from '../../../../../src/modules/watcher/logic/errors/github-request-error.js';
-import { FakeGitHubToken, ScriptedFetch } from '../../fakes/fake-watcher-ports.js';
+import { FakeGitHubToken } from '../../fakes/fake-github-token.js';
+import { ScriptedFetch } from '../../fakes/fake-watcher-ports.js';
 
 const feedUrl = 'https://api.github.com/repos/octo/hello/issues';
 

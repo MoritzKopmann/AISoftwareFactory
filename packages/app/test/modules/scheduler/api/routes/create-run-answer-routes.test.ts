@@ -7,6 +7,7 @@ import {
 import { startedRunResponseSchema } from '../../../../../src/modules/scheduler/api/schemas/runs-schemas.js';
 import type { RunAnswer } from '../../../../../src/modules/scheduler/logic/domain/types/run-answer.js';
 import { RunNotAnswerableError } from '../../../../../src/modules/scheduler/logic/errors/run-not-answerable-error.js';
+import { TicketWriteFailedError } from '../../../../../src/modules/scheduler/logic/errors/ticket-write-failed-error.js';
 import { RunAlreadyActiveError } from '../../../../../src/modules/scheduler/logic/errors/run-already-active-error.js';
 
 class FakeRunAnswers implements RunAnswers {
@@ -87,6 +88,16 @@ describe('createRunAnswerRoutes', () => {
       expect(response.status).toBe(409);
       expect(await response.json()).toEqual({ message: failure.message });
     });
+
+    it('should answer 502 with the message when the ticket write fails', async () => {
+      const runAnswers = new FakeRunAnswers();
+      runAnswers.failure = new TicketWriteFailedError('gh issue edit failed');
+
+      const response = await post(runAnswers, { decision: 'allow' });
+
+      expect(response.status).toBe(502);
+      expect(await response.json()).toEqual({ message: 'gh issue edit failed' });
+    });
   });
 
   describe('POST /runs/:runId/checkpoint', () => {
@@ -150,6 +161,16 @@ describe('createRunAnswerRoutes', () => {
 
       expect(response.status).toBe(409);
       expect(await response.json()).toEqual({ message: failure.message });
+    });
+
+    it('should answer 502 with the message when the ticket write fails', async () => {
+      const runAnswers = new FakeRunAnswers();
+      runAnswers.failure = new TicketWriteFailedError('gh issue edit failed');
+
+      const response = await post(runAnswers, { answer: 'Looks good' }, 'checkpoint');
+
+      expect(response.status).toBe(502);
+      expect(await response.json()).toEqual({ message: 'gh issue edit failed' });
     });
   });
 });

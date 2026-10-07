@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { FetchGraphQLTicketSource } from '../../../../../src/modules/watcher/infra/integrations/fetch-graphql-ticket-source.js';
 import { GitHubRateLimitedError } from '../../../../../src/modules/watcher/logic/errors/github-rate-limited-error.js';
 import { GitHubRequestError } from '../../../../../src/modules/watcher/logic/errors/github-request-error.js';
-import { FakeGitHubToken, ScriptedFetch } from '../../fakes/fake-watcher-ports.js';
+import { FakeGitHubToken } from '../../fakes/fake-github-token.js';
+import { ScriptedFetch } from '../../fakes/fake-watcher-ports.js';
 
 const repository = { owner: 'octo', name: 'hello' };
 const rawBody = '\n  ## Snapshot\n\n**bold** <details><summary>raw</summary></details>  \n\n';

@@ -1,5 +1,5 @@
 import type { Logger } from '../../../../shared/logger/create-logger.js';
-import { GitHubCliError } from '../errors/github-cli-error.js';
+import { LabelSyncFailedError } from '../errors/label-sync-failed-error.js';
 import type { LabelSync } from '../ports/label-sync.js';
 import type { ProjectRepository } from '../ports/project-repository.js';
 
@@ -19,7 +19,7 @@ export class SyncProjectLabelsUseCase {
       try {
         await labelSync.sync(project.repository);
       } catch (error) {
-        if (!(error instanceof GitHubCliError)) {
+        if (!(error instanceof LabelSyncFailedError)) {
           throw error;
         }
         logger.warn(`Syncing the labels of ${project.id} failed: ${error.message}`);

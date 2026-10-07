@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Project } from '../../../../../src/modules/projects/logic/domain/types/project.js';
-import { GitHubCliError } from '../../../../../src/modules/projects/logic/errors/github-cli-error.js';
+import { LabelSyncFailedError } from '../../../../../src/modules/projects/logic/errors/label-sync-failed-error.js';
 import { SyncProjectLabelsUseCase } from '../../../../../src/modules/projects/logic/use-cases/sync-project-labels-use-case.js';
 import { createLogger, type LogLevel } from '../../../../../src/shared/logger/create-logger.js';
 import { FakeLabelSync, FakeProjectRepository } from '../../fakes/fake-projects-ports.js';
@@ -47,7 +47,7 @@ describe('SyncProjectLabelsUseCase', () => {
       expect(logged).toEqual([]);
     });
 
-    it('should sync the other projects and warn once when one project fails with a GitHubCliError', async () => {
+    it('should sync the other projects and warn once when one project fails with a LabelSyncFailedError', async () => {
       const firstProject = createProject('moritz', 'aisf');
       const secondProject = createProject('moritz', 'gone');
       const thirdProject = createProject('moritz', 'other');
@@ -56,7 +56,10 @@ describe('SyncProjectLabelsUseCase', () => {
         secondProject,
         thirdProject,
       ]);
-      labelSync.setFailure(secondProject.repository, new GitHubCliError('repository not found'));
+      labelSync.setFailure(
+        secondProject.repository,
+        new LabelSyncFailedError('repository not found'),
+      );
 
       await expect(useCase.execute()).resolves.toBeUndefined();
 
@@ -71,7 +74,7 @@ describe('SyncProjectLabelsUseCase', () => {
       expect(logged[0]?.[1]).toContain('repository not found');
     });
 
-    it('should reject with the error and not warn when the failure is not a GitHubCliError', async () => {
+    it('should reject with the error and not warn when the failure is not a LabelSyncFailedError', async () => {
       const project = createProject('moritz', 'aisf');
       const { useCase, labelSync, logged } = await createSubject([project]);
       const failure = new Error('database is locked');

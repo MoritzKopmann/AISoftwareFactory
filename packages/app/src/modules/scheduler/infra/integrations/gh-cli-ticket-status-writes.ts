@@ -1,9 +1,10 @@
+import { GhCommandFailedError } from '../../../../shared/github/gh-command-failed-error.js';
+import { runGhCommand } from '../../../../shared/github/run-gh-command.js';
 import { deriveTicketStatus } from '../../../../shared/ticket-status/derive-ticket-status.js';
 import type { TicketStatus } from '../../../../shared/ticket-status/ticket-status.js';
 import type { RepositoryReference } from '../../logic/domain/types/repository-reference.js';
 import { TicketWriteFailedError } from '../../logic/errors/ticket-write-failed-error.js';
 import type { TicketStatusWrites } from '../../logic/ports/ticket-status-writes.js';
-import { runGhCommand } from './run-gh-command.js';
 
 const statusLabelPrefix = 'status: ';
 
@@ -66,11 +67,18 @@ export class GhCliTicketStatusWrites implements TicketStatusWrites {
     }
   }
 
-  private runGh(
+  private async runGh(
     repository: RepositoryReference,
     argumentList: ReadonlyArray<string>,
   ): Promise<string> {
-    return runGhCommand(repository, argumentList, (message) => new TicketWriteFailedError(message));
+    try {
+      return await runGhCommand(argumentList, { repository });
+    } catch (error) {
+      if (error instanceof GhCommandFailedError) {
+        throw new TicketWriteFailedError(error.message);
+      }
+      throw error;
+    }
   }
 }
 

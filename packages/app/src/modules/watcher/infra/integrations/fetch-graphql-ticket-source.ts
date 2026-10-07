@@ -5,7 +5,7 @@ import type { RepositoryReference } from '../../logic/domain/types/repository-re
 import type { Ticket } from '../../logic/domain/types/ticket.js';
 import type { TicketSnapshot } from '../../logic/domain/types/ticket-snapshot.js';
 import { GitHubRequestError } from '../../logic/errors/github-request-error.js';
-import type { GitHubToken } from '../../logic/ports/github-token.js';
+import type { GitHubToken } from './github-token.js';
 import type { TicketSource } from '../../logic/ports/ticket-source.js';
 import { requestGitHub } from './request-github.js';
 

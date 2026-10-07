@@ -6,25 +6,7 @@ import type {
   RegisteredRepository,
 } from '../../../../src/modules/watcher/logic/ports/registered-repositories.js';
 import type { IssueFeeds } from '../../../../src/modules/watcher/logic/ports/issue-feeds.js';
-import type { GitHubToken } from '../../../../src/modules/watcher/logic/ports/github-token.js';
 import type { TicketSource } from '../../../../src/modules/watcher/logic/ports/ticket-source.js';
-
-export class FakeGitHubToken implements GitHubToken {
-  readCount = 0;
-  invalidateCount = 0;
-
-  constructor(private readonly tokens: ReadonlyArray<string>) {}
-
-  async read(): Promise<string> {
-    const token = this.tokens[Math.min(this.invalidateCount, this.tokens.length - 1)];
-    this.readCount += 1;
-    return token ?? '';
-  }
-
-  invalidate(): void {
-    this.invalidateCount += 1;
-  }
-}
 
 export class FakeRegisteredRepositories implements RegisteredRepositories {
   constructor(private readonly registered: ReadonlyArray<RegisteredRepository>) {}
