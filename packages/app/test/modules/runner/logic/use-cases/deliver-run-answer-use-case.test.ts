@@ -33,7 +33,10 @@ describe('DeliverRunAnswerUseCase', () => {
     const run = await useCase.execute('run-1', { kind: 'checkpoint', text: 'Looks good' });
 
     expect(run).toEqual(waitingRun);
-    expect(await outcome).toEqual({ kind: 'answered', text: 'Looks good' });
+    expect(await outcome).toEqual({
+      kind: 'answered',
+      answer: { kind: 'checkpoint', text: 'Looks good' },
+    });
     expect(resumedAnswers).toEqual([]);
   });
 
@@ -46,8 +49,23 @@ describe('DeliverRunAnswerUseCase', () => {
     expect(resumedAnswers).toEqual([{ runId: 'run-1', answer }]);
   });
 
-  it('should resume the run when the answer is a permission answer', async () => {
-    await runRepository.insert(buildRun());
+  it('should deliver to a live permission wait and not resume when a permission answer meets one', async () => {
+    const waitingRun = buildRun({
+      waitingFor: { kind: 'permission-needed', toolName: 'Bash', toolInput: { command: 'ls' } },
+    });
+    await runRepository.insert(waitingRun);
+    const outcome = runAnswerWaits.wait('run-1', 1000);
+    const answer = { kind: 'permission', decision: 'allow' } as const;
+
+    const run = await useCase.execute('run-1', answer);
+
+    expect(run).toEqual(waitingRun);
+    expect(await outcome).toEqual({ kind: 'answered', answer });
+    expect(resumedAnswers).toEqual([]);
+  });
+
+  it('should resume the run when the answer does not fit the live wait', async () => {
+    await runRepository.insert(buildRun({ waitingFor: { kind: 'checkpoint', request: 'Check' } }));
     runAnswerWaits.wait('run-1', 1000);
     const answer = { kind: 'permission', decision: 'allow' } as const;
 
@@ -55,6 +73,21 @@ describe('DeliverRunAnswerUseCase', () => {
 
     expect(run).toBe(resumedRun);
     expect(runAnswerWaits.isWaiting('run-1')).toBe(true);
+    expect(resumedAnswers).toEqual([{ runId: 'run-1', answer }]);
+  });
+
+  it('should resume the run when the run has ended with a permission ending', async () => {
+    await runRepository.insert(
+      buildRun({
+        state: 'ended',
+        ending: { kind: 'permission-needed', toolName: 'Bash', toolInput: { command: 'ls' } },
+      }),
+    );
+    const answer = { kind: 'permission', decision: 'allow' } as const;
+
+    const run = await useCase.execute('run-1', answer);
+
+    expect(run).toBe(resumedRun);
     expect(resumedAnswers).toEqual([{ runId: 'run-1', answer }]);
   });
 });

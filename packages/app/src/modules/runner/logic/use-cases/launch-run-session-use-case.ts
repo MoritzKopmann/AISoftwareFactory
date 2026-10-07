@@ -7,6 +7,8 @@ import type { RunTool } from '../domain/types/run-tool.js';
 import type { SessionEvent } from '../domain/types/session-event.js';
 import type { SessionLaunch } from '../domain/types/session-launch.js';
 import type { SessionTool } from '../domain/types/session-tool.js';
+import type { RunAnswer } from '../domain/types/run-answer.js';
+import type { RunWaitOutcome } from '../domain/types/run-wait-outcome.js';
 import type { RunWait } from '../domain/types/run-wait.js';
 import type { AgentSessions } from '../ports/agent-sessions.js';
 import type { RecentRunSteps } from '../ports/recent-run-steps.js';
@@ -17,7 +19,7 @@ export type LaunchRunSessionDependencies = {
   readonly recentRunSteps: RecentRunSteps;
   readonly runRepository: RunRepository;
   readonly finishRun: FinishRun;
-  readonly waitForRunAnswer: (run: Run, wait: RunWait) => Promise<string>;
+  readonly waitForRunAnswer: (run: Run, wait: RunWait) => Promise<RunWaitOutcome>;
   readonly tools: ReadonlyArray<RunTool>;
   readonly logger: Logger;
 };
@@ -64,7 +66,8 @@ export class LaunchRunSessionUseCase {
         }
         const result = await tool.execute(input, runContext);
         if ('wait' in result) {
-          return this.dependencies.waitForRunAnswer(run, result.wait);
+          const outcome = await this.dependencies.waitForRunAnswer(run, result.wait);
+          return outcome.kind === 'answered' ? answerText(outcome.answer) : outcome.message;
         }
         if (result.ending !== undefined) {
           await this.dependencies.finishRun(run.id, result.ending);
@@ -110,4 +113,8 @@ export class LaunchRunSessionUseCase {
   private reportFailure(run: Run, error: unknown): void {
     this.dependencies.logger.error(`Run ${run.id} failed: ${describeError(error)}`);
   }
+}
+
+function answerText(answer: RunAnswer): string {
+  return answer.kind === 'checkpoint' ? answer.text : answer.decision;
 }

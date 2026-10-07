@@ -86,6 +86,7 @@ export class FakeRunnerPort implements RunnerPort {
   activeTicketNumbers: ReadonlyArray<number> = [];
   activeSteps: ReadonlyArray<RunStep> = [];
   activeWaitingFor: RunWait | undefined;
+  activeWaitingSince: string | undefined;
   latest: LatestRun | undefined;
   transcript: SessionLog = { kind: 'no-session' };
   record: RunRecord | undefined;
@@ -126,6 +127,7 @@ export class FakeRunnerPort implements RunnerPort {
         ticketNumber,
         startedAt: '2026-09-29T09:00:00.000Z',
         ...(this.activeWaitingFor === undefined ? {} : { waitingFor: this.activeWaitingFor }),
+        ...(this.activeWaitingSince === undefined ? {} : { waitingSince: this.activeWaitingSince }),
       },
       steps: this.activeSteps,
     }));

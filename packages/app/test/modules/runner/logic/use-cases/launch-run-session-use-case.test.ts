@@ -1,3 +1,4 @@
+import type { RunWaitOutcome } from '../../../../../src/modules/runner/logic/domain/types/run-wait-outcome.js';
 import { describe, expect, it, vi } from 'vitest';
 import { LaunchRunSessionUseCase } from '../../../../../src/modules/runner/logic/use-cases/launch-run-session-use-case.js';
 import type { FinishRun } from '../../../../../src/modules/runner/logic/domain/types/finish-run.js';
@@ -9,7 +10,13 @@ import {
   FakeRunRepository,
 } from '../../fakes/fake-runner-ports.js';
 
-function buildSubject(tools: ReadonlyArray<RunTool> = []) {
+function buildSubject(
+  tools: ReadonlyArray<RunTool> = [],
+  outcome: RunWaitOutcome = {
+    kind: 'answered',
+    answer: { kind: 'checkpoint', text: 'the answer' },
+  },
+) {
   const agentSessions = new FakeAgentSessions();
   const runRepository = new FakeRunRepository();
   const finishedEndings: Array<Parameters<FinishRun>[1]> = [];
@@ -22,8 +29,8 @@ function buildSubject(tools: ReadonlyArray<RunTool> = []) {
       finishedEndings.push(ending);
     },
     waitForRunAnswer: async (_run, wait) => {
-      waitedFor.push(wait.request);
-      return 'the answer';
+      waitedFor.push(wait.kind === 'checkpoint' ? wait.request : wait.toolName);
+      return outcome;
     },
     tools,
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
@@ -109,6 +116,16 @@ describe('LaunchRunSessionUseCase', () => {
       expect(await callBoundTool(subject)).toBe('the answer');
       expect(subject.waitedFor).toEqual(['Check']);
       expect(subject.finishedEndings).toEqual([]);
+    });
+
+    it('should return the unanswered message when the wait is unanswered', async () => {
+      const { tool } = buildTool({ wait: { kind: 'checkpoint', request: 'Check' } });
+      const subject = buildSubject([tool], {
+        kind: 'unanswered',
+        message: 'The run has ended. End your turn.',
+      });
+
+      expect(await callBoundTool(subject)).toBe('The run has ended. End your turn.');
     });
 
     it('should refuse and run nothing when the run is no longer running', async () => {

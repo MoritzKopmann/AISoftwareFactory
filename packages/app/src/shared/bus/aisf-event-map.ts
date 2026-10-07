@@ -39,11 +39,13 @@ export type AisfEventMap = {
     readonly runId: string;
     readonly projectId: string;
     readonly ticketNumber: number;
-    readonly wait: {
-      readonly kind: 'checkpoint';
-      readonly request: string;
-      readonly artifactId?: string;
-    };
+    readonly wait:
+      | { readonly kind: 'checkpoint'; readonly request: string; readonly artifactId?: string }
+      | {
+          readonly kind: 'permission-needed';
+          readonly toolName: string;
+          readonly toolInput: Readonly<Record<string, unknown>>;
+        };
   };
   readonly 'ticket.status-written': {
     readonly projectId: string;

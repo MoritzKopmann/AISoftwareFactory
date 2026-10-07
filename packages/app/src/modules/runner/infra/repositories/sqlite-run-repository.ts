@@ -101,6 +101,13 @@ function toWait(row: RunRow): RunWait | undefined {
   if (row.waiting_kind === null) {
     return undefined;
   }
+  if (row.waiting_kind === 'permission-needed') {
+    return {
+      kind: 'permission-needed',
+      toolName: String(row.tool_name),
+      toolInput: JSON.parse(String(row.tool_input)) as Record<string, unknown>,
+    };
+  }
   return {
     kind: 'checkpoint',
     request: String(row.waiting_request),
@@ -288,13 +295,23 @@ export class SqliteRunRepository implements RunRepository {
         SET waiting_kind = ?,
           waiting_request = ?,
           waiting_since = ?,
-          checkpoint_artifact_id = ?
+          checkpoint_artifact_id = ?,
+          tool_name = ?,
+          tool_input = ?
         WHERE id = ?
           AND state = 'running'
           AND waiting_kind IS NULL
       `,
       )
-      .run(wait.kind, wait.request, waitingSince, wait.artifactId ?? null, runId);
+      .run(
+        wait.kind,
+        wait.kind === 'checkpoint' ? wait.request : null,
+        waitingSince,
+        wait.kind === 'checkpoint' ? (wait.artifactId ?? null) : null,
+        wait.kind === 'permission-needed' ? wait.toolName : null,
+        wait.kind === 'permission-needed' ? JSON.stringify(wait.toolInput) : null,
+        runId,
+      );
 
     return result.changes === 0 ? 'refused' : 'recorded';
   }
@@ -307,7 +324,9 @@ export class SqliteRunRepository implements RunRepository {
         SET waiting_kind = NULL,
           waiting_request = NULL,
           waiting_since = NULL,
-          checkpoint_artifact_id = NULL
+          checkpoint_artifact_id = NULL,
+          tool_name = NULL,
+          tool_input = NULL
         WHERE id = ?
           AND state = 'running'
       `,

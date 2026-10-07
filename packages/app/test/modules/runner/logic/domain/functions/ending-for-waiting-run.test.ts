@@ -20,29 +20,37 @@ describe('endingForWaitingRun', () => {
   });
 
   it.each([
-    ['crashed', { kind: 'crashed', reason: 'boom' }],
+    ['crashed', { kind: 'crashed', reason: 'x' }],
     ['app-restarted', { kind: 'app-restarted' }],
     ['finished', { kind: 'finished' }],
-    ['checkpoint', { kind: 'checkpoint', request: 'Check the page' }],
-  ] as const)(
-    'should turn a %s ending into a checkpoint when the run is waiting',
-    (_kind, ending) => {
-      expect(endingForWaitingRun(waitingRun, ending)).toEqual({
-        kind: 'checkpoint',
-        request: 'Check the page',
-      });
-    },
-  );
-
-  it('should copy the artifactId into the checkpoint when the wait has one', () => {
-    const run = buildRun({
-      waitingFor: { kind: 'checkpoint', request: 'Check the page', artifactId: 'confirm-plan' },
-    });
-
-    expect(endingForWaitingRun(run, { kind: 'app-restarted' })).toEqual({
+  ] as const)('should return the stored checkpoint wait when the ending is %s', (_kind, ending) => {
+    expect(endingForWaitingRun(waitingRun, ending)).toEqual({
       kind: 'checkpoint',
       request: 'Check the page',
-      artifactId: 'confirm-plan',
     });
+  });
+
+  it('should keep the artifactId when the checkpoint wait has one', () => {
+    const run = buildRun({
+      waitingFor: { kind: 'checkpoint', request: 'Pick one', artifactId: 'page-1' },
+    });
+
+    expect(endingForWaitingRun(run, { kind: 'crashed', reason: 'x' })).toEqual({
+      kind: 'checkpoint',
+      request: 'Pick one',
+      artifactId: 'page-1',
+    });
+  });
+
+  it('should return the permission wait as the ending when the run waits for a permission', () => {
+    const wait = {
+      kind: 'permission-needed',
+      toolName: 'Bash',
+      toolInput: { command: 'ls' },
+    } as const;
+
+    expect(endingForWaitingRun(buildRun({ waitingFor: wait }), { kind: 'app-restarted' })).toEqual(
+      wait,
+    );
   });
 });

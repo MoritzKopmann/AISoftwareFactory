@@ -27,6 +27,20 @@ const checkpoint: RunEndingResponse = {
 };
 
 describe('describeCheckpointPrompt', () => {
+  it('should hide the prompt when the active run waits for a permission', () => {
+    const response: TicketRunResponse = {
+      ...idle,
+      activeRun: {
+        id: 'run-2',
+        startedAt: '2026-10-04T09:11:00Z',
+        steps: [],
+        waitingFor: { kind: 'permission-needed', toolName: 'Bash', toolInput: { command: 'ls' } },
+      },
+    };
+
+    expect(describeCheckpointPrompt(response, 'waiting', undefined)).toEqual({ kind: 'hidden' });
+  });
+
   it('should hide the prompt when the poll has not answered yet', () => {
     expect(describeCheckpointPrompt(undefined, 'waiting', undefined)).toEqual({ kind: 'hidden' });
   });

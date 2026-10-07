@@ -10,6 +10,7 @@ export type TicketRun = {
     readonly startedAt: string;
     readonly steps: ReadonlyArray<RunStep>;
     readonly waitingFor?: RunWait;
+    readonly waitingSince?: string;
   };
   readonly lastRun?: {
     readonly id: string;

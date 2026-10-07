@@ -66,7 +66,17 @@ export const ticketRunResponseSchema = z.object({
   activeRun: startedRunResponseSchema
     .extend({
       steps: z.array(runStepResponseSchema),
-      waitingFor: z.object({ kind: z.literal('checkpoint'), request: z.string() }).optional(),
+      waitingFor: z
+        .discriminatedUnion('kind', [
+          z.object({ kind: z.literal('checkpoint'), request: z.string() }),
+          z.object({
+            kind: z.literal('permission-needed'),
+            toolName: z.string(),
+            toolInput: z.record(z.string(), z.unknown()),
+          }),
+        ])
+        .optional(),
+      waitingSince: z.string().optional(),
     })
     .optional(),
   lastRun: startedRunResponseSchema

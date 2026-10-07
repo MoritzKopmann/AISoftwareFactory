@@ -34,9 +34,9 @@ describe('WaitForRunAnswerUseCase', () => {
     const wait = { kind: 'checkpoint', request: 'Check the page' } as const;
 
     let returned = false;
-    const result = useCase.execute(buildRun(), wait).then((text) => {
+    const result = useCase.execute(buildRun(), wait).then((outcome) => {
       returned = true;
-      return text;
+      return outcome;
     });
     await Promise.resolve();
 
@@ -54,7 +54,7 @@ describe('WaitForRunAnswerUseCase', () => {
       },
     ]);
     expect(finishedEndings).toEqual([]);
-    runAnswerWaits.deliver('run-1', 'ok');
+    runAnswerWaits.deliver('run-1', { kind: 'checkpoint', text: 'ok' });
     await result;
   });
 
@@ -62,9 +62,12 @@ describe('WaitForRunAnswerUseCase', () => {
     const result = useCase.execute(buildRun(), { kind: 'checkpoint', request: 'Check' });
     await Promise.resolve();
 
-    runAnswerWaits.deliver('run-1', 'Looks good');
+    runAnswerWaits.deliver('run-1', { kind: 'checkpoint', text: 'Looks good' });
 
-    expect(await result).toBe('Looks good');
+    expect(await result).toEqual({
+      kind: 'answered',
+      answer: { kind: 'checkpoint', text: 'Looks good' },
+    });
     const run = runRepository.runs.get('run-1');
     expect(run?.state).toBe('running');
     expect(run).not.toHaveProperty('waitingFor');
@@ -75,21 +78,33 @@ describe('WaitForRunAnswerUseCase', () => {
     const first = useCase.execute(buildRun(), { kind: 'checkpoint', request: 'Check the page' });
     await Promise.resolve();
 
-    const text = await useCase.execute(buildRun(), { kind: 'checkpoint', request: 'Second' });
+    const outcome = await useCase.execute(buildRun(), { kind: 'checkpoint', request: 'Second' });
 
-    expect(text).toContain('already waiting');
+    expect(outcome).toEqual({
+      kind: 'unanswered',
+      message:
+        'This run is already waiting for an answer. Do not call this tool again: end your turn.',
+    });
     expect(events.emittedEvents).toHaveLength(1);
-    expect(runRepository.runs.get('run-1')?.waitingFor?.request).toBe('Check the page');
-    runAnswerWaits.deliver('run-1', 'ok');
+    expect(runRepository.runs.get('run-1')?.waitingFor).toEqual({
+      kind: 'checkpoint',
+      request: 'Check the page',
+    });
+    runAnswerWaits.deliver('run-1', { kind: 'checkpoint', text: 'ok' });
     await first;
   });
 
-  it('should end the run as a checkpoint when the window passes', async () => {
+  it('should end the run with the wait when the window passes', async () => {
     const result = useCase.execute(buildRun(), { kind: 'checkpoint', request: 'Check the page' });
     await Promise.resolve();
 
     runAnswerWaits.expire('run-1');
-    await result;
+
+    expect(await result).toEqual({
+      kind: 'unanswered',
+      message:
+        'The answer window has passed. End your turn: the app resumes this session when the human answers.',
+    });
 
     expect(finishedEndings).toEqual([{ kind: 'checkpoint', request: 'Check the page' }]);
   });
@@ -100,7 +115,10 @@ describe('WaitForRunAnswerUseCase', () => {
 
     runAnswerWaits.cancel('run-1');
 
-    expect(await result).toContain('End your turn');
+    expect(await result).toEqual({
+      kind: 'unanswered',
+      message: 'The run has ended. End your turn.',
+    });
     expect(finishedEndings).toEqual([]);
   });
 
@@ -111,7 +129,41 @@ describe('WaitForRunAnswerUseCase', () => {
 
     expect(runRepository.runs.get('run-1')?.waitingFor).toEqual(wait);
     expect(events.emittedEvents).toMatchObject([{ payload: { wait } }]);
-    runAnswerWaits.deliver('run-1', 'ok');
+    runAnswerWaits.deliver('run-1', { kind: 'checkpoint', text: 'ok' });
     await result;
+  });
+
+  it('should hold a permission wait and end the run with it when the window passes', async () => {
+    const wait = {
+      kind: 'permission-needed',
+      toolName: 'Bash',
+      toolInput: { command: 'ls' },
+    } as const;
+    const result = useCase.execute(buildRun(), wait);
+    await Promise.resolve();
+
+    expect(runRepository.runs.get('run-1')?.waitingFor).toEqual(wait);
+    expect(events.emittedEvents).toMatchObject([{ name: 'run.waiting', payload: { wait } }]);
+    runAnswerWaits.expire('run-1');
+    await result;
+
+    expect(finishedEndings).toEqual([wait]);
+  });
+
+  it('should resolve answered with the permission answer when one is delivered', async () => {
+    const result = useCase.execute(buildRun(), {
+      kind: 'permission-needed',
+      toolName: 'Bash',
+      toolInput: { command: 'ls' },
+    });
+    await Promise.resolve();
+
+    runAnswerWaits.deliver('run-1', { kind: 'permission', decision: 'deny' });
+
+    expect(await result).toEqual({
+      kind: 'answered',
+      answer: { kind: 'permission', decision: 'deny' },
+    });
+    expect(runRepository.runs.get('run-1')).not.toHaveProperty('waitingFor');
   });
 });
