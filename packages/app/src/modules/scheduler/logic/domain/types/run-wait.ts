@@ -1,5 +1,3 @@
-export type RunWait = {
-  readonly kind: 'checkpoint';
-  readonly request: string;
-  readonly artifactId?: string;
-};
+import type { RunEnding } from './run-ending.js';
+
+export type RunWait = Extract<RunEnding, { kind: 'checkpoint' | 'permission-needed' }>;

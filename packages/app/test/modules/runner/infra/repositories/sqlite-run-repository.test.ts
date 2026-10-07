@@ -217,7 +217,47 @@ describe('SqliteRunRepository', () => {
       const outcome = await repository.recordWait('run-1', { ...wait, request: 'Other' }, since);
 
       expect(outcome).toBe('refused');
-      expect((await repository.findById('run-1'))?.waitingFor?.request).toBe('Check the page');
+      expect((await repository.findById('run-1'))?.waitingFor).toEqual(wait);
+    });
+
+    describe('permission waits', () => {
+      const permissionWait = {
+        kind: 'permission-needed',
+        toolName: 'Bash',
+        toolInput: { command: 'ls' },
+      } as const;
+
+      it('should store and read back a permission wait with its start', async () => {
+        await repository.insert(buildRun());
+
+        const outcome = await repository.recordWait('run-1', permissionWait, since);
+
+        expect(outcome).toBe('recorded');
+        const run = await repository.findById('run-1');
+        expect(run?.waitingFor).toEqual(permissionWait);
+        expect(run?.waitingSince).toBe(since);
+      });
+
+      it('should remove the permission wait and its tool columns when cleared', async () => {
+        await repository.insert(buildRun());
+        await repository.recordWait('run-1', permissionWait, since);
+
+        await repository.clearWait('run-1');
+
+        const run = await repository.findById('run-1');
+        expect(run).not.toHaveProperty('waitingFor');
+        expect(run).not.toHaveProperty('waitingSince');
+        expect(
+          database.prepare('SELECT tool_name, tool_input FROM runs WHERE id = ?').get('run-1'),
+        ).toEqual({ tool_name: null, tool_input: null });
+      });
+
+      it('should refuse a second wait when a permission wait is stored', async () => {
+        await repository.insert(buildRun());
+        await repository.recordWait('run-1', permissionWait, since);
+
+        expect(await repository.recordWait('run-1', wait, since)).toBe('refused');
+      });
     });
 
     it('should refuse when the run has ended', async () => {

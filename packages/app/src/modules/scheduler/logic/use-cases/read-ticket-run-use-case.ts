@@ -34,6 +34,9 @@ export class ReadTicketRunUseCase {
               ...(activeRun.run.waitingFor === undefined
                 ? {}
                 : { waitingFor: activeRun.run.waitingFor }),
+              ...(activeRun.run.waitingSince === undefined
+                ? {}
+                : { waitingSince: activeRun.run.waitingSince }),
             },
           }
         : {}),

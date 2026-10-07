@@ -47,6 +47,7 @@ export type { RunAnswer } from './logic/domain/types/run-answer.js';
 export type { Run } from './logic/domain/types/run.js';
 export type { RunContext } from './logic/domain/types/run-context.js';
 export type { RunWait } from './logic/domain/types/run-wait.js';
+export type { RunWaitOutcome } from './logic/domain/types/run-wait-outcome.js';
 export type { RunEnding } from './logic/domain/types/run-ending.js';
 export type { RunMode } from './logic/domain/types/run-mode.js';
 export type { RunStage } from './logic/domain/types/run-stage.js';

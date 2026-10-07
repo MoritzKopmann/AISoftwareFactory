@@ -11,6 +11,7 @@ import type { SessionSpec } from '../../../../src/modules/runner/logic/domain/ty
 import type { WorktreeSpec } from '../../../../src/modules/runner/logic/domain/types/worktree-spec.js';
 import type { AgentSessions } from '../../../../src/modules/runner/logic/ports/agent-sessions.js';
 import type { Identifiers } from '../../../../src/shared/identifiers/identifiers.js';
+import type { RunAnswer } from '../../../../src/modules/runner/logic/domain/types/run-answer.js';
 import type { RecentRunSteps } from '../../../../src/modules/runner/logic/ports/recent-run-steps.js';
 import type {
   RunAnswerWaitOutcome,
@@ -119,8 +120,8 @@ export class FakeRunAnswerWaits implements RunAnswerWaits {
     });
   }
 
-  deliver(runId: string, text: string): boolean {
-    return this.settle(runId, { kind: 'answered', text });
+  deliver(runId: string, answer: RunAnswer): boolean {
+    return this.settle(runId, { kind: 'answered', answer });
   }
 
   cancel(runId: string): void {

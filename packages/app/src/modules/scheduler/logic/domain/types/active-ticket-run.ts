@@ -7,6 +7,7 @@ export type ActiveTicketRun = {
     readonly ticketNumber: number;
     readonly startedAt: string;
     readonly waitingFor?: RunWait;
+    readonly waitingSince?: string;
   };
   readonly steps: ReadonlyArray<RunStep>;
 };

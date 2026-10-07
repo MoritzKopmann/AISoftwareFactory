@@ -9,7 +9,7 @@ export function subscribeToRunWaiting(
 ): () => void {
   return subscriber.on('run.waiting', (waitingRun) => {
     // A bus handler must never reject: an unhandled rejection would end the process. A failed
-    // write is not retried: the fallback checkpoint ending writes the status later.
+    // write is not retried: the fallback ending writes the status later.
     settleWaitingRun.execute(waitingRun).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       logger.error(`Marking run ${waitingRun.runId} waiting failed: ${message}`);

@@ -66,7 +66,7 @@ describe('ResumeRunUseCase', () => {
       recentRunSteps,
       runRepository,
       finishRun,
-      waitForRunAnswer: async () => '',
+      waitForRunAnswer: async () => ({ kind: 'unanswered', message: '' }),
       tools: [],
       logger,
     });

@@ -137,6 +137,55 @@ describe('createRunRoutes', () => {
       expect(body.activeRun?.waitingFor).not.toHaveProperty('artifactId');
     });
 
+    it('should expose a permission wait and its start when the active run waits for a permission', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      const waitingSince = '2026-10-07T10:00:00.000Z';
+      ticketRuns.ticketRun = {
+        availability: { kind: 'disabled', reason: '#7 is running' },
+        activeRun: {
+          id: 'run-1',
+          startedAt,
+          steps: [],
+          waitingFor: { kind: 'permission-needed', toolName: 'Bash', toolInput: { command: 'ls' } },
+          waitingSince,
+        },
+      };
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/7/run',
+      );
+
+      const body = ticketRunResponseSchema.parse(await response.json());
+      expect(body.activeRun?.waitingFor).toEqual({
+        kind: 'permission-needed',
+        toolName: 'Bash',
+        toolInput: { command: 'ls' },
+      });
+      expect(body.activeRun?.waitingSince).toBe(waitingSince);
+    });
+
+    it('should expose waitingSince for a checkpoint wait', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.ticketRun = {
+        availability: { kind: 'disabled', reason: '#7 is running' },
+        activeRun: {
+          id: 'run-1',
+          startedAt,
+          steps: [],
+          waitingFor: { kind: 'checkpoint', request: 'Pick one', artifactId: 'page-1' },
+          waitingSince: '2026-10-07T10:00:00.000Z',
+        },
+      };
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/7/run',
+      );
+
+      const body = ticketRunResponseSchema.parse(await response.json());
+      expect(body.activeRun?.waitingFor).toEqual({ kind: 'checkpoint', request: 'Pick one' });
+      expect(body.activeRun?.waitingSince).toBe('2026-10-07T10:00:00.000Z');
+    });
+
     it('should expose no waitingFor key when the active run is working', async () => {
       const ticketRuns = new FakeTicketRuns();
       ticketRuns.ticketRun = {
@@ -148,9 +197,9 @@ describe('createRunRoutes', () => {
         '/projects/owner/name/tickets/7/run',
       );
 
-      expect(ticketRunResponseSchema.parse(await response.json()).activeRun).not.toHaveProperty(
-        'waitingFor',
-      );
+      const body = ticketRunResponseSchema.parse(await response.json());
+      expect(body.activeRun).not.toHaveProperty('waitingFor');
+      expect(body.activeRun).not.toHaveProperty('waitingSince');
     });
 
     it('should answer the last run with its ending when the ticket run has one', async () => {

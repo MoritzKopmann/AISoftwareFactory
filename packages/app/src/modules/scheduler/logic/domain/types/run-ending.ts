@@ -15,4 +15,4 @@ export type RunEnding =
   | { readonly kind: 'crashed'; readonly reason: string }
   | { readonly kind: 'usage-limit'; readonly reason: string }
   | { readonly kind: 'app-restarted' }
-  | { readonly kind: 'checkpoint'; readonly request: string };
+  | { readonly kind: 'checkpoint'; readonly request: string; readonly artifactId?: string };

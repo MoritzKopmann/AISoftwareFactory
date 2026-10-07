@@ -1,3 +1,4 @@
+import type { RunAnswer } from '../../logic/domain/types/run-answer.js';
 import type { RunAnswerWaitOutcome, RunAnswerWaits } from '../../logic/ports/run-answer-waits.js';
 
 export class InMemoryRunAnswerWaits implements RunAnswerWaits {
@@ -14,8 +15,8 @@ export class InMemoryRunAnswerWaits implements RunAnswerWaits {
     });
   }
 
-  deliver(runId: string, text: string): boolean {
-    return this.settle(runId, { kind: 'answered', text });
+  deliver(runId: string, answer: RunAnswer): boolean {
+    return this.settle(runId, { kind: 'answered', answer });
   }
 
   cancel(runId: string): void {

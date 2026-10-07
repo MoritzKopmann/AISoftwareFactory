@@ -50,6 +50,17 @@ describe('ReadTicketRunUseCase', () => {
     expect(ticketRun.activeRun?.waitingFor).toEqual({ kind: 'checkpoint', request: 'Pick A or B' });
   });
 
+  it('should copy waitingSince when the active run waits', async () => {
+    const runner = new FakeRunnerPort();
+    runner.activeTicketNumbers = [138];
+    runner.activeWaitingFor = { kind: 'permission-needed', toolName: 'Bash', toolInput: {} };
+    runner.activeWaitingSince = '2026-10-07T10:00:00.000Z';
+
+    const ticketRun = await buildUseCase(runner).execute('moritz/aisf', 138);
+
+    expect(ticketRun.activeRun?.waitingSince).toBe('2026-10-07T10:00:00.000Z');
+  });
+
   it('should leave out waitingFor when the active run is working', async () => {
     const runner = new FakeRunnerPort();
     runner.activeTicketNumbers = [138];

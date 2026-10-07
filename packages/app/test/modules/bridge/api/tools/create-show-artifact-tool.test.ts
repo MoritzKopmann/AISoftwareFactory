@@ -54,7 +54,9 @@ describe('createShowArtifactTool', () => {
   it('should keep a URL and the token out of the request when it publishes', async () => {
     const result = await tool.execute({ artifactId: 'plan', title: 'Plan review' }, runContext);
 
-    if (!('wait' in result)) throw new Error('Expected a wait');
+    if (!('wait' in result) || result.wait.kind !== 'checkpoint') {
+      throw new Error('Expected a checkpoint wait');
+    }
     expect(result.wait.request).not.toContain('a1b2c3-token');
     expect(result.wait.request).not.toContain('/a/');
     expect(result.wait.request).not.toContain('http');

@@ -27,12 +27,9 @@ export class SettleWaitingRunUseCase {
       return;
     }
 
-    // The run is still running: the same checkpoint rule applies, but nothing is settled.
+    // The run is still running: the same end rule applies, but nothing is settled.
     const liveStatus = await ticketStatusWrites.readStatus(project.repository, ticketNumber);
-    const transition = decideRunEndTransition(
-      { kind: 'checkpoint', request: wait.request },
-      liveStatus,
-    );
+    const transition = decideRunEndTransition(wait, liveStatus);
     if (transition.kind === 'none') {
       return;
     }

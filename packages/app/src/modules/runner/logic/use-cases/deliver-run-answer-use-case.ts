@@ -1,3 +1,4 @@
+import { isAnswerFor } from '../domain/functions/is-answer-for.js';
 import type { RunAnswer } from '../domain/types/run-answer.js';
 import type { Run } from '../domain/types/run.js';
 import type { RunAnswerWaits } from '../ports/run-answer-waits.js';
@@ -15,11 +16,13 @@ export class DeliverRunAnswerUseCase {
   async execute(runId: string, answer: RunAnswer): Promise<Run> {
     const { runRepository, runAnswerWaits, resumeRun } = this.dependencies;
 
-    if (answer.kind === 'checkpoint' && runAnswerWaits.deliver(runId, answer.text)) {
-      const waitingRun = await runRepository.findById(runId);
-      if (waitingRun !== undefined) {
-        return waitingRun;
-      }
+    const waitingRun = await runRepository.findById(runId);
+    if (
+      waitingRun?.waitingFor !== undefined &&
+      isAnswerFor(waitingRun.waitingFor, answer) &&
+      runAnswerWaits.deliver(runId, answer)
+    ) {
+      return waitingRun;
     }
     return resumeRun(runId, answer);
   }

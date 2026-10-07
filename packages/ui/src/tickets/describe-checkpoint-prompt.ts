@@ -58,7 +58,7 @@ type ShownWait = { readonly runId: string; readonly request: string };
 function findShownWait(response: TicketRunResponse | undefined): ShownWait | undefined {
   const activeRun = response?.activeRun;
   if (activeRun !== undefined) {
-    return activeRun.waitingFor === undefined
+    return activeRun.waitingFor?.kind !== 'checkpoint'
       ? undefined
       : { runId: activeRun.id, request: activeRun.waitingFor.request };
   }

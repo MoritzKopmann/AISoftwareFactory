@@ -15,10 +15,13 @@ describe('InMemoryRunAnswerWaits', () => {
     const outcome = waits.wait('run-1', 1000);
 
     vi.advanceTimersByTime(999);
-    const delivered = waits.deliver('run-1', 'yes');
+    const delivered = waits.deliver('run-1', { kind: 'permission', decision: 'allow' });
 
     expect(delivered).toBe(true);
-    expect(await outcome).toEqual({ kind: 'answered', text: 'yes' });
+    expect(await outcome).toEqual({
+      kind: 'answered',
+      answer: { kind: 'permission', decision: 'allow' },
+    });
   });
 
   it('should resolve expired when the window passes with no answer', async () => {
@@ -28,7 +31,7 @@ describe('InMemoryRunAnswerWaits', () => {
     vi.advanceTimersByTime(1000);
 
     expect(await outcome).toEqual({ kind: 'expired' });
-    expect(waits.deliver('run-1', 'late')).toBe(false);
+    expect(waits.deliver('run-1', { kind: 'checkpoint', text: 'late' })).toBe(false);
   });
 
   it('should resolve cancelled when the wait is cancelled', async () => {
@@ -38,11 +41,13 @@ describe('InMemoryRunAnswerWaits', () => {
     waits.cancel('run-1');
 
     expect(await outcome).toEqual({ kind: 'cancelled' });
-    expect(waits.deliver('run-1', 'late')).toBe(false);
+    expect(waits.deliver('run-1', { kind: 'checkpoint', text: 'late' })).toBe(false);
   });
 
   it('should return false when deliver finds no wait for the run', () => {
-    expect(new InMemoryRunAnswerWaits().deliver('run-1', 'yes')).toBe(false);
+    expect(new InMemoryRunAnswerWaits().deliver('run-1', { kind: 'checkpoint', text: 'yes' })).toBe(
+      false,
+    );
   });
 
   it('should do nothing when cancel finds no wait for the run', () => {
