@@ -1,0 +1,707 @@
+<title>AISF Module Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+/>
+<style>
+  /* Layout: one wide drafting sheet; modules are columns, layers are rows, lines run in channels between rows. */
+  :root {
+    --bg: #e9eef2;
+    --surface: #f8fafb;
+    --surface-2: #dfe6ec;
+    --border: #a9b8c5;
+    --border-strong: #6f8499;
+    --text: #13243a;
+    --muted: #4c6075;
+    --accent: #c45404;
+    --accent-soft: #f8e2d2;
+    --info: #2d5f93;
+    --hitl: #6b47c2;
+    --grid: rgba(45, 95, 147, 0.07);
+    --font-ui: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --bg: #0d1924;
+      --surface: #122130;
+      --surface-2: #192b3d;
+      --border: #2e4760;
+      --border-strong: #587592;
+      --text: #d8e4ee;
+      --muted: #9ab2c7;
+      --accent: #ff8a45;
+      --accent-soft: #3b2515;
+      --info: #7cb4ea;
+      --hitl: #b39cf5;
+      --grid: rgba(124, 180, 234, 0.06);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme='dark'] {
+    --bg: #0d1924;
+    --surface: #122130;
+    --surface-2: #192b3d;
+    --border: #2e4760;
+    --border-strong: #587592;
+    --text: #d8e4ee;
+    --muted: #9ab2c7;
+    --accent: #ff8a45;
+    --accent-soft: #3b2515;
+    --info: #7cb4ea;
+    --hitl: #b39cf5;
+    --grid: rgba(124, 180, 234, 0.06);
+    color-scheme: dark;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .page {
+    padding-inline: 16px;
+    padding-block: 24px 40px;
+    display: grid;
+    gap: 20px;
+  }
+  header {
+    display: grid;
+    gap: 10px;
+    max-width: 72ch;
+  }
+  h1 {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 20px;
+    margin: 0;
+    text-wrap: balance;
+  }
+  header p {
+    margin: 0;
+    color: var(--muted);
+  }
+  .counts {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    align-items: center;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .legend svg {
+    width: 30px;
+    height: 8px;
+  }
+  .selection {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text);
+    min-height: 1.4em;
+  }
+  .selection button {
+    font: inherit;
+    margin-left: 10px;
+    background: none;
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    border-radius: 2px;
+    padding: 1px 8px;
+    cursor: pointer;
+  }
+  .selection button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .sheet {
+    overflow-x: auto;
+    border: 1px solid var(--border-strong);
+    border-radius: 4px;
+    background-color: var(--surface);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .sheet svg {
+    display: block;
+  }
+  .module-column {
+    fill: var(--surface-2);
+    opacity: 0.55;
+  }
+  .module-name {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    fill: var(--text);
+  }
+  .band-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    fill: var(--muted);
+  }
+  .band-rule {
+    stroke: var(--border);
+    stroke-dasharray: 2 4;
+  }
+  .box rect {
+    fill: var(--surface);
+    stroke: var(--border-strong);
+    stroke-width: 1;
+  }
+  .box text {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    fill: var(--text);
+  }
+  .box .sub {
+    font-size: 9.5px;
+    fill: var(--muted);
+  }
+  .box.interface rect {
+    fill: var(--surface-2);
+  }
+  .box.interface.empty rect {
+    stroke-dasharray: 3 3;
+  }
+  .box.infra.repository rect {
+    stroke: var(--info);
+  }
+  .box.useCase {
+    cursor: pointer;
+  }
+  .box.useCase:hover rect {
+    stroke: var(--accent);
+  }
+  .box.useCase:focus {
+    outline: none;
+  }
+  .box.useCase:focus-visible rect {
+    stroke: var(--accent);
+    stroke-width: 2;
+  }
+  .box.selected rect {
+    fill: var(--accent-soft);
+    stroke: var(--accent);
+    stroke-width: 2;
+  }
+  .edge {
+    fill: none;
+    stroke-width: 1.2;
+    opacity: 0.6;
+    transition:
+      opacity 120ms,
+      stroke-width 120ms;
+  }
+  .edge.uses {
+    stroke: var(--info);
+  }
+  .edge.calls,
+  .edge.backs {
+    stroke: var(--accent);
+  }
+  .edge.backs {
+    stroke-dasharray: 1 3;
+    stroke-linecap: round;
+    stroke-width: 1.4;
+  }
+  .edge.internal {
+    stroke: var(--muted);
+  }
+  .edge.event {
+    stroke: var(--hitl);
+    stroke-dasharray: 6 4;
+  }
+  .arrow-uses {
+    fill: var(--info);
+  }
+  .arrow-calls,
+  .arrow-backs {
+    fill: var(--accent);
+  }
+  .arrow-internal {
+    fill: var(--muted);
+  }
+  .arrow-event {
+    fill: var(--hitl);
+  }
+  .edge-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    fill: var(--hitl);
+    paint-order: stroke;
+    stroke: var(--surface);
+    stroke-width: 4px;
+    display: none;
+  }
+  .has-selection .edge {
+    opacity: 0.07;
+  }
+  .has-selection .edge.on {
+    opacity: 1;
+    stroke-width: 2.2;
+  }
+  .has-selection .box {
+    opacity: 0.3;
+  }
+  .has-selection .box.on {
+    opacity: 1;
+  }
+  .has-selection .edge-label.on {
+    display: block;
+  }
+  .domain rect {
+    fill: none;
+    stroke: var(--border-strong);
+    stroke-dasharray: 4 3;
+  }
+  .domain text {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    fill: var(--muted);
+    paint-order: stroke;
+    stroke: var(--surface-2);
+    stroke-width: 4px;
+  }
+  .badge rect {
+    stroke-width: 1;
+  }
+  .badge text {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .badge.decided rect {
+    fill: var(--accent);
+    stroke: var(--accent);
+  }
+  .badge.decided text {
+    fill: var(--surface);
+  }
+  .badge.proposed rect {
+    fill: var(--surface);
+    stroke: var(--info);
+  }
+  .badge.proposed text {
+    fill: var(--info);
+  }
+  .badge.open rect {
+    fill: var(--surface);
+    stroke: var(--muted);
+    stroke-dasharray: 2 2;
+  }
+  .badge.open text {
+    fill: var(--muted);
+  }
+  .decisions {
+    display: grid;
+    gap: 10px;
+    max-width: 110ch;
+  }
+  .decisions h2,
+  .decision-table {
+    overflow-x: auto;
+  }
+  .decision-table table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 14px;
+  }
+  .decision-table th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .decision-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .decision-table a {
+    color: var(--accent);
+    font-family: var(--font-mono);
+  }
+  .decision-table td:first-child {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .chip {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 1px 7px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .chip.decided {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--surface);
+  }
+  .chip.proposed {
+    color: var(--info);
+    border-color: var(--info);
+  }
+  .chip.open {
+    color: var(--muted);
+    border-color: var(--muted);
+    border-style: dashed;
+  }
+  .notes {
+    max-width: 72ch;
+    display: grid;
+    gap: 8px;
+  }
+  .notes h2 {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin: 0;
+  }
+  .notes ul {
+    margin: 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 4px;
+    color: var(--text);
+  }
+  .notes code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .edge {
+      transition: none;
+    }
+  }
+</style>
+
+<div class="page">
+  <header>
+    <h1>AISF module map</h1>
+    <p>
+      Every module of <code>packages/app</code> as a column: public interface on top, use cases in
+      the middle, infra below. Click a use case to trace what it uses and calls.
+    </p>
+    <div class="counts" id="counts"></div>
+  </header>
+
+  <div class="toolbar">
+    <div class="legend" aria-label="Line types">
+      <span
+        ><svg viewBox="0 0 30 8">
+          <line x1="0" y1="4" x2="30" y2="4" class="edge uses" style="opacity: 1" /></svg
+        >uses infra</span
+      >
+      <span
+        ><svg viewBox="0 0 30 8">
+          <line x1="0" y1="4" x2="30" y2="4" class="edge calls" style="opacity: 1" /></svg
+        >calls another module</span
+      >
+      <span
+        ><svg viewBox="0 0 30 8">
+          <line x1="0" y1="4" x2="30" y2="4" class="edge backs" style="opacity: 1" /></svg
+        >interface → its use case</span
+      >
+      <span
+        ><svg viewBox="0 0 30 8">
+          <line x1="0" y1="4" x2="30" y2="4" class="edge internal" style="opacity: 1" /></svg
+        >same-module call</span
+      >
+      <span
+        ><svg viewBox="0 0 30 8">
+          <line x1="0" y1="4" x2="30" y2="4" class="edge event" style="opacity: 1" /></svg
+        >bus event</span
+      >
+      <span
+        ><svg viewBox="0 0 30 8">
+          <rect
+            x="1"
+            y="1"
+            width="28"
+            height="6"
+            fill="none"
+            stroke="var(--border-strong)"
+            stroke-dasharray="4 3"
+          /></svg
+        >domain</span
+      >
+      <span
+        ><span class="chip decided">D5</span> decided ·
+        <span class="chip proposed">D1</span> proposed ·
+        <span class="chip open">D7</span> open</span
+      >
+    </div>
+  </div>
+  <div class="selection" id="selection" aria-live="polite">Nothing selected.</div>
+
+  <div class="sheet" id="sheet"></div>
+
+  <section class="decisions">
+    <h2>Decisions and steps</h2>
+    <div class="decision-table">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Status</th>
+            <th>Change</th>
+            <th>Step</th>
+            <th>Ticket</th>
+          </tr>
+        </thead>
+        <tbody id="decision-rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h2>Reading notes</h2>
+    <ul>
+      <li>
+        Use cases never import another module. A cross-module line runs from the use case to its own
+        port, which <code>main.ts</code> fills with the other module's interface method. The dotted
+        line then leads to the use case behind that method.
+      </li>
+      <li>
+        Watcher's subscriptions to <code>project.added</code>, <code>run.finished</code> and
+        <code>ticket.status-written</code> update in-memory state and request a poll. Their lines
+        end at <code>PollRepositories</code>.
+      </li>
+      <li>
+        <code>RecoverInterruptedRuns</code> emits <code>run.finished</code> itself and also through
+        <code>FinishRun</code>.
+      </li>
+      <li>
+        <code>tools (MCP)</code> of bridge and findings are handed to <code>LaunchRunSession</code>.
+        The agent session calls them, not the use case code.
+      </li>
+      <li>
+        <code>skills.start</code> runs both <code>StartSkills</code> and
+        <code>ReadCredentials</code>. Only <code>StartSkills</code> is linked.
+      </li>
+      <li>
+        Left out: shared adapters (clock, bus, logger, identifiers), helper files without a class,
+        routes, and <code>GhCliGitHubToken</code>, which only other infra uses. Watcher's
+        <code>RegisteredRepositories</code> port calls <code>projects.list</code> from
+        <code>index.ts</code>, not from a use case, so it has no line.
+      </li>
+      <li>
+        Snapshot of <code>main</code> at <code>9a40605</code>, 2026-10-07. Domain boxes are a first
+        proposal. Round 3: tickets #328–#331.
+      </li>
+    </ul>
+  </section>
+</div>
+
+<script>
+  /*LAYOUT*/
+  const graph = /*GRAPH*/;
+  const review = /*REVIEW*/;
+  const layout = buildLayout(graph, review);
+  const decisionsById = new Map(review.decisions.map((decision) => [decision.id, decision]));
+  const decisionRows = document.getElementById('decision-rows');
+  for (const decision of review.decisions) {
+    const row = document.createElement('tr');
+    for (const [index, value] of [decision.id, decision.status, decision.title, decision.step, decision.ticket].entries()) {
+      const cell = document.createElement('td');
+      if (index === 1) {
+        const chip = document.createElement('span');
+        chip.className = `chip ${decision.status}`;
+        chip.textContent = decision.status;
+        cell.appendChild(chip);
+      } else if (index === 4) {
+        if (value) {
+          const link = document.createElement('a');
+          link.href = `https://github.com/MoritzKopmann/AISoftwareFactory/issues/${value}`;
+          link.textContent = `#${value}`;
+          cell.appendChild(link);
+        } else {
+          cell.textContent = '—';
+        }
+      } else {
+        cell.textContent = value;
+      }
+      row.appendChild(cell);
+    }
+    decisionRows.appendChild(row);
+  }
+
+  function drawBadge(parent, decisionId, x, y) {
+    const decision = decisionsById.get(decisionId);
+    if (!decision) return;
+    const group = element('g', { class: `badge ${decision.status}`, transform: `translate(${x},${y})` }, parent);
+    element('rect', { width: 24, height: 13, rx: 1 }, group);
+    element('text', { x: 12, y: 9.5, 'text-anchor': 'middle' }, group).textContent = decision.id;
+    element('title', {}, group).textContent = `${decision.id} · ${decision.status}: ${decision.title}`;
+  }
+  const svgNamespace = 'http://www.w3.org/2000/svg';
+
+  function element(name, attributes, parent) {
+    const created = document.createElementNS(svgNamespace, name);
+    for (const [key, value] of Object.entries(attributes)) created.setAttribute(key, value);
+    if (parent) parent.appendChild(created);
+    return created;
+  }
+
+  const useCaseCount = layout.nodes.filter((node) => node.band === 'useCase').length;
+  const infraCount = layout.nodes.filter((node) => node.band === 'infra').length;
+  const countByKind = (kind) => graph.edges.filter((edge) => edge.kind === kind).length;
+  document.getElementById('counts').textContent =
+    `${layout.modules.length} modules · ${useCaseCount} use cases · ${infraCount} infra · ` +
+    `${countByKind('uses')} uses · ${countByKind('calls')} calls · ${countByKind('internal')} internal · ${countByKind('event')} events`;
+
+  const svg = element('svg', { width: layout.width, height: layout.height, viewBox: `0 0 ${layout.width} ${layout.height}`, role: 'img', 'aria-label': 'Module dependency map' });
+  document.getElementById('sheet').appendChild(svg);
+
+  const definitions = element('defs', {}, svg);
+  for (const kind of ['uses', 'calls', 'backs', 'internal', 'event']) {
+    const marker = element('marker', { id: `arrow-${kind}`, viewBox: '0 0 8 8', refX: 7, refY: 4, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, definitions);
+    element('path', { d: 'M0,0 L8,4 L0,8 z', class: `arrow-${kind}` }, marker);
+  }
+
+  for (const module of layout.modules) {
+    element('rect', { x: module.x - 14, y: 8, width: module.width + 28, height: layout.height - 16, rx: 4, class: 'module-column' }, svg);
+    const name = element('text', { x: module.x - 2, y: 34, class: 'module-name' }, svg);
+    name.textContent = module.name;
+    if (module.badge) drawBadge(svg, module.badge, module.x + module.name.length * 9.2 + 8, 23);
+  }
+  for (const domain of layout.domainBoxes) {
+    const group = element('g', { class: 'domain' }, svg);
+    element('rect', { x: domain.x, y: domain.y, width: domain.width, height: domain.height, rx: 3 }, group);
+    element('text', { x: domain.x + 8, y: domain.y + 14 }, group).textContent = domain.name;
+  }
+  for (const band of layout.bands) {
+    const label = element('text', { x: 14, y: band.y + (band.channel ? 14 : band.height / 2 + 4), class: 'band-label' }, svg);
+    label.textContent = band.label;
+    if (band.channel) element('line', { x1: 14, x2: 112, y1: band.y + 22, y2: band.y + 22, class: 'band-rule' }, svg);
+  }
+
+  const edgeLayer = element('g', {}, svg);
+  const labelLayer = element('g', {}, svg);
+  const nodeLayer = element('g', {}, svg);
+  const edgeElements = new Map();
+  const labelElements = new Map();
+  for (const edge of layout.edges) {
+    const path = element('path', { d: edge.d, class: `edge ${edge.kind}`, 'marker-end': `url(#arrow-${edge.kind})` }, edgeLayer);
+    const title = element('title', {}, path);
+    title.textContent = edge.kind === 'event' ? `event ${edge.event}` : edge.via ? `${edge.kind} via ${edge.via}` : edge.kind;
+    edgeElements.set(edge.id, path);
+    if (edge.kind === 'event' || edge.via) {
+      const label = element('text', { x: edge.labelX, y: edge.labelY, 'text-anchor': 'middle', class: 'edge-label' }, labelLayer);
+      label.textContent = edge.kind === 'event' ? edge.event : edge.via;
+      labelElements.set(edge.id, label);
+    }
+  }
+
+  const nodeElements = new Map();
+  for (const node of layout.nodes) {
+    const classes = ['box', node.band, node.kind ?? '', node.band === 'interface' && !node.backs ? 'empty' : ''].join(' ');
+    const group = element('g', { class: classes, transform: `translate(${node.x},${node.y})` }, nodeLayer);
+    element('rect', { width: node.width, height: node.height, rx: 2 }, group);
+    element('title', {}, group).textContent = node.title;
+    const lineCount = node.lines.length + (node.sub ? 1 : 0);
+    const textArea = node.badge ? node.height - 16 : node.height;
+    const firstBaseline = textArea / 2 - ((lineCount - 1) * 13) / 2 + 4 + (node.badge ? 2 : 0);
+    node.lines.forEach((line, index) => {
+      element('text', { x: 9, y: firstBaseline + index * 13 }, group).textContent = line;
+    });
+    if (node.sub) element('text', { x: 9, y: firstBaseline + node.lines.length * 13, class: 'sub' }, group).textContent = node.sub;
+    if (node.badge) drawBadge(group, node.badge, node.width - 30, node.height - 17);
+    if (node.band === 'useCase') {
+      group.setAttribute('tabindex', '0');
+      group.setAttribute('role', 'button');
+      group.setAttribute('aria-label', `Trace ${node.title}`);
+      group.addEventListener('click', (event) => { event.stopPropagation(); select(node.id); });
+      group.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(node.id); }
+      });
+    }
+    nodeElements.set(node.id, group);
+  }
+
+  const nodesById = new Map(layout.nodes.map((node) => [node.id, node]));
+  const selectionLine = document.getElementById('selection');
+  let selectedId = null;
+
+  function select(useCaseId) {
+    if (selectedId === useCaseId) return clearSelection();
+    clearSelection();
+    selectedId = useCaseId;
+    const litEdges = new Set();
+    const litNodes = new Set([useCaseId]);
+    for (const edge of layout.edges.filter((candidate) => candidate.from === useCaseId)) {
+      litEdges.add(edge.id);
+      litNodes.add(edge.to);
+      if (edge.kind === 'calls') {
+        const backs = layout.edges.find((candidate) => candidate.kind === 'backs' && candidate.from === edge.to);
+        if (backs) { litEdges.add(backs.id); litNodes.add(backs.to); }
+      }
+    }
+    svg.classList.add('has-selection');
+    litEdges.forEach((id) => { edgeElements.get(id).classList.add('on'); labelElements.get(id)?.classList.add('on'); });
+    litNodes.forEach((id) => nodeElements.get(id).classList.add('on'));
+    nodeElements.get(useCaseId).classList.add('selected');
+    const node = nodesById.get(useCaseId);
+    selectionLine.textContent = `${node.module} · ${node.title} — ${litEdges.size} lines, ${litNodes.size - 1} connected`;
+    const clearButton = document.createElement('button');
+    clearButton.type = 'button';
+    clearButton.textContent = 'Clear';
+    clearButton.addEventListener('click', clearSelection);
+    selectionLine.appendChild(clearButton);
+  }
+
+  function clearSelection() {
+    selectedId = null;
+    svg.classList.remove('has-selection');
+    svg.querySelectorAll('.on, .selected').forEach((lit) => lit.classList.remove('on', 'selected'));
+    selectionLine.textContent = 'Nothing selected.';
+  }
+
+  svg.addEventListener('click', clearSelection);
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') clearSelection(); });
+</script>

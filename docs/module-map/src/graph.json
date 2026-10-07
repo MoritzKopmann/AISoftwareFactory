@@ -1,0 +1,1218 @@
+{
+  "modules": [
+    {
+      "name": "bridge",
+      "interface": [
+        {
+          "id": "bridge.if.tools",
+          "name": "tools",
+          "useCase": "bridge.uc.PublishArtifactUseCase"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "bridge.uc.ListTicketArtifactsUseCase",
+          "name": "ListTicketArtifactsUseCase"
+        },
+        {
+          "id": "bridge.uc.PublishArtifactUseCase",
+          "name": "PublishArtifactUseCase"
+        },
+        {
+          "id": "bridge.uc.ReadPageAssetUseCase",
+          "name": "ReadPageAssetUseCase"
+        },
+        {
+          "id": "bridge.uc.ReadPageStateUseCase",
+          "name": "ReadPageStateUseCase"
+        },
+        {
+          "id": "bridge.uc.ReadPageStatusUseCase",
+          "name": "ReadPageStatusUseCase"
+        },
+        {
+          "id": "bridge.uc.ReadPageUseCase",
+          "name": "ReadPageUseCase"
+        },
+        {
+          "id": "bridge.uc.SubmitPageEventUseCase",
+          "name": "SubmitPageEventUseCase"
+        },
+        {
+          "id": "bridge.uc.WritePageStateUseCase",
+          "name": "WritePageStateUseCase"
+        }
+      ],
+      "infra": [
+        {
+          "id": "bridge.infra.FileSystemArtifactFiles",
+          "name": "FileSystemArtifactFiles",
+          "kind": "integration",
+          "port": "ArtifactFiles"
+        },
+        {
+          "id": "bridge.infra.SqliteArtifactRepository",
+          "name": "SqliteArtifactRepository",
+          "kind": "repository",
+          "port": "ArtifactRepository",
+          "table": "artifacts"
+        }
+      ]
+    },
+    {
+      "name": "findings",
+      "interface": [
+        {
+          "id": "findings.if.tools",
+          "name": "tools",
+          "useCase": "findings.uc.ReportFindingUseCase"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "findings.uc.CreateTicketFromFindingUseCase",
+          "name": "CreateTicketFromFindingUseCase"
+        },
+        {
+          "id": "findings.uc.DismissFindingUseCase",
+          "name": "DismissFindingUseCase"
+        },
+        {
+          "id": "findings.uc.ListFindingsUseCase",
+          "name": "ListFindingsUseCase"
+        },
+        {
+          "id": "findings.uc.ReportFindingUseCase",
+          "name": "ReportFindingUseCase"
+        }
+      ],
+      "infra": [
+        {
+          "id": "findings.infra.GhCliTicketCreator",
+          "name": "GhCliTicketCreator",
+          "kind": "integration",
+          "port": "TicketCreator"
+        },
+        {
+          "id": "findings.infra.SqliteFindingRepository",
+          "name": "SqliteFindingRepository",
+          "kind": "repository",
+          "port": "FindingRepository",
+          "table": "findings"
+        }
+      ]
+    },
+    {
+      "name": "projects",
+      "interface": [
+        {
+          "id": "projects.if.list",
+          "name": "list",
+          "useCase": "projects.uc.ListProjectsUseCase"
+        },
+        {
+          "id": "projects.if.start",
+          "name": "start",
+          "useCase": "projects.uc.SyncProjectLabelsUseCase"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "projects.uc.AddProjectUseCase",
+          "name": "AddProjectUseCase"
+        },
+        {
+          "id": "projects.uc.ListProjectsUseCase",
+          "name": "ListProjectsUseCase"
+        },
+        {
+          "id": "projects.uc.SyncProjectLabelsUseCase",
+          "name": "SyncProjectLabelsUseCase"
+        }
+      ],
+      "infra": [
+        {
+          "id": "projects.infra.GhCliLabelSync",
+          "name": "GhCliLabelSync",
+          "kind": "integration",
+          "port": "LabelSync"
+        },
+        {
+          "id": "projects.infra.GhCliRepositoryResolver",
+          "name": "GhCliRepositoryResolver",
+          "kind": "integration",
+          "port": "RepositoryResolver"
+        },
+        {
+          "id": "projects.infra.SqliteProjectRepository",
+          "name": "SqliteProjectRepository",
+          "kind": "repository",
+          "port": "ProjectRepository",
+          "table": "projects"
+        }
+      ]
+    },
+    {
+      "name": "runner",
+      "interface": [
+        {
+          "id": "runner.if.start",
+          "name": "start",
+          "useCase": "runner.uc.StartRunUseCase"
+        },
+        {
+          "id": "runner.if.answer",
+          "name": "answer",
+          "useCase": "runner.uc.DeliverRunAnswerUseCase"
+        },
+        {
+          "id": "runner.if.findRun",
+          "name": "findRun",
+          "useCase": "runner.uc.ReadRunUseCase"
+        },
+        {
+          "id": "runner.if.activeRuns",
+          "name": "activeRuns",
+          "useCase": "runner.uc.ReadActiveRunsUseCase"
+        },
+        {
+          "id": "runner.if.latestRun",
+          "name": "latestRun",
+          "useCase": "runner.uc.ReadLatestRunUseCase"
+        },
+        {
+          "id": "runner.if.settle",
+          "name": "settle",
+          "useCase": "runner.uc.SettleRunUseCase"
+        },
+        {
+          "id": "runner.if.sessionLog",
+          "name": "sessionLog",
+          "useCase": "runner.uc.ReadSessionLogUseCase"
+        },
+        {
+          "id": "runner.if.recover",
+          "name": "recover",
+          "useCase": "runner.uc.RecoverInterruptedRunsUseCase"
+        },
+        {
+          "id": "runner.if.abortSessions",
+          "name": "abortSessions",
+          "useCase": null
+        }
+      ],
+      "useCases": [
+        {
+          "id": "runner.uc.DeliverRunAnswerUseCase",
+          "name": "DeliverRunAnswerUseCase"
+        },
+        {
+          "id": "runner.uc.FinishRunUseCase",
+          "name": "FinishRunUseCase"
+        },
+        {
+          "id": "runner.uc.LaunchRunSessionUseCase",
+          "name": "LaunchRunSessionUseCase"
+        },
+        {
+          "id": "runner.uc.ReadActiveRunsUseCase",
+          "name": "ReadActiveRunsUseCase"
+        },
+        {
+          "id": "runner.uc.ReadLatestRunUseCase",
+          "name": "ReadLatestRunUseCase"
+        },
+        {
+          "id": "runner.uc.ReadRunUseCase",
+          "name": "ReadRunUseCase"
+        },
+        {
+          "id": "runner.uc.ReadSessionLogUseCase",
+          "name": "ReadSessionLogUseCase"
+        },
+        {
+          "id": "runner.uc.RecoverInterruptedRunsUseCase",
+          "name": "RecoverInterruptedRunsUseCase"
+        },
+        {
+          "id": "runner.uc.ResumeRunUseCase",
+          "name": "ResumeRunUseCase"
+        },
+        {
+          "id": "runner.uc.SettleRunUseCase",
+          "name": "SettleRunUseCase"
+        },
+        {
+          "id": "runner.uc.StartRunUseCase",
+          "name": "StartRunUseCase"
+        },
+        {
+          "id": "runner.uc.StopRunUseCase",
+          "name": "StopRunUseCase"
+        },
+        {
+          "id": "runner.uc.WaitForRunAnswerUseCase",
+          "name": "WaitForRunAnswerUseCase"
+        }
+      ],
+      "infra": [
+        {
+          "id": "runner.infra.ClaudeAgentSdkSessions",
+          "name": "ClaudeAgentSdkSessions",
+          "kind": "integration",
+          "port": "AgentSessions"
+        },
+        {
+          "id": "runner.infra.ClaudeAgentSdkSessionTranscripts",
+          "name": "ClaudeAgentSdkSessionTranscripts",
+          "kind": "integration",
+          "port": "SessionTranscripts"
+        },
+        {
+          "id": "runner.infra.GitCliWorktrees",
+          "name": "GitCliWorktrees",
+          "kind": "integration",
+          "port": "Worktrees"
+        },
+        {
+          "id": "runner.infra.InMemoryRecentRunSteps",
+          "name": "InMemoryRecentRunSteps",
+          "kind": "integration",
+          "port": "RecentRunSteps"
+        },
+        {
+          "id": "runner.infra.InMemoryRunAnswerWaits",
+          "name": "InMemoryRunAnswerWaits",
+          "kind": "integration",
+          "port": "RunAnswerWaits"
+        },
+        {
+          "id": "runner.infra.SqliteRunRepository",
+          "name": "SqliteRunRepository",
+          "kind": "repository",
+          "port": "RunRepository",
+          "table": "runs"
+        }
+      ]
+    },
+    {
+      "name": "scheduler",
+      "interface": [
+        {
+          "id": "scheduler.if.start",
+          "name": "start",
+          "useCase": null
+        },
+        {
+          "id": "scheduler.if.answer",
+          "name": "answer",
+          "useCase": "scheduler.uc.AnswerRunUseCase"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "scheduler.uc.AnswerRunUseCase",
+          "name": "AnswerRunUseCase"
+        },
+        {
+          "id": "scheduler.uc.MergeApprovedPullRequestsUseCase",
+          "name": "MergeApprovedPullRequestsUseCase"
+        },
+        {
+          "id": "scheduler.uc.ReadRunAvailabilityUseCase",
+          "name": "ReadRunAvailabilityUseCase"
+        },
+        {
+          "id": "scheduler.uc.ReadTicketRunUseCase",
+          "name": "ReadTicketRunUseCase"
+        },
+        {
+          "id": "scheduler.uc.ReadTicketSessionLogUseCase",
+          "name": "ReadTicketSessionLogUseCase"
+        },
+        {
+          "id": "scheduler.uc.ResetTicketUseCase",
+          "name": "ResetTicketUseCase"
+        },
+        {
+          "id": "scheduler.uc.SettleFinishedRunUseCase",
+          "name": "SettleFinishedRunUseCase"
+        },
+        {
+          "id": "scheduler.uc.SettleWaitingRunUseCase",
+          "name": "SettleWaitingRunUseCase"
+        },
+        {
+          "id": "scheduler.uc.StartTicketRunUseCase",
+          "name": "StartTicketRunUseCase"
+        }
+      ],
+      "infra": [
+        {
+          "id": "scheduler.infra.GhCliPullRequestMerges",
+          "name": "GhCliPullRequestMerges",
+          "kind": "integration",
+          "port": "PullRequestMerges"
+        },
+        {
+          "id": "scheduler.infra.GhCliTicketStatusWrites",
+          "name": "GhCliTicketStatusWrites",
+          "kind": "integration",
+          "port": "TicketStatusWrites"
+        }
+      ]
+    },
+    {
+      "name": "skills",
+      "interface": [
+        {
+          "id": "skills.if.start",
+          "name": "start",
+          "useCase": "skills.uc.StartSkillsUseCase"
+        },
+        {
+          "id": "skills.if.runsBlocked",
+          "name": "runsBlocked",
+          "useCase": null
+        },
+        {
+          "id": "skills.if.runContractPreflight",
+          "name": "runContractPreflight",
+          "useCase": "skills.uc.ContractPreflightUseCase"
+        },
+        {
+          "id": "skills.if.installPluginLocally",
+          "name": "installPluginLocally",
+          "useCase": "skills.uc.InstallPluginLocallyUseCase"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "skills.uc.ContractPreflightUseCase",
+          "name": "ContractPreflightUseCase"
+        },
+        {
+          "id": "skills.uc.InstallPluginLocallyUseCase",
+          "name": "InstallPluginLocallyUseCase"
+        },
+        {
+          "id": "skills.uc.ReadCredentialsUseCase",
+          "name": "ReadCredentialsUseCase"
+        },
+        {
+          "id": "skills.uc.StartSkillsUseCase",
+          "name": "StartSkillsUseCase"
+        }
+      ],
+      "infra": [
+        {
+          "id": "skills.infra.ClaudeCliLocalPluginInstaller",
+          "name": "ClaudeCliLocalPluginInstaller",
+          "kind": "integration",
+          "port": "LocalPluginInstaller"
+        },
+        {
+          "id": "skills.infra.ClaudeCliMarketplaceRegistry",
+          "name": "ClaudeCliMarketplaceRegistry",
+          "kind": "integration",
+          "port": "MarketplaceRegistry"
+        },
+        {
+          "id": "skills.infra.ClaudeCliSmokeProbe",
+          "name": "ClaudeCliSmokeProbe",
+          "kind": "integration",
+          "port": "SmokeProbe"
+        },
+        {
+          "id": "skills.infra.EnvironmentCredentialSource",
+          "name": "EnvironmentCredentialSource",
+          "kind": "integration",
+          "port": "CredentialSource"
+        },
+        {
+          "id": "skills.infra.FileSystemPluginMirror",
+          "name": "FileSystemPluginMirror",
+          "kind": "integration",
+          "port": "PluginMirror"
+        },
+        {
+          "id": "skills.infra.FileSystemSlotReader",
+          "name": "FileSystemSlotReader",
+          "kind": "integration",
+          "port": "SlotReader"
+        }
+      ]
+    },
+    {
+      "name": "watcher",
+      "interface": [
+        {
+          "id": "watcher.if.start",
+          "name": "start",
+          "useCase": "watcher.uc.PollRepositoriesUseCase"
+        },
+        {
+          "id": "watcher.if.stop",
+          "name": "stop",
+          "useCase": null
+        },
+        {
+          "id": "watcher.if.openTickets",
+          "name": "openTickets",
+          "useCase": null
+        },
+        {
+          "id": "watcher.if.ticket",
+          "name": "ticket",
+          "useCase": "watcher.uc.ReadTicketUseCase"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "watcher.uc.PollRepositoriesUseCase",
+          "name": "PollRepositoriesUseCase"
+        },
+        {
+          "id": "watcher.uc.ReadProjectBoardUseCase",
+          "name": "ReadProjectBoardUseCase"
+        },
+        {
+          "id": "watcher.uc.ReadTicketUseCase",
+          "name": "ReadTicketUseCase"
+        }
+      ],
+      "infra": [
+        {
+          "id": "watcher.infra.FetchGraphQLTicketSource",
+          "name": "FetchGraphQLTicketSource",
+          "kind": "integration",
+          "port": "TicketSource"
+        },
+        {
+          "id": "watcher.infra.FetchIssueFeeds",
+          "name": "FetchIssueFeeds",
+          "kind": "integration",
+          "port": "IssueFeeds"
+        },
+        {
+          "id": "watcher.infra.GhCliGitHubToken",
+          "name": "GhCliGitHubToken",
+          "kind": "integration",
+          "port": "GitHubToken"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "bridge.uc.ListTicketArtifactsUseCase",
+      "to": "bridge.infra.SqliteArtifactRepository",
+      "kind": "uses",
+      "via": "ArtifactRepository"
+    },
+    {
+      "from": "bridge.uc.PublishArtifactUseCase",
+      "to": "bridge.infra.SqliteArtifactRepository",
+      "kind": "uses",
+      "via": "ArtifactRepository"
+    },
+    {
+      "from": "bridge.uc.PublishArtifactUseCase",
+      "to": "bridge.infra.FileSystemArtifactFiles",
+      "kind": "uses",
+      "via": "ArtifactFiles"
+    },
+    {
+      "from": "bridge.uc.ReadPageAssetUseCase",
+      "to": "bridge.infra.SqliteArtifactRepository",
+      "kind": "uses",
+      "via": "ArtifactRepository"
+    },
+    {
+      "from": "bridge.uc.ReadPageAssetUseCase",
+      "to": "bridge.infra.FileSystemArtifactFiles",
+      "kind": "uses",
+      "via": "ArtifactFiles"
+    },
+    {
+      "from": "bridge.uc.ReadPageStateUseCase",
+      "to": "bridge.infra.SqliteArtifactRepository",
+      "kind": "uses",
+      "via": "ArtifactRepository"
+    },
+    {
+      "from": "bridge.uc.ReadPageStateUseCase",
+      "to": "bridge.infra.FileSystemArtifactFiles",
+      "kind": "uses",
+      "via": "ArtifactFiles"
+    },
+    {
+      "from": "bridge.uc.ReadPageStatusUseCase",
+      "to": "bridge.infra.SqliteArtifactRepository",
+      "kind": "uses",
+      "via": "ArtifactRepository"
+    },
+    {
+      "from": "bridge.uc.ReadPageUseCase",
+      "to": "bridge.infra.SqliteArtifactRepository",
+      "kind": "uses",
+      "via": "ArtifactRepository"
+    },
+    {
+      "from": "bridge.uc.ReadPageUseCase",
+      "to": "bridge.infra.FileSystemArtifactFiles",
+      "kind": "uses",
+      "via": "ArtifactFiles"
+    },
+    {
+      "from": "bridge.uc.SubmitPageEventUseCase",
+      "to": "bridge.infra.SqliteArtifactRepository",
+      "kind": "uses",
+      "via": "ArtifactRepository"
+    },
+    {
+      "from": "bridge.uc.WritePageStateUseCase",
+      "to": "bridge.infra.SqliteArtifactRepository",
+      "kind": "uses",
+      "via": "ArtifactRepository"
+    },
+    {
+      "from": "bridge.uc.WritePageStateUseCase",
+      "to": "bridge.infra.FileSystemArtifactFiles",
+      "kind": "uses",
+      "via": "ArtifactFiles"
+    },
+    {
+      "from": "findings.uc.CreateTicketFromFindingUseCase",
+      "to": "findings.infra.SqliteFindingRepository",
+      "kind": "uses",
+      "via": "FindingRepository"
+    },
+    {
+      "from": "findings.uc.CreateTicketFromFindingUseCase",
+      "to": "findings.infra.GhCliTicketCreator",
+      "kind": "uses",
+      "via": "TicketCreator"
+    },
+    {
+      "from": "findings.uc.DismissFindingUseCase",
+      "to": "findings.infra.SqliteFindingRepository",
+      "kind": "uses",
+      "via": "FindingRepository"
+    },
+    {
+      "from": "findings.uc.ListFindingsUseCase",
+      "to": "findings.infra.SqliteFindingRepository",
+      "kind": "uses",
+      "via": "FindingRepository"
+    },
+    {
+      "from": "findings.uc.ReportFindingUseCase",
+      "to": "findings.infra.SqliteFindingRepository",
+      "kind": "uses",
+      "via": "FindingRepository"
+    },
+    {
+      "from": "projects.uc.AddProjectUseCase",
+      "to": "projects.infra.GhCliRepositoryResolver",
+      "kind": "uses",
+      "via": "RepositoryResolver"
+    },
+    {
+      "from": "projects.uc.AddProjectUseCase",
+      "to": "projects.infra.SqliteProjectRepository",
+      "kind": "uses",
+      "via": "ProjectRepository"
+    },
+    {
+      "from": "projects.uc.AddProjectUseCase",
+      "to": "projects.infra.GhCliLabelSync",
+      "kind": "uses",
+      "via": "LabelSync"
+    },
+    {
+      "from": "projects.uc.ListProjectsUseCase",
+      "to": "projects.infra.SqliteProjectRepository",
+      "kind": "uses",
+      "via": "ProjectRepository"
+    },
+    {
+      "from": "projects.uc.SyncProjectLabelsUseCase",
+      "to": "projects.infra.SqliteProjectRepository",
+      "kind": "uses",
+      "via": "ProjectRepository"
+    },
+    {
+      "from": "projects.uc.SyncProjectLabelsUseCase",
+      "to": "projects.infra.GhCliLabelSync",
+      "kind": "uses",
+      "via": "LabelSync"
+    },
+    {
+      "from": "runner.uc.DeliverRunAnswerUseCase",
+      "to": "runner.infra.SqliteRunRepository",
+      "kind": "uses",
+      "via": "RunRepository"
+    },
+    {
+      "from": "runner.uc.DeliverRunAnswerUseCase",
+      "to": "runner.infra.InMemoryRunAnswerWaits",
+      "kind": "uses",
+      "via": "RunAnswerWaits"
+    },
+    {
+      "from": "runner.uc.FinishRunUseCase",
+      "to": "runner.infra.SqliteRunRepository",
+      "kind": "uses",
+      "via": "RunRepository"
+    },
+    {
+      "from": "runner.uc.FinishRunUseCase",
+      "to": "runner.infra.ClaudeAgentSdkSessions",
+      "kind": "uses",
+      "via": "AgentSessions"
+    },
+    {
+      "from": "runner.uc.FinishRunUseCase",
+      "to": "runner.infra.InMemoryRunAnswerWaits",
+      "kind": "uses",
+      "via": "RunAnswerWaits"
+    },
+    {
+      "from": "runner.uc.LaunchRunSessionUseCase",
+      "to": "runner.infra.ClaudeAgentSdkSessions",
+      "kind": "uses",
+      "via": "AgentSessions"
+    },
+    {
+      "from": "runner.uc.LaunchRunSessionUseCase",
+      "to": "runner.infra.InMemoryRecentRunSteps",
+      "kind": "uses",
+      "via": "RecentRunSteps"
+    },
+    {
+      "from": "runner.uc.LaunchRunSessionUseCase",
+      "to": "runner.infra.SqliteRunRepository",
+      "kind": "uses",
+      "via": "RunRepository"
+    },
+    {
+      "from": "runner.uc.ReadActiveRunsUseCase",
+      "to": "runner.infra.SqliteRunRepository",
+      "kind": "uses",
+      "via": "RunRepository"
+    },
+    {
+      "from": "runner.uc.ReadActiveRunsUseCase",
+      "to": "runner.infra.InMemoryRecentRunSteps",
+      "kind": "uses",
+      "via": "RecentRunSteps"
+    },
+    {
+      "from": "runner.uc.ReadLatestRunUseCase",
+      "to": "runner.infra.SqliteRunRepository",
+      "kind": "uses",
+      "via": "RunRepository"
+    },
+    {
+      "from": "runner.uc.ReadRunUseCase",
+      "to": "runner.infra.SqliteRunRepository",
+      "kind": "uses",
+      "via": "RunRepository"
+    },
+    {
+      "from": "runner.uc.ReadSessionLogUseCase",
+      "to": "runner.infra.SqliteRunRepository",
+      "kind": "uses",
+      "via": "RunRepository"
+    },
+    {
+      "from": "runner.uc.ReadSessionLogUseCase",
+      "to": "runner.infra.ClaudeAgentSdkSessionTranscripts",
+      "kind": "uses",
+      "via": "SessionTranscripts"
+    },
+    {
+      "from": "runner.uc.RecoverInterruptedRunsUseCase",
+      "to": "runner.infra.SqliteRunRepository",
+      "kind": "uses",
+      "via": "RunRepository"
+    },
+    {
+      "from": "runner.uc.ResumeRunUseCase",
+      "to": "runner.infra.SqliteRunRepository",
+      "kind": "uses",
+      "via": "RunRepository"
+    },
+    {
+      "from": "runner.uc.SettleRunUseCase",
+      "to": "runner.infra.SqliteRunRepository",
+      "kind": "uses",
+      "via": "RunRepository"
+    },
+    {
+      "from": "runner.uc.StartRunUseCase",
+      "to": "runner.infra.SqliteRunRepository",
+      "kind": "uses",
+      "via": "RunRepository"
+    },
+    {
+      "from": "runner.uc.StartRunUseCase",
+      "to": "runner.infra.GitCliWorktrees",
+      "kind": "uses",
+      "via": "Worktrees"
+    },
+    {
+      "from": "runner.uc.StopRunUseCase",
+      "to": "runner.infra.SqliteRunRepository",
+      "kind": "uses",
+      "via": "RunRepository"
+    },
+    {
+      "from": "runner.uc.WaitForRunAnswerUseCase",
+      "to": "runner.infra.SqliteRunRepository",
+      "kind": "uses",
+      "via": "RunRepository"
+    },
+    {
+      "from": "runner.uc.WaitForRunAnswerUseCase",
+      "to": "runner.infra.InMemoryRunAnswerWaits",
+      "kind": "uses",
+      "via": "RunAnswerWaits"
+    },
+    {
+      "from": "scheduler.uc.AnswerRunUseCase",
+      "to": "scheduler.infra.GhCliTicketStatusWrites",
+      "kind": "uses",
+      "via": "TicketStatusWrites"
+    },
+    {
+      "from": "scheduler.uc.MergeApprovedPullRequestsUseCase",
+      "to": "scheduler.infra.GhCliPullRequestMerges",
+      "kind": "uses",
+      "via": "PullRequestMerges"
+    },
+    {
+      "from": "scheduler.uc.ResetTicketUseCase",
+      "to": "scheduler.infra.GhCliTicketStatusWrites",
+      "kind": "uses",
+      "via": "TicketStatusWrites"
+    },
+    {
+      "from": "scheduler.uc.SettleFinishedRunUseCase",
+      "to": "scheduler.infra.GhCliTicketStatusWrites",
+      "kind": "uses",
+      "via": "TicketStatusWrites"
+    },
+    {
+      "from": "scheduler.uc.SettleWaitingRunUseCase",
+      "to": "scheduler.infra.GhCliTicketStatusWrites",
+      "kind": "uses",
+      "via": "TicketStatusWrites"
+    },
+    {
+      "from": "skills.uc.ContractPreflightUseCase",
+      "to": "skills.infra.FileSystemSlotReader",
+      "kind": "uses",
+      "via": "SlotReader"
+    },
+    {
+      "from": "skills.uc.InstallPluginLocallyUseCase",
+      "to": "skills.infra.ClaudeCliLocalPluginInstaller",
+      "kind": "uses",
+      "via": "LocalPluginInstaller"
+    },
+    {
+      "from": "skills.uc.ReadCredentialsUseCase",
+      "to": "skills.infra.EnvironmentCredentialSource",
+      "kind": "uses",
+      "via": "CredentialSource"
+    },
+    {
+      "from": "skills.uc.StartSkillsUseCase",
+      "to": "skills.infra.FileSystemPluginMirror",
+      "kind": "uses",
+      "via": "PluginMirror"
+    },
+    {
+      "from": "skills.uc.StartSkillsUseCase",
+      "to": "skills.infra.ClaudeCliMarketplaceRegistry",
+      "kind": "uses",
+      "via": "MarketplaceRegistry"
+    },
+    {
+      "from": "skills.uc.StartSkillsUseCase",
+      "to": "skills.infra.ClaudeCliSmokeProbe",
+      "kind": "uses",
+      "via": "SmokeProbe"
+    },
+    {
+      "from": "watcher.uc.PollRepositoriesUseCase",
+      "to": "watcher.infra.FetchIssueFeeds",
+      "kind": "uses",
+      "via": "IssueFeeds"
+    },
+    {
+      "from": "watcher.uc.PollRepositoriesUseCase",
+      "to": "watcher.infra.FetchGraphQLTicketSource",
+      "kind": "uses",
+      "via": "TicketSource"
+    },
+    {
+      "from": "watcher.uc.ReadTicketUseCase",
+      "to": "watcher.infra.FetchGraphQLTicketSource",
+      "kind": "uses",
+      "via": "TicketSource"
+    },
+    {
+      "from": "projects.uc.AddProjectUseCase",
+      "to": "skills.if.installPluginLocally",
+      "kind": "calls",
+      "via": "PluginInstaller"
+    },
+    {
+      "from": "projects.uc.ListProjectsUseCase",
+      "to": "skills.if.runContractPreflight",
+      "kind": "calls",
+      "via": "ContractPreflight"
+    },
+    {
+      "from": "bridge.uc.ListTicketArtifactsUseCase",
+      "to": "runner.if.latestRun",
+      "kind": "calls",
+      "via": "TicketRunLookup"
+    },
+    {
+      "from": "bridge.uc.ReadPageStatusUseCase",
+      "to": "runner.if.latestRun",
+      "kind": "calls",
+      "via": "TicketRunLookup"
+    },
+    {
+      "from": "bridge.uc.SubmitPageEventUseCase",
+      "to": "runner.if.latestRun",
+      "kind": "calls",
+      "via": "TicketRunLookup"
+    },
+    {
+      "from": "bridge.uc.SubmitPageEventUseCase",
+      "to": "scheduler.if.answer",
+      "kind": "calls",
+      "via": "CheckpointAnswers"
+    },
+    {
+      "from": "findings.uc.CreateTicketFromFindingUseCase",
+      "to": "projects.if.list",
+      "kind": "calls",
+      "via": "ProjectLookup"
+    },
+    {
+      "from": "runner.uc.StartRunUseCase",
+      "to": "projects.if.list",
+      "kind": "calls",
+      "via": "RunTargets"
+    },
+    {
+      "from": "runner.uc.StartRunUseCase",
+      "to": "watcher.if.ticket",
+      "kind": "calls",
+      "via": "RunTargets"
+    },
+    {
+      "from": "runner.uc.LaunchRunSessionUseCase",
+      "to": "findings.if.tools",
+      "kind": "calls",
+      "via": "tools"
+    },
+    {
+      "from": "runner.uc.LaunchRunSessionUseCase",
+      "to": "bridge.if.tools",
+      "kind": "calls",
+      "via": "tools"
+    },
+    {
+      "from": "watcher.uc.ReadProjectBoardUseCase",
+      "to": "runner.if.activeRuns",
+      "kind": "calls",
+      "via": "ActiveRunLookup"
+    },
+    {
+      "from": "scheduler.uc.AnswerRunUseCase",
+      "to": "runner.if.findRun",
+      "kind": "calls",
+      "via": "RunnerPort"
+    },
+    {
+      "from": "scheduler.uc.AnswerRunUseCase",
+      "to": "runner.if.latestRun",
+      "kind": "calls",
+      "via": "RunnerPort"
+    },
+    {
+      "from": "scheduler.uc.AnswerRunUseCase",
+      "to": "runner.if.answer",
+      "kind": "calls",
+      "via": "RunnerPort"
+    },
+    {
+      "from": "scheduler.uc.AnswerRunUseCase",
+      "to": "projects.if.list",
+      "kind": "calls",
+      "via": "ProjectLookup"
+    },
+    {
+      "from": "scheduler.uc.MergeApprovedPullRequestsUseCase",
+      "to": "runner.if.activeRuns",
+      "kind": "calls",
+      "via": "RunnerPort"
+    },
+    {
+      "from": "scheduler.uc.MergeApprovedPullRequestsUseCase",
+      "to": "watcher.if.openTickets",
+      "kind": "calls",
+      "via": "ReviewedTicketLookup"
+    },
+    {
+      "from": "scheduler.uc.MergeApprovedPullRequestsUseCase",
+      "to": "projects.if.list",
+      "kind": "calls",
+      "via": "ProjectLookup"
+    },
+    {
+      "from": "scheduler.uc.ReadRunAvailabilityUseCase",
+      "to": "watcher.if.ticket",
+      "kind": "calls",
+      "via": "TicketLookup"
+    },
+    {
+      "from": "scheduler.uc.ReadRunAvailabilityUseCase",
+      "to": "runner.if.activeRuns",
+      "kind": "calls",
+      "via": "RunnerPort"
+    },
+    {
+      "from": "scheduler.uc.ReadRunAvailabilityUseCase",
+      "to": "runner.if.latestRun",
+      "kind": "calls",
+      "via": "RunnerPort"
+    },
+    {
+      "from": "scheduler.uc.ReadRunAvailabilityUseCase",
+      "to": "skills.if.runsBlocked",
+      "kind": "calls",
+      "via": "RunsGate"
+    },
+    {
+      "from": "scheduler.uc.ReadRunAvailabilityUseCase",
+      "to": "projects.if.list",
+      "kind": "calls",
+      "via": "ProjectLookup"
+    },
+    {
+      "from": "scheduler.uc.ReadTicketRunUseCase",
+      "to": "runner.if.activeRuns",
+      "kind": "calls",
+      "via": "RunnerPort"
+    },
+    {
+      "from": "scheduler.uc.ReadTicketRunUseCase",
+      "to": "runner.if.latestRun",
+      "kind": "calls",
+      "via": "RunnerPort"
+    },
+    {
+      "from": "scheduler.uc.ReadTicketSessionLogUseCase",
+      "to": "runner.if.latestRun",
+      "kind": "calls",
+      "via": "RunnerPort"
+    },
+    {
+      "from": "scheduler.uc.ReadTicketSessionLogUseCase",
+      "to": "runner.if.sessionLog",
+      "kind": "calls",
+      "via": "RunnerPort"
+    },
+    {
+      "from": "scheduler.uc.ResetTicketUseCase",
+      "to": "runner.if.activeRuns",
+      "kind": "calls",
+      "via": "RunnerPort"
+    },
+    {
+      "from": "scheduler.uc.ResetTicketUseCase",
+      "to": "projects.if.list",
+      "kind": "calls",
+      "via": "ProjectLookup"
+    },
+    {
+      "from": "scheduler.uc.SettleFinishedRunUseCase",
+      "to": "runner.if.settle",
+      "kind": "calls",
+      "via": "RunnerPort"
+    },
+    {
+      "from": "scheduler.uc.SettleFinishedRunUseCase",
+      "to": "projects.if.list",
+      "kind": "calls",
+      "via": "ProjectLookup"
+    },
+    {
+      "from": "scheduler.uc.SettleWaitingRunUseCase",
+      "to": "projects.if.list",
+      "kind": "calls",
+      "via": "ProjectLookup"
+    },
+    {
+      "from": "scheduler.uc.StartTicketRunUseCase",
+      "to": "runner.if.start",
+      "kind": "calls",
+      "via": "RunnerPort"
+    },
+    {
+      "from": "runner.uc.WaitForRunAnswerUseCase",
+      "to": "runner.uc.FinishRunUseCase",
+      "kind": "internal",
+      "via": "finishRun"
+    },
+    {
+      "from": "runner.uc.LaunchRunSessionUseCase",
+      "to": "runner.uc.FinishRunUseCase",
+      "kind": "internal",
+      "via": "finishRun"
+    },
+    {
+      "from": "runner.uc.LaunchRunSessionUseCase",
+      "to": "runner.uc.WaitForRunAnswerUseCase",
+      "kind": "internal",
+      "via": "waitForRunAnswer"
+    },
+    {
+      "from": "runner.uc.StartRunUseCase",
+      "to": "runner.uc.FinishRunUseCase",
+      "kind": "internal",
+      "via": "finishRun"
+    },
+    {
+      "from": "runner.uc.StartRunUseCase",
+      "to": "runner.uc.LaunchRunSessionUseCase",
+      "kind": "internal",
+      "via": "launchRunSession"
+    },
+    {
+      "from": "runner.uc.ResumeRunUseCase",
+      "to": "runner.uc.LaunchRunSessionUseCase",
+      "kind": "internal",
+      "via": "launchRunSession"
+    },
+    {
+      "from": "runner.uc.DeliverRunAnswerUseCase",
+      "to": "runner.uc.ResumeRunUseCase",
+      "kind": "internal",
+      "via": "resumeRun"
+    },
+    {
+      "from": "runner.uc.StopRunUseCase",
+      "to": "runner.uc.FinishRunUseCase",
+      "kind": "internal",
+      "via": "finishRun"
+    },
+    {
+      "from": "runner.uc.RecoverInterruptedRunsUseCase",
+      "to": "runner.uc.FinishRunUseCase",
+      "kind": "internal",
+      "via": "finishRun"
+    },
+    {
+      "from": "scheduler.uc.StartTicketRunUseCase",
+      "to": "scheduler.uc.ReadRunAvailabilityUseCase",
+      "kind": "internal",
+      "via": "readRunAvailability"
+    },
+    {
+      "from": "scheduler.uc.ReadTicketRunUseCase",
+      "to": "scheduler.uc.ReadRunAvailabilityUseCase",
+      "kind": "internal",
+      "via": "readRunAvailability"
+    },
+    {
+      "from": "projects.uc.AddProjectUseCase",
+      "to": "watcher.uc.PollRepositoriesUseCase",
+      "kind": "event",
+      "event": "project.added"
+    },
+    {
+      "from": "watcher.uc.PollRepositoriesUseCase",
+      "to": "scheduler.uc.MergeApprovedPullRequestsUseCase",
+      "kind": "event",
+      "event": "snapshot.changed"
+    },
+    {
+      "from": "runner.uc.FinishRunUseCase",
+      "to": "scheduler.uc.SettleFinishedRunUseCase",
+      "kind": "event",
+      "event": "run.finished"
+    },
+    {
+      "from": "runner.uc.FinishRunUseCase",
+      "to": "watcher.uc.PollRepositoriesUseCase",
+      "kind": "event",
+      "event": "run.finished"
+    },
+    {
+      "from": "runner.uc.RecoverInterruptedRunsUseCase",
+      "to": "scheduler.uc.SettleFinishedRunUseCase",
+      "kind": "event",
+      "event": "run.finished"
+    },
+    {
+      "from": "runner.uc.RecoverInterruptedRunsUseCase",
+      "to": "watcher.uc.PollRepositoriesUseCase",
+      "kind": "event",
+      "event": "run.finished"
+    },
+    {
+      "from": "runner.uc.WaitForRunAnswerUseCase",
+      "to": "scheduler.uc.SettleWaitingRunUseCase",
+      "kind": "event",
+      "event": "run.waiting"
+    },
+    {
+      "from": "scheduler.uc.AnswerRunUseCase",
+      "to": "watcher.uc.PollRepositoriesUseCase",
+      "kind": "event",
+      "event": "ticket.status-written"
+    },
+    {
+      "from": "scheduler.uc.SettleFinishedRunUseCase",
+      "to": "watcher.uc.PollRepositoriesUseCase",
+      "kind": "event",
+      "event": "ticket.status-written"
+    },
+    {
+      "from": "scheduler.uc.SettleWaitingRunUseCase",
+      "to": "watcher.uc.PollRepositoriesUseCase",
+      "kind": "event",
+      "event": "ticket.status-written"
+    }
+  ],
+  "notes": [
+    "Events: all 5 bus events (project.added, snapshot.changed, run.finished, run.waiting, ticket.status-written) are emitted only from use cases. No emits outside use cases.",
+    "Subscriptions: scheduler/api/subscriptions/subscribe-to-run-finished -> SettleFinishedRunUseCase; subscribe-to-run-waiting -> SettleWaitingRunUseCase; subscribe-to-snapshot-changed -> MergeApprovedPullRequestsUseCase. Wired in scheduler.start().",
+    "Watcher subscriptions (subscribe-to-project-added, subscribe-to-ticket-status-written, subscribe-to-run-finished) do not call a use case directly: they call inline callbacks in watcher/index.ts that update in-memory state (watchRepository / recordStatusWrite) and call requestPoll() -> PollRepositoriesUseCase.execute. Event edges to watcher.uc.PollRepositoriesUseCase are therefore indirect.",
+    "RecoverInterruptedRunsUseCase emits run.finished itself AND is given finishRun (FinishRunUseCase), which also emits run.finished.",
+    "Every cross-module port is filled in main.ts by an inline lambda/object, not a direct method reference, except scheduler RunnerPort findRun/activeRuns/latestRun/settle/sessionLog (direct refs). RunnerPort.start/answer lambdas also translate runner errors to scheduler errors; runner.start is called with mode 'afk' added.",
+    "bridge CheckpointAnswers.answer lambda -> scheduler.answer with {kind:'checkpoint', text}, maps scheduler errors to PageBusyError. bridge TicketRunLookup.latest -> runner.latestRun, late-bound (runner built after bridge).",
+    "runner RunTargets.find lambda combines projects.list AND watcher.ticket (two calls edges).",
+    "scheduler TicketLookup.find -> watcher.ticket (reshaped); ReviewedTicketLookup.list -> watcher.openTickets; RunsGate.check -> skills.runsBlocked; ProjectLookup.find -> projects.list (filtered). findings ProjectLookup.find -> projects.list (filtered).",
+    "watcher ActiveRunLookup.activeRunTicketNumbers -> runner.activeRuns, late-bound (runner built after watcher).",
+    "watcher RegisteredRepositories.list -> projects.list is used by watcher/index.ts start() directly, not by a use case. No edge added.",
+    "runner appTools = [...findings.tools, ...bridge.tools] passed into LaunchRunSessionUseCase.tools. Modeled as 'tools' interface entries (properties, not methods) and calls edges via 'tools'. findings.tools wraps ReportFindingUseCase; bridge.tools wraps PublishArtifactUseCase. The agent session invokes them, not the use case code directly.",
+    "RunnerPort calls edges list only the RunnerPort methods each use case actually calls, not all 7 methods.",
+    "Interface methods without a use case: runner.abortSessions (agentSessions.stopAll inline), scheduler.start (wires subscriptions), skills.runsBlocked (domain fn determineRunsBlocked over cached state), watcher.stop, watcher.openTickets (reads in-memory snapshot).",
+    "skills.start runs BOTH StartSkillsUseCase and ReadCredentialsUseCase; schema allows one, StartSkillsUseCase listed. watcher.start runs PollRepositoriesUseCase via requestPoll (also registers subscriptions).",
+    "Routes/kitRoutes/pageRoutes properties excluded from interface. Use cases reached only via routes: bridge ListTicketArtifacts, ReadPage*, WritePageState, SubmitPageEvent; findings ListFindings, CreateTicketFromFinding, DismissFinding; projects AddProject; runner StopRun; scheduler StartTicketRun, ReadTicketRun, ResetTicket, ReadTicketSessionLog, AnswerRun (also interface). watcher.ReadProjectBoardUseCase via tickets routes.",
+    "GhCliGitHubToken (port GitHubToken) is not used by any use case: injected into FetchIssueFeeds and FetchGraphQLTicketSource (infra -> infra). No edge.",
+    "Shared adapters skipped: SystemClock, RandomUuidIdentifiers, TypedEventBus, logger. Non-class infra helpers skipped: runner map-sdk-message.ts, scheduler run-gh-command.ts, skills run-claude.ts, watcher request-github.ts.",
+    "uses edges come from declared constructor dependencies; each declared dependency was checked to be referenced in its use case body."
+  ]
+}

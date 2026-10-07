@@ -1,0 +1,182 @@
+{
+  "domains": {
+    "projects": [
+      {
+        "name": "Registration",
+        "useCases": ["AddProjectUseCase", "ListProjectsUseCase"]
+      },
+      {
+        "name": "Repo setup",
+        "useCases": ["SyncProjectLabelsUseCase"]
+      }
+    ],
+    "skills": [
+      {
+        "name": "Start-up checks",
+        "useCases": ["StartSkillsUseCase", "ReadCredentialsUseCase"]
+      },
+      {
+        "name": "Project onboarding",
+        "useCases": ["ContractPreflightUseCase", "InstallPluginLocallyUseCase"]
+      }
+    ],
+    "watcher": [
+      {
+        "name": "Polling",
+        "useCases": ["PollRepositoriesUseCase"]
+      },
+      {
+        "name": "Ticket reads",
+        "useCases": ["ReadProjectBoardUseCase", "ReadTicketUseCase"]
+      }
+    ],
+    "scheduler": [
+      {
+        "name": "Starting work",
+        "useCases": ["StartTicketRunUseCase", "ReadRunAvailabilityUseCase"]
+      },
+      {
+        "name": "Settling runs",
+        "useCases": ["SettleFinishedRunUseCase", "SettleWaitingRunUseCase"]
+      },
+      {
+        "name": "Human actions",
+        "useCases": ["AnswerRunUseCase", "ResetTicketUseCase"]
+      },
+      {
+        "name": "Merging",
+        "useCases": ["MergeApprovedPullRequestsUseCase"]
+      },
+      {
+        "name": "Ticket page reads",
+        "useCases": ["ReadTicketRunUseCase", "ReadTicketSessionLogUseCase"]
+      }
+    ],
+    "runner": [
+      {
+        "name": "Run lifecycle",
+        "useCases": [
+          "StartRunUseCase",
+          "LaunchRunSessionUseCase",
+          "ResumeRunUseCase",
+          "StopRunUseCase",
+          "FinishRunUseCase",
+          "SettleRunUseCase",
+          "RecoverInterruptedRunsUseCase"
+        ]
+      },
+      {
+        "name": "Human answers",
+        "useCases": ["WaitForRunAnswerUseCase", "DeliverRunAnswerUseCase"]
+      },
+      {
+        "name": "Run reads",
+        "useCases": [
+          "ReadRunUseCase",
+          "ReadLatestRunUseCase",
+          "ReadActiveRunsUseCase",
+          "ReadSessionLogUseCase"
+        ]
+      }
+    ],
+    "bridge": [
+      {
+        "name": "Publishing",
+        "useCases": ["PublishArtifactUseCase", "ListTicketArtifactsUseCase"]
+      },
+      {
+        "name": "Serving",
+        "useCases": ["ReadPageUseCase", "ReadPageAssetUseCase"]
+      },
+      {
+        "name": "Drafts",
+        "useCases": ["ReadPageStateUseCase", "WritePageStateUseCase"]
+      },
+      {
+        "name": "Answering",
+        "useCases": ["ReadPageStatusUseCase", "SubmitPageEventUseCase"]
+      }
+    ],
+    "findings": [
+      {
+        "name": "Findings",
+        "useCases": ["ReportFindingUseCase", "ListFindingsUseCase", "DismissFindingUseCase"]
+      },
+      {
+        "name": "Ticket creation",
+        "useCases": ["CreateTicketFromFindingUseCase"]
+      }
+    ]
+  },
+  "badges": {
+    "skills.uc.StartSkillsUseCase": "D1",
+    "skills.uc.ReadCredentialsUseCase": "D1",
+    "watcher.infra.GhCliGitHubToken": "D2",
+    "projects.infra.GhCliLabelSync": "D3",
+    "projects.infra.GhCliRepositoryResolver": "D3",
+    "scheduler.infra.GhCliPullRequestMerges": "D3",
+    "scheduler.infra.GhCliTicketStatusWrites": "D3",
+    "findings.infra.GhCliTicketCreator": "D3",
+    "scheduler.uc.ReadTicketSessionLogUseCase": "D5",
+    "runner.uc.ReadSessionLogUseCase": "D5",
+    "bridge.uc.ReadPageStateUseCase": "D6",
+    "bridge.uc.WritePageStateUseCase": "D6",
+    "module.bridge": "D7"
+  },
+  "decisions": [
+    {
+      "id": "D1",
+      "status": "proposed",
+      "title": "Move skills start-up logic out of index.ts",
+      "step": "Add RunStartUpChecksUseCase (runs StartSkills + ReadCredentials, saves the result to a new in-memory StartUpCheckResults port) and ReadRunsBlockedUseCase. InstallPluginLocally waits through that port. index.ts only maps methods to use cases."
+    },
+    {
+      "id": "D2",
+      "status": "decided",
+      "title": "GitHubToken is not a logic port",
+      "step": "Move the GitHubToken interface from watcher/logic/ports into watcher/infra; only infra uses it. Keep it in watcher, not shared: no second module needs it.",
+      "ticket": 328
+    },
+    {
+      "id": "D3",
+      "status": "decided",
+      "title": "One shared gh runner",
+      "step": "Move scheduler's runGhCommand to shared/ (e.g. shared/github) and use it from projects, scheduler and findings. Four modules already spawn gh with their own timeout and error handling.",
+      "ticket": 328
+    },
+    {
+      "id": "D4",
+      "status": "decided",
+      "title": "Keep ReadRunAvailability and ReadTicketRun in scheduler",
+      "step": "No change. Optional later: rename ReadRunAvailability to show it is the start gate."
+    },
+    {
+      "id": "D5",
+      "status": "decided",
+      "title": "Move ReadTicketSessionLog to runner",
+      "step": "Fold it into runner's ReadSessionLog (now ticket-keyed; runner.sessionLog has no other caller). Move the session-log route to runner, URL unchanged. Drop sessionLog from scheduler's RunnerPort. Name still open: ReadTicketRunLog or ReadTicketSessionLog.",
+      "ticket": 330
+    },
+    {
+      "id": "D6",
+      "status": "decided",
+      "title": "Rename ReadPageState / WritePageState",
+      "step": "Rename both use cases, the _state route handlers and FileSystemArtifactFiles' readState/writeState. Name still open: \u2026PageUserInputState or \u2026PageDraft.",
+      "ticket": 329
+    },
+    {
+      "id": "D7",
+      "status": "decided",
+      "title": "Rename bridge module to artifacts",
+      "step": "Carried over. If yes: rename the folder, factory, main.ts wiring, project-architecture and the plugin artifacts skill wording; keep kit bridge.js.",
+      "ticket": 329
+    },
+    {
+      "id": "D8",
+      "status": "decided",
+      "title": "Tighten the module-split rule",
+      "step": "Carried over from round 1. Make 'almost no logic' and 'core business logic' testable, and add when a split is due.",
+      "ticket": 331
+    }
+  ]
+}
