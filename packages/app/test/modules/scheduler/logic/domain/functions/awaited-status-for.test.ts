@@ -13,8 +13,8 @@ const permissionEnding: RunEnding = {
 const checkpointEnding: RunEnding = { kind: 'checkpoint', request: 'Check the login page' };
 
 describe('awaitedStatusFor', () => {
-  it('should return stuck when a permission answer meets a permission-needed ending', () => {
-    expect(awaitedStatusFor(permissionEnding, permissionAnswer)).toBe('stuck');
+  it('should return waiting when a permission answer meets a permission-needed ending', () => {
+    expect(awaitedStatusFor(permissionEnding, permissionAnswer)).toBe('waiting');
   });
 
   it('should return waiting when a checkpoint answer meets a checkpoint ending', () => {

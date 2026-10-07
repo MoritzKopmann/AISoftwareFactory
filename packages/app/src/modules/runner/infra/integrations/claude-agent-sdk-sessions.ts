@@ -3,7 +3,6 @@ import { createSdkMcpServer, query, tool } from '@anthropic-ai/claude-agent-sdk'
 import type { SessionEvent } from '../../logic/domain/types/session-event.js';
 import type { ResumeSessionSpec } from '../../logic/domain/types/resume-session-spec.js';
 import type { SessionSpec } from '../../logic/domain/types/session-spec.js';
-import type { ToolCall } from '../../logic/domain/types/tool-call.js';
 import type { AgentSessions } from '../../logic/ports/agent-sessions.js';
 import { mapSdkMessage } from './map-sdk-message.js';
 
@@ -50,7 +49,6 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
     abortController: AbortController,
     sessionMode: 'start' | 'resume',
   ): AsyncGenerator<SessionEvent> {
-    let permissionRequest: ToolCall | undefined;
     let allowedCall = spec.allowedCall;
     let sawSuccessfulResult = false;
 
@@ -97,22 +95,16 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
               allowedCall = undefined;
               return { behavior: 'allow', updatedInput: toolInput };
             }
-            permissionRequest ??= { toolName, toolInput };
-            return {
-              behavior: 'deny',
-              message: 'A human has to decide on this tool call.',
-              interrupt: true,
-            };
+            const verdict = await spec.decidePermission({ toolName, toolInput });
+            return verdict.kind === 'allow'
+              ? { behavior: 'allow', updatedInput: toolInput }
+              : { behavior: 'deny', message: verdict.message };
           },
           abortController,
         },
       });
 
       for await (const message of sdkQuery) {
-        if (permissionRequest !== undefined) {
-          yield { kind: 'permission-needed', ...permissionRequest };
-          return;
-        }
         for (const event of mapSdkMessage(message, this.options.now())) {
           yield event;
           if (event.kind === 'crashed' || event.kind === 'usage-limit') {
@@ -124,17 +116,11 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
         }
       }
 
-      if (permissionRequest !== undefined) {
-        yield { kind: 'permission-needed', ...permissionRequest };
-        return;
-      }
       yield sawSuccessfulResult
         ? { kind: 'completed' }
         : { kind: 'crashed', reason: 'The session ended without a successful result' };
     } catch (error) {
-      if (permissionRequest !== undefined) {
-        yield { kind: 'permission-needed', ...permissionRequest };
-      } else if (!abortController.signal.aborted) {
+      if (!abortController.signal.aborted) {
         yield { kind: 'crashed', reason: error instanceof Error ? error.message : String(error) };
       }
     } finally {

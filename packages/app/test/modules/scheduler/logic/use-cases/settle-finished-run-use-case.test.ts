@@ -135,7 +135,7 @@ describe('SettleFinishedRunUseCase', () => {
     expect(runner.calls).toEqual([]);
   });
 
-  it('should announce the stuck write after setStatus and before comment when the run needs permission', async () => {
+  it('should announce the waiting write after setStatus and before comment when the run needs permission', async () => {
     const { useCase, ticketStatusWrites, events } = buildSubject();
     let eventsSeenAtComment = -1;
     ticketStatusWrites.comment = async () => {
@@ -154,7 +154,7 @@ describe('SettleFinishedRunUseCase', () => {
           projectId: 'moritz/aisf',
           ticketNumber: 138,
           from: 'in-progress',
-          to: 'stuck',
+          to: 'waiting',
         },
       },
     ]);
