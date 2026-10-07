@@ -59,12 +59,15 @@ packages/
 
 ### When something is its own module
 
-**Rule:** a module serves one concern end to end, and either owns its own table and its own domain or owns core business logic (decisions the app makes) that no other module holds.
+**Rule:** a module serves one concern end to end and passes the module test: it owns a table, or it holds at least two decisions.
 
+- **Decision:** a domain function whose result picks what the app does next (a status transition, run or block, merge or skip), called by one of the module's own use cases. A function that builds names, paths, prompts, text or views is not a decision, and neither is a use case that passes a port's result through.
+- **Thin integration:** a port, its adapter, and at most functions that build names, paths or text. It fails the module test and stays in the module that uses it.
+- **Must:** split a module exactly when a split is due: it holds two parts that each pass the module test, at least one by owning a table, and they share no table, use case or domain type.
+- **Must:** new code joins the module whose domain types or ports it uses. It becomes its own module only when joining would make a split due.
 - **Must:** `index.ts` exports exactly one factory (plus its public interface and the types that interface uses).
 - **Must:** a module is named after its concern, never after its provider. Only `infra/` knows it is GitHub.
 - **Must:** infra stays inside the module that uses it. It moves to `shared/` only when a second module uses the same infra.
-- **Must not:** split out a module that would be an integration with almost no logic of its own, owning neither a table and domain nor core business logic.
 
 ## Class types
 
