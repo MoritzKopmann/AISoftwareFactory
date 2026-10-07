@@ -1,0 +1,5 @@
+{
+  "permissions": {
+    "ask": ["Bash(date)", "Bash(uname)", "Read(./probe-a.txt)", "Read(./probe-b.txt)"]
+  }
+}
