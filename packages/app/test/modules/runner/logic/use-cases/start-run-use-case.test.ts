@@ -226,24 +226,6 @@ describe('StartRunUseCase', () => {
     });
   });
 
-  it('should end the run as permission-needed with the tool call and close the session when a permission prompt appears', async () => {
-    await startRun.execute(startRequest);
-
-    agentSessions.push('id-2', {
-      kind: 'permission-needed',
-      toolName: 'Bash',
-      toolInput: { command: 'git config --local x 1' },
-    });
-
-    await vi.waitFor(() => expect(events.emittedEvents).toHaveLength(1));
-    expect(endingOf('id-1')).toEqual({
-      kind: 'permission-needed',
-      toolName: 'Bash',
-      toolInput: { command: 'git config --local x 1' },
-    });
-    expect(agentSessions.stoppedSessionIds).toEqual(['id-2']);
-  });
-
   it('should end the run as usage-limit with the reason when the session reports the limit', async () => {
     await startRun.execute(startRequest);
 

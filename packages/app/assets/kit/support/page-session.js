@@ -1,4 +1,4 @@
-// The page's one link to bridge.js: the saved state, the status and the sends.
+// The page's one link to bridge.js: the saved user input state, the status and the sends.
 // Elements share it. Without an `aisf` global it saves and sends nothing.
 import { isRecord } from './dom.js';
 
@@ -7,7 +7,7 @@ import { isRecord } from './dom.js';
 /** @typedef {{ ok: true } | { ok: false, status: 'busy' | 'closed' }} SendResult */
 /**
  * @typedef {object} Aisf
- * @property {{ load(): Promise<unknown>, save(value: unknown): Promise<void> }} state
+ * @property {{ load(): Promise<unknown>, save(value: unknown): Promise<void> }} userInputState
  * @property {(event: 'status', listener: (event: { status: PageStatus, version: number }) => void) => void} on
  * @property {(event: PageEvent) => Promise<SendResult>} send
  */
@@ -41,7 +41,7 @@ export class PageSession {
   async load() {
     if (this.aisf === undefined) return;
     try {
-      const loaded = await this.aisf.state.load();
+      const loaded = await this.aisf.userInputState.load();
       if (isRecord(loaded)) {
         this.state = { ...loaded, rounds: isRecord(loaded['rounds']) ? loaded['rounds'] : {} };
       }
@@ -84,7 +84,7 @@ export class PageSession {
     clearTimeout(this.saveTimer);
     this.saveTimer = undefined;
     try {
-      await this.aisf.state.save(this.state);
+      await this.aisf.userInputState.save(this.state);
       this.draftNotSaved = false;
     } catch {
       this.draftNotSaved = true;

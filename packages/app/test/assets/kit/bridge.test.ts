@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type StatusEvent = { status: 'open' | 'busy' | 'closed'; version: number };
 type Aisf = {
-  state: { load(): Promise<unknown>; save(value: unknown): Promise<void> };
+  userInputState: { load(): Promise<unknown>; save(value: unknown): Promise<void> };
   on(event: 'status', listener: (event: StatusEvent) => void): void;
   send(event: {
     kind: string;
@@ -57,11 +57,11 @@ describe('bridge.js', () => {
       if (url === './_events') {
         return eventsResponse;
       }
-      if (url === './_state' && init?.method === 'PUT') {
+      if (url === './_user-input-state' && init?.method === 'PUT') {
         if (saveStatus === 'network-error') throw new TypeError('network down');
         return new Response(null, { status: saveStatus });
       }
-      if (url === './_state') {
+      if (url === './_user-input-state') {
         return json(stateOnServer);
       }
       return new Response(null, { status: 404 });
@@ -78,16 +78,16 @@ describe('bridge.js', () => {
     vi.unstubAllGlobals();
   });
 
-  describe('aisf.state', () => {
-    it('should send the value to ./_state and load what ./_state answers when a draft is saved and loaded', async () => {
+  describe('aisf.userInputState', () => {
+    it('should send the value to ./_user-input-state and load what ./_user-input-state answers when a draft is saved and loaded', async () => {
       await loadBridge();
       stateOnServer = { q1: 'yes' };
 
-      await aisf().state.save({ q1: 'yes' });
-      const loaded = await aisf().state.load();
+      await aisf().userInputState.save({ q1: 'yes' });
+      const loaded = await aisf().userInputState.load();
 
       expect(fetchMock).toHaveBeenCalledWith(
-        './_state',
+        './_user-input-state',
         expect.objectContaining({
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -100,7 +100,7 @@ describe('bridge.js', () => {
     it('should resolve to null when the server has no draft', async () => {
       await loadBridge();
 
-      expect(await aisf().state.load()).toBeNull();
+      expect(await aisf().userInputState.load()).toBeNull();
     });
 
     it.each([500, 'network-error' as const])(
@@ -109,7 +109,7 @@ describe('bridge.js', () => {
         await loadBridge();
         saveStatus = failure;
 
-        await expect(aisf().state.save({ a: 1 })).rejects.toThrow();
+        await expect(aisf().userInputState.save({ a: 1 })).rejects.toThrow();
       },
     );
   });
@@ -242,9 +242,9 @@ describe('bridge.js', () => {
 
       expect(result).toEqual({ ok: false, status: 'busy' });
       expect(document.body.hasAttribute('inert')).toBe(false);
-      expect(await aisf().state.load()).toEqual({ q1: 'draft' });
+      expect(await aisf().userInputState.load()).toEqual({ q1: 'draft' });
       expect(fetchMock).not.toHaveBeenCalledWith(
-        './_state',
+        './_user-input-state',
         expect.objectContaining({ method: 'PUT' }),
       );
     });

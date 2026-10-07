@@ -15,7 +15,6 @@ import type { LatestRun } from '../../../../src/modules/scheduler/logic/domain/t
 import type { RunWait } from '../../../../src/modules/scheduler/logic/domain/types/run-wait.js';
 import type { RunAnswer } from '../../../../src/modules/scheduler/logic/domain/types/run-answer.js';
 import type { RunRecord } from '../../../../src/modules/scheduler/logic/domain/types/run-record.js';
-import type { SessionLog } from '../../../../src/modules/scheduler/logic/domain/types/session-log.js';
 import type { RunStep } from '../../../../src/modules/scheduler/logic/domain/types/run-step.js';
 import type { RunnerPort } from '../../../../src/modules/scheduler/logic/ports/runner-port.js';
 import type { RunsGate } from '../../../../src/modules/scheduler/logic/ports/runs-gate.js';
@@ -88,7 +87,6 @@ export class FakeRunnerPort implements RunnerPort {
   activeWaitingFor: RunWait | undefined;
   activeWaitingSince: string | undefined;
   latest: LatestRun | undefined;
-  transcript: SessionLog = { kind: 'no-session' };
   record: RunRecord | undefined;
   startFailure: Error | undefined;
   answerFailure: Error | undefined;
@@ -139,11 +137,6 @@ export class FakeRunnerPort implements RunnerPort {
 
   async settle(runId: string): Promise<void> {
     this.calls.push(`settle ${runId}`);
-  }
-
-  async sessionLog(runId: string): Promise<SessionLog> {
-    this.calls.push(`sessionLog ${runId}`);
-    return this.transcript;
   }
 }
 

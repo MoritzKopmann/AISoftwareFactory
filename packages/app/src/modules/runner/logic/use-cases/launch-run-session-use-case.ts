@@ -5,6 +5,9 @@ import type { FinishRun } from '../domain/types/finish-run.js';
 import type { Run } from '../domain/types/run.js';
 import type { RunTool } from '../domain/types/run-tool.js';
 import type { SessionEvent } from '../domain/types/session-event.js';
+import type { PermissionVerdict } from '../domain/types/permission-verdict.js';
+import type { SessionSpec } from '../domain/types/session-spec.js';
+import type { ToolCall } from '../domain/types/tool-call.js';
 import type { SessionLaunch } from '../domain/types/session-launch.js';
 import type { SessionTool } from '../domain/types/session-tool.js';
 import type { RunAnswer } from '../domain/types/run-answer.js';
@@ -35,6 +38,7 @@ export class LaunchRunSessionUseCase {
       prompt: launch.prompt,
       model: stageModels[run.stage],
       tools: this.bindTools(run),
+      decidePermission: this.bindPermission(run),
     };
     const sessionEvents =
       launch.kind === 'start'
@@ -77,6 +81,28 @@ export class LaunchRunSessionUseCase {
     }));
   }
 
+  private bindPermission(run: Run): SessionSpec['decidePermission'] {
+    let queue: Promise<unknown> = Promise.resolve();
+    return (toolCall) => {
+      const verdict = queue.then(() => this.waitForPermission(run, toolCall));
+      queue = verdict.catch(() => undefined);
+      return verdict;
+    };
+  }
+
+  private async waitForPermission(run: Run, toolCall: ToolCall): Promise<PermissionVerdict> {
+    const outcome = await this.dependencies.waitForRunAnswer(run, {
+      kind: 'permission-needed',
+      ...toolCall,
+    });
+    if (outcome.kind === 'unanswered') {
+      return { kind: 'deny', message: outcome.message };
+    }
+    return outcome.answer.kind === 'permission' && outcome.answer.decision === 'allow'
+      ? { kind: 'allow' }
+      : { kind: 'deny', message: refusalMessage };
+  }
+
   private async consume(run: Run, sessionEvents: AsyncIterable<SessionEvent>): Promise<void> {
     const { finishRun, recentRunSteps } = this.dependencies;
     try {
@@ -87,13 +113,6 @@ export class LaunchRunSessionUseCase {
             break;
           case 'completed':
             await finishRun(run.id, { kind: 'finished' });
-            break;
-          case 'permission-needed':
-            await finishRun(run.id, {
-              kind: 'permission-needed',
-              toolName: event.toolName,
-              toolInput: event.toolInput,
-            });
             break;
           case 'usage-limit':
             await finishRun(run.id, { kind: 'usage-limit', reason: event.reason });
@@ -114,6 +133,8 @@ export class LaunchRunSessionUseCase {
     this.dependencies.logger.error(`Run ${run.id} failed: ${describeError(error)}`);
   }
 }
+
+const refusalMessage = 'A human refused this tool call. Do not retry it; carry on without it.';
 
 function answerText(answer: RunAnswer): string {
   return answer.kind === 'checkpoint' ? answer.text : answer.decision;

@@ -68,7 +68,7 @@ arrives later in the resume prompt. Read it the same way.
 - **No outside origins**, for any resource type: no CDN, remote font, remote image or remote
   fetch. Images come from the artifact directory or `data:` URIs.
 - **The kit owns** rounds, state, Accept all, Submit/Confirm/Reopen and freezing. Page scripts
-  are for figures only. They never call `aisf.send` or `aisf.state`. They may listen with
+  are for figures only. They never call `aisf.send` or `aisf.userInputState`. They may listen with
   `aisf.on('status', …)`.
 - **No `localStorage`.**
 - **No header, no ticket identity.** The page starts at the current round.

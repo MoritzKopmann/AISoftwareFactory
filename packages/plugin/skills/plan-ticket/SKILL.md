@@ -18,6 +18,9 @@ every issue write goes through `aisf:github-issue`.
 
 **The agent plans, the human decides.** Nothing is silently assumed.
 
+- **Never guess.** Underdefined → ask.
+- **Never make a feature decision alone**, unless it follows directly from one already made.
+
 `aisf:create-ticket` settled _what_, this settles _how_, `aisf:implement-ticket` writes the
 code: one sub-issue, one branch, one PR. A parent with children is a tracking umbrella.
 

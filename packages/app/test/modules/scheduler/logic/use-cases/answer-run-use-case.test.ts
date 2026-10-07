@@ -32,7 +32,7 @@ function buildSubject(
   run: RunRecord = permissionRun,
 ) {
   const ticketStatusWrites = new FakeTicketStatusWrites();
-  ticketStatusWrites.liveStatus = run === permissionRun ? 'stuck' : 'waiting';
+  ticketStatusWrites.liveStatus = 'waiting';
   const runner = new FakeRunnerPort();
   runner.record = run;
   runner.latest = {
@@ -169,7 +169,7 @@ describe('AnswerRunUseCase', () => {
 
   it.each([
     [
-      'the ticket is no longer stuck',
+      'the ticket is no longer waiting',
       (subject: ReturnType<typeof buildSubject>) => {
         subject.ticketStatusWrites.liveStatus = 'in-progress';
       },
@@ -216,7 +216,7 @@ describe('AnswerRunUseCase', () => {
     expect(subject.ticketStatusWrites.calls).toEqual([]);
   });
 
-  it('should put the ticket back to stuck and rethrow when the runner cannot resume', async () => {
+  it('should put the ticket back to waiting and rethrow when the runner cannot resume', async () => {
     const { useCase, ticketStatusWrites, runner } = buildSubject();
     const failure = new Error('worktree is gone');
     runner.answerFailure = failure;
@@ -226,7 +226,7 @@ describe('AnswerRunUseCase', () => {
     expect(ticketStatusWrites.calls).toEqual([
       'readStatus',
       'setStatus #147 -> in-progress',
-      'setStatus #147 -> stuck',
+      'setStatus #147 -> waiting',
     ]);
   });
 
@@ -248,7 +248,7 @@ describe('AnswerRunUseCase', () => {
 
       await useCase.execute('run-1', { kind: 'permission', decision });
 
-      expect(events.emittedEvents).toEqual([written('stuck', 'in-progress')]);
+      expect(events.emittedEvents).toEqual([written('waiting', 'in-progress')]);
       expect(eventsSeenAtResume).toBe(1);
     },
   );
@@ -261,8 +261,8 @@ describe('AnswerRunUseCase', () => {
     await expect(useCase.execute('run-1', allowAnswer)).rejects.toBe(failure);
 
     expect(events.emittedEvents).toEqual([
-      written('stuck', 'in-progress'),
-      written('in-progress', 'stuck'),
+      written('waiting', 'in-progress'),
+      written('in-progress', 'waiting'),
     ]);
   });
 

@@ -23,7 +23,6 @@ import { AnswerRunUseCase } from './logic/use-cases/answer-run-use-case.js';
 import { MergeApprovedPullRequestsUseCase } from './logic/use-cases/merge-approved-pull-requests-use-case.js';
 import { ReadRunAvailabilityUseCase } from './logic/use-cases/read-run-availability-use-case.js';
 import { ReadTicketRunUseCase } from './logic/use-cases/read-ticket-run-use-case.js';
-import { ReadTicketSessionLogUseCase } from './logic/use-cases/read-ticket-session-log-use-case.js';
 import { ResetTicketUseCase } from './logic/use-cases/reset-ticket-use-case.js';
 import { SettleFinishedRunUseCase } from './logic/use-cases/settle-finished-run-use-case.js';
 import { SettleWaitingRunUseCase } from './logic/use-cases/settle-waiting-run-use-case.js';
@@ -87,7 +86,6 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
       readRunAvailability.execute(projectId, ticketNumber),
     runner,
   });
-  const readTicketSessionLog = new ReadTicketSessionLogUseCase({ runner });
   const settleFinishedRun = new SettleFinishedRunUseCase({
     ticketStatusWrites,
     runner,
@@ -124,8 +122,6 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
           read: (projectId, ticketNumber) => readTicketRun.execute(projectId, ticketNumber),
           start: (projectId, ticketNumber) => startTicketRun.execute(projectId, ticketNumber),
           reset: (projectId, ticketNumber) => resetTicket.execute(projectId, ticketNumber),
-          readSessionLog: (projectId, ticketNumber) =>
-            readTicketSessionLog.execute(projectId, ticketNumber),
         }),
       )
       .route(

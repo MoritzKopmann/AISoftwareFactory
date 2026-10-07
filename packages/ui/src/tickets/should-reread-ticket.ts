@@ -12,7 +12,7 @@ export function shouldRereadTicket(
     );
   }
   if (response?.lastRun?.ending.kind === 'permission-needed') {
-    return ticketStatus !== 'stuck' && ticketStatus !== 'closed';
+    return ticketStatus !== 'waiting' && ticketStatus !== 'closed';
   }
   return ticketStatus === 'in-progress' && response?.lastRun !== undefined;
 }
