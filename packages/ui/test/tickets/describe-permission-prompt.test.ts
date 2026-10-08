@@ -256,3 +256,53 @@ describe('settlePermissionAnswer', () => {
     expect(settlePermissionAnswer(none, liveWait())).toBe(none);
   });
 });
+
+const REASON = 'Posting comments on GitHub issues';
+const reasonWaitFor = {
+  kind: 'permission-needed',
+  toolName: 'Bash',
+  toolInput: { command: 'gh issue comment 1' },
+  reason: REASON,
+} as const;
+
+describe('describePermissionPrompt reason', () => {
+  it('should carry the reason when a live wait has one', () => {
+    const result = describePermissionPrompt(liveWait(T1, reasonWaitFor), 'waiting', noAnswer);
+    expect(result).toMatchObject({ kind: 'shown', reason: REASON });
+  });
+
+  it('should carry the reason when the fallback wait has one', () => {
+    const result = describePermissionPrompt(endedWith(reasonWaitFor), 'waiting', noAnswer);
+    expect(result).toMatchObject({ kind: 'shown', reason: REASON });
+  });
+
+  it('should leave out the reason key when the wait has none', () => {
+    const live = describePermissionPrompt(liveWait(), 'waiting', noAnswer);
+    const fallback = describePermissionPrompt(endedWith(bashPrompt), 'waiting', noAnswer);
+    expect(live).not.toHaveProperty('reason');
+    expect(fallback).not.toHaveProperty('reason');
+  });
+
+  it('should keep the reason when the answer is answering or failed', () => {
+    const response = liveWait(T1, reasonWaitFor);
+    const answering = describePermissionPrompt(response, 'waiting', {
+      kind: 'answering',
+      wait: liveWaitId,
+      decision: 'allow',
+    });
+    const failed = describePermissionPrompt(response, 'waiting', {
+      kind: 'failed',
+      wait: liveWaitId,
+      message: 'Nope.',
+    });
+    expect(answering).toMatchObject({ reason: REASON, pressable: false, resuming: 'allow' });
+    expect(failed).toMatchObject({ reason: REASON, pressable: true });
+  });
+});
+
+describe('settlePermissionAnswer reason', () => {
+  it('should keep the answer when the same wait now carries a reason', () => {
+    const answer: PermissionAnswer = { kind: 'answering', wait: liveWaitId, decision: 'allow' };
+    expect(settlePermissionAnswer(answer, liveWait(T1, reasonWaitFor))).toBe(answer);
+  });
+});

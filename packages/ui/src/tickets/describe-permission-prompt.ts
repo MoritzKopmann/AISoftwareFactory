@@ -33,6 +33,7 @@ export type PermissionPromptDescription =
       readonly waitingSince?: string;
       readonly toolName: string;
       readonly inputText: string;
+      readonly reason?: string;
       readonly guidance: boolean;
       readonly pressable: boolean;
       readonly resuming?: PermissionDecision;
@@ -51,6 +52,7 @@ function describeToolInput(toolName: string, toolInput: Readonly<Record<string, 
 type ShownWait = PermissionWait & {
   readonly toolName: string;
   readonly toolInput: Readonly<Record<string, unknown>>;
+  readonly reason?: string;
 };
 
 function findShownWait(response: TicketRunResponse | undefined): ShownWait | undefined {
@@ -64,11 +66,17 @@ function findShownWait(response: TicketRunResponse | undefined): ShownWait | und
           ...(activeRun.waitingSince === undefined ? {} : { waitingSince: activeRun.waitingSince }),
           toolName: waitingFor.toolName,
           toolInput: waitingFor.toolInput,
+          ...(waitingFor.reason === undefined ? {} : { reason: waitingFor.reason }),
         };
   }
   const lastRun = response?.lastRun;
   return lastRun?.ending.kind === 'permission-needed'
-    ? { runId: lastRun.id, toolName: lastRun.ending.toolName, toolInput: lastRun.ending.toolInput }
+    ? {
+        runId: lastRun.id,
+        toolName: lastRun.ending.toolName,
+        toolInput: lastRun.ending.toolInput,
+        ...(lastRun.ending.reason === undefined ? {} : { reason: lastRun.ending.reason }),
+      }
     : undefined;
 }
 
@@ -102,6 +110,7 @@ export function describePermissionPrompt(
     ...(wait.waitingSince === undefined ? {} : { waitingSince: wait.waitingSince }),
     toolName,
     inputText: describeToolInput(toolName, toolInput),
+    ...(wait.reason === undefined ? {} : { reason: wait.reason }),
   } as const;
   if (answer.kind === 'idle' || !isSameWait(answer.wait, wait)) {
     return { ...prompt, guidance: true, pressable: true };

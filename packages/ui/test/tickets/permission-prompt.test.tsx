@@ -64,4 +64,16 @@ describe('PermissionPrompt', () => {
     expect(markup).toContain('>409<');
     expect(markup.indexOf('role="alert"')).toBeLessThan(markup.indexOf('>Allow<'));
   });
+
+  it('should show the reason once after the input and before the buttons when it is set', () => {
+    const markup = render({ ...prompt, reason: 'Posting comments on GitHub issues' });
+    const text = 'Reason: Posting comments on GitHub issues';
+    expect(markup.split(text)).toHaveLength(2);
+    expect(markup.indexOf(text)).toBeGreaterThan(markup.indexOf('>pnpm add zod</pre>'));
+    expect(markup.indexOf(text)).toBeLessThan(markup.indexOf('>Allow<'));
+  });
+
+  it('should show no Reason line when the reason is absent', () => {
+    expect(render(prompt)).not.toContain('Reason:');
+  });
 });

@@ -51,7 +51,8 @@ export function PermissionPrompt({ description, onAnswer }: PermissionPromptProp
   if (description.kind === 'hidden') {
     return null;
   }
-  const { toolName, inputText, guidance, pressable, resuming, announcement, error } = description;
+  const { toolName, inputText, reason, guidance, pressable, resuming, announcement, error } =
+    description;
   const answerButton = (decision: PermissionDecision) => (
     <button
       className={decision === 'allow' ? 'btn primary' : 'btn'}
@@ -88,6 +89,7 @@ export function PermissionPrompt({ description, onAnswer }: PermissionPromptProp
         </div>
         <ToolInput text={inputText} />
       </div>
+      {reason !== undefined && <p className="sm">{`Reason: ${reason}`}</p>}
       {error !== undefined && (
         <div className="err" role="alert">
           <span className="shape" aria-hidden="true">
