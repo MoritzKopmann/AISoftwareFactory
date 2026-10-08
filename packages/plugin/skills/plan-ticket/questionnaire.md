@@ -32,16 +32,17 @@ the context is your job, never the human's.
 
 **Pick the figure by what is decided:**
 
-| Decision about           | Figure                                                   |
-| ------------------------ | -------------------------------------------------------- |
-| UI / UX                  | low-fi mockup, one per option                            |
-| Flow, order of calls     | sequence or flow diagram                                 |
-| State, lifecycle         | state diagram                                            |
-| Where code lives         | module map, new and changed nodes marked                 |
-| Data shape, API, storage | before → after schema or snippet, by path                |
-| Library                  | comparison table: fit, size, upkeep, precedent           |
-| Scope, the slice         | in / out, two columns                                    |
-| `hitl` checkpoint        | the full checkpoint: what is set up, what the human does |
+| Decision about           | Figure                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| UI / UX                  | low-fi mockup, one per option                                                   |
+| Flow, order of calls     | sequence or flow diagram                                                        |
+| State, lifecycle         | state diagram                                                                   |
+| Where code lives         | module map, new and changed nodes marked                                        |
+| Data shape, API, storage | before → after schema or snippet, by path                                       |
+| Library                  | comparison table: fit, size, upkeep, precedent                                  |
+| Scope                    | in / out, two columns                                                           |
+| Playback, round 1        | each acceptance criterion as a flow over today's system, new and changed marked |
+| `hitl` checkpoint        | the full checkpoint: what is set up, what the human does                        |
 
 ## Settled by precedent
 

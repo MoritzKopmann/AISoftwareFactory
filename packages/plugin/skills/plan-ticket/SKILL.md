@@ -98,8 +98,15 @@ result settles them, and whether the human has to judge that result.
 
 Load `aisf:grilling` and follow it. Specific to planning:
 
-- **The root question is the slice**: the thinnest end-to-end thing that satisfies the ticket,
-  and what it gives up.
+- **Start with a playback.** Round 1 opens with each acceptance criterion drawn as a flow
+  through today's system, new and changed parts marked, for the human to confirm or correct.
+  Its first questions are the ones that picture raises.
+- **Pick the lens that fits the ticket** and name it on the page, with one line of why. It
+  decides which questions come first:
+  - **Precedent**: a feature that already does almost this exists.
+  - **Data**: new or changed data, its shape and its home, drive the work.
+  - **One-way doors**: a library, storage format or public API is hard to reverse.
+  - **Ownership**: it is unclear which module owns the work.
 - **Group the frontier.** Every question whose answer does not depend on another open one goes
   in the same round. Research for the questions downstream runs meanwhile.
 - **Rounds go on the questionnaire page.** With the `Artifact` tool present, read
