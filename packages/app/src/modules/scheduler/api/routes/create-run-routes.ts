@@ -37,6 +37,9 @@ function toTicketRunResponse({ availability, activeRun, lastRun }: TicketRun): T
                           kind: 'permission-needed',
                           toolName: activeRun.waitingFor.toolName,
                           toolInput: activeRun.waitingFor.toolInput,
+                          ...(activeRun.waitingFor.reason === undefined
+                            ? {}
+                            : { reason: activeRun.waitingFor.reason }),
                         },
                 }),
             ...(activeRun.waitingSince === undefined

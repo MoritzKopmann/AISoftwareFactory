@@ -103,6 +103,20 @@ describe('SqliteRunRepository', () => {
       });
     });
 
+    it('should read back the reason when a permission ending has one', async () => {
+      await repository.insert(buildRun());
+      const ending = {
+        kind: 'permission-needed',
+        toolName: 'Bash',
+        toolInput: { command: 'gh issue comment 1' },
+        reason: 'Posting to GitHub is hard-denied',
+      } as const;
+
+      await repository.recordEnding('run-1', ending, '2026-09-29T11:00:00.000Z');
+
+      expect((await repository.findById('run-1'))?.ending).toEqual(ending);
+    });
+
     it('should keep the first ending and report already-ended when a second one arrives', async () => {
       await repository.insert(buildRun());
       await repository.recordEnding('run-1', { kind: 'parked', blockerNumber: 42 }, 'first');
@@ -236,6 +250,25 @@ describe('SqliteRunRepository', () => {
         const run = await repository.findById('run-1');
         expect(run?.waitingFor).toEqual(permissionWait);
         expect(run?.waitingSince).toBe(since);
+      });
+
+      it('should read back the reason when a permission wait has one', async () => {
+        await repository.insert(buildRun());
+        const withReason = { ...permissionWait, reason: 'Posting to GitHub is hard-denied' };
+
+        await repository.recordWait('run-1', withReason, since);
+
+        expect((await repository.findById('run-1'))?.waitingFor).toEqual(withReason);
+      });
+
+      it('should read back no reason key when a permission wait or ending has none', async () => {
+        await repository.insert(buildRun());
+        await repository.recordWait('run-1', permissionWait, since);
+        expect((await repository.findById('run-1'))?.waitingFor).not.toHaveProperty('reason');
+
+        await repository.recordEnding('run-1', permissionWait, '2026-09-29T11:00:00.000Z');
+
+        expect((await repository.findById('run-1'))?.ending).not.toHaveProperty('reason');
       });
 
       it('should remove the permission wait and its tool columns when cleared', async () => {

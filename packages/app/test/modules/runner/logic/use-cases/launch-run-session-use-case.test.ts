@@ -184,6 +184,15 @@ describe('LaunchRunSessionUseCase', () => {
       expect(subject.waits).toEqual([{ kind: 'permission-needed', ...dateCall }]);
     });
 
+    it('should pass the reason into the permission wait when the request has one', async () => {
+      const subject = buildSubject([], allowOutcome);
+      const request = { ...dateCall, reason: 'Posting to GitHub is hard-denied' };
+
+      await launch(subject).decidePermission(request);
+
+      expect(subject.waits).toEqual([{ kind: 'permission-needed', ...request }]);
+    });
+
     it('should return the same verdict for a resume launch when the answer is allow', async () => {
       const subject = buildSubject([], allowOutcome);
 

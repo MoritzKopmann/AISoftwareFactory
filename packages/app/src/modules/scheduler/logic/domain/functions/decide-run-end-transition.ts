@@ -32,7 +32,7 @@ function describeEnding(ending: Exclude<RunEnding, { kind: 'parked' }>): string 
     case 'checkpoint':
       return `The run reached its human checkpoint and waits for an answer on the ticket page:\n\n${ending.request}`;
     case 'permission-needed':
-      return `The run needs permission for ${ending.toolName} with input ${JSON.stringify(ending.toolInput)}`;
+      return `The run needs permission for ${ending.toolName} with input ${JSON.stringify(ending.toolInput)}${ending.reason === undefined ? '' : `\n\nReason: ${ending.reason}`}`;
     case 'escalated':
       return `The run escalated (${ending.escalation}): ${ending.reason}`;
     case 'finished':

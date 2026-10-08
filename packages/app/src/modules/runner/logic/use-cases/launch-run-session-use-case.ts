@@ -5,9 +5,9 @@ import type { FinishRun } from '../domain/types/finish-run.js';
 import type { Run } from '../domain/types/run.js';
 import type { RunTool } from '../domain/types/run-tool.js';
 import type { SessionEvent } from '../domain/types/session-event.js';
+import type { PermissionRequest } from '../domain/types/permission-request.js';
 import type { PermissionVerdict } from '../domain/types/permission-verdict.js';
 import type { SessionSpec } from '../domain/types/session-spec.js';
-import type { ToolCall } from '../domain/types/tool-call.js';
 import type { SessionLaunch } from '../domain/types/session-launch.js';
 import type { SessionTool } from '../domain/types/session-tool.js';
 import type { RunAnswer } from '../domain/types/run-answer.js';
@@ -83,17 +83,20 @@ export class LaunchRunSessionUseCase {
 
   private bindPermission(run: Run): SessionSpec['decidePermission'] {
     let queue: Promise<unknown> = Promise.resolve();
-    return (toolCall) => {
-      const verdict = queue.then(() => this.waitForPermission(run, toolCall));
+    return (request) => {
+      const verdict = queue.then(() => this.waitForPermission(run, request));
       queue = verdict.catch(() => undefined);
       return verdict;
     };
   }
 
-  private async waitForPermission(run: Run, toolCall: ToolCall): Promise<PermissionVerdict> {
+  private async waitForPermission(
+    run: Run,
+    request: PermissionRequest,
+  ): Promise<PermissionVerdict> {
     const outcome = await this.dependencies.waitForRunAnswer(run, {
       kind: 'permission-needed',
-      ...toolCall,
+      ...request,
     });
     if (outcome.kind === 'unanswered') {
       return { kind: 'deny', message: outcome.message };

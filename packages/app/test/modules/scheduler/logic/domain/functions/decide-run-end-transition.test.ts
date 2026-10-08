@@ -38,6 +38,22 @@ describe('decideRunEndTransition', () => {
     },
   );
 
+  it('should append the reason to the comment when the permission ending has one', () => {
+    const ending: RunEnding = {
+      kind: 'permission-needed',
+      toolName: 'Bash',
+      toolInput: { command: 'ls' },
+      reason: 'Needs network',
+    };
+
+    expect(decideRunEndTransition(ending, 'in-progress')).toEqual({
+      kind: 'transition',
+      to: 'waiting',
+      comment:
+        'The run needs permission for Bash with input {"command":"ls"}\n\nReason: Needs network',
+    });
+  });
+
   it('should write nothing when a permission is needed while the ticket is already waiting', () => {
     const ending: RunEnding = { kind: 'permission-needed', toolName: 'Bash', toolInput: {} };
 
