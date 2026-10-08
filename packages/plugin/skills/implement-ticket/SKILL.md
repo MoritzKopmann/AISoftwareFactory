@@ -30,15 +30,19 @@ Drive a ready leaf to a PR. Argument: ticket number. If none, ask.
 The only times to involve a human. Mode is **AFK** when the `aisf_escalate` tool is present,
 **hand-run** otherwise. Decide once. `hitl` is not a mode: a `hitl` leaf runs in either mode.
 
-| Stop point                                                 | AFK                                       | Hand-run                  |
-| ---------------------------------------------------------- | ----------------------------------------- | ------------------------- |
-| **escalate `red`**: a check still fails (§5)               | `aisf_escalate({kind: 'red', reason})`    | show the output, ask      |
-| **escalate `spec`**: the ticket doesn't answer it          | `aisf_escalate({kind: 'spec', reason})`   | ask the concrete question |
-| **escalate `denied`**: the hook denied it ~3 times         | `aisf_escalate({kind: 'denied', reason})` | say what was denied, ask  |
-| **park**: hidden dependency on another ticket (§4)         | blocker + comment, `aisf_park({blocker})` | propose the blocker, ask  |
-| **checkpoint**: the human checkpoint of a `hitl` leaf (§7) | `aisf_checkpoint({request})`              | ask in chat               |
+| Stop point                                                              | AFK                                       | Hand-run                  |
+| ----------------------------------------------------------------------- | ----------------------------------------- | ------------------------- |
+| **escalate `red`**: a check still fails (§5)                            | `aisf_escalate({kind: 'red', reason})`    | show the output, ask      |
+| **escalate `spec`**: the ticket doesn't answer it                       | `aisf_escalate({kind: 'spec', reason})`   | ask the concrete question |
+| **escalate `denied`**: a call the work can't finish without was refused | `aisf_escalate({kind: 'denied', reason})` | say what was denied, ask  |
+| **park**: hidden dependency on another ticket (§4)                      | blocker + comment, `aisf_park({blocker})` | propose the blocker, ask  |
+| **checkpoint**: the human checkpoint of a `hitl` leaf (§7)              | `aisf_checkpoint({request})`              | ask in chat               |
 
-`reason`: what you tried, the output, the decision needed. AFK: escalate and park end the run.
+`reason`: what you tried, the output, the decision needed. For `denied`: the refused tool and
+its input. AFK: escalate and park end the run.
+
+AFK: A permission denial doesn't end your turn: the app asks the human. Told you may retry → issue the identical call once, unchanged. Otherwise carry on without it.
+
 Checkpoint waits: the human's answer arrives as the `aisf_checkpoint` tool result, so carry on
 from it. An "interrupted" or refused result means the app resumes this session with a prompt
 that carries the answer. Never call the tool again for the same request. Hand-run carries on
