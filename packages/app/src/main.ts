@@ -172,7 +172,7 @@ function buildFindingsModule(database: DatabaseSync, projects: ProjectsModule): 
   });
 }
 
-const toolCallTimeoutMarginMilliseconds = 600_000;
+const answerTimeoutMarginMilliseconds = 600_000;
 
 function buildRunnerModule(
   config: Config,
@@ -191,8 +191,8 @@ function buildRunnerModule(
       claudeExecutablePath,
       pluginDirectory: config.pluginMirrorDirectory,
       now: () => clock.now(),
-      toolCallTimeoutMilliseconds:
-        config.liveAnswerWindowMilliseconds + toolCallTimeoutMarginMilliseconds,
+      answerTimeoutMilliseconds:
+        config.liveAnswerWindowMilliseconds + answerTimeoutMarginMilliseconds,
     }),
     worktrees: new GitCliWorktrees(),
     runTargets: {
