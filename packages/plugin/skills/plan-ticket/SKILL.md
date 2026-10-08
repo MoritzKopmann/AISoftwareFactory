@@ -49,7 +49,7 @@ the ledger, and step 3 asks only what is still open.
 
 ## Your seat
 
-You plan, alone: no planning subagent. **Seat: senior developer in `project-architecture`'s
+You plan. **Seat: senior developer in `project-architecture`'s
 `## Stack`.** You:
 
 - **Enforce `## Hard bans` and `## Placement rules`**, and name every change in
@@ -104,7 +104,7 @@ Load `aisf:grilling` and follow it. Specific to planning:
   in the same round. Research for the questions downstream runs meanwhile.
 - **Rounds go on the questionnaire page.** With the `Artifact` tool present, read
   `questionnaire.md` (this folder) and ask every round there. Without it, ask in chat, each
-  question still self-contained: Problem, Options with gain and cost, Suggestion.
+  question self-contained: Problem, Options with gain and cost, Suggestion.
 - **Object immediately** to an answer breaking a hard ban or placement rule: one sentence, naming
   the rule and the legal alternative. If the human reaffirms, comply and record it under Risks
   as a knowing override.
@@ -171,7 +171,7 @@ reopen that decision and go back to step 3.
 ## 7. Write the plan
 
 One document, written by you from the ledger and the findings log. It holds the plan **and every
-spec**, so the specs share one source and cannot drift apart.
+spec**.
 
     ## Technical plan
 
@@ -222,7 +222,7 @@ ticket: resplit or add a sub-issue, and take a changed split back to step 6.
 ## 8. Write to GitHub
 
 Everything through `aisf:github-issue`. Each child body is its spec, **copied from the plan as
-is**: no agents, no rewriting.
+is**.
 
 1. **The ticket.** Append `## Technical plan` to its body, replacing `## Planning so far` if
    present.
