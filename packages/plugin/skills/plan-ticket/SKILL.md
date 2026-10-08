@@ -118,8 +118,10 @@ Load `aisf:grilling` and follow it. Specific to planning:
 - **An answer contradicting a settled decision's `assumes:` reopens that decision.** Re-scan
   once per round.
 - **Ledger.** One scratchpad file, appended each round:
-  `decision · resolution · assumes: … · round N`, precedent decisions included. Later steps read
-  the ledger, not the scrollback.
+  `decision · resolution · assumes: … · round N`, precedent decisions included.
+- **Files are the memory.** After each round, the ledger and the findings log hold everything
+  later steps need. Later steps read them, not the scrollback, so a compacted context loses
+  nothing.
 
 **Done** when no decision in scope is open: every criterion has its flow, its landing module and
 its data settled in the ledger.
