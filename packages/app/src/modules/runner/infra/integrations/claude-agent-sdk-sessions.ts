@@ -1,9 +1,9 @@
-import { isDeepStrictEqual } from 'node:util';
 import { createSdkMcpServer, query, tool } from '@anthropic-ai/claude-agent-sdk';
 import type { SessionEvent } from '../../logic/domain/types/session-event.js';
 import type { ResumeSessionSpec } from '../../logic/domain/types/resume-session-spec.js';
 import type { SessionSpec } from '../../logic/domain/types/session-spec.js';
 import type { AgentSessions } from '../../logic/ports/agent-sessions.js';
+import { createPermissionHooks } from './create-permission-hooks.js';
 import { mapSdkMessage } from './map-sdk-message.js';
 
 const appToolServerName = 'aisf';
@@ -14,7 +14,7 @@ export type ClaudeAgentSdkSessionsOptions = {
   readonly claudeExecutablePath: string;
   readonly pluginDirectory: string;
   readonly now: () => string;
-  readonly toolCallTimeoutMilliseconds: number;
+  readonly answerTimeoutMilliseconds: number;
 };
 
 export class ClaudeAgentSdkSessions implements AgentSessions {
@@ -49,7 +49,6 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
     abortController: AbortController,
     sessionMode: 'start' | 'resume',
   ): AsyncGenerator<SessionEvent> {
-    let allowedCall = spec.allowedCall;
     let sawSuccessfulResult = false;
 
     try {
@@ -70,7 +69,7 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
               name: appToolServerName,
               version: '1.0.0',
               alwaysLoad: true,
-              timeout: this.options.toolCallTimeoutMilliseconds,
+              timeout: this.options.answerTimeoutMilliseconds,
               tools: spec.tools.map((sessionTool) =>
                 tool(
                   sessionTool.name,
@@ -87,15 +86,17 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
           allowedTools: spec.tools.map(
             (sessionTool) => `mcp__${appToolServerName}__${sessionTool.name}`,
           ),
-          canUseTool: async (toolName, toolInput) => {
-            if (
-              allowedCall?.toolName === toolName &&
-              isDeepStrictEqual(allowedCall.toolInput, toolInput)
-            ) {
-              allowedCall = undefined;
-              return { behavior: 'allow', updatedInput: toolInput };
-            }
-            const verdict = await spec.decidePermission({ toolName, toolInput });
+          hooks: createPermissionHooks(
+            spec.decidePermission,
+            this.options.answerTimeoutMilliseconds,
+            spec.allowedCall,
+          ),
+          canUseTool: async (toolName, toolInput, options) => {
+            const verdict = await spec.decidePermission({
+              toolName,
+              toolInput,
+              ...(options.decisionReason === undefined ? {} : { reason: options.decisionReason }),
+            });
             return verdict.kind === 'allow'
               ? { behavior: 'allow', updatedInput: toolInput }
               : { behavior: 'deny', message: verdict.message };
