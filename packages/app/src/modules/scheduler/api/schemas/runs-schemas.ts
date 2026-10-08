@@ -23,6 +23,7 @@ export const runEndingResponseSchema = z.discriminatedUnion('kind', [
     kind: z.literal('permission-needed'),
     toolName: z.string(),
     toolInput: z.record(z.string(), z.unknown()),
+    reason: z.string().optional(),
   }),
   z.object({ kind: z.literal('parked'), blockerNumber: z.number() }),
   z.object({ kind: z.literal('finished') }),
@@ -62,6 +63,7 @@ export const ticketRunResponseSchema = z.object({
             kind: z.literal('permission-needed'),
             toolName: z.string(),
             toolInput: z.record(z.string(), z.unknown()),
+            reason: z.string().optional(),
           }),
         ])
         .optional(),

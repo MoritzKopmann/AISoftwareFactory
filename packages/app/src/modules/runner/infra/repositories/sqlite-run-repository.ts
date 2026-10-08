@@ -70,6 +70,7 @@ function toEnding(row: RunRow): RunEnding | undefined {
         kind: 'permission-needed',
         toolName: String(row.tool_name),
         toolInput: JSON.parse(String(row.tool_input)) as Record<string, unknown>,
+        ...(row.ending_reason === null ? {} : { reason: row.ending_reason }),
       };
     case 'parked':
       return { kind: 'parked', blockerNumber: Number(row.blocker_number) };
@@ -93,7 +94,7 @@ function toEnding(row: RunRow): RunEnding | undefined {
 }
 
 function endingReason(ending: RunEnding): string | null {
-  if ('reason' in ending) return ending.reason;
+  if ('reason' in ending) return ending.reason ?? null;
   return ending.kind === 'checkpoint' ? ending.request : null;
 }
 
@@ -106,6 +107,7 @@ function toWait(row: RunRow): RunWait | undefined {
       kind: 'permission-needed',
       toolName: String(row.tool_name),
       toolInput: JSON.parse(String(row.tool_input)) as Record<string, unknown>,
+      ...(row.waiting_request === null ? {} : { reason: row.waiting_request }),
     };
   }
   return {
@@ -305,7 +307,7 @@ export class SqliteRunRepository implements RunRepository {
       )
       .run(
         wait.kind,
-        wait.kind === 'checkpoint' ? wait.request : null,
+        wait.kind === 'checkpoint' ? wait.request : (wait.reason ?? null),
         waitingSince,
         wait.kind === 'checkpoint' ? (wait.artifactId ?? null) : null,
         wait.kind === 'permission-needed' ? wait.toolName : null,

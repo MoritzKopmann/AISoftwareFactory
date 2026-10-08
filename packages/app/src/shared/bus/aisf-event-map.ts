@@ -26,6 +26,7 @@ export type AisfEventMap = {
           readonly kind: 'permission-needed';
           readonly toolName: string;
           readonly toolInput: Readonly<Record<string, unknown>>;
+          readonly reason?: string;
         }
       | { readonly kind: 'parked'; readonly blockerNumber: number }
       | { readonly kind: 'finished' }
@@ -45,6 +46,7 @@ export type AisfEventMap = {
           readonly kind: 'permission-needed';
           readonly toolName: string;
           readonly toolInput: Readonly<Record<string, unknown>>;
+          readonly reason?: string;
         };
   };
   readonly 'ticket.status-written': {

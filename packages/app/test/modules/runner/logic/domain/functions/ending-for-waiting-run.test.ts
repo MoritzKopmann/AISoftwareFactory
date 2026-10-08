@@ -42,6 +42,19 @@ describe('endingForWaitingRun', () => {
     });
   });
 
+  it('should keep the reason when an expired permission wait has one', () => {
+    const wait = {
+      kind: 'permission-needed',
+      toolName: 'Bash',
+      toolInput: { command: 'ls' },
+      reason: 'Posting to GitHub is hard-denied',
+    } as const;
+
+    expect(
+      endingForWaitingRun(buildRun({ waitingFor: wait }), { kind: 'crashed', reason: 'x' }),
+    ).toEqual(wait);
+  });
+
   it('should return the permission wait as the ending when the run waits for a permission', () => {
     const wait = {
       kind: 'permission-needed',

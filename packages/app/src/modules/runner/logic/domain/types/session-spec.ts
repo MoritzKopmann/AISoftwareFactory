@@ -1,6 +1,6 @@
+import type { PermissionRequest } from './permission-request.js';
 import type { PermissionVerdict } from './permission-verdict.js';
 import type { SessionTool } from './session-tool.js';
-import type { ToolCall } from './tool-call.js';
 
 export type SessionSpec = {
   readonly sessionId: string;
@@ -8,5 +8,5 @@ export type SessionSpec = {
   readonly prompt: string;
   readonly model: string;
   readonly tools: ReadonlyArray<SessionTool>;
-  readonly decidePermission: (toolCall: ToolCall) => Promise<PermissionVerdict>;
+  readonly decidePermission: (request: PermissionRequest) => Promise<PermissionVerdict>;
 };

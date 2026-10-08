@@ -156,6 +156,77 @@ describe('createRunRoutes', () => {
       expect(body.activeRun?.waitingSince).toBe(waitingSince);
     });
 
+    it('should expose the reason of a permission wait and omit it when there is none', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      const run = {
+        id: 'run-1',
+        startedAt,
+        steps: [],
+        waitingSince: '2026-10-07T10:00:00.000Z',
+      };
+      ticketRuns.ticketRun = {
+        availability: { kind: 'disabled', reason: '#7 is running' },
+        activeRun: {
+          ...run,
+          waitingFor: {
+            kind: 'permission-needed',
+            toolName: 'Bash',
+            toolInput: { command: 'ls' },
+            reason: 'Needs network',
+          },
+        },
+      };
+      const app = createTestApp(ticketRuns);
+
+      const withReason = ticketRunResponseSchema.parse(
+        await (await app.request('/projects/owner/name/tickets/7/run')).json(),
+      );
+      ticketRuns.ticketRun = {
+        availability: { kind: 'disabled', reason: '#7 is running' },
+        activeRun: {
+          ...run,
+          waitingFor: { kind: 'permission-needed', toolName: 'Bash', toolInput: { command: 'ls' } },
+        },
+      };
+      const without = ticketRunResponseSchema.parse(
+        await (await app.request('/projects/owner/name/tickets/7/run')).json(),
+      );
+
+      expect(withReason.activeRun?.waitingFor).toEqual({
+        kind: 'permission-needed',
+        toolName: 'Bash',
+        toolInput: { command: 'ls' },
+        reason: 'Needs network',
+      });
+      expect(without.activeRun?.waitingFor).not.toHaveProperty('reason');
+    });
+
+    it('should return the reason of a permission ending when the last run has one', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.ticketRun = {
+        availability: { kind: 'available' },
+        lastRun: {
+          id: 'run-1',
+          startedAt,
+          endedAt,
+          ending: {
+            kind: 'permission-needed',
+            toolName: 'Bash',
+            toolInput: { command: 'ls' },
+            reason: 'Needs network',
+          },
+        },
+      };
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/139/run',
+      );
+
+      expect(ticketRunResponseSchema.parse(await response.json()).lastRun?.ending).toMatchObject({
+        reason: 'Needs network',
+      });
+    });
+
     it('should expose waitingSince for a checkpoint wait', async () => {
       const ticketRuns = new FakeTicketRuns();
       ticketRuns.ticketRun = {

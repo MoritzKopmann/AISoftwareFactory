@@ -8,6 +8,7 @@ export type RunEnding =
       readonly kind: 'permission-needed';
       readonly toolName: string;
       readonly toolInput: Readonly<Record<string, unknown>>;
+      readonly reason?: string;
     }
   | { readonly kind: 'parked'; readonly blockerNumber: number }
   | { readonly kind: 'checkpoint'; readonly request: string; readonly artifactId?: string }
