@@ -14,6 +14,20 @@ number. If none, ask.
 `gh` infers the repository from the current checkout. Never pass `-R`. Every status change and
 every issue write goes through `aisf:github-issue`.
 
+## Stop points
+
+Mode is **AFK** when the `aisf_escalate` tool is present, **hand-run** otherwise. Decide once.
+
+AFK: A permission denial doesn't end your turn: the app asks the human. Told you may retry → issue the identical call once, unchanged. Otherwise carry on without it.
+
+**escalate `denied`**: a call the work can't finish without was refused.
+
+- AFK: `aisf_escalate({kind: 'denied', reason})`. The `reason` names the refused tool and its
+  input. Escalation ends the run.
+- Hand-run: say what was denied, ask.
+
+Never call an `aisf_*` tool that isn't present.
+
 ## 1. Read
 
 ```bash
