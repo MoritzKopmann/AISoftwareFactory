@@ -261,7 +261,6 @@ if (response.status === 304) return previousPage;
 - **No second process:** no daemon plus separate UI process, and no process per project.
 - **No persistence besides `aisf.db`:** no JSON **app**-state files, no native SQLite binding.
 - **Rejected stacks stay rejected:** htmx, Fastify, Svelte, Docker, a single binary.
-- **No app write to tickets or pull requests** outside the scheduler's settle, answer, reset and merge use cases and findings' create-ticket use case. Named exception: the create-only label sync in `projects`.
 - **No global 3-layer split** (a top-level `api/`, `logic/`, `infra/` across modules). Layers live inside each module.
 
 ## Plan vocabulary
