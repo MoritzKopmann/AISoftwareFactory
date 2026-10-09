@@ -32,6 +32,7 @@ describe('ResumeRunUseCase', () => {
   let agentSessions: FakeAgentSessions;
   let recentRunSteps: FakeRecentRunSteps;
   let logger: { info: Mock; warn: Mock; error: Mock };
+  let events: FakeEventPublisher;
   let resumeRun: ResumeRunUseCase;
 
   async function insertEndedRun(overrides = {}): Promise<void> {
@@ -52,7 +53,7 @@ describe('ResumeRunUseCase', () => {
     recentRunSteps = new FakeRecentRunSteps();
     logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
     const clock = new FakeClock('2026-09-29T11:00:00.000Z');
-    const events = new FakeEventPublisher();
+    events = new FakeEventPublisher();
     const finishRun = (runId: string, ending: RunEnding) =>
       new FinishRunUseCase({
         runRepository,
@@ -68,12 +69,14 @@ describe('ResumeRunUseCase', () => {
       finishRun,
       waitForRunAnswer: async () => ({ kind: 'unanswered', message: '' }),
       tools: [],
+      events,
       logger,
     });
     resumeRun = new ResumeRunUseCase({
       runRepository,
       identifiers: new SequentialIdentifiers(),
       clock,
+      events,
       launchRunSession: (run, launch) => launchRunSession.execute(run, launch),
     });
   });
@@ -285,4 +288,17 @@ describe('ResumeRunUseCase', () => {
       expect(agentSessions.resumedSpecs).toEqual([]);
     },
   );
+
+  it('should emit run.started for the new run when a run is resumed', async () => {
+    await insertEndedRun();
+
+    await resumeRun.execute('run-1', allow);
+
+    expect(events.emittedEvents).toEqual([
+      {
+        name: 'run.started',
+        payload: { runId: 'id-1', projectId: 'moritz/aisf', ticketNumber: 137 },
+      },
+    ]);
+  });
 });

@@ -86,6 +86,7 @@ describe('createRunnerModule', () => {
 
   it('should end the run as escalated and emit run.finished when the session calls aisf_escalate', async () => {
     await runner.start(startRequest);
+    events.emittedEvents.length = 0;
     const escalate = agentSessions.startedSpecs[0]?.tools.find(
       (tool) => tool.name === 'aisf_escalate',
     );
@@ -108,6 +109,7 @@ describe('createRunnerModule', () => {
 
   it('should end the run as parked and emit run.finished when the session calls aisf_park', async () => {
     await runner.start(startRequest);
+    events.emittedEvents.length = 0;
     const park = agentSessions.startedSpecs[0]?.tools.find((tool) => tool.name === 'aisf_park');
 
     await park?.execute({ blocker: 42 });
@@ -119,6 +121,7 @@ describe('createRunnerModule', () => {
 
   it('should wait, then end the run as checkpoint and emit run.finished when the window passes after aisf_checkpoint', async () => {
     await runner.start(startRequest);
+    events.emittedEvents.length = 0;
     const checkpoint = agentSessions.startedSpecs[0]?.tools.find(
       (tool) => tool.name === 'aisf_checkpoint',
     );
@@ -156,6 +159,7 @@ describe('createRunnerModule', () => {
 
   it('should end the run as stopped when POST /runs/:runId/stop is called', async () => {
     const run = await runner.start(startRequest);
+    events.emittedEvents.length = 0;
 
     const response = await runner.routes.request(`/runs/${run.id}/stop`, { method: 'POST' });
 

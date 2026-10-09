@@ -166,4 +166,42 @@ describe('WaitForRunAnswerUseCase', () => {
     });
     expect(runRepository.runs.get('run-1')).not.toHaveProperty('waitingFor');
   });
+
+  it('should emit run.wait-cleared after the wait is cleared when an answer is delivered', async () => {
+    let waitingForAtEmit: unknown = 'unset';
+    const baseEmit = events.emit.bind(events);
+    events.emit = (name, payload) => {
+      if (name === 'run.wait-cleared') {
+        waitingForAtEmit = runRepository.runs.get('run-1')?.waitingFor;
+      }
+      baseEmit(name, payload);
+    };
+    const result = useCase.execute(buildRun(), { kind: 'checkpoint', request: 'Check' });
+    await Promise.resolve();
+
+    runAnswerWaits.deliver('run-1', { kind: 'checkpoint', text: 'ok' });
+    await result;
+
+    expect(waitingForAtEmit).toBeUndefined();
+    expect(events.emittedEvents.map(({ name }) => name)).toEqual([
+      'run.waiting',
+      'run.wait-cleared',
+    ]);
+    expect(events.emittedEvents[1]?.payload).toEqual({
+      runId: 'run-1',
+      projectId: 'moritz/aisf',
+      ticketNumber: 137,
+    });
+  });
+
+  it('should emit no run.wait-cleared when the answer window expires', async () => {
+    const result = useCase.execute(buildRun(), { kind: 'checkpoint', request: 'Check' });
+    await Promise.resolve();
+
+    runAnswerWaits.expire('run-1');
+    await result;
+
+    expect(events.emittedEvents.map(({ name }) => name)).toEqual(['run.waiting']);
+    expect(finishedEndings).toHaveLength(1);
+  });
 });

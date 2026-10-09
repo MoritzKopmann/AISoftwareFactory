@@ -105,7 +105,12 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
     projectLookup,
     events,
   });
-  const resetTicket = new ResetTicketUseCase({ ticketStatusWrites, runner, projectLookup });
+  const resetTicket = new ResetTicketUseCase({
+    ticketStatusWrites,
+    runner,
+    projectLookup,
+    events,
+  });
   const mergeApprovedPullRequests = new MergeApprovedPullRequestsUseCase({
     pullRequestMerges,
     runner,
