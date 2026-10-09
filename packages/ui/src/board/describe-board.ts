@@ -17,8 +17,10 @@ export type BoardRowDescription = {
   readonly tickets: ReadonlyArray<TicketResponse>;
 };
 
+export type BoardBannerDescription = SyncFailureDescription & { readonly retryable?: true };
+
 export type BoardDescription = {
-  readonly banner?: SyncFailureDescription;
+  readonly banner?: BoardBannerDescription;
   readonly updatedAt?: string;
   readonly emptyMessage?: string;
   readonly loading: boolean;
@@ -42,7 +44,7 @@ function describeBanner(
   state: BoardState,
   projectId: string,
   now: Date,
-): SyncFailureDescription | undefined {
+): BoardBannerDescription | undefined {
   switch (state.connection) {
     case 'not-watched':
       return {
@@ -52,7 +54,8 @@ function describeBanner(
     case 'request-failed':
       return {
         tone: 'warn',
-        message: "Can't reach aisf. The board retries when something changes, or on Retry.",
+        message: "Can't reach aisf. Loads again on the next change, or on Retry.",
+        retryable: true,
       };
     case 'ok':
       return state.response === undefined

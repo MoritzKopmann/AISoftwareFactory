@@ -478,6 +478,10 @@ a.ext::after {
   grid-column: 2;
 }
 
+.banner > .btn {
+  justify-self: start;
+}
+
 .banner.warn {
   --c: var(--warn);
 }

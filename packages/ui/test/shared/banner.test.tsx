@@ -1,6 +1,16 @@
+import { isValidElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Banner } from '../../src/shared/banner.js';
+
+function findRetryButtonClick(node: ReactNode): (() => void) | undefined {
+  if (Array.isArray(node)) {
+    return node.map(findRetryButtonClick).find((click) => click !== undefined);
+  }
+  if (!isValidElement<{ children?: ReactNode; onClick?: () => void }>(node)) return undefined;
+  if (node.type === 'button' && node.props.children === 'Retry') return node.props.onClick;
+  return findRetryButtonClick(node.props.children);
+}
 
 describe('Banner', () => {
   it('should render shape, message, command, hint and detail in that order when all are given', () => {
@@ -65,5 +75,31 @@ describe('Banner', () => {
     );
     expect(markup).toContain('>Copy</button>');
     expect(markup).toMatch(/<span class="vh" role="status"><\/span>/);
+  });
+
+  it('should render a Retry button when onRetry is given', () => {
+    const markup = renderToStaticMarkup(<Banner tone="warn" message="m" onRetry={() => {}} />);
+    expect(markup).toContain('<button class="btn" type="button">Retry</button>');
+  });
+
+  it('should render no Retry button when onRetry is absent', () => {
+    const markup = renderToStaticMarkup(<Banner tone="warn" message="m" />);
+    expect(markup).not.toContain('Retry');
+  });
+
+  it('should place Retry after the hint and before the detail when all are given', () => {
+    const markup = renderToStaticMarkup(
+      <Banner tone="warn" message="m" hint="the hint" detail="the detail" onRetry={() => {}} />,
+    );
+    const positions = ['the hint', '>Retry<', 'the detail'].map((part) => markup.indexOf(part));
+    expect(positions.every((position) => position >= 0)).toBe(true);
+    expect(positions).toEqual([...positions].sort((first, second) => first - second));
+  });
+
+  it('should call onRetry when the Retry button is clicked', () => {
+    const onRetry = vi.fn();
+    const click = findRetryButtonClick(Banner({ tone: 'warn', message: 'm', onRetry }));
+    click?.();
+    expect(onRetry).toHaveBeenCalledTimes(1);
   });
 });
