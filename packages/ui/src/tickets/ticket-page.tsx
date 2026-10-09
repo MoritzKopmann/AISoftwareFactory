@@ -105,6 +105,7 @@ export function TicketPageView({
               </>
             )}
           </p>
+          <p className="sm">Loads again on the next change, or on Retry.</p>
           <button className="btn" type="button" onClick={onRetry}>
             Retry
           </button>

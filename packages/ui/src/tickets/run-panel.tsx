@@ -3,9 +3,10 @@ import type { RunPanelDescription } from './describe-run-panel.js';
 type RunPanelProps = {
   readonly description: RunPanelDescription;
   readonly onStop: () => void;
+  readonly onRetry: () => void;
 };
 
-export function RunPanel({ description, onStop }: RunPanelProps) {
+export function RunPanel({ description, onStop, onRetry }: RunPanelProps) {
   if (description.kind === 'hidden') {
     return null;
   }
@@ -67,6 +68,9 @@ export function RunPanel({ description, onStop }: RunPanelProps) {
             ▲
           </span>
           <p className="sm">{banner}</p>
+          <button className="btn" type="button" onClick={onRetry}>
+            Retry
+          </button>
         </div>
       )}
       <ol className="steps">

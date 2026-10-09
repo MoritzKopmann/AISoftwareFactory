@@ -765,6 +765,14 @@ details:not([open]) .t-hide {
   line-height: 1.45;
 }
 
+.inline-banner > :not(.shape) {
+  grid-column: 2;
+}
+
+.inline-banner .btn {
+  justify-self: start;
+}
+
 .inline-banner p {
   color: var(--text);
 }

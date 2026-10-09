@@ -60,7 +60,7 @@ function describeLiveRun(
       : { label: 'Stop', pressable: true },
     ...(input.lastPollFailed && input.answeredAt !== undefined
       ? {
-          banner: `Can't reach aisf. Showing the steps from ${formatClockTime(input.answeredAt, 'minutes')}; retrying when something changes, or on Retry.`,
+          banner: `Can't reach aisf. Showing the steps from ${formatClockTime(input.answeredAt, 'minutes')}. Loads again on the next change, or on Retry.`,
         }
       : {}),
     steps: lastSteps.map((step, position) => ({

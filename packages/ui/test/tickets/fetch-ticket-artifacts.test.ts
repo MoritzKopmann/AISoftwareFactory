@@ -27,15 +27,17 @@ describe('fetchTicketArtifacts', () => {
     });
   });
 
-  it('should return request-failed when the route answers an error', async () => {
+  it('should return request-failed with the HTTP status when the route answers an error', async () => {
     expect(await fetchTicketArtifacts('o/n', 56, answerWith(500, {}))).toEqual({
       kind: 'request-failed',
+      cause: { kind: 'not-ok', status: 500 },
     });
   });
 
-  it('should return request-failed when the request throws', async () => {
+  it('should return request-failed with the error message when the request throws', async () => {
     expect(await fetchTicketArtifacts('o/n', 56, () => Promise.reject(new Error('down')))).toEqual({
       kind: 'request-failed',
+      cause: { kind: 'network', message: 'down' },
     });
   });
 });
