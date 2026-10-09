@@ -1,5 +1,6 @@
 import type { Clock } from '../../../../shared/clock/clock.js';
 import { failWatch } from '../domain/functions/fail-watch.js';
+import { presentWatch } from '../domain/functions/present-watch.js';
 import { findRateLimitGate } from '../domain/functions/find-rate-limit-gate.js';
 import type { ProjectTicket } from '../domain/types/project-ticket.js';
 import type { RepositoryWatch } from '../domain/types/repository-watch.js';
@@ -9,17 +10,24 @@ import { GitHubAuthError } from '../errors/github-auth-error.js';
 import { GitHubRateLimitedError } from '../errors/github-rate-limited-error.js';
 import { GitHubRequestError } from '../errors/github-request-error.js';
 import type { TicketSource } from '../ports/ticket-source.js';
+import type { WatchStore } from '../ports/watch-store.js';
 
 export type ReadTicketDependencies = {
   readonly ticketSource: TicketSource;
   readonly clock: Clock;
+  readonly watchStore: WatchStore;
 };
 
 export class ReadTicketUseCase {
   constructor(private readonly dependencies: ReadTicketDependencies) {}
 
-  async execute(watch: RepositoryWatch, number: number): Promise<ProjectTicket | undefined> {
-    const { ticketSource, clock } = this.dependencies;
+  async execute(projectId: string, number: number): Promise<ProjectTicket | undefined> {
+    const { ticketSource, clock, watchStore } = this.dependencies;
+    const storedWatch = watchStore.watch(projectId);
+    if (storedWatch === undefined) {
+      return undefined;
+    }
+    const watch = presentWatch(storedWatch, watchStore.statusWrites(projectId));
     const snapshotCopy = [
       ...(watch.snapshot?.openTickets ?? []),
       ...(watch.snapshot?.recentlyClosedTickets ?? []),

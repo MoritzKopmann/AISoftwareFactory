@@ -5,6 +5,7 @@ import type { TicketSnapshot } from '../../../../../src/modules/watcher/logic/do
 import { GitHubAuthError } from '../../../../../src/modules/watcher/logic/errors/github-auth-error.js';
 import { GitHubRateLimitedError } from '../../../../../src/modules/watcher/logic/errors/github-rate-limited-error.js';
 import { GitHubRequestError } from '../../../../../src/modules/watcher/logic/errors/github-request-error.js';
+import { InMemoryWatchStore } from '../../../../../src/modules/watcher/infra/integrations/in-memory-watch-store.js';
 import { ReadTicketUseCase } from '../../../../../src/modules/watcher/logic/use-cases/read-ticket-use-case.js';
 import { FakeClock } from '../../../../fakes/fake-clock.js';
 import { buildTicket } from '../../fakes/build-ticket.js';
@@ -51,7 +52,14 @@ function createSubject() {
       [3, buildTicket({ number: 3, status: 'closed' })],
     ]),
   );
-  const useCase = new ReadTicketUseCase({ ticketSource, clock: new FakeClock(now) });
+  const watchStore = new InMemoryWatchStore();
+  const readTicket = new ReadTicketUseCase({ ticketSource, clock: new FakeClock(now), watchStore });
+  const useCase = {
+    execute: (watch: RepositoryWatch, number: number) => {
+      watchStore.saveWatch(watch);
+      return readTicket.execute(watch.projectId, number);
+    },
+  };
   return { useCase, ticketSource };
 }
 
