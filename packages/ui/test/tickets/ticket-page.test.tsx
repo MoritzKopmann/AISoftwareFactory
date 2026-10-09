@@ -1,13 +1,16 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import type { LiveUpdates } from '../../src/live/live-updates.js';
 import { TicketPageView } from '../../src/tickets/ticket-page.js';
 
 const ignore = () => undefined;
+const liveUpdates: LiveUpdates = { listen: () => ignore, connection: () => 'open' };
 
 describe('TicketPageView', () => {
   it('should end with the collapsed description after the run log when the ticket is loaded', () => {
     const markup = renderToStaticMarkup(
       <TicketPageView
+        liveUpdates={liveUpdates}
         projectId="o/n"
         number={56}
         description={{
@@ -23,7 +26,6 @@ describe('TicketPageView', () => {
           pullRequests: [],
         }}
         onRetry={ignore}
-        onTicketStale={ignore}
       />,
     );
     expect(markup).toMatch(

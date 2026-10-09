@@ -112,7 +112,7 @@ describe('describeBoard', () => {
     );
     expect(description.banner).toEqual({
       tone: 'warn',
-      message: "Can't reach aisf. The board tries again every 5 s.",
+      message: "Can't reach aisf. The board retries when something changes, or on Retry.",
     });
     expect(description.updatedAt).toBe('checked');
     expect(description.rows).toHaveLength(1);
@@ -130,7 +130,9 @@ describe('describeBoard', () => {
       'o/n',
       now,
     );
-    expect(description.banner?.message).toBe("Can't reach aisf. The board tries again every 5 s.");
+    expect(description.banner?.message).toBe(
+      "Can't reach aisf. The board retries when something changes, or on Retry.",
+    );
   });
 
   it('should give one empty message with a full stop and no rows when every row is empty', () => {

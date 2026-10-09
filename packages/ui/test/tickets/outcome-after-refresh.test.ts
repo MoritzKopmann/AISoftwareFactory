@@ -25,4 +25,10 @@ describe('outcomeAfterRefresh', () => {
     );
     expect(outcomeAfterRefresh(loaded, { kind: 'not-found' })).toBe(loaded);
   });
+
+  it('should show the failure when no answer was shown yet', () => {
+    const failed: TicketPageOutcome = { kind: 'request-failed', message: 'offline' };
+    expect(outcomeAfterRefresh({ kind: 'loading' }, failed)).toBe(failed);
+    expect(outcomeAfterRefresh({ kind: 'not-found' }, failed)).toBe(failed);
+  });
 });

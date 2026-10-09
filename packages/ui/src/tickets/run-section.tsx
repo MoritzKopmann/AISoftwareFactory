@@ -1,7 +1,8 @@
 import type { TicketStatusResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
 import type { TicketArtifactsResponse } from '@aisf/app/api-schemas/artifacts-schemas.js';
 import { useEffect, useState } from 'react';
-import { poll } from '../shared/poll.js';
+import type { LiveUpdates } from '../live/live-updates.js';
+import { useLiveRead } from '../live/use-live-read.js';
 import { ArtifactLinks } from './artifact-links.js';
 import { answerCheckpoint } from './answer-checkpoint.js';
 import { answerPermissionPrompt } from './answer-permission-prompt.js';
@@ -34,28 +35,26 @@ import { ResetAction } from './reset-action.js';
 import { resetTicket } from './reset-ticket.js';
 import { RunBar } from './run-bar.js';
 import { RunPanel } from './run-panel.js';
-import { shouldRereadTicket } from './should-reread-ticket.js';
 import { startTicketRun } from './start-ticket-run.js';
 import { stopTicketRun } from './stop-ticket-run.js';
-import { ticketRunPollIntervalMilliseconds } from './ticket-run-poll-interval-milliseconds.js';
 import { useTicketRun } from './use-ticket-run.js';
 
 type RunSectionProps = {
+  readonly liveUpdates: LiveUpdates;
   readonly projectId: string;
   readonly number: number;
   readonly ticketStatus: TicketStatusResponse;
   readonly runSkill: RunSkill;
-  readonly onTicketStale: () => void;
 };
 
 export function RunSection({
+  liveUpdates,
   projectId,
   number,
   ticketStatus,
   runSkill,
-  onTicketStale,
 }: RunSectionProps) {
-  const ticketRun = useTicketRun(projectId, number);
+  const { ticketRun } = useTicketRun(liveUpdates, projectId, number);
   const [start, setStart] = useState<StartState>({ kind: 'idle' });
   const [stoppingRunId, setStoppingRunId] = useState<string | undefined>(undefined);
   const [permissionAnswer, setPermissionAnswer] = useState<PermissionAnswer>({ kind: 'idle' });
@@ -63,12 +62,6 @@ export function RunSection({
   const [reset, setReset] = useState<ResetState>({ kind: 'idle' });
   const [artifacts, setArtifacts] = useState<TicketArtifactsResponse | undefined>(undefined);
   const activeRunId = ticketRun.response?.activeRun?.id;
-  const resetting = reset.kind === 'resetting';
-
-  // The ticket is served from the Watcher's snapshot, so a reset shows only after a later read.
-  useEffect(() => {
-    if (resetting || shouldRereadTicket(ticketRun.response, ticketStatus)) onTicketStale();
-  }, [ticketRun.response, ticketStatus, onTicketStale, resetting]);
 
   useEffect(() => {
     setPermissionAnswer((current) => settlePermissionAnswer(current, ticketRun.response));
@@ -79,16 +72,14 @@ export function RunSection({
   }, [ticketRun.response]);
 
   // A failed read keeps the links from the last answer.
-  useEffect(() => {
-    setArtifacts(undefined);
-    return poll(
-      () => fetchTicketArtifacts(projectId, number, (url) => fetch(url)),
-      (outcome) => {
-        if (outcome.kind === 'answer') setArtifacts(outcome.response);
-      },
-      ticketRunPollIntervalMilliseconds,
-    );
-  }, [projectId, number]);
+  useLiveRead(
+    liveUpdates,
+    { kind: 'artifacts', projectId, ticketNumber: number },
+    () => fetchTicketArtifacts(projectId, number, (url) => fetch(url)),
+    (outcome) => {
+      if (outcome.kind === 'answer') setArtifacts(outcome.response);
+    },
+  );
 
   useEffect(() => {
     setStart((current) => settleStartState(current, ticketRun.response));
@@ -134,7 +125,6 @@ export function RunSection({
       fetch(url, requestInit),
     );
     if (outcome.kind === 'failed') setReset(outcome);
-    else onTicketStale();
   };
 
   const prompt = describePermissionPrompt(ticketRun.response, ticketStatus, permissionAnswer);

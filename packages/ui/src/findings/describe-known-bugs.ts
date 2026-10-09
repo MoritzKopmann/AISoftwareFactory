@@ -1,6 +1,5 @@
 import type { FindingResponse } from '@aisf/app/api-schemas/findings-schemas.js';
 import { formatClockTime } from '../board/format-clock-time.js';
-import { findingsPollIntervalMilliseconds } from './findings-poll-interval-milliseconds.js';
 import type { FindingsFailure, FindingsPoll } from './fold-findings-poll.js';
 
 const firstRowCount = 20;
@@ -167,7 +166,7 @@ export function describeKnownBugs(
     ),
     ...(poll.failure !== undefined && poll.answeredAt !== undefined
       ? {
-          banner: `Can't reach aisf. Showing the list from ${formatClockTime(poll.answeredAt, 'minutes')}; trying again every ${findingsPollIntervalMilliseconds / 1000} s.`,
+          banner: `Can't reach aisf. Showing the list from ${formatClockTime(poll.answeredAt, 'minutes')}; retrying when something changes, or on Retry.`,
         }
       : {}),
     ...(cut ? { footer: `Showing ${firstRowCount} of ${listed.length}.` } : {}),

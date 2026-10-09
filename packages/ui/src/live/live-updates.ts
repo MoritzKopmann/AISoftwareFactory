@@ -14,9 +14,9 @@ export type LiveUpdates = {
 
 /** The EventSource subset the client uses. */
 export type LiveStream = {
-  onopen: ((event: unknown) => void) | null;
-  onerror: ((event: unknown) => void) | null;
-  onmessage: ((event: { data: string }) => void) | null;
+  onopen: ((event: Event) => void) | null;
+  onerror: ((event: Event) => void) | null;
+  onmessage: ((event: MessageEvent<string>) => void) | null;
   readonly readyState: number;
   close(): void;
 };

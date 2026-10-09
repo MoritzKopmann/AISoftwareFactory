@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ProjectResponse } from '@aisf/app/api-schemas/projects-schemas.js';
+import { createLiveUpdates } from './live/create-live-updates.js';
 import { SkillsStatusPanel } from './skills/skills-status-panel.js';
 import { parseAppRoute, type AppRoute } from './app-route.js';
 import { ProjectSidebar } from './projects/project-sidebar.js';
@@ -16,6 +17,9 @@ export function AppShell() {
   const [projects, setProjects] = useState<ReadonlyArray<ProjectResponse> | undefined>(undefined);
   const [loadFailed, setLoadFailed] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
+  const [liveUpdates] = useState(() =>
+    createLiveUpdates({ openStream: (url) => new EventSource(url), visibility: document }),
+  );
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -79,6 +83,7 @@ export function AppShell() {
       case 'project':
         return (
           <ProjectPage
+            liveUpdates={liveUpdates}
             key={route.id}
             id={route.id}
             project={projects.find((project) => project.id === route.id)}
@@ -86,7 +91,12 @@ export function AppShell() {
         );
       case 'ticket':
         return (
-          <TicketPage key={`${route.id}#${route.number}`} id={route.id} number={route.number} />
+          <TicketPage
+            key={`${route.id}#${route.number}`}
+            liveUpdates={liveUpdates}
+            id={route.id}
+            number={route.number}
+          />
         );
     }
   };
@@ -95,7 +105,7 @@ export function AppShell() {
     <div className="shell">
       <ProjectSidebar projects={projects} route={route} />
       <div className="main">
-        <SkillsStatusPanel />
+        <SkillsStatusPanel liveUpdates={liveUpdates} />
         {renderPage()}
       </div>
     </div>

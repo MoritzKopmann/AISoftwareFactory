@@ -105,7 +105,8 @@ describe('describeRunPanel', () => {
       kind: 'live',
       stop: { label: 'Stop', pressable: true },
       steps: [{ summary: 'Bash: npm test' }],
-      banner: "Can't reach aisf. Showing the steps from 09:41; trying again every 3 s.",
+      banner:
+        "Can't reach aisf. Showing the steps from 09:41; retrying when something changes, or on Retry.",
     });
   });
 

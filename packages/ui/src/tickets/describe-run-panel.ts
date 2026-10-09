@@ -3,7 +3,6 @@ import type { TicketStatusResponse } from '@aisf/app/api-schemas/tickets-schemas
 import { describeTimeAgo } from '../board/describe-time-ago.js';
 import { formatClockTime } from '../board/format-clock-time.js';
 import type { TicketRunPoll } from './fold-ticket-run-poll.js';
-import { ticketRunPollIntervalMilliseconds } from './ticket-run-poll-interval-milliseconds.js';
 
 const shownStepCount = 5;
 const millisecondsPerMinute = 60_000;
@@ -61,7 +60,7 @@ function describeLiveRun(
       : { label: 'Stop', pressable: true },
     ...(input.lastPollFailed && input.answeredAt !== undefined
       ? {
-          banner: `Can't reach aisf. Showing the steps from ${formatClockTime(input.answeredAt, 'minutes')}; trying again every ${ticketRunPollIntervalMilliseconds / 1000} s.`,
+          banner: `Can't reach aisf. Showing the steps from ${formatClockTime(input.answeredAt, 'minutes')}; retrying when something changes, or on Retry.`,
         }
       : {}),
     steps: lastSteps.map((step, position) => ({
