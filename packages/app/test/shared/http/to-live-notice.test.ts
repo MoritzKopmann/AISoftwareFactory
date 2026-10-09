@@ -13,11 +13,30 @@ describe('toLiveNotice', () => {
     ).toEqual({ event: 'run.finished', projectId: 'octo/repo', ticketNumber: 7 });
   });
 
-  it('should omit the ticket number when the payload has none', () => {
-    expect(toLiveNotice('watch.updated', { projectId: 'octo/repo' })).toEqual({
+  it('should carry changed and polledAt when the event is watch.updated', () => {
+    expect(
+      toLiveNotice('watch.updated', {
+        projectId: 'octo/repo',
+        changed: false,
+        polledAt: '2026-09-28T12:00:00.000Z',
+      }),
+    ).toEqual({
       event: 'watch.updated',
       projectId: 'octo/repo',
+      changed: false,
+      polledAt: '2026-09-28T12:00:00.000Z',
     });
+  });
+
+  it('should carry no changed and no polledAt when the event is not watch.updated', () => {
+    const notice = toLiveNotice('run.finished', {
+      runId: 'run-1',
+      projectId: 'octo/repo',
+      ticketNumber: 7,
+      ending: { kind: 'finished' },
+    });
+    expect(notice).not.toHaveProperty('changed');
+    expect(notice).not.toHaveProperty('polledAt');
   });
 
   it('should carry only the name when the payload has no ids', () => {

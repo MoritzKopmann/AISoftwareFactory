@@ -24,8 +24,27 @@ describe('FailWatchesUseCase', () => {
       expect.objectContaining({ state: 'failed', cause: 'unexpected', message: 'boom' }),
     ]);
     expect(events.emittedEvents).toEqual([
-      { name: 'watch.updated', payload: { projectId: 'octo/one' } },
-      { name: 'watch.updated', payload: { projectId: 'octo/two' } },
+      { name: 'watch.updated', payload: { projectId: 'octo/one', changed: true, polledAt: now } },
+      { name: 'watch.updated', payload: { projectId: 'octo/two', changed: true, polledAt: now } },
+    ]);
+  });
+
+  it('should announce changed false when the same error repeats', () => {
+    const watchStore = new InMemoryWatchStore();
+    const events = new FakeEventPublisher();
+    watchStore.saveWatch({
+      projectId: 'octo/one',
+      repository: { owner: 'octo', name: 'one' },
+      sync: { state: 'ok', checkedAt: now, snapshotTakenAt: now },
+    });
+    const useCase = new FailWatchesUseCase({ watchStore, clock: new FakeClock(now), events });
+
+    useCase.execute(new Error('boom'));
+    useCase.execute(new Error('boom'));
+
+    expect(events.emittedEvents.map((event) => event.payload)).toEqual([
+      { projectId: 'octo/one', changed: true, polledAt: now },
+      { projectId: 'octo/one', changed: false, polledAt: now },
     ]);
   });
 });

@@ -5,6 +5,8 @@ export const liveNoticeSchema = z.object({
   event: z.enum(aisfEventNames),
   projectId: z.string().optional(),
   ticketNumber: z.number().optional(),
+  changed: z.boolean().optional(),
+  polledAt: z.string().optional(),
 });
 
 export type LiveNotice = z.infer<typeof liveNoticeSchema>;

@@ -80,6 +80,10 @@ export type AisfEventMap = {
     readonly ticketNumber: number;
     readonly artifactId: string;
   };
-  readonly 'watch.updated': { readonly projectId: string };
+  readonly 'watch.updated': {
+    readonly projectId: string;
+    readonly changed: boolean;
+    readonly polledAt: string;
+  };
   readonly 'skills.status-changed': Readonly<Record<never, never>>;
 };
