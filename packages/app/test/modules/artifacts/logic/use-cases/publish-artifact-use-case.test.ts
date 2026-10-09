@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { ArtifactNotFoundError } from '../../../../../src/modules/artifacts/logic/errors/artifact-not-found-error.js';
 import { PublishArtifactUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/publish-artifact-use-case.js';
 import { FakeClock } from '../../../../fakes/fake-clock.js';
+import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
 import { FakeArtifactFiles } from '../../fakes/fake-artifact-files.js';
 import { InMemoryArtifactRepository } from '../../fakes/in-memory-artifact-repository.js';
 
@@ -19,15 +20,29 @@ describe('PublishArtifactUseCase', () => {
   let artifactFiles: FakeArtifactFiles;
   let publish: PublishArtifactUseCase;
   let tokens: string[];
+  let events: FakeEventPublisher;
+  let artifactIdsAtEmit: Array<Promise<ReadonlyArray<string>>>;
 
   beforeEach(() => {
     artifactRepository = new InMemoryArtifactRepository();
     artifactFiles = new FakeArtifactFiles();
     artifactFiles.files.set('/worktrees/n/7/.aisf/artifacts/plan/index.html', '<p>hi</p>');
     tokens = ['T', 'U'];
+    events = new FakeEventPublisher();
+    artifactIdsAtEmit = [];
     publish = new PublishArtifactUseCase({
       artifactRepository,
       artifactFiles,
+      events: {
+        emit: (...emitted) => {
+          events.emit(...emitted);
+          artifactIdsAtEmit.push(
+            artifactRepository
+              .listForTicket('o/n', 7)
+              .then((artifacts) => artifacts.map(({ artifactId }) => artifactId)),
+          );
+        },
+      },
       identifiers: { next: () => tokens.shift() ?? 'spare' },
       clock: new FakeClock('2026-10-06T10:00:00.000Z'),
     });
@@ -68,5 +83,24 @@ describe('PublishArtifactUseCase', () => {
 
     await expect(publish.execute(request)).rejects.toThrow(ArtifactNotFoundError);
     expect(await artifactRepository.listForTicket('o/n', 7)).toEqual([]);
+  });
+
+  it('should emit artifact.published once the artifact is listed when it is published', async () => {
+    await publish.execute(request);
+
+    expect(events.emittedEvents).toEqual([
+      {
+        name: 'artifact.published',
+        payload: { projectId: 'o/n', ticketNumber: 7, artifactId: 'plan' },
+      },
+    ]);
+    expect(await artifactIdsAtEmit[0]).toEqual(['plan']);
+  });
+
+  it('should not emit when index.html is missing', async () => {
+    artifactFiles.files.clear();
+
+    await expect(publish.execute(request)).rejects.toThrow(ArtifactNotFoundError);
+    expect(events.emittedEvents).toEqual([]);
   });
 });

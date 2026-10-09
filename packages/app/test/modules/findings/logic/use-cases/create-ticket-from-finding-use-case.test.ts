@@ -3,6 +3,7 @@ import { TicketCreationFailedError } from '../../../../../src/modules/findings/l
 import { FindingNotFoundError } from '../../../../../src/modules/findings/logic/errors/finding-not-found-error.js';
 import { FindingNotOpenError } from '../../../../../src/modules/findings/logic/errors/finding-not-open-error.js';
 import { CreateTicketFromFindingUseCase } from '../../../../../src/modules/findings/logic/use-cases/create-ticket-from-finding-use-case.js';
+import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
 import { FakeProjectLookup, FakeTicketCreator } from '../../fakes/fake-findings-ports.js';
 import { InMemoryFindingRepository } from '../../fakes/in-memory-finding-repository.js';
 
@@ -20,16 +21,28 @@ describe('CreateTicketFromFindingUseCase', () => {
   let findingRepository: InMemoryFindingRepository;
   let ticketCreator: FakeTicketCreator;
   let createTicketFromFinding: CreateTicketFromFindingUseCase;
+  let events: FakeEventPublisher;
+  let statesAtEmit: Array<Promise<string | undefined>>;
 
   beforeEach(async () => {
     findingRepository = new InMemoryFindingRepository();
     ticketCreator = new FakeTicketCreator();
+    events = new FakeEventPublisher();
+    statesAtEmit = [];
     createTicketFromFinding = new CreateTicketFromFindingUseCase({
       findingRepository,
+      events: {
+        emit: (...emitted) => {
+          events.emit(...emitted);
+          statesAtEmit.push(findingRepository.findById(3).then((found) => found?.state));
+        },
+      },
       ticketCreator,
       projectLookup: new FakeProjectLookup(),
       clock: { now: () => '2026-09-29T11:00:00.000Z' },
     });
+    await findingRepository.insert(newFinding);
+    await findingRepository.insert(newFinding);
     await findingRepository.insert(newFinding);
   });
 
@@ -91,5 +104,26 @@ describe('CreateTicketFromFindingUseCase', () => {
       FindingNotFoundError,
     );
     expect(ticketCreator.createdTickets).toEqual([]);
+  });
+
+  it('should emit finding.changed while creating and again when ticketed when GitHub succeeds', async () => {
+    await createTicketFromFinding.execute('moritz/aisf', 3);
+
+    const payload = { projectId: 'moritz/aisf', ticketNumber: 141, findingId: 3 };
+    expect(events.emittedEvents).toEqual([
+      { name: 'finding.changed', payload },
+      { name: 'finding.changed', payload },
+    ]);
+    expect(await Promise.all(statesAtEmit)).toEqual(['creating', 'ticketed']);
+  });
+
+  it('should emit finding.changed after the release when GitHub fails', async () => {
+    ticketCreator.error = new TicketCreationFailedError('rate limited');
+
+    await expect(createTicketFromFinding.execute('moritz/aisf', 3)).rejects.toThrow(
+      TicketCreationFailedError,
+    );
+
+    expect(await Promise.all(statesAtEmit)).toEqual(['creating', 'open']);
   });
 });

@@ -1,3 +1,4 @@
+import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
 import type { Clock } from '../../../../shared/clock/clock.js';
 import type { Identifiers } from '../../../../shared/identifiers/identifiers.js';
 import { artifactDirectoryFor } from '../domain/functions/artifact-directory-for.js';
@@ -18,6 +19,7 @@ export type PublishArtifactRequest = {
 export type PublishArtifactDependencies = {
   readonly artifactRepository: ArtifactRepository;
   readonly artifactFiles: ArtifactFiles;
+  readonly events: EventPublisher;
   readonly identifiers: Identifiers;
   readonly clock: Clock;
 };
@@ -26,14 +28,14 @@ export class PublishArtifactUseCase {
   constructor(private readonly dependencies: PublishArtifactDependencies) {}
 
   async execute(request: PublishArtifactRequest): Promise<Artifact> {
-    const { artifactRepository, artifactFiles, identifiers, clock } = this.dependencies;
+    const { artifactRepository, artifactFiles, events, identifiers, clock } = this.dependencies;
     const directory = artifactDirectoryFor(request.worktreePath, request.artifactId);
     if (!(await artifactFiles.hasIndex(directory))) {
       throw new ArtifactNotFoundError(
         `The artifact "${request.artifactId}" has no index.html in .aisf/artifacts/${request.artifactId}/`,
       );
     }
-    return artifactRepository.publish({
+    const artifact = await artifactRepository.publish({
       token: identifiers.next(),
       projectId: request.projectId,
       ticketNumber: request.ticketNumber,
@@ -43,5 +45,11 @@ export class PublishArtifactUseCase {
       runId: request.runId,
       publishedAt: clock.now(),
     });
+    events.emit('artifact.published', {
+      projectId: request.projectId,
+      ticketNumber: request.ticketNumber,
+      artifactId: request.artifactId,
+    });
+    return artifact;
   }
 }

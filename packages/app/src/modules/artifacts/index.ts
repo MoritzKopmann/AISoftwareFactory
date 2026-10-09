@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import type { EventPublisher } from '../../shared/bus/event-publisher.js';
 import type { Clock } from '../../shared/clock/clock.js';
 import type { Identifiers } from '../../shared/identifiers/identifiers.js';
 import type { RunTool } from '../runner/index.js';
@@ -29,6 +30,7 @@ export type ArtifactsModuleDependencies = {
   readonly artifactFiles: ArtifactFiles;
   readonly ticketRunLookup: TicketRunLookup;
   readonly checkpointAnswers: CheckpointAnswers;
+  readonly events: EventPublisher;
   readonly identifiers: Identifiers;
   readonly clock: Clock;
 };
@@ -46,6 +48,7 @@ export function createArtifactsModule(dependencies: ArtifactsModuleDependencies)
     artifactFiles,
     ticketRunLookup,
     checkpointAnswers,
+    events,
     identifiers,
     clock,
   } = dependencies;
@@ -53,6 +56,7 @@ export function createArtifactsModule(dependencies: ArtifactsModuleDependencies)
   const publishArtifact = new PublishArtifactUseCase({
     artifactRepository,
     artifactFiles,
+    events,
     identifiers,
     clock,
   });

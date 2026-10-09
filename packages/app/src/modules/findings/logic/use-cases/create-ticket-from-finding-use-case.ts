@@ -1,3 +1,4 @@
+import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
 import type { Clock } from '../../../../shared/clock/clock.js';
 import { describeFindingIssue } from '../domain/functions/describe-finding-issue.js';
 import type { Finding } from '../domain/types/finding.js';
@@ -11,6 +12,7 @@ export type CreateTicketFromFindingDependencies = {
   readonly findingRepository: FindingRepository;
   readonly ticketCreator: TicketCreator;
   readonly projectLookup: ProjectLookup;
+  readonly events: EventPublisher;
   readonly clock: Clock;
 };
 
@@ -18,7 +20,7 @@ export class CreateTicketFromFindingUseCase {
   constructor(private readonly dependencies: CreateTicketFromFindingDependencies) {}
 
   async execute(projectId: string, findingId: number): Promise<Finding> {
-    const { findingRepository, ticketCreator, projectLookup, clock } = this.dependencies;
+    const { findingRepository, ticketCreator, projectLookup, events, clock } = this.dependencies;
 
     const finding = await findingRepository.findById(findingId);
     if (finding?.projectId !== projectId) {
@@ -33,6 +35,14 @@ export class CreateTicketFromFindingUseCase {
       throw new FindingNotOpenError(`Finding ${findingId} is not open`);
     }
 
+    const announce = (): void =>
+      events.emit('finding.changed', {
+        projectId,
+        ticketNumber: finding.ticketNumber,
+        findingId,
+      });
+    announce();
+
     let createdTicketNumber: number;
     try {
       createdTicketNumber = await ticketCreator.create(
@@ -41,11 +51,13 @@ export class CreateTicketFromFindingUseCase {
       );
     } catch (error) {
       await findingRepository.releaseClaim(findingId);
+      announce();
       throw error;
     }
 
     const resolvedAt = clock.now();
     await findingRepository.markTicketed(findingId, createdTicketNumber, resolvedAt);
+    announce();
     return { ...finding, state: 'ticketed', createdTicketNumber, resolvedAt };
   }
 }

@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { InMemorySkillsStatusStore } from '../../../src/modules/skills/infra/integrations/in-memory-skills-status-store.js';
+import { FakeEventPublisher } from '../../fakes/fake-event-publisher.js';
 import { createSkillsModule } from '../../../src/modules/skills/index.js';
 import { SkillsSetupError } from '../../../src/modules/skills/logic/errors/skills-setup-error.js';
 import {
@@ -17,6 +19,7 @@ function createSubject() {
   const slotReader = new FakeSlotReader();
   const localPluginInstaller = new FakeLocalPluginInstaller();
   const credentialSource = new FakeCredentialSource();
+  const statusStore = new InMemorySkillsStatusStore();
   const skills = createSkillsModule({
     pluginMirror: new FakePluginMirror(),
     marketplaceRegistry: new FakeMarketplaceRegistry(mirrorDirectory),
@@ -25,8 +28,10 @@ function createSubject() {
     slotReader,
     localPluginInstaller,
     credentialSource,
+    statusStore,
+    events: new FakeEventPublisher(),
   });
-  return { skills, smokeProbe, slotReader, localPluginInstaller, credentialSource };
+  return { skills, smokeProbe, slotReader, localPluginInstaller, credentialSource, statusStore };
 }
 
 describe('createSkillsModule', () => {
@@ -70,6 +75,16 @@ describe('createSkillsModule', () => {
         blocked: true,
         reason: 'Runs would bill ANTHROPIC_API_KEY, not your Claude login. Unset it to run.',
       });
+    });
+
+    it('should return the reason determineRunsBlocked gives when the store holds a failed status', () => {
+      const { skills, statusStore } = createSubject();
+      statusStore.save(
+        { state: 'failed', reason: 'probe broke' },
+        { setEnvironmentVariables: [], apiKeyHelperFiles: [] },
+      );
+
+      expect(skills.runsBlocked()).toEqual({ blocked: true, reason: 'probe broke' });
     });
 
     it('should not block runs when only CLAUDE_CODE_OAUTH_TOKEN is set', async () => {
@@ -149,6 +164,8 @@ describe('createSkillsModule', () => {
         slotReader: new FakeSlotReader(),
         localPluginInstaller,
         credentialSource: new FakeCredentialSource(),
+        statusStore: new InMemorySkillsStatusStore(),
+        events: new FakeEventPublisher(),
       });
 
       const startPromise = blockedSkills.start();

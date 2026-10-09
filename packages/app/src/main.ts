@@ -24,6 +24,7 @@ import { ClaudeCliSmokeProbe } from './modules/skills/infra/integrations/claude-
 import { EnvironmentCredentialSource } from './modules/skills/infra/integrations/environment-credential-source.js';
 import { FileSystemPluginMirror } from './modules/skills/infra/integrations/file-system-plugin-mirror.js';
 import { FileSystemSlotReader } from './modules/skills/infra/integrations/file-system-slot-reader.js';
+import { InMemorySkillsStatusStore } from './modules/skills/infra/integrations/in-memory-skills-status-store.js';
 import { createSkillsModule, type SkillsModule } from './modules/skills/index.js';
 import { ClaudeAgentSdkRunTranscripts } from './modules/runner/infra/integrations/claude-agent-sdk-run-transcripts.js';
 import { ClaudeAgentSdkSessions } from './modules/runner/infra/integrations/claude-agent-sdk-sessions.js';
@@ -79,6 +80,7 @@ function buildArtifactsModule(
   database: DatabaseSync,
   runner: Pick<RunnerModule, 'latestRun'>,
   checkpointAnswers: CheckpointAnswers,
+  events: EventPublisher,
 ): ArtifactsModule {
   return createArtifactsModule({
     kitDirectory,
@@ -88,6 +90,7 @@ function buildArtifactsModule(
       latest: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber),
     },
     checkpointAnswers,
+    events,
     identifiers: new RandomUuidIdentifiers(),
     clock: new SystemClock(),
   });
@@ -111,7 +114,11 @@ function buildProjectsModule(
   });
 }
 
-function buildSkillsModule(config: Config, pluginDirectory: string): SkillsModule {
+function buildSkillsModule(
+  config: Config,
+  pluginDirectory: string,
+  events: EventPublisher,
+): SkillsModule {
   return createSkillsModule({
     pluginMirror: new FileSystemPluginMirror({
       sourceDirectory: pluginDirectory,
@@ -129,6 +136,8 @@ function buildSkillsModule(config: Config, pluginDirectory: string): SkillsModul
       environment: process.env,
       projectDirectory: process.cwd(),
     }),
+    statusStore: new InMemorySkillsStatusStore(),
+    events,
   });
 }
 
@@ -159,7 +168,11 @@ function buildWatcherModule(
   });
 }
 
-function buildFindingsModule(database: DatabaseSync, projects: ProjectsModule): FindingsModule {
+function buildFindingsModule(
+  database: DatabaseSync,
+  projects: ProjectsModule,
+  events: EventPublisher,
+): FindingsModule {
   return createFindingsModule({
     findingRepository: new SqliteFindingRepository(database),
     ticketCreator: new GhCliTicketCreator(),
@@ -169,6 +182,7 @@ function buildFindingsModule(database: DatabaseSync, projects: ProjectsModule): 
         return project === undefined ? undefined : { repository: project.repository };
       },
     },
+    events,
     clock: new SystemClock(),
   });
 }
@@ -319,14 +333,14 @@ const database = openDatabase(config.databasePath);
 runMigrations(database, migrations);
 const eventBus = new TypedEventBus<AisfEventMap>();
 
-const skills = buildSkillsModule(config, pluginDirectory);
+const skills = buildSkillsModule(config, pluginDirectory, eventBus);
 const projects = buildProjectsModule(database, eventBus, skills, logger);
 // The watcher is built before the runner, which needs watcher.ticket, so the lookup binds late.
 const watcher = buildWatcherModule(config, eventBus, projects, {
   activeRunTicketNumbers: async (projectId) =>
     (await runner.activeRuns(projectId)).map(({ run }) => run.ticketNumber),
 });
-const findings = buildFindingsModule(database, projects);
+const findings = buildFindingsModule(database, projects, eventBus);
 // The artifacts module needs runner.latestRun and the runner needs its tools, so the lookup binds late.
 // The same goes for scheduler.answer, which delivers a page's event.
 const artifacts: ArtifactsModule = buildArtifactsModule(
@@ -345,6 +359,7 @@ const artifacts: ArtifactsModule = buildArtifactsModule(
       }
     },
   },
+  eventBus,
 );
 const runner = buildRunnerModule(
   config,
