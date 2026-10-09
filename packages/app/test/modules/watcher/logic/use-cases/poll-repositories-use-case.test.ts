@@ -388,4 +388,148 @@ describe('PollRepositoriesUseCase', () => {
       expect(seen[0]?.writeCount).toBe(0);
     });
   });
+
+  describe('watch.updated payload', () => {
+    const later = '2026-09-28T12:00:30.000Z';
+
+    function announcements(allEvents: {
+      emittedEvents: ReadonlyArray<{ name: string; payload: unknown }>;
+    }) {
+      return allEvents.emittedEvents
+        .filter((event) => event.name === 'watch.updated')
+        .map((event) => event.payload);
+    }
+
+    async function pollTwice(prepare?: (subject: ReturnType<typeof createSubject>) => void) {
+      const subject = createSubject();
+      const [firstWatch] = await subject.useCase.execute([buildWatch('owner/name')]);
+      subject.clock.setNow(later);
+      prepare?.(subject);
+      await subject.useCase.execute([firstWatch as RepositoryWatch]);
+      return { ...subject, firstWatch: firstWatch as RepositoryWatch };
+    }
+
+    it('should emit changed false and the clock time when nothing changed', async () => {
+      const { allEvents } = await pollTwice();
+
+      expect(announcements(allEvents).at(-1)).toEqual({
+        projectId: 'owner/name',
+        changed: false,
+        polledAt: later,
+      });
+    });
+
+    it('should emit changed true when a ticket differs, is new or is gone', async () => {
+      for (const tickets of [
+        [buildTicket({ number: 1, status: 'ready' })],
+        [buildTicket({ number: 1 }), buildTicket({ number: 2 })],
+        [],
+      ]) {
+        const { allEvents } = await pollTwice(({ issueFeeds, ticketSource }) => {
+          issueFeeds.changed = true;
+          ticketSource.snapshotToReturn = buildSnapshot(later, tickets);
+        });
+
+        expect(announcements(allEvents).at(-1)).toMatchObject({ changed: true });
+      }
+    });
+
+    it('should emit changed true when the first poll finds no tickets in a pending watch', async () => {
+      const { useCase, ticketSource, allEvents } = createSubject();
+      ticketSource.snapshotToReturn = buildSnapshot(startedAt, []);
+
+      await useCase.execute([buildWatch('owner/name')]);
+
+      expect(announcements(allEvents)).toEqual([
+        { projectId: 'owner/name', changed: true, polledAt: startedAt },
+      ]);
+    });
+
+    it('should emit changed true when the first poll after start finds tickets', async () => {
+      const { useCase, allEvents } = createSubject();
+
+      await useCase.execute([buildWatch('owner/name')]);
+
+      expect(announcements(allEvents)).toMatchObject([{ changed: true }]);
+    });
+
+    it('should emit changed true when the poll recovers from a failure with the same tickets', async () => {
+      const { useCase, allEvents, firstWatch } = await pollTwice();
+      const failedWatch: RepositoryWatch = {
+        ...firstWatch,
+        sync: {
+          state: 'failed',
+          cause: 'unavailable',
+          message: 'down',
+          failedAt: startedAt,
+          snapshotTakenAt: startedAt,
+        },
+      };
+
+      await useCase.execute([failedWatch]);
+
+      expect(announcements(allEvents).at(-1)).toMatchObject({ changed: true });
+    });
+
+    it('should emit changed true when a failure or a rate-limit pause starts', async () => {
+      const failing = await pollTwice(({ issueFeeds }) => {
+        issueFeeds.failure = new GitHubRequestError('down');
+      });
+      const limited = await pollTwice(({ issueFeeds }) => {
+        issueFeeds.failure = new GitHubRateLimitedError(
+          'limited',
+          new Date('2026-09-28T12:10:00.000Z'),
+        );
+      });
+
+      expect(announcements(failing.allEvents).at(-1)).toMatchObject({ changed: true });
+      expect(announcements(limited.allEvents).at(-1)).toMatchObject({ changed: true });
+    });
+
+    it('should emit changed false when the same rate-limit pause repeats', async () => {
+      const subject = createSubject();
+      subject.issueFeeds.failure = new GitHubRateLimitedError(
+        'limited',
+        new Date('2026-09-28T12:10:00.000Z'),
+      );
+      const [pausedWatch] = await subject.useCase.execute([buildWatch('owner/name')]);
+      subject.clock.setNow(later);
+
+      await subject.useCase.execute([pausedWatch as RepositoryWatch]);
+
+      expect(announcements(subject.allEvents).at(-1)).toEqual({
+        projectId: 'owner/name',
+        changed: false,
+        polledAt: later,
+      });
+    });
+
+    it('should emit changed true when a different failure follows', async () => {
+      const subject = createSubject();
+      subject.issueFeeds.failure = new GitHubRequestError('first');
+      const [failedWatch] = await subject.useCase.execute([buildWatch('owner/name')]);
+      subject.issueFeeds.failure = new GitHubRequestError('second');
+      subject.clock.setNow(later);
+
+      await subject.useCase.execute([failedWatch as RepositoryWatch]);
+
+      expect(announcements(subject.allEvents).at(-1)).toMatchObject({ changed: true });
+    });
+
+    it('should emit changed true when pruning removes an unconfirmed status write', async () => {
+      const subject = createSubject();
+      const [firstWatch] = await subject.useCase.execute([buildWatch('owner/name')]);
+      subject.watchStore.saveStatusWrite('owner/name', {
+        ticketNumber: 1,
+        from: 'stuck',
+        to: 'ready',
+        writtenAt: startedAt,
+      });
+      subject.clock.setNow('2026-09-28T12:01:01.000Z');
+
+      await subject.useCase.execute([firstWatch as RepositoryWatch]);
+
+      expect(announcements(subject.allEvents).at(-1)).toMatchObject({ changed: true });
+    });
+  });
 });

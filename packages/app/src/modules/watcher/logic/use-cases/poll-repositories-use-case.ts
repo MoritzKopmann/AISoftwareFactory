@@ -4,6 +4,7 @@ import { diffSnapshots } from '../domain/functions/diff-snapshots.js';
 import { failWatch } from '../domain/functions/fail-watch.js';
 import { findRateLimitGate } from '../domain/functions/find-rate-limit-gate.js';
 import { hasSnapshotChanges } from '../domain/functions/has-snapshot-changes.js';
+import { hasWatchChanged } from '../domain/functions/has-watch-changed.js';
 import { pruneStatusWrites } from '../domain/functions/prune-status-writes.js';
 import { shouldTakeSnapshot } from '../domain/functions/should-take-snapshot.js';
 import type { RateLimitGate } from '../domain/types/rate-limit-gate.js';
@@ -30,7 +31,10 @@ export class PollRepositoriesUseCase {
 
   async execute(): Promise<void> {
     const { watchStore, clock, events } = this.dependencies;
-    for (const watch of await this.pollAll(watchStore.watches())) {
+    const previousWatches = watchStore.watches();
+    for (const watch of await this.pollAll(previousWatches)) {
+      const previous = previousWatches.find(({ projectId }) => projectId === watch.projectId);
+      const writesBefore = watchStore.statusWrites(watch.projectId).length;
       watchStore.saveWatch(watch);
       if (watch.snapshot !== undefined) {
         watchStore.replaceStatusWrites(
@@ -38,7 +42,12 @@ export class PollRepositoriesUseCase {
           pruneStatusWrites(watchStore.statusWrites(watch.projectId), watch.snapshot, clock.now()),
         );
       }
-      events.emit('watch.updated', { projectId: watch.projectId });
+      const pruned = watchStore.statusWrites(watch.projectId).length < writesBefore;
+      events.emit('watch.updated', {
+        projectId: watch.projectId,
+        changed: pruned || previous === undefined || hasWatchChanged(previous, watch),
+        polledAt: clock.now(),
+      });
     }
   }
 

@@ -1,6 +1,7 @@
 import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
 import type { Clock } from '../../../../shared/clock/clock.js';
 import { failWatch } from '../domain/functions/fail-watch.js';
+import { hasWatchChanged } from '../domain/functions/has-watch-changed.js';
 import type { WatchStore } from '../ports/watch-store.js';
 
 export type FailWatchesDependencies = {
@@ -17,8 +18,13 @@ export class FailWatchesUseCase {
     const failedAt = clock.now();
     const message = error instanceof Error ? error.message : String(error);
     for (const watch of watchStore.watches()) {
-      watchStore.saveWatch(failWatch(watch, { cause: 'unexpected', message, failedAt }));
-      events.emit('watch.updated', { projectId: watch.projectId });
+      const failedWatch = failWatch(watch, { cause: 'unexpected', message, failedAt });
+      watchStore.saveWatch(failedWatch);
+      events.emit('watch.updated', {
+        projectId: watch.projectId,
+        changed: hasWatchChanged(watch, failedWatch),
+        polledAt: clock.now(),
+      });
     }
   }
 }
