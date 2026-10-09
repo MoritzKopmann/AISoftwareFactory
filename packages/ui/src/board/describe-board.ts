@@ -50,7 +50,10 @@ function describeBanner(
         message: `The watcher hasn't picked up ${projectId} yet. The board appears after its next poll.`,
       };
     case 'request-failed':
-      return { tone: 'warn', message: "Can't reach aisf. The board tries again every 5 s." };
+      return {
+        tone: 'warn',
+        message: "Can't reach aisf. The board retries when something changes, or on Retry.",
+      };
     case 'ok':
       return state.response === undefined
         ? undefined

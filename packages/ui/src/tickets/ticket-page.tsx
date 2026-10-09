@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import type { LiveUpdates } from '../live/live-updates.js';
+import { useLiveRead } from '../live/use-live-read.js';
 import { KnownBugs } from '../findings/known-bugs.js';
 import {
   describeTicketPage,
@@ -10,67 +12,62 @@ import { outcomeAfterRefresh } from './outcome-after-refresh.js';
 import { RunSection } from './run-section.js';
 import { RunLog } from './run-log.js';
 import { TicketBodySection } from './ticket-body-section.js';
+import { ticketLiveView } from './ticket-live-view.js';
 
 type TicketPageProps = {
+  readonly liveUpdates: LiveUpdates;
   readonly id: string;
   readonly number: number;
 };
 
-export function TicketPage({ id, number }: TicketPageProps) {
+export function TicketPage({ liveUpdates, id, number }: TicketPageProps) {
   const [outcome, setOutcome] = useState<TicketPageOutcome>({ kind: 'loading' });
 
-  const read = useCallback(async (): Promise<TicketPageOutcome> => {
-    try {
-      const response = await fetch(`/api/projects/${id}/tickets/${number}`);
-      return await outcomeFromAnswer(response.status, () => response.json());
-    } catch (error) {
-      return {
-        kind: 'request-failed',
-        message: error instanceof Error ? error.message : String(error),
-      };
-    }
-  }, [id, number]);
-
-  const load = useCallback(async () => {
-    setOutcome({ kind: 'loading' });
-    setOutcome(await read());
-  }, [read]);
-
-  const refresh = useCallback(() => {
-    void read().then((refreshed) => {
-      setOutcome((shown) => outcomeAfterRefresh(shown, refreshed));
-    });
-  }, [read]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { retry } = useLiveRead(
+    liveUpdates,
+    ticketLiveView(id, number, outcome),
+    async (): Promise<TicketPageOutcome> => {
+      try {
+        const response = await fetch(`/api/projects/${id}/tickets/${number}`);
+        return await outcomeFromAnswer(response.status, () => response.json());
+      } catch (error) {
+        return {
+          kind: 'request-failed',
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+    (refreshed) => setOutcome((shown) => outcomeAfterRefresh(shown, refreshed)),
+  );
 
   return (
     <TicketPageView
+      liveUpdates={liveUpdates}
       projectId={id}
       number={number}
       description={describeTicketPage(outcome, id, number, Date.now())}
-      onRetry={() => void load()}
-      onTicketStale={refresh}
+      onRetry={() => {
+        setOutcome({ kind: 'loading' });
+        retry();
+      }}
     />
   );
 }
 
 type TicketPageViewProps = {
+  readonly liveUpdates: LiveUpdates;
   readonly projectId: string;
   readonly number: number;
   readonly description: TicketPageDescription;
   readonly onRetry: () => void;
-  readonly onTicketStale: () => void;
 };
 
 export function TicketPageView({
+  liveUpdates,
   projectId,
   number,
   description,
   onRetry,
-  onTicketStale,
 }: TicketPageViewProps) {
   return (
     <main className="page" aria-busy={description.kind === 'loading' ? 'true' : undefined}>
@@ -119,7 +116,7 @@ export function TicketPageView({
           projectId={projectId}
           number={number}
           description={description}
-          onTicketStale={onTicketStale}
+          liveUpdates={liveUpdates}
         />
       )}
     </main>
@@ -144,15 +141,15 @@ function TicketSkeleton() {
 }
 
 function LoadedTicket({
+  liveUpdates,
   projectId,
   number,
   description,
-  onTicketStale,
 }: {
+  readonly liveUpdates: LiveUpdates;
   readonly projectId: string;
   readonly number: number;
   readonly description: Extract<TicketPageDescription, { kind: 'loaded' }>;
-  readonly onTicketStale: () => void;
 }) {
   const { statusMark, parent, pullRequests } = description;
   return (
@@ -178,11 +175,11 @@ function LoadedTicket({
         </div>
       </div>
       <RunSection
+        liveUpdates={liveUpdates}
         projectId={projectId}
         number={number}
         ticketStatus={description.status}
         runSkill={description.runSkill}
-        onTicketStale={onTicketStale}
       />
       <dl className="facts">
         {parent !== undefined && (
@@ -213,7 +210,7 @@ function LoadedTicket({
           </dd>
         )}
       </dl>
-      <KnownBugs projectId={projectId} ticketNumber={number} />
+      <KnownBugs liveUpdates={liveUpdates} projectId={projectId} ticketNumber={number} />
       <RunLog projectId={projectId} number={number} />
       <TicketBodySection body={description.body} />
     </>

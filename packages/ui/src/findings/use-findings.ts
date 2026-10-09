@@ -1,35 +1,27 @@
-import { useCallback, useEffect, useState } from 'react';
-import { poll } from '../shared/poll.js';
+import { useState } from 'react';
+import type { LiveUpdates } from '../live/live-updates.js';
+import { useLiveRead } from '../live/use-live-read.js';
 import { fetchFindings } from './fetch-findings.js';
-import { findingsPollIntervalMilliseconds } from './findings-poll-interval-milliseconds.js';
 import { foldFindingsPoll, initialFindingsPoll, type FindingsPoll } from './fold-findings-poll.js';
 
 export function useFindings(
+  liveUpdates: LiveUpdates,
   projectId: string,
   ticketNumber?: number,
 ): {
   readonly findingsPoll: FindingsPoll;
-  readonly readNow: () => void;
+  readonly retry: () => void;
 } {
   const [findingsPoll, setFindingsPoll] = useState<FindingsPoll>(initialFindingsPoll);
-  const [readCount, setReadCount] = useState(0);
 
-  // A new read count restarts the poll, and a poll reads at once when it starts.
-  useEffect(
-    () =>
-      poll(
-        () => fetchFindings(projectId, (url) => fetch(url), ticketNumber),
-        (outcome) => {
-          setFindingsPoll((previous) =>
-            foldFindingsPoll(previous, outcome, new Date().toISOString()),
-          );
-        },
-        findingsPollIntervalMilliseconds,
-      ),
-    [projectId, ticketNumber, readCount],
+  const { retry } = useLiveRead(
+    liveUpdates,
+    { kind: 'findings', projectId, ...(ticketNumber === undefined ? {} : { ticketNumber }) },
+    () => fetchFindings(projectId, (url) => fetch(url), ticketNumber),
+    (outcome) => {
+      setFindingsPoll((previous) => foldFindingsPoll(previous, outcome, new Date().toISOString()));
+    },
   );
 
-  const readNow = useCallback(() => setReadCount((count) => count + 1), []);
-
-  return { findingsPoll, readNow };
+  return { findingsPoll, retry };
 }

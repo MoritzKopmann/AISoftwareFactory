@@ -1,3 +1,4 @@
+import type { LiveUpdates } from '../live/live-updates.js';
 import type { ProjectResponse } from '@aisf/app/api-schemas/projects-schemas.js';
 import { Board, BoardSkeleton } from '../board/board.js';
 import { describeBoard } from '../board/describe-board.js';
@@ -10,11 +11,12 @@ import { Banner } from '../shared/banner.js';
 import { ContractReport } from './contract-report.js';
 
 type ProjectPageProps = {
+  readonly liveUpdates: LiveUpdates;
   readonly id: string;
   readonly project: ProjectResponse | undefined;
 };
 
-export function ProjectPage({ id, project }: ProjectPageProps) {
+export function ProjectPage({ liveUpdates, id, project }: ProjectPageProps) {
   if (project === undefined) {
     return (
       <main className="page">
@@ -22,11 +24,17 @@ export function ProjectPage({ id, project }: ProjectPageProps) {
       </main>
     );
   }
-  return <RegisteredProjectPage project={project} />;
+  return <RegisteredProjectPage liveUpdates={liveUpdates} project={project} />;
 }
 
-function RegisteredProjectPage({ project }: { readonly project: ProjectResponse }) {
-  const { state, now } = useProjectBoard(project.id);
+function RegisteredProjectPage({
+  liveUpdates,
+  project,
+}: {
+  readonly liveUpdates: LiveUpdates;
+  readonly project: ProjectResponse;
+}) {
+  const { state, now } = useProjectBoard(liveUpdates, project.id);
   const board = describeBoard(state, project.id, now);
   const skeletonVisible = useGatedSkeleton(board.loading);
   const { banner, updatedAt } = board;
@@ -72,7 +80,7 @@ function RegisteredProjectPage({ project }: { readonly project: ProjectResponse 
             )}
           </>
         )}
-        <KnownBugs projectId={project.id} />
+        <KnownBugs liveUpdates={liveUpdates} projectId={project.id} />
       </main>
     </>
   );

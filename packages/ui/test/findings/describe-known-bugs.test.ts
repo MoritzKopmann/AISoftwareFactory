@@ -193,7 +193,8 @@ describe('describeKnownBugs', () => {
 
     expect(listedIds(description)).toEqual([3]);
     expect(description).toMatchObject({
-      banner: "Can't reach aisf. Showing the list from 09:41; trying again every 5 s.",
+      banner:
+        "Can't reach aisf. Showing the list from 09:41; retrying when something changes, or on Retry.",
     });
   });
 

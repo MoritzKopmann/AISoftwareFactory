@@ -8,6 +8,7 @@ import {
   type KnownBugsDescription,
 } from './describe-known-bugs.js';
 import { dismissFinding } from './dismiss-finding.js';
+import type { LiveUpdates } from '../live/live-updates.js';
 import { useFindings } from './use-findings.js';
 
 const skeletonLineWidths: ReadonlyArray<readonly [string, string]> = [
@@ -230,12 +231,13 @@ export function KnownBugsSection({
 }
 
 type KnownBugsProps = {
+  readonly liveUpdates: LiveUpdates;
   readonly projectId: string;
   readonly ticketNumber?: number;
 };
 
-export function KnownBugs({ projectId, ticketNumber }: KnownBugsProps) {
-  const { findingsPoll, readNow } = useFindings(projectId, ticketNumber);
+export function KnownBugs({ liveUpdates, projectId, ticketNumber }: KnownBugsProps) {
+  const { findingsPoll, retry } = useFindings(liveUpdates, projectId, ticketNumber);
   const [showAll, setShowAll] = useState(false);
   const [presses, setPresses] = useState<ReadonlyMap<number, FindingPress>>(new Map());
   const description = describeKnownBugs(findingsPoll, presses, projectId, showAll, ticketNumber);
@@ -275,7 +277,7 @@ export function KnownBugs({ projectId, ticketNumber }: KnownBugsProps) {
     <KnownBugsSection
       description={description}
       skeletonVisible={skeletonVisible}
-      onRetry={readNow}
+      onRetry={retry}
       onShowAll={() => setShowAll(true)}
       onCreateTicket={(findingId) => void createTicket(findingId)}
       onDismiss={(findingId) => void dismiss(findingId)}
