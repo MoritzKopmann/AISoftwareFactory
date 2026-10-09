@@ -55,4 +55,31 @@ export type AisfEventMap = {
     readonly from: TicketStatus;
     readonly to: TicketStatus;
   };
+  readonly 'run.started': {
+    readonly runId: string;
+    readonly projectId: string;
+    readonly ticketNumber: number;
+  };
+  readonly 'run.step-added': {
+    readonly runId: string;
+    readonly projectId: string;
+    readonly ticketNumber: number;
+  };
+  readonly 'run.wait-cleared': {
+    readonly runId: string;
+    readonly projectId: string;
+    readonly ticketNumber: number;
+  };
+  readonly 'finding.changed': {
+    readonly projectId: string;
+    readonly ticketNumber: number;
+    readonly findingId: number;
+  };
+  readonly 'artifact.published': {
+    readonly projectId: string;
+    readonly ticketNumber: number;
+    readonly artifactId: string;
+  };
+  readonly 'watch.updated': { readonly projectId: string };
+  readonly 'skills.status-changed': Readonly<Record<never, never>>;
 };
