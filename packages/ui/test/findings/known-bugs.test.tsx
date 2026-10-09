@@ -72,6 +72,23 @@ describe('KnownBugsSection', () => {
     expect(markup).toContain('>Failed to fetch<');
   });
 
+  it('should say when the list loads again between the message and Retry when the first fetch failed', () => {
+    const markup = render({
+      kind: 'error',
+      message: "Couldn't load known bugs. Can't reach aisf.",
+      detail: 'Failed to fetch',
+    });
+
+    const positions = [
+      'Can&#x27;t reach aisf.',
+      'Loads again on the next change, or on Retry.',
+      '>Retry<',
+      '>Failed to fetch<',
+    ].map((part) => markup.indexOf(part));
+    expect(positions.every((position) => position >= 0)).toBe(true);
+    expect(positions).toEqual([...positions].sort((first, second) => first - second));
+  });
+
   it('should show the label, 0 and None without a toggle when empty', () => {
     const markup = render({ kind: 'empty' });
 
@@ -117,6 +134,14 @@ describe('KnownBugsSection', () => {
     expect(markup).toContain('>packages/app/src/retry-policy.ts:42<');
     expect(markup).not.toContain('from');
     expect(markup).not.toContain('tickets/56');
+  });
+
+  it('should put a Retry button under the banner message when a later poll failed', () => {
+    const markup = render({ ...list, banner: "Can't reach aisf. Showing the list from 09:41." });
+
+    expect(markup).toMatch(
+      /class="inline-banner".*<p class="sm">Can&#x27;t reach aisf\. Showing the list from 09:41\.<\/p><button[^>]*>Retry<\/button><\/div>/,
+    );
   });
 
   it('should render neither a banner nor a footer when the description has none', () => {

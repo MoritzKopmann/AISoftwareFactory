@@ -166,7 +166,7 @@ export function describeKnownBugs(
     ),
     ...(poll.failure !== undefined && poll.answeredAt !== undefined
       ? {
-          banner: `Can't reach aisf. Showing the list from ${formatClockTime(poll.answeredAt, 'minutes')}; retrying when something changes, or on Retry.`,
+          banner: `Can't reach aisf. Showing the list from ${formatClockTime(poll.answeredAt, 'minutes')}. Loads again on the next change, or on Retry.`,
         }
       : {}),
     ...(cut ? { footer: `Showing ${firstRowCount} of ${listed.length}.` } : {}),

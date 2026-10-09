@@ -136,6 +136,7 @@ export function KnownBugsSection({
             ■
           </span>
           <p>{description.message}</p>
+          <p className="sm">Loads again on the next change, or on Retry.</p>
           <button className="btn" type="button" onClick={onRetry}>
             Retry
           </button>
@@ -180,6 +181,9 @@ export function KnownBugsSection({
               ▲
             </span>
             <p className="sm">{banner}</p>
+            <button className="btn" type="button" onClick={onRetry}>
+              Retry
+            </button>
           </div>
         )}
         <ul className="finding-list">
