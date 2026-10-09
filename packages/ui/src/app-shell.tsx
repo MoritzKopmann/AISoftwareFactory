@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ProjectResponse } from '@aisf/app/api-schemas/projects-schemas.js';
 import { createLiveUpdates } from './live/create-live-updates.js';
+import { OfflineHint } from './live/offline-hint.js';
 import { SkillsStatusPanel } from './skills/skills-status-panel.js';
 import { parseAppRoute, type AppRoute } from './app-route.js';
 import { ProjectSidebar } from './projects/project-sidebar.js';
@@ -105,6 +106,7 @@ export function AppShell() {
     <div className="shell">
       <ProjectSidebar projects={projects} route={route} />
       <div className="main">
+        <OfflineHint liveUpdates={liveUpdates} />
         <SkillsStatusPanel liveUpdates={liveUpdates} />
         {renderPage()}
       </div>

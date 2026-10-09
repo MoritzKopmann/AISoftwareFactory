@@ -490,6 +490,25 @@ a.ext::after {
   --c: var(--info);
 }
 
+.offline-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 6px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-strong);
+  box-shadow: inset 4px 0 0 var(--warn);
+}
+
+.offline-hint .shape {
+  color: var(--warn);
+}
+
+.offline-hint .label {
+  color: var(--text);
+}
+
 .cmd {
   display: flex;
   align-items: center;
