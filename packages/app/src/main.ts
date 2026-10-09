@@ -64,6 +64,7 @@ import { createApp } from './server/create-app.js';
 import { startServer } from './server/start-server.js';
 import type { EventPublisher } from './shared/bus/event-publisher.js';
 import type { EventSubscriber } from './shared/bus/event-subscriber.js';
+import { createLiveNoticeRoutes } from './shared/http/create-live-notice-routes.js';
 import { TypedEventBus } from './shared/bus/typed-event-bus.js';
 import type { AisfEventMap } from './shared/bus/aisf-event-map.js';
 import type { Config } from './shared/config/load-config.js';
@@ -384,6 +385,7 @@ const runningServer = await startServer({
       scheduler.routes,
       runner.routes,
       artifacts.routes,
+      createLiveNoticeRoutes(eventBus),
     ],
   }),
   port: config.port,
