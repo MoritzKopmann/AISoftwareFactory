@@ -9,6 +9,7 @@ type BannerProps = {
   readonly hint?: string;
   readonly detail?: string;
   readonly pulses?: boolean;
+  readonly onRetry?: () => void;
 };
 
 const toneShapes: Readonly<Record<BannerTone, string>> = {
@@ -17,7 +18,15 @@ const toneShapes: Readonly<Record<BannerTone, string>> = {
   danger: '■',
 };
 
-export function Banner({ tone, message, command, hint, detail, pulses = false }: BannerProps) {
+export function Banner({
+  tone,
+  message,
+  command,
+  hint,
+  detail,
+  pulses = false,
+  onRetry,
+}: BannerProps) {
   return (
     <div className={`banner ${tone}`} role={tone === 'danger' ? 'alert' : 'status'}>
       <span className={pulses ? 'shape pulse' : 'shape'} aria-hidden="true">
@@ -26,6 +35,11 @@ export function Banner({ tone, message, command, hint, detail, pulses = false }:
       <p>{message}</p>
       {command !== undefined && <CommandBlock command={command} />}
       {hint !== undefined && <p className="sm">{hint}</p>}
+      {onRetry !== undefined && (
+        <button className="btn" type="button" onClick={onRetry}>
+          Retry
+        </button>
+      )}
       {detail !== undefined && <p className="sm mono">{detail}</p>}
     </div>
   );

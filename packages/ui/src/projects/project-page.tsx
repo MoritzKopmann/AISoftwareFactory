@@ -34,14 +34,16 @@ function RegisteredProjectPage({
   readonly liveUpdates: LiveUpdates;
   readonly project: ProjectResponse;
 }) {
-  const { state, now } = useProjectBoard(liveUpdates, project.id);
+  const { state, now, retry } = useProjectBoard(liveUpdates, project.id);
   const board = describeBoard(state, project.id, now);
   const skeletonVisible = useGatedSkeleton(board.loading);
   const { banner, updatedAt } = board;
 
   return (
     <>
-      {banner !== undefined && <Banner {...banner} />}
+      {banner !== undefined && (
+        <Banner {...banner} {...(banner.retryable === true && { onRetry: retry })} />
+      )}
       <main className="page">
         <div className="page-head">
           <h1>{project.repository.name}</h1>

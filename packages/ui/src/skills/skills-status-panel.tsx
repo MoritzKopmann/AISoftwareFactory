@@ -9,7 +9,7 @@ export function SkillsStatusPanel({ liveUpdates }: { readonly liveUpdates: LiveU
   const [status, setStatus] = useState<SkillsStatusResponse | undefined>(undefined);
   const [loadFailed, setLoadFailed] = useState(false);
 
-  useLiveRead(
+  const { retry } = useLiveRead(
     liveUpdates,
     { kind: 'skills' },
     () => fetchSkillsStatus((url) => fetch(url)),
@@ -24,7 +24,13 @@ export function SkillsStatusPanel({ liveUpdates }: { readonly liveUpdates: LiveU
   );
 
   if (loadFailed) {
-    return <Banner tone="danger" message="The skills status could not be loaded." />;
+    return (
+      <Banner
+        tone="danger"
+        message="The skills status could not be loaded. Loads again on the next change, or on Retry."
+        onRetry={retry}
+      />
+    );
   }
   if (status === undefined) {
     return null;

@@ -69,6 +69,7 @@ describe('describeBoard', () => {
       now,
     );
     expect(description.banner).toMatchObject({ tone: 'warn', detail: 'GitHub is down.' });
+    expect(description.banner).not.toHaveProperty('retryable');
     expect(description.updatedAt).toBe('old snapshot');
     expect(description.rows).toHaveLength(1);
     expect(description.loading).toBe(false);
@@ -112,7 +113,8 @@ describe('describeBoard', () => {
     );
     expect(description.banner).toEqual({
       tone: 'warn',
-      message: "Can't reach aisf. The board retries when something changes, or on Retry.",
+      message: "Can't reach aisf. Loads again on the next change, or on Retry.",
+      retryable: true,
     });
     expect(description.updatedAt).toBe('checked');
     expect(description.rows).toHaveLength(1);
@@ -131,7 +133,7 @@ describe('describeBoard', () => {
       now,
     );
     expect(description.banner?.message).toBe(
-      "Can't reach aisf. The board retries when something changes, or on Retry.",
+      "Can't reach aisf. Loads again on the next change, or on Retry.",
     );
   });
 
