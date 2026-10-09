@@ -7,7 +7,6 @@ import { describeBoard } from '../../src/board/describe-board.js';
 import { initialBoardState, type BoardState } from '../../src/board/fold-board-outcome.js';
 import { buildTicketResponse } from './fixtures/ticket-response.js';
 
-const now = new Date('2026-09-28T10:00:00.000Z');
 const okSync = { state: 'ok', checkedAt: 'checked', snapshotTakenAt: 'snapshot' } as const;
 
 function buildRow(
@@ -31,7 +30,7 @@ function answered(response: ProjectBoardResponse): BoardState {
 
 describe('describeBoard', () => {
   it('should be loading without a banner or an updated time before the first answer', () => {
-    const description = describeBoard(initialBoardState, 'o/n', now);
+    const description = describeBoard(initialBoardState, 'o/n');
     expect(description).toEqual({ loading: true, rows: [], runningTicketNumbers: [] });
   });
 
@@ -39,13 +38,12 @@ describe('describeBoard', () => {
     const description = describeBoard(
       answered({ projectId: 'o/n', sync: { state: 'pending' }, runningTicketNumbers: [] }),
       'o/n',
-      now,
     );
     expect(description).toEqual({ loading: true, rows: [], runningTicketNumbers: [] });
   });
 
   it('should take the checked time as the updated time when the sync is ok', () => {
-    const description = describeBoard(answered(buildBoard([buildRow('ready', 1)])), 'o/n', now);
+    const description = describeBoard(answered(buildBoard([buildRow('ready', 1)])), 'o/n');
     expect(description.updatedAt).toBe('checked');
     expect(description.loading).toBe(false);
     expect(description.banner).toBeUndefined();
@@ -66,7 +64,6 @@ describe('describeBoard', () => {
         board: { rows: [buildRow('ready', 2)] },
       }),
       'o/n',
-      now,
     );
     expect(description.banner).toMatchObject({ tone: 'warn', detail: 'GitHub is down.' });
     expect(description.banner).not.toHaveProperty('retryable');
@@ -83,7 +80,6 @@ describe('describeBoard', () => {
         sync: { state: 'failed', cause: 'auth', message: 'Run gh auth login.', failedAt: 'f' },
       }),
       'o/n',
-      now,
     );
     expect(description.banner?.command).toBe('gh auth login');
     expect(description.updatedAt).toBeUndefined();
@@ -92,11 +88,7 @@ describe('describeBoard', () => {
   });
 
   it('should raise the info banner over the loading state when the watcher does not know the project', () => {
-    const description = describeBoard(
-      { response: undefined, connection: 'not-watched' },
-      'o/n',
-      now,
-    );
+    const description = describeBoard({ response: undefined, connection: 'not-watched' }, 'o/n');
     expect(description.banner).toEqual({
       tone: 'info',
       message: "The watcher hasn't picked up o/n yet. The board appears after its next poll.",
@@ -109,7 +101,6 @@ describe('describeBoard', () => {
     const description = describeBoard(
       { response: buildBoard([buildRow('ready', 1)]), connection: 'request-failed' },
       'o/n',
-      now,
     );
     expect(description.banner).toEqual({
       tone: 'warn',
@@ -130,7 +121,6 @@ describe('describeBoard', () => {
     const description = describeBoard(
       { response: failedSync, connection: 'request-failed' },
       'o/n',
-      now,
     );
     expect(description.banner?.message).toBe(
       "Can't reach aisf. Loads again on the next change, or on Retry.",
@@ -141,7 +131,6 @@ describe('describeBoard', () => {
     const description = describeBoard(
       answered(buildBoard([buildRow('idea', 0), buildRow('closed', 0)])),
       'o/n',
-      now,
     );
     expect(description.emptyMessage).toBe('No tickets in o/n yet.');
     expect(description.rows).toEqual([]);
@@ -152,7 +141,6 @@ describe('describeBoard', () => {
     const description = describeBoard(
       answered(buildBoard([buildRow('idea', 0), buildRow('ready', 1)])),
       'o/n',
-      now,
     );
     expect(description.emptyMessage).toBeUndefined();
     expect(description.rows[0]).toMatchObject({ key: 'idea', label: 'Idea', countLabel: '0' });
@@ -162,17 +150,12 @@ describe('describeBoard', () => {
     const description = describeBoard(
       answered(buildBoard([buildRow('ready', 1), buildRow('idea', 1)])),
       'o/n',
-      now,
     );
     expect(description.rows.map((row) => row.key)).toEqual(['ready', 'idea']);
   });
 
   it('should read "50 of 340", collapse it and flag the truncation when Closed is truncated', () => {
-    const description = describeBoard(
-      answered(buildBoard([buildRow('closed', 50, 340)])),
-      'o/n',
-      now,
-    );
+    const description = describeBoard(answered(buildBoard([buildRow('closed', 50, 340)])), 'o/n');
     const closedRow = description.rows[0];
     expect(closedRow?.countLabel).toBe('50 of 340');
     expect(closedRow?.collapsedByDefault).toBe(true);
@@ -183,7 +166,6 @@ describe('describeBoard', () => {
     const description = describeBoard(
       answered(buildBoard([buildRow('ready', 1), buildRow('closed', 1)])),
       'o/n',
-      now,
     );
     expect(description.rows.map((row) => row.collapsedByDefault)).toEqual([false, true]);
   });
@@ -192,14 +174,13 @@ describe('describeBoard', () => {
     const description = describeBoard(
       answered(buildBoard([buildRow('conflict', 1), buildRow('closed', 50, 340)])),
       'o/n',
-      now,
     );
     expect(description.rows[0]).not.toHaveProperty('warning');
     expect(description.rows[1]).not.toHaveProperty('truncatedNote');
   });
 
   it('should show a plain count and no truncation when nothing is cut', () => {
-    const description = describeBoard(answered(buildBoard([buildRow('ready', 3)])), 'o/n', now);
+    const description = describeBoard(answered(buildBoard([buildRow('ready', 3)])), 'o/n');
     expect(description.rows[0]?.countLabel).toBe('3');
     expect(description.rows[0]?.truncated).toBe(false);
   });
@@ -208,8 +189,39 @@ describe('describeBoard', () => {
     const description = describeBoard(
       answered({ ...buildBoard([buildRow('in-progress', 2)]), runningTicketNumbers: [2, 3] }),
       'o/n',
-      now,
     );
     expect(description.runningTicketNumbers).toEqual([2, 3]);
+  });
+
+  describe('updatedAt with a kept poll time', () => {
+    const t0 = '2026-09-28T10:00:00.000Z';
+    const t1 = '2026-09-28T10:05:00.000Z';
+    const board = (sync: ProjectBoardResponse['sync']): BoardState =>
+      answered({ ...buildBoard([buildRow('ready', 1)]), sync });
+
+    it('should follow the poll time when it is later than the checked time and the sync is ok', () => {
+      const sync = { state: 'ok', checkedAt: t0, snapshotTakenAt: t0 } as const;
+      expect(describeBoard(board(sync), 'o/n', t1).updatedAt).toBe(t1);
+    });
+
+    it('should keep the checked time when the poll time is earlier', () => {
+      const sync = { state: 'ok', checkedAt: t1, snapshotTakenAt: t1 } as const;
+      expect(describeBoard(board(sync), 'o/n', t0).updatedAt).toBe(t1);
+    });
+
+    it('should keep the snapshot time when the sync failed, whatever the poll time', () => {
+      const sync = {
+        state: 'failed',
+        cause: 'auth',
+        message: 'm',
+        failedAt: t1,
+        snapshotTakenAt: t0,
+      } as const;
+      expect(describeBoard(board(sync), 'o/n', t1).updatedAt).toBe(t0);
+    });
+
+    it('should show no time when the sync is pending, whatever the poll time', () => {
+      expect(describeBoard(board({ state: 'pending' }), 'o/n', t1).updatedAt).toBeUndefined();
+    });
   });
 });

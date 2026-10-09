@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TicketResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
+import { formatClockTime } from '../../src/board/format-clock-time.js';
 import {
   describeTicketPage,
   outcomeFromAnswer,
@@ -11,7 +12,6 @@ import {
 } from '../board/fixtures/ticket-response.js';
 
 const projectId = 'MoritzKopmann/postkarte';
-const now = Date.parse('2026-09-28T12:00:00Z');
 
 function answered(ticket: TicketResponse): TicketPageOutcome {
   return {
@@ -60,14 +60,14 @@ function failedSync(failure: {
 
 describe('describeTicketPage', () => {
   it('should name the ticket in a loading label when the request is in flight', () => {
-    expect(describeTicketPage({ kind: 'loading' }, projectId, 46, now)).toEqual({
+    expect(describeTicketPage({ kind: 'loading' }, projectId, 46)).toEqual({
       kind: 'loading',
       loadingLabel: 'Loading #46…',
     });
   });
 
   it('should name the ticket and the project without a retry when the ticket is not found', () => {
-    expect(describeTicketPage({ kind: 'not-found' }, projectId, 999, now)).toEqual({
+    expect(describeTicketPage({ kind: 'not-found' }, projectId, 999)).toEqual({
       kind: 'not-found',
       message: "#999 isn't a ticket in MoritzKopmann/postkarte.",
     });
@@ -81,7 +81,7 @@ describe('describeTicketPage', () => {
       status: 'closed',
     });
 
-    expect(describeTicketPage(answered(ticket), projectId, 36, now)).toEqual({
+    expect(describeTicketPage(answered(ticket), projectId, 36)).toEqual({
       kind: 'loaded',
       numberLabel: '#36',
       title: 'Envelope flip animation',
@@ -98,7 +98,7 @@ describe('describeTicketPage', () => {
   it('should pass the ticket body on when the ticket loads', () => {
     const ticket = buildTicketResponse({ body: '## Spec\n\nText' });
 
-    expect(describeTicketPage(answered(ticket), projectId, 1, now)).toMatchObject({
+    expect(describeTicketPage(answered(ticket), projectId, 1)).toMatchObject({
       body: '## Spec\n\nText',
     });
   });
@@ -106,7 +106,7 @@ describe('describeTicketPage', () => {
   it('should run the spike skill when the ticket types include spike', () => {
     const ticket = buildTicketResponse({ types: ['spike'] });
 
-    expect(describeTicketPage(answered(ticket), projectId, 1, now)).toMatchObject({
+    expect(describeTicketPage(answered(ticket), projectId, 1)).toMatchObject({
       runSkill: 'spike',
     });
   });
@@ -114,7 +114,7 @@ describe('describeTicketPage', () => {
   it('should run implement-ticket when the ticket types do not include spike', () => {
     const ticket = buildTicketResponse({ types: ['enhancement'] });
 
-    expect(describeTicketPage(answered(ticket), projectId, 1, now)).toMatchObject({
+    expect(describeTicketPage(answered(ticket), projectId, 1)).toMatchObject({
       runSkill: 'implement-ticket',
     });
   });
@@ -122,7 +122,7 @@ describe('describeTicketPage', () => {
   it('should pass the raw status on when the ticket loads', () => {
     const ticket = buildTicketResponse({ status: 'stuck' });
 
-    expect(describeTicketPage(answered(ticket), projectId, 1, now)).toMatchObject({
+    expect(describeTicketPage(answered(ticket), projectId, 1)).toMatchObject({
       status: 'stuck',
     });
   });
@@ -130,7 +130,7 @@ describe('describeTicketPage', () => {
   it('should link the parent to its in-app ticket page when the ticket has a parent', () => {
     const ticket = buildTicketResponse({ parent: { number: 40, title: 'Small-screen polish' } });
 
-    const description = describeTicketPage(answered(ticket), projectId, 1, now);
+    const description = describeTicketPage(answered(ticket), projectId, 1);
 
     expect(description).toMatchObject({
       parent: {
@@ -149,7 +149,7 @@ describe('describeTicketPage', () => {
       ],
     });
 
-    const description = describeTicketPage(answered(ticket), projectId, 1, now);
+    const description = describeTicketPage(answered(ticket), projectId, 1);
 
     expect(description).toMatchObject({
       pullRequests: [
@@ -164,7 +164,6 @@ describe('describeTicketPage', () => {
       { kind: 'request-failed', message: 'Failed to fetch' },
       projectId,
       36,
-      now,
     );
 
     expect(description).toEqual({
@@ -179,7 +178,6 @@ describe('describeTicketPage', () => {
       failedSync({ cause: 'unavailable', message: 'gh: HTTP 504 Gateway Timeout' }),
       projectId,
       36,
-      now,
     );
 
     expect(description).toEqual({
@@ -189,39 +187,31 @@ describe('describeTicketPage', () => {
     });
   });
 
-  it('should count the minutes until the retry rounded up when the sync is rate-limited', () => {
+  it('should show the retry time of day when the sync is rate-limited', () => {
+    const retryAt = '2026-09-28T12:02:10Z';
     const description = describeTicketPage(
-      failedSync({
-        cause: 'rate-limited',
-        message: 'API rate limit exceeded',
-        retryAt: '2026-09-28T12:02:10Z',
-      }),
+      failedSync({ cause: 'rate-limited', message: 'API rate limit exceeded', retryAt }),
       projectId,
       36,
-      now,
     );
 
     expect(description).toEqual({
       kind: 'failed',
-      message: "Couldn't load #36. GitHub rate limit reached; resuming in 3 min.",
+      message: `Couldn't load #36. GitHub rate limit reached; resuming at ${formatClockTime(retryAt, 'minutes')}.`,
       detail: 'API rate limit exceeded',
     });
   });
 
-  it('should say resuming in 1 min when the retry time has passed', () => {
+  it('should still show the retry time when it has passed', () => {
+    const retryAt = '2026-09-28T11:59:00Z';
     const description = describeTicketPage(
-      failedSync({
-        cause: 'rate-limited',
-        message: 'limit',
-        retryAt: '2026-09-28T11:59:00Z',
-      }),
+      failedSync({ cause: 'rate-limited', message: 'limit', retryAt }),
       projectId,
       36,
-      now,
     );
 
     expect(description).toMatchObject({
-      message: "Couldn't load #36. GitHub rate limit reached; resuming in 1 min.",
+      message: `Couldn't load #36. GitHub rate limit reached; resuming at ${formatClockTime(retryAt, 'minutes')}.`,
     });
   });
 
@@ -230,7 +220,6 @@ describe('describeTicketPage', () => {
       failedSync({ cause: 'rate-limited', message: 'limit' }),
       projectId,
       36,
-      now,
     );
 
     expect(description).toMatchObject({
@@ -243,7 +232,6 @@ describe('describeTicketPage', () => {
       failedSync({ cause: 'auth', message: 'You are not logged in' }),
       projectId,
       36,
-      now,
     );
 
     expect(description).toEqual({
@@ -259,7 +247,6 @@ describe('describeTicketPage', () => {
       failedSync({ cause: 'unexpected', message: 'boom' }),
       projectId,
       36,
-      now,
     );
 
     expect(description).toEqual({
@@ -284,7 +271,7 @@ describe('describeTicketPage', () => {
       },
     };
 
-    expect(describeTicketPage(outcome, projectId, 7, now)).toMatchObject({
+    expect(describeTicketPage(outcome, projectId, 7)).toMatchObject({
       kind: 'loaded',
       numberLabel: '#7',
     });
@@ -293,7 +280,7 @@ describe('describeTicketPage', () => {
   it('should carry the pulsing mark when the ticket is in progress', () => {
     const ticket = buildTicketResponse({ status: 'in-progress' });
 
-    const description = describeTicketPage(answered(ticket), projectId, 1, now);
+    const description = describeTicketPage(answered(ticket), projectId, 1);
 
     expect(description).toMatchObject({
       statusLabel: 'In progress',

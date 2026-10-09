@@ -1,5 +1,6 @@
 import type { SyncStatusResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
 import type { BannerTone } from '../shared/banner.js';
+import { formatClockTime } from './format-clock-time.js';
 
 export type SyncFailureDescription = {
   readonly tone: BannerTone;
@@ -9,30 +10,22 @@ export type SyncFailureDescription = {
   readonly detail?: string;
 };
 
-const millisecondsPerMinute = 60_000;
 const refreshFailurePrefix = "Couldn't refresh the board.";
 
-function describeRateLimit(retryAt: string | undefined, now: Date): SyncFailureDescription {
+function describeRateLimit(retryAt: string | undefined): SyncFailureDescription {
   if (retryAt === undefined) {
     return {
       tone: 'warn',
       message: `${refreshFailurePrefix} GitHub rate limit reached; the watcher tries again at its next poll.`,
     };
   }
-  const minutesUntilRetry = Math.max(
-    1,
-    Math.ceil((Date.parse(retryAt) - now.getTime()) / millisecondsPerMinute),
-  );
   return {
     tone: 'warn',
-    message: `${refreshFailurePrefix} GitHub rate limit reached; resuming in ${minutesUntilRetry} min.`,
+    message: `${refreshFailurePrefix} GitHub rate limit reached; resuming at ${formatClockTime(retryAt, 'minutes')}.`,
   };
 }
 
-export function describeSyncFailure(
-  sync: SyncStatusResponse,
-  now: Date,
-): SyncFailureDescription | undefined {
+export function describeSyncFailure(sync: SyncStatusResponse): SyncFailureDescription | undefined {
   if (sync.state !== 'failed') {
     return undefined;
   }
@@ -46,7 +39,7 @@ export function describeSyncFailure(
         detail: sync.message,
       };
     case 'rate-limited':
-      return describeRateLimit(sync.retryAt, now);
+      return describeRateLimit(sync.retryAt);
     case 'unavailable':
       return {
         tone: 'warn',

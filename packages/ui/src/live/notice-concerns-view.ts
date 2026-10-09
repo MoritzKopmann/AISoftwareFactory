@@ -15,6 +15,7 @@ export function noticeConcernsView(notice: LiveNotice, view: LiveView): boolean 
 
   switch (notice.event) {
     case 'watch.updated':
+      if (notice.changed === false) return false;
       return (
         view.kind === 'board' || view.kind === 'run' || (view.kind === 'ticket' && !view.closed)
       );
