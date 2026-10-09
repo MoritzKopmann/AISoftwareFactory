@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createReportFindingTool } from '../../../../../src/modules/findings/api/tools/create-report-finding-tool.js';
 import { ReportFindingUseCase } from '../../../../../src/modules/findings/logic/use-cases/report-finding-use-case.js';
+import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
 import { InMemoryFindingRepository } from '../../fakes/in-memory-finding-repository.js';
 
 const runContext = {
@@ -20,6 +21,7 @@ describe('createReportFindingTool', () => {
     tool = createReportFindingTool(
       new ReportFindingUseCase({
         findingRepository,
+        events: new FakeEventPublisher(),
         clock: { now: () => '2026-09-29T10:00:00.000Z' },
       }),
     );

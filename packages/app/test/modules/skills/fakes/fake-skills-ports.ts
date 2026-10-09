@@ -71,11 +71,16 @@ export class FakeSmokeProbe implements SmokeProbe {
 }
 
 export class FakeCredentialSource implements CredentialSource {
+  blocker: Promise<void> | undefined;
+
   constructor(
     public snapshot: CredentialSnapshot = { setEnvironmentVariables: [], apiKeyHelperFiles: [] },
   ) {}
 
   async read(): Promise<CredentialSnapshot> {
+    if (this.blocker !== undefined) {
+      await this.blocker;
+    }
     return this.snapshot;
   }
 }

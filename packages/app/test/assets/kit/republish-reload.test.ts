@@ -12,6 +12,7 @@ import { ReadPageStatusUseCase } from '../../../src/modules/artifacts/logic/use-
 import { ReadPageUseCase } from '../../../src/modules/artifacts/logic/use-cases/read-page-use-case.js';
 import { SubmitPageEventUseCase } from '../../../src/modules/artifacts/logic/use-cases/submit-page-event-use-case.js';
 import { WritePageUserInputStateUseCase } from '../../../src/modules/artifacts/logic/use-cases/write-page-user-input-state-use-case.js';
+import { FakeEventPublisher } from '../../fakes/fake-event-publisher.js';
 import { FakeClock } from '../../fakes/fake-clock.js';
 import { FakeArtifactFiles } from '../../modules/artifacts/fakes/fake-artifact-files.js';
 import { FakeCheckpointAnswers } from '../../modules/artifacts/fakes/fake-checkpoint-answers.js';
@@ -37,6 +38,7 @@ describe('a republished page', () => {
     const publishArtifact = new PublishArtifactUseCase({
       artifactRepository,
       artifactFiles,
+      events: new FakeEventPublisher(),
       identifiers: { next: () => 'T' },
       clock: new FakeClock('2026-10-06T10:00:00.000Z'),
     });

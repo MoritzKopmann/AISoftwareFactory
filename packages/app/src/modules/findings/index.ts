@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import type { EventPublisher } from '../../shared/bus/event-publisher.js';
 import type { Clock } from '../../shared/clock/clock.js';
 import type { RunTool } from '../runner/index.js';
 import { createFindingsRoutes } from './api/routes/create-findings-routes.js';
@@ -15,6 +16,7 @@ export type FindingsModuleDependencies = {
   readonly findingRepository: FindingRepository;
   readonly ticketCreator: TicketCreator;
   readonly projectLookup: ProjectLookup;
+  readonly events: EventPublisher;
   readonly clock: Clock;
 };
 
@@ -24,17 +26,18 @@ export type FindingsModule = {
 };
 
 export function createFindingsModule(dependencies: FindingsModuleDependencies): FindingsModule {
-  const { findingRepository, ticketCreator, projectLookup, clock } = dependencies;
+  const { findingRepository, ticketCreator, projectLookup, events, clock } = dependencies;
 
-  const reportFinding = new ReportFindingUseCase({ findingRepository, clock });
+  const reportFinding = new ReportFindingUseCase({ findingRepository, events, clock });
   const listFindings = new ListFindingsUseCase({ findingRepository });
   const createTicketFromFinding = new CreateTicketFromFindingUseCase({
     findingRepository,
     ticketCreator,
     projectLookup,
+    events,
     clock,
   });
-  const dismissFinding = new DismissFindingUseCase({ findingRepository, clock });
+  const dismissFinding = new DismissFindingUseCase({ findingRepository, events, clock });
 
   return {
     tools: [createReportFindingTool(reportFinding)],

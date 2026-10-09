@@ -1,3 +1,4 @@
+import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
 import type { Clock } from '../../../../shared/clock/clock.js';
 import type { Finding } from '../domain/types/finding.js';
 import { FindingNotFoundError } from '../errors/finding-not-found-error.js';
@@ -6,6 +7,7 @@ import type { FindingRepository } from '../ports/finding-repository.js';
 
 export type DismissFindingDependencies = {
   readonly findingRepository: FindingRepository;
+  readonly events: EventPublisher;
   readonly clock: Clock;
 };
 
@@ -13,7 +15,7 @@ export class DismissFindingUseCase {
   constructor(private readonly dependencies: DismissFindingDependencies) {}
 
   async execute(projectId: string, findingId: number): Promise<Finding> {
-    const { findingRepository, clock } = this.dependencies;
+    const { findingRepository, events, clock } = this.dependencies;
 
     const finding = await findingRepository.findById(findingId);
     if (finding?.projectId !== projectId) {
@@ -26,6 +28,11 @@ export class DismissFindingUseCase {
       throw new FindingNotOpenError(`Finding ${findingId} is already ${finding.state}`);
     }
 
+    events.emit('finding.changed', {
+      projectId,
+      ticketNumber: finding.ticketNumber,
+      findingId,
+    });
     return { ...finding, state: 'dismissed', resolvedAt };
   }
 }

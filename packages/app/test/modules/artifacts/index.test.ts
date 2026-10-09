@@ -3,6 +3,7 @@ import {
   createArtifactsModule,
   type ArtifactsModule,
 } from '../../../src/modules/artifacts/index.js';
+import { FakeEventPublisher } from '../../fakes/fake-event-publisher.js';
 import { FakeClock } from '../../fakes/fake-clock.js';
 import { buildArtifact } from './fakes/build-artifact.js';
 import { FakeArtifactFiles } from './fakes/fake-artifact-files.js';
@@ -24,6 +25,7 @@ describe('createArtifactsModule', () => {
       artifactFiles,
       ticketRunLookup: new FakeTicketRunLookup(),
       checkpointAnswers: new FakeCheckpointAnswers(),
+      events: new FakeEventPublisher(),
       identifiers: { next: () => 'T' },
       clock: new FakeClock('2026-10-06T10:00:00.000Z'),
     });

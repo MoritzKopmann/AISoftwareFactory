@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createFindingsModule, type FindingsModule } from '../../../src/modules/findings/index.js';
+import { FakeEventPublisher } from '../../fakes/fake-event-publisher.js';
 import { InMemoryFindingRepository } from './fakes/in-memory-finding-repository.js';
 import { FakeProjectLookup, FakeTicketCreator } from './fakes/fake-findings-ports.js';
 
@@ -20,6 +21,7 @@ describe('createFindingsModule', () => {
       findingRepository: new InMemoryFindingRepository(),
       ticketCreator,
       projectLookup: new FakeProjectLookup(),
+      events: new FakeEventPublisher(),
       clock: { now: () => '2026-09-29T10:00:00.000Z' },
     });
     await findings.tools[0]?.execute(

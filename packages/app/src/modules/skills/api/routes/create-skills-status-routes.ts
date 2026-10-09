@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
-import type { SkillsStatus } from '../../logic/domain/types/skills-status.js';
+import type { ReadSkillsStatusUseCase } from '../../logic/use-cases/read-skills-status-use-case.js';
 
-export function createSkillsStatusRoutes(getStatus: () => SkillsStatus): Hono {
-  return new Hono().get('/status', (context) => context.json(getStatus()));
+export function createSkillsStatusRoutes(readSkillsStatus: ReadSkillsStatusUseCase): Hono {
+  return new Hono().get('/status', (context) => context.json(readSkillsStatus.execute()));
 }

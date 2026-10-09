@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createShowArtifactTool } from '../../../../../src/modules/artifacts/api/tools/create-show-artifact-tool.js';
 import { PublishArtifactUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/publish-artifact-use-case.js';
+import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
 import { FakeClock } from '../../../../fakes/fake-clock.js';
 import { textResult } from '../../../runner/fakes/text-result.js';
 import { FakeArtifactFiles } from '../../fakes/fake-artifact-files.js';
@@ -26,6 +27,7 @@ describe('createShowArtifactTool', () => {
       new PublishArtifactUseCase({
         artifactRepository,
         artifactFiles,
+        events: new FakeEventPublisher(),
         identifiers: { next: () => 'a1b2c3-token' },
         clock: new FakeClock('2026-10-06T10:00:00.000Z'),
       }),
