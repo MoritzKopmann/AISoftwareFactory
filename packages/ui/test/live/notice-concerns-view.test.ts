@@ -21,6 +21,14 @@ const skills: LiveView = { kind: 'skills' };
 const on = (event: LiveNotice['event'], ticketNumber?: number): LiveNotice =>
   ticketNumber === undefined ? { event, projectId: p } : { event, projectId: p, ticketNumber };
 
+const noChange = (): LiveNotice => ({
+  event: 'watch.updated',
+  projectId: p,
+  changed: false,
+  polledAt: '2026-09-28T10:00:00.000Z',
+});
+const changed = (): LiveNotice => ({ ...noChange(), changed: true });
+
 describe('noticeConcernsView', () => {
   it.each<[string, LiveNotice, LiveView, boolean]>([
     ['watch.updated', on('watch.updated'), board(), true],
@@ -46,6 +54,16 @@ describe('noticeConcernsView', () => {
     ['skills.status-changed', { event: 'skills.status-changed' }, run(), true],
     ['snapshot.changed', on('snapshot.changed'), board(), false],
     ['project.added', on('project.added'), board(), false],
+    ['watch.updated no-change', noChange(), board(), false],
+    ['watch.updated no-change', noChange(), ticket(false), false],
+    ['watch.updated no-change', noChange(), run(), false],
+    ['watch.updated changed', changed(), board(), true],
+    ['watch.updated changed', changed(), ticket(false), true],
+    ['watch.updated changed', changed(), run(), true],
+    ['watch.updated changed', changed(), ticket(true), false],
+    ['watch.updated changed', changed(), findings(), false],
+    ['watch.updated changed', changed(), artifacts(), false],
+    ['watch.updated changed', changed(), skills, false],
   ])('should map %s to the view as expected', (_name, notice, view, expected) => {
     expect(noticeConcernsView(notice, view)).toBe(expected);
   });

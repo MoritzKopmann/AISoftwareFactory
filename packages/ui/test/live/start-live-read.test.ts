@@ -132,4 +132,18 @@ describe('startLiveRead', () => {
     expect(outcomes).toEqual([]);
     expect(pending).toHaveLength(1);
   });
+
+  it('should not read again when a no-change watch.updated notice arrives', async () => {
+    const { liveUpdates, pending, settle } = build({ kind: 'board', projectId: 'octo/repo' });
+    await settle(0, 1);
+
+    liveUpdates.notice({
+      event: 'watch.updated',
+      projectId: 'octo/repo',
+      changed: false,
+      polledAt: '2026-09-28T10:00:00.000Z',
+    });
+
+    expect(pending).toHaveLength(1);
+  });
 });

@@ -34,8 +34,8 @@ function RegisteredProjectPage({
   readonly liveUpdates: LiveUpdates;
   readonly project: ProjectResponse;
 }) {
-  const { state, now, retry } = useProjectBoard(liveUpdates, project.id);
-  const board = describeBoard(state, project.id, now);
+  const { state, now, polledAt, retry } = useProjectBoard(liveUpdates, project.id);
+  const board = describeBoard(state, project.id, polledAt);
   const skeletonVisible = useGatedSkeleton(board.loading);
   const { banner, updatedAt } = board;
 

@@ -40,11 +40,7 @@ function describeRow(row: BoardRowResponse): BoardRowDescription {
   };
 }
 
-function describeBanner(
-  state: BoardState,
-  projectId: string,
-  now: Date,
-): BoardBannerDescription | undefined {
+function describeBanner(state: BoardState, projectId: string): BoardBannerDescription | undefined {
   switch (state.connection) {
     case 'not-watched':
       return {
@@ -58,16 +54,16 @@ function describeBanner(
         retryable: true,
       };
     case 'ok':
-      return state.response === undefined
-        ? undefined
-        : describeSyncFailure(state.response.sync, now);
+      return state.response === undefined ? undefined : describeSyncFailure(state.response.sync);
   }
 }
 
-function readUpdatedAt(sync: SyncStatusResponse): string | undefined {
+function readUpdatedAt(sync: SyncStatusResponse, polledAt: string | undefined): string | undefined {
   switch (sync.state) {
     case 'ok':
-      return sync.checkedAt;
+      return polledAt !== undefined && Date.parse(polledAt) > Date.parse(sync.checkedAt)
+        ? polledAt
+        : sync.checkedAt;
     case 'failed':
       return sync.snapshotTakenAt;
     case 'pending':
@@ -75,11 +71,15 @@ function readUpdatedAt(sync: SyncStatusResponse): string | undefined {
   }
 }
 
-export function describeBoard(state: BoardState, projectId: string, now: Date): BoardDescription {
-  const banner = describeBanner(state, projectId, now);
+export function describeBoard(
+  state: BoardState,
+  projectId: string,
+  polledAt?: string,
+): BoardDescription {
+  const banner = describeBanner(state, projectId);
   const bannerPart = banner === undefined ? {} : { banner };
   const response = state.response;
-  const updatedAt = response === undefined ? undefined : readUpdatedAt(response.sync);
+  const updatedAt = response === undefined ? undefined : readUpdatedAt(response.sync, polledAt);
   const updatedAtPart = updatedAt === undefined ? {} : { updatedAt };
   const shared = { ...bannerPart, ...updatedAtPart };
   const board = response?.board;

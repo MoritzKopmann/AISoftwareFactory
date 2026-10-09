@@ -5,6 +5,7 @@ import type {
   TicketStatusResponse,
 } from '@aisf/app/api-schemas/tickets-schemas.js';
 import { describeTicketStatusMark, type StatusMark } from '../board/describe-ticket-status-mark.js';
+import { formatClockTime } from '../board/format-clock-time.js';
 import { ticketStatusLabel } from '../board/ticket-status-labels.js';
 import type { RunSkill } from './describe-run-bar.js';
 
@@ -91,10 +92,7 @@ type FailureCause = { readonly cause: string; readonly command?: string };
 
 const unexpectedCause = 'The watcher hit an unexpected error; see the aisf log.';
 
-function describeSyncCause(
-  sync: Extract<SyncStatusResponse, { state: 'failed' }>,
-  now: number,
-): FailureCause {
+function describeSyncCause(sync: Extract<SyncStatusResponse, { state: 'failed' }>): FailureCause {
   switch (sync.cause) {
     case 'unavailable':
       return { cause: "GitHub didn't answer in time." };
@@ -102,8 +100,9 @@ function describeSyncCause(
       if (sync.retryAt === undefined) {
         return { cause: 'GitHub rate limit reached; resuming soon.' };
       }
-      const minutes = Math.max(1, Math.ceil((Date.parse(sync.retryAt) - now) / 60_000));
-      return { cause: `GitHub rate limit reached; resuming in ${minutes} min.` };
+      return {
+        cause: `GitHub rate limit reached; resuming at ${formatClockTime(sync.retryAt, 'minutes')}.`,
+      };
     }
     case 'auth':
       return { cause: "gh isn't logged in. Run:", command: 'gh auth login' };
@@ -125,7 +124,6 @@ export function describeTicketPage(
   outcome: TicketPageOutcome,
   projectId: string,
   number: number,
-  now: number,
 ): TicketPageDescription {
   switch (outcome.kind) {
     case 'loading':
@@ -142,7 +140,7 @@ export function describeTicketPage(
       if (sync.state !== 'failed') {
         return failed(number, { cause: unexpectedCause }, '');
       }
-      return failed(number, describeSyncCause(sync, now), sync.message);
+      return failed(number, describeSyncCause(sync), sync.message);
     }
   }
 }

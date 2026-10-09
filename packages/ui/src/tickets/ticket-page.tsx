@@ -45,7 +45,7 @@ export function TicketPage({ liveUpdates, id, number }: TicketPageProps) {
       liveUpdates={liveUpdates}
       projectId={id}
       number={number}
-      description={describeTicketPage(outcome, id, number, Date.now())}
+      description={describeTicketPage(outcome, id, number)}
       onRetry={() => {
         setOutcome({ kind: 'loading' });
         retry();
