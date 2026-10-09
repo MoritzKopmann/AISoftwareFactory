@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RepositoryWatch } from '../../../../../src/modules/watcher/logic/domain/types/repository-watch.js';
 import type { ActiveRunLookup } from '../../../../../src/modules/watcher/logic/ports/active-run-lookup.js';
+import { InMemoryWatchStore } from '../../../../../src/modules/watcher/infra/integrations/in-memory-watch-store.js';
 import { ReadProjectBoardUseCase } from '../../../../../src/modules/watcher/logic/use-cases/read-project-board-use-case.js';
 
 const watch: RepositoryWatch = {
@@ -17,7 +18,13 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number>) {
       return runningTicketNumbers;
     },
   };
-  return { subject: new ReadProjectBoardUseCase({ activeRunLookup }), requestedProjectIds };
+  const watchStore = new InMemoryWatchStore();
+  watchStore.saveWatch(watch);
+  const readProjectBoard = new ReadProjectBoardUseCase({ activeRunLookup, watchStore });
+  return {
+    subject: { execute: (target: RepositoryWatch) => readProjectBoard.execute(target.projectId) },
+    requestedProjectIds,
+  };
 }
 
 describe('ReadProjectBoardUseCase', () => {

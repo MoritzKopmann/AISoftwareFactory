@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { InMemoryWatchStore } from '../../../src/modules/watcher/infra/integrations/in-memory-watch-store.js';
 import { createWatcherModule } from '../../../src/modules/watcher/index.js';
 import type { AisfEventMap } from '../../../src/shared/bus/aisf-event-map.js';
 import { TypedEventBus } from '../../../src/shared/bus/typed-event-bus.js';
@@ -32,6 +33,7 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
     ticketSource,
     clock,
     events,
+    watchStore: new InMemoryWatchStore(),
     subscriber: events,
     registeredRepositories: new FakeRegisteredRepositories([registered]),
     activeRunLookup: { activeRunTicketNumbers: async () => runningTicketNumbers },

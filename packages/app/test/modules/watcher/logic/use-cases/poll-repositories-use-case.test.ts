@@ -4,6 +4,7 @@ import type { TicketSnapshot } from '../../../../../src/modules/watcher/logic/do
 import { GitHubAuthError } from '../../../../../src/modules/watcher/logic/errors/github-auth-error.js';
 import { GitHubRateLimitedError } from '../../../../../src/modules/watcher/logic/errors/github-rate-limited-error.js';
 import { GitHubRequestError } from '../../../../../src/modules/watcher/logic/errors/github-request-error.js';
+import { InMemoryWatchStore } from '../../../../../src/modules/watcher/infra/integrations/in-memory-watch-store.js';
 import { PollRepositoriesUseCase } from '../../../../../src/modules/watcher/logic/use-cases/poll-repositories-use-case.js';
 import { FakeClock } from '../../../../fakes/fake-clock.js';
 import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
@@ -30,14 +31,51 @@ function createSubject() {
   const ticketSource = new FakeTicketSource(buildSnapshot(startedAt, [buildTicket({ number: 1 })]));
   const clock = new FakeClock(startedAt);
   const events = new FakeEventPublisher();
-  const useCase = new PollRepositoriesUseCase({
+  const watchStore = new InMemoryWatchStore();
+  const pollRepositories = new PollRepositoriesUseCase({
     issueFeeds,
     ticketSource,
     clock,
     events,
+    watchStore,
     snapshotIntervalMilliseconds,
   });
-  return { useCase, issueFeeds, ticketSource, clock, events };
+  const useCase = {
+    // Seeds the store with the given watches, polls, and returns the stored result.
+    execute: async (
+      watches: ReadonlyArray<RepositoryWatch>,
+      projectIdsWithStatusWrites: ReadonlySet<string> = new Set(),
+    ): Promise<ReadonlyArray<RepositoryWatch>> => {
+      for (const watch of watches) {
+        watchStore.saveWatch(watch);
+      }
+      for (const projectId of projectIdsWithStatusWrites) {
+        watchStore.saveStatusWrite(projectId, {
+          ticketNumber: 0,
+          from: 'ready',
+          to: 'ready',
+          writtenAt: startedAt,
+        });
+      }
+      await pollRepositories.execute();
+      return watches.map(({ projectId }) => watchStore.watch(projectId) as RepositoryWatch);
+    },
+  };
+  const snapshotEvents = {
+    get emittedEvents() {
+      return events.emittedEvents.filter((event) => event.name !== 'watch.updated');
+    },
+  };
+  return {
+    useCase,
+    pollRepositories,
+    watchStore,
+    issueFeeds,
+    ticketSource,
+    clock,
+    events: snapshotEvents,
+    allEvents: events,
+  };
 }
 
 describe('PollRepositoriesUseCase', () => {
@@ -248,6 +286,106 @@ describe('PollRepositoriesUseCase', () => {
         expect(ticketSource.snapshotRequests).toHaveLength(2);
         expect(resumedWatches.map((watch) => watch.sync.state)).toEqual(['ok', 'ok']);
       });
+    });
+  });
+
+  describe('watch.updated', () => {
+    type Seen = {
+      readonly projectId: string;
+      readonly watch: RepositoryWatch | undefined;
+      readonly writeCount: number;
+    };
+
+    function createObservedSubject() {
+      const issueFeeds = new FakeIssueFeeds();
+      const ticketSource = new FakeTicketSource(
+        buildSnapshot(startedAt, [buildTicket({ number: 1 })]),
+      );
+      const clock = new FakeClock(startedAt);
+      const watchStore = new InMemoryWatchStore();
+      const seen: Seen[] = [];
+      const events = {
+        emit: (name: string, payload: { projectId?: string }) => {
+          if (name === 'watch.updated' && payload.projectId !== undefined) {
+            seen.push({
+              projectId: payload.projectId,
+              watch: watchStore.watch(payload.projectId),
+              writeCount: watchStore.statusWrites(payload.projectId).length,
+            });
+          }
+        },
+      };
+      const useCase = new PollRepositoriesUseCase({
+        issueFeeds,
+        ticketSource,
+        clock,
+        events,
+        watchStore,
+        snapshotIntervalMilliseconds,
+      });
+      return { useCase, issueFeeds, ticketSource, clock, watchStore, seen };
+    }
+
+    it('should announce a watch after its poll is stored when the feeds are unchanged', async () => {
+      const { useCase, watchStore, clock, seen } = createObservedSubject();
+      watchStore.saveWatch(buildWatch('octo/repo'));
+      await useCase.execute();
+      clock.setNow('2026-09-28T12:00:30.000Z');
+      seen.length = 0;
+
+      await useCase.execute();
+
+      expect(seen).toHaveLength(1);
+      expect(seen[0]?.projectId).toBe('octo/repo');
+      expect(seen[0]?.watch?.sync).toMatchObject({
+        state: 'ok',
+        checkedAt: '2026-09-28T12:00:30.000Z',
+      });
+    });
+
+    it('should show each project its own poll when several projects are polled', async () => {
+      const { useCase, watchStore, seen } = createObservedSubject();
+      watchStore.saveWatch(buildWatch('octo/one'));
+      watchStore.saveWatch(buildWatch('octo/two'));
+
+      await useCase.execute();
+
+      expect(seen.map((entry) => entry.projectId)).toEqual(['octo/one', 'octo/two']);
+      expect(seen[0]?.watch?.snapshot?.openTickets.map((ticket) => ticket.number)).toEqual([1]);
+      expect(seen[0]?.watch?.sync.state).toBe('ok');
+    });
+
+    it('should announce a failed watch when GitHub answers with a rate limit', async () => {
+      const { useCase, watchStore, ticketSource, seen } = createObservedSubject();
+      ticketSource.failure = new GitHubRateLimitedError(
+        'limited',
+        new Date('2026-09-28T13:00:00.000Z'),
+      );
+      watchStore.saveWatch(buildWatch('octo/repo'));
+
+      await useCase.execute();
+
+      expect(seen).toHaveLength(1);
+      expect(seen[0]?.watch?.sync).toMatchObject({ state: 'failed', cause: 'rate-limited' });
+    });
+
+    it('should announce after an expired status write is pruned when the write is unconfirmed', async () => {
+      const { useCase, watchStore, clock, seen } = createObservedSubject();
+      watchStore.saveWatch(buildWatch('octo/repo'));
+      await useCase.execute();
+      seen.length = 0;
+      watchStore.saveStatusWrite('octo/repo', {
+        ticketNumber: 1,
+        from: 'stuck',
+        to: 'ready',
+        writtenAt: startedAt,
+      });
+      clock.setNow('2026-09-28T12:01:01.000Z');
+
+      await useCase.execute();
+
+      expect(seen).toHaveLength(1);
+      expect(seen[0]?.writeCount).toBe(0);
     });
   });
 });

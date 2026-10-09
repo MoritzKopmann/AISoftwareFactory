@@ -49,6 +49,7 @@ import {
 } from './modules/scheduler/index.js';
 import { FetchGraphQLTicketSource } from './modules/watcher/infra/integrations/fetch-graphql-ticket-source.js';
 import { FetchIssueFeeds } from './modules/watcher/infra/integrations/fetch-issue-feeds.js';
+import { InMemoryWatchStore } from './modules/watcher/infra/integrations/in-memory-watch-store.js';
 import { GhCliGitHubToken } from './modules/watcher/infra/integrations/gh-cli-github-token.js';
 import {
   createWatcherModule,
@@ -148,6 +149,7 @@ function buildWatcherModule(
     }),
     clock: new SystemClock(),
     events,
+    watchStore: new InMemoryWatchStore(),
     subscriber: events,
     registeredRepositories: {
       list: async () =>
