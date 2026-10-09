@@ -29,7 +29,7 @@ import {
 } from './describe-run-bar.js';
 import { describeRunPanel } from './describe-run-panel.js';
 import { editCheckpointDraft } from './edit-checkpoint-draft.js';
-import { fetchTicketArtifacts } from './fetch-ticket-artifacts.js';
+import { fetchTicketArtifacts, type TicketArtifactsFailure } from './fetch-ticket-artifacts.js';
 import { PermissionPrompt } from './permission-prompt.js';
 import { ResetAction } from './reset-action.js';
 import { resetTicket } from './reset-ticket.js';
@@ -54,13 +54,16 @@ export function RunSection({
   ticketStatus,
   runSkill,
 }: RunSectionProps) {
-  const { ticketRun } = useTicketRun(liveUpdates, projectId, number);
+  const { ticketRun, retry: retryRun } = useTicketRun(liveUpdates, projectId, number);
   const [start, setStart] = useState<StartState>({ kind: 'idle' });
   const [stoppingRunId, setStoppingRunId] = useState<string | undefined>(undefined);
   const [permissionAnswer, setPermissionAnswer] = useState<PermissionAnswer>({ kind: 'idle' });
   const [checkpointAnswer, setCheckpointAnswer] = useState<CheckpointAnswer | undefined>(undefined);
   const [reset, setReset] = useState<ResetState>({ kind: 'idle' });
   const [artifacts, setArtifacts] = useState<TicketArtifactsResponse | undefined>(undefined);
+  const [artifactsFailure, setArtifactsFailure] = useState<TicketArtifactsFailure | undefined>(
+    undefined,
+  );
   const activeRunId = ticketRun.response?.activeRun?.id;
 
   useEffect(() => {
@@ -72,12 +75,17 @@ export function RunSection({
   }, [ticketRun.response]);
 
   // A failed read keeps the links from the last answer.
-  useLiveRead(
+  const { retry: retryArtifacts } = useLiveRead(
     liveUpdates,
     { kind: 'artifacts', projectId, ticketNumber: number },
     () => fetchTicketArtifacts(projectId, number, (url) => fetch(url)),
     (outcome) => {
-      if (outcome.kind === 'answer') setArtifacts(outcome.response);
+      if (outcome.kind === 'answer') {
+        setArtifacts(outcome.response);
+        setArtifactsFailure(undefined);
+      } else {
+        setArtifactsFailure(outcome.cause);
+      }
     },
   );
 
@@ -179,9 +187,13 @@ export function RunSection({
           }
         }}
       />
-      <ArtifactLinks links={describeArtifactLinks(artifacts)} />
+      <ArtifactLinks
+        description={describeArtifactLinks(artifacts, artifactsFailure)}
+        onRetry={retryArtifacts}
+      />
       <RunPanel
         description={panel}
+        onRetry={retryRun}
         onStop={() => {
           if (activeRunId !== undefined) void stop(activeRunId);
         }}

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { RunPanelDescription } from '../../src/tickets/describe-run-panel.js';
 import { RunPanel } from '../../src/tickets/run-panel.js';
 
-const ignoreStop = () => undefined;
+const ignore = () => undefined;
 
 const live: Extract<RunPanelDescription, { kind: 'live' }> = {
   kind: 'live',
@@ -17,7 +17,9 @@ const live: Extract<RunPanelDescription, { kind: 'live' }> = {
 };
 
 function render(description: RunPanelDescription): string {
-  return renderToStaticMarkup(<RunPanel description={description} onStop={ignoreStop} />);
+  return renderToStaticMarkup(
+    <RunPanel description={description} onStop={ignore} onRetry={ignore} />,
+  );
 }
 
 describe('RunPanel', () => {
@@ -61,6 +63,17 @@ describe('RunPanel', () => {
     const markup = render({ ...live, banner: "Can't reach aisf." });
     expect(markup).toMatch(/role="status"[^>]*>.*Can&#x27;t reach aisf./);
     expect(markup).toContain('Bash: npm test');
+  });
+
+  it('should put a Retry button under the banner message when the poll failed', () => {
+    const markup = render({ ...live, banner: "Can't reach aisf." });
+    expect(markup).toMatch(
+      /class="inline-banner".*<p class="sm">Can&#x27;t reach aisf\.<\/p><button[^>]*>Retry<\/button><\/div>/,
+    );
+  });
+
+  it('should show no Retry when the poll did not fail', () => {
+    expect(render(live)).not.toContain('Retry');
   });
 
   it('should announce the reason and show no Stop and no steps when the run ended', () => {

@@ -32,4 +32,23 @@ describe('TicketPageView', () => {
       /<details class="row runlog"><summary.*<\/summary><\/details><details class="row ticket-body"><summary.*<\/summary>.*<\/details><\/main>$/,
     );
   });
+
+  it('should show the message, the reload hint, Retry and the detail in that order when the ticket read failed', () => {
+    const markup = renderToStaticMarkup(
+      <TicketPageView
+        liveUpdates={liveUpdates}
+        projectId="o/n"
+        number={56}
+        description={{
+          kind: 'failed',
+          message: "Couldn't load #56. Can't reach aisf.",
+          detail: 'Failed to fetch',
+        }}
+        onRetry={ignore}
+      />,
+    );
+    expect(markup).toMatch(
+      /Couldn&#x27;t load #56.*<p class="sm">Loads again on the next change, or on Retry\.<\/p><button[^>]*>Retry<\/button><p class="sm mono">Failed to fetch<\/p>/,
+    );
+  });
 });
