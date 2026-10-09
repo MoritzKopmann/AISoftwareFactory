@@ -1,3 +1,4 @@
+import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
 import { TicketNotResettableError } from '../errors/ticket-not-resettable-error.js';
 import type { ProjectLookup } from '../ports/project-lookup.js';
 import type { RunnerPort } from '../ports/runner-port.js';
@@ -7,13 +8,14 @@ export type ResetTicketDependencies = {
   readonly ticketStatusWrites: TicketStatusWrites;
   readonly runner: RunnerPort;
   readonly projectLookup: ProjectLookup;
+  readonly events: EventPublisher;
 };
 
 export class ResetTicketUseCase {
   constructor(private readonly dependencies: ResetTicketDependencies) {}
 
   async execute(projectId: string, ticketNumber: number): Promise<void> {
-    const { ticketStatusWrites, runner, projectLookup } = this.dependencies;
+    const { ticketStatusWrites, runner, projectLookup, events } = this.dependencies;
 
     const project = await projectLookup.find(projectId);
     if (project === undefined) {
@@ -29,5 +31,6 @@ export class ResetTicketUseCase {
     }
 
     await ticketStatusWrites.setStatus(project.repository, ticketNumber, 'ready');
+    events.emit('ticket.status-written', { projectId, ticketNumber, from: status, to: 'ready' });
   }
 }

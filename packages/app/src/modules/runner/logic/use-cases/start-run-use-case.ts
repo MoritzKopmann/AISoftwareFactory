@@ -1,3 +1,4 @@
+import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
 import type { Clock } from '../../../../shared/clock/clock.js';
 import { branchNameFor } from '../domain/functions/branch-name-for.js';
 import { describeError } from '../domain/functions/describe-error.js';
@@ -27,6 +28,7 @@ export type StartRunDependencies = {
   readonly identifiers: Identifiers;
   readonly clock: Clock;
   readonly finishRun: FinishRun;
+  readonly events: EventPublisher;
   readonly launchRunSession: LaunchRunSession;
   readonly worktreesDirectory: string;
 };
@@ -35,7 +37,7 @@ export class StartRunUseCase {
   constructor(private readonly dependencies: StartRunDependencies) {}
 
   async execute(request: StartRunRequest): Promise<Run> {
-    const { runRepository, worktrees, runTargets, identifiers, clock, finishRun } =
+    const { runRepository, worktrees, runTargets, identifiers, clock, finishRun, events } =
       this.dependencies;
 
     const target = await runTargets.find(request.projectId, request.ticketNumber);
@@ -62,6 +64,11 @@ export class StartRunUseCase {
       startedAt: clock.now(),
     };
     await runRepository.insert(run);
+    events.emit('run.started', {
+      runId: run.id,
+      projectId: run.projectId,
+      ticketNumber: run.ticketNumber,
+    });
 
     try {
       await worktrees.ensure({

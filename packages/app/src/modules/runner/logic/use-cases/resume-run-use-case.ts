@@ -1,3 +1,4 @@
+import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
 import type { Clock } from '../../../../shared/clock/clock.js';
 import { stageSkills } from '../domain/constants/stage-skills.js';
 import { buildCheckpointResumePrompt } from '../domain/functions/build-checkpoint-resume-prompt.js';
@@ -14,6 +15,7 @@ export type ResumeRunDependencies = {
   readonly runRepository: RunRepository;
   readonly identifiers: Identifiers;
   readonly clock: Clock;
+  readonly events: EventPublisher;
   readonly launchRunSession: LaunchRunSession;
 };
 
@@ -21,7 +23,7 @@ export class ResumeRunUseCase {
   constructor(private readonly dependencies: ResumeRunDependencies) {}
 
   async execute(runId: string, answer: RunAnswer): Promise<Run> {
-    const { runRepository, identifiers, clock, launchRunSession } = this.dependencies;
+    const { runRepository, identifiers, clock, events, launchRunSession } = this.dependencies;
 
     const previousRun = await runRepository.findById(runId);
     const ending = previousRun?.ending;
@@ -73,6 +75,11 @@ export class ResumeRunUseCase {
       startedAt: clock.now(),
     };
     await runRepository.insert(run);
+    events.emit('run.started', {
+      runId: run.id,
+      projectId: run.projectId,
+      ticketNumber: run.ticketNumber,
+    });
 
     launchRunSession(run, launch);
 

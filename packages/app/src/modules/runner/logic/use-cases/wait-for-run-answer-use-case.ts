@@ -43,6 +43,11 @@ export class WaitForRunAnswerUseCase {
     switch (answer.kind) {
       case 'answered':
         await runRepository.clearWait(run.id);
+        events.emit('run.wait-cleared', {
+          runId: run.id,
+          projectId: run.projectId,
+          ticketNumber: run.ticketNumber,
+        });
         return { kind: 'answered', answer: answer.answer };
       case 'expired':
         await finishRun(run.id, wait);

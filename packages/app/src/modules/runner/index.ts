@@ -117,6 +117,7 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
     recentRunSteps,
     runRepository,
     finishRun,
+    events,
     waitForRunAnswer: (run, wait) => waitForRunAnswer.execute(run, wait),
     tools: [
       createEscalateTool(),
@@ -135,6 +136,7 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
     identifiers: dependencies.identifiers,
     clock,
     finishRun,
+    events,
     launchRunSession,
     worktreesDirectory: dependencies.worktreesDirectory,
   });
@@ -142,6 +144,7 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
     runRepository,
     identifiers: dependencies.identifiers,
     clock,
+    events,
     launchRunSession,
   });
   const deliverRunAnswer = new DeliverRunAnswerUseCase({

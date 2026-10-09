@@ -3,6 +3,7 @@ import { TicketNotResettableError } from '../../../../../src/modules/scheduler/l
 import type { ProjectLookup } from '../../../../../src/modules/scheduler/logic/ports/project-lookup.js';
 import { ResetTicketUseCase } from '../../../../../src/modules/scheduler/logic/use-cases/reset-ticket-use-case.js';
 import type { TicketStatus } from '../../../../../src/shared/ticket-status/ticket-status.js';
+import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
 import {
   FakeProjectLookup,
   FakeRunnerPort,
@@ -16,8 +17,9 @@ function buildSubject(
   const ticketStatusWrites = new FakeTicketStatusWrites();
   ticketStatusWrites.liveStatus = liveStatus;
   const runner = new FakeRunnerPort();
-  const useCase = new ResetTicketUseCase({ ticketStatusWrites, runner, projectLookup });
-  return { useCase, ticketStatusWrites, runner };
+  const events = new FakeEventPublisher();
+  const useCase = new ResetTicketUseCase({ ticketStatusWrites, runner, projectLookup, events });
+  return { useCase, ticketStatusWrites, runner, events };
 }
 
 describe('ResetTicketUseCase', () => {
@@ -75,5 +77,36 @@ describe('ResetTicketUseCase', () => {
       TicketNotResettableError,
     );
     expect(ticketStatusWrites.calls).toEqual([]);
+  });
+
+  it('should emit ticket.status-written from the read status to ready when the reset succeeds', async () => {
+    const { useCase, events } = buildSubject('stuck');
+
+    await useCase.execute('moritz/aisf', 138);
+
+    expect(events.emittedEvents).toEqual([
+      {
+        name: 'ticket.status-written',
+        payload: { projectId: 'moritz/aisf', ticketNumber: 138, from: 'stuck', to: 'ready' },
+      },
+    ]);
+  });
+
+  it('should emit nothing when the ticket has an active run', async () => {
+    const { useCase, runner, events } = buildSubject('stuck');
+    runner.activeTicketNumbers = [138];
+
+    await expect(useCase.execute('moritz/aisf', 138)).rejects.toBeInstanceOf(
+      TicketNotResettableError,
+    );
+    expect(events.emittedEvents).toEqual([]);
+  });
+
+  it('should emit nothing when the status write fails', async () => {
+    const { useCase, ticketStatusWrites, events } = buildSubject('stuck');
+    ticketStatusWrites.setStatusFailure = new Error('gh failed');
+
+    await expect(useCase.execute('moritz/aisf', 138)).rejects.toThrow('gh failed');
+    expect(events.emittedEvents).toEqual([]);
   });
 });

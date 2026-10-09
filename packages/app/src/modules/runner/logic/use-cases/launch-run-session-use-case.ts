@@ -1,3 +1,4 @@
+import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
 import type { Logger } from '../../../../shared/logger/create-logger.js';
 import { stageModels } from '../domain/constants/stage-models.js';
 import { describeError } from '../domain/functions/describe-error.js';
@@ -24,6 +25,7 @@ export type LaunchRunSessionDependencies = {
   readonly finishRun: FinishRun;
   readonly waitForRunAnswer: (run: Run, wait: RunWait) => Promise<RunWaitOutcome>;
   readonly tools: ReadonlyArray<RunTool>;
+  readonly events: EventPublisher;
   readonly logger: Logger;
 };
 
@@ -107,12 +109,17 @@ export class LaunchRunSessionUseCase {
   }
 
   private async consume(run: Run, sessionEvents: AsyncIterable<SessionEvent>): Promise<void> {
-    const { finishRun, recentRunSteps } = this.dependencies;
+    const { finishRun, recentRunSteps, events } = this.dependencies;
     try {
       for await (const event of sessionEvents) {
         switch (event.kind) {
           case 'step':
             recentRunSteps.append(run.id, event.step);
+            events.emit('run.step-added', {
+              runId: run.id,
+              projectId: run.projectId,
+              ticketNumber: run.ticketNumber,
+            });
             break;
           case 'completed':
             await finishRun(run.id, { kind: 'finished' });

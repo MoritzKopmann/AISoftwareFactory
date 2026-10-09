@@ -56,6 +56,7 @@ describe('StartRunUseCase', () => {
       finishRun,
       waitForRunAnswer: async () => ({ kind: 'unanswered', message: '' }),
       tools,
+      events,
       logger,
     });
     return new StartRunUseCase({
@@ -65,6 +66,7 @@ describe('StartRunUseCase', () => {
       identifiers: new SequentialIdentifiers(),
       clock,
       finishRun,
+      events,
       launchRunSession: (run, launch) => launchRunSession.execute(run, launch),
       worktreesDirectory: '/worktrees',
     });
@@ -76,6 +78,10 @@ describe('StartRunUseCase', () => {
     ticketTitle: 'The runner takes a ticket',
     types: [] as ReadonlyArray<TicketType>,
   };
+
+  function finishedEvents() {
+    return events.emittedEvents.filter(({ name }) => name === 'run.finished');
+  }
 
   function endingOf(runId: string): RunEnding | undefined {
     return runRepository.runs.get(runId)?.ending;
@@ -199,7 +205,7 @@ describe('StartRunUseCase', () => {
     await expect(startRun.execute(startRequest)).rejects.toThrow(WorktreeSetupFailedError);
 
     expect(endingOf('id-1')).toEqual({ kind: 'crashed', reason: 'git worktree add failed' });
-    expect(events.emittedEvents).toHaveLength(1);
+    expect(finishedEvents()).toHaveLength(1);
     expect(agentSessions.startedSpecs).toEqual([]);
   });
 
@@ -209,7 +215,7 @@ describe('StartRunUseCase', () => {
     agentSessions.push('id-2', { kind: 'step', step: { at: 'a', summary: 'Read package.json' } });
     agentSessions.push('id-2', { kind: 'completed' });
 
-    await vi.waitFor(() => expect(events.emittedEvents).toHaveLength(1));
+    await vi.waitFor(() => expect(finishedEvents()).toHaveLength(1));
     expect(recentRunSteps.read('id-1')).toEqual([{ at: 'a', summary: 'Read package.json' }]);
   });
 
@@ -218,9 +224,9 @@ describe('StartRunUseCase', () => {
 
     agentSessions.push('id-2', { kind: 'completed' });
 
-    await vi.waitFor(() => expect(events.emittedEvents).toHaveLength(1));
+    await vi.waitFor(() => expect(finishedEvents()).toHaveLength(1));
     expect(endingOf('id-1')).toEqual({ kind: 'finished' });
-    expect(events.emittedEvents[0]).toMatchObject({
+    expect(finishedEvents()[0]).toMatchObject({
       name: 'run.finished',
       payload: { runId: 'id-1', ending: { kind: 'finished' } },
     });
@@ -231,7 +237,7 @@ describe('StartRunUseCase', () => {
 
     agentSessions.push('id-2', { kind: 'usage-limit', reason: 'five_hour limit rejected' });
 
-    await vi.waitFor(() => expect(events.emittedEvents).toHaveLength(1));
+    await vi.waitFor(() => expect(finishedEvents()).toHaveLength(1));
     expect(endingOf('id-1')).toEqual({ kind: 'usage-limit', reason: 'five_hour limit rejected' });
   });
 
@@ -240,7 +246,7 @@ describe('StartRunUseCase', () => {
 
     agentSessions.push('id-2', { kind: 'crashed', reason: 'Login expired' });
 
-    await vi.waitFor(() => expect(events.emittedEvents).toHaveLength(1));
+    await vi.waitFor(() => expect(finishedEvents()).toHaveLength(1));
     expect(endingOf('id-1')).toEqual({ kind: 'crashed', reason: 'Login expired' });
   });
 
@@ -249,13 +255,15 @@ describe('StartRunUseCase', () => {
 
     agentSessions.fail('id-2', new Error('spawn claude ENOENT'));
 
-    await vi.waitFor(() => expect(events.emittedEvents).toHaveLength(1));
+    await vi.waitFor(() => expect(finishedEvents()).toHaveLength(1));
     expect(endingOf('id-1')).toEqual({ kind: 'crashed', reason: 'spawn claude ENOENT' });
   });
 
   it('should log the failure instead of leaving a rejection unhandled when recording the ending throws', async () => {
-    events.emit = () => {
-      throw new Error('subscriber failed');
+    events.emit = (name) => {
+      if (name === 'run.finished') {
+        throw new Error('subscriber failed');
+      }
     };
     await startRun.execute(startRequest);
 
@@ -299,6 +307,62 @@ describe('StartRunUseCase', () => {
     expect(endingResult).toBe('ended');
     expect(endingOf('id-1')).toEqual({ kind: 'parked', blockerNumber: 42 });
     expect(agentSessions.stoppedSessionIds).toEqual(['id-2']);
-    expect(events.emittedEvents).toHaveLength(1);
+    expect(finishedEvents()).toHaveLength(1);
+  });
+
+  it('should emit run.started after the run is stored when the run starts', async () => {
+    let activeAtEmit: string[] = [];
+    events.emit = (name) => {
+      if (name === 'run.started') {
+        activeAtEmit = [...runRepository.runs.values()]
+          .filter((run) => run.state === 'running')
+          .map((run) => run.id);
+      }
+    };
+    const emitted: string[] = [];
+    const baseEmit = events.emit.bind(events);
+    events.emit = (name, payload) => {
+      emitted.push(name);
+      baseEmit(name, payload);
+    };
+
+    await startRun.execute(startRequest);
+
+    expect(emitted).toEqual(['run.started']);
+    expect(activeAtEmit).toEqual(['id-1']);
+  });
+
+  it('should emit run.started with the run id, project and ticket when the run starts', async () => {
+    await startRun.execute(startRequest);
+
+    expect(events.emittedEvents).toEqual([
+      {
+        name: 'run.started',
+        payload: { runId: 'id-1', projectId: 'moritz/aisf', ticketNumber: 137 },
+      },
+    ]);
+  });
+
+  it('should emit run.step-added after the step is readable when the session reports a step', async () => {
+    await startRun.execute(startRequest);
+    let stepsAtEmit: unknown;
+    const baseEmit = events.emit.bind(events);
+    events.emit = (name, payload) => {
+      if (name === 'run.step-added') {
+        stepsAtEmit = recentRunSteps.read('id-1');
+      }
+      baseEmit(name, payload);
+    };
+
+    agentSessions.push('id-2', { kind: 'step', step: { at: 'a', summary: 'Read package.json' } });
+
+    await vi.waitFor(() =>
+      expect(events.emittedEvents.map(({ name }) => name)).toContain('run.step-added'),
+    );
+    expect(stepsAtEmit).toEqual([{ at: 'a', summary: 'Read package.json' }]);
+    expect(events.emittedEvents.at(-1)).toEqual({
+      name: 'run.step-added',
+      payload: { runId: 'id-1', projectId: 'moritz/aisf', ticketNumber: 137 },
+    });
   });
 });
