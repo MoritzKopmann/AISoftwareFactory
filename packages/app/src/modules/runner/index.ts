@@ -25,6 +25,7 @@ import type { RunRepository } from './logic/ports/run-repository.js';
 import type { RunTargets } from './logic/ports/run-targets.js';
 import type { RunTranscripts } from './logic/ports/run-transcripts.js';
 import type { Worktrees } from './logic/ports/worktrees.js';
+import type { ActiveWait } from './logic/domain/types/active-wait.js';
 import { DeliverRunAnswerUseCase } from './logic/use-cases/deliver-run-answer-use-case.js';
 import { FinishRunUseCase } from './logic/use-cases/finish-run-use-case.js';
 import { LaunchRunSessionUseCase } from './logic/use-cases/launch-run-session-use-case.js';
@@ -32,6 +33,7 @@ import {
   ReadActiveRunsUseCase,
   type ActiveRun,
 } from './logic/use-cases/read-active-runs-use-case.js';
+import { ReadActiveWaitsUseCase } from './logic/use-cases/read-active-waits-use-case.js';
 import { ReadLatestRunUseCase } from './logic/use-cases/read-latest-run-use-case.js';
 import { ReadRunUseCase } from './logic/use-cases/read-run-use-case.js';
 import { ReadTicketRunLogUseCase } from './logic/use-cases/read-ticket-run-log-use-case.js';
@@ -53,6 +55,7 @@ export type { RunMode } from './logic/domain/types/run-mode.js';
 export type { RunStage } from './logic/domain/types/run-stage.js';
 export type { RunStep } from './logic/domain/types/run-step.js';
 export type { RunTool, RunToolResult } from './logic/domain/types/run-tool.js';
+export type { ActiveWait } from './logic/domain/types/active-wait.js';
 export type { ActiveRun } from './logic/use-cases/read-active-runs-use-case.js';
 export type { StartRunRequest } from './logic/use-cases/start-run-use-case.js';
 export {
@@ -86,6 +89,7 @@ export type RunnerModule = {
   readonly answer: (runId: string, answer: RunAnswer) => Promise<Run>;
   readonly findRun: (runId: string) => Promise<Run | undefined>;
   readonly activeRuns: (projectId: string) => Promise<ReadonlyArray<ActiveRun>>;
+  readonly activeWaits: (projectId: string) => Promise<ReadonlyArray<ActiveWait>>;
   readonly latestRun: (projectId: string, ticketNumber: number) => Promise<Run | undefined>;
   readonly settle: (runId: string) => Promise<void>;
   readonly recover: () => Promise<void>;
@@ -155,6 +159,7 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
   const readRun = new ReadRunUseCase({ runRepository });
   const stopRun = new StopRunUseCase({ runRepository, finishRun });
   const readActiveRuns = new ReadActiveRunsUseCase({ runRepository, recentRunSteps });
+  const readActiveWaits = new ReadActiveWaitsUseCase({ runRepository });
   const readLatestRun = new ReadLatestRunUseCase({ runRepository });
   const readTicketRunLog = new ReadTicketRunLogUseCase({
     runRepository,
@@ -175,6 +180,7 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
     answer: (runId, answer) => deliverRunAnswer.execute(runId, answer),
     findRun: (runId) => readRun.execute(runId),
     activeRuns: (projectId) => readActiveRuns.execute(projectId),
+    activeWaits: (projectId) => readActiveWaits.execute(projectId),
     latestRun: (projectId, ticketNumber) => readLatestRun.execute(projectId, ticketNumber),
     settle: (runId) => settleRun.execute(runId),
     recover: () => recoverInterruptedRuns.execute(),

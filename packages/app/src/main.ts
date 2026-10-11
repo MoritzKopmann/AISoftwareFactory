@@ -56,6 +56,7 @@ import {
   createTicketsModule,
   TicketNotAnswerableError,
   type ActiveRunLookup,
+  type RunWaitLookup,
   type RunSettlement,
   type TicketsModule,
 } from './modules/tickets/index.js';
@@ -149,6 +150,7 @@ function buildTicketsModule(
   events: EventPublisher & EventSubscriber,
   projects: ProjectsModule,
   activeRunLookup: ActiveRunLookup,
+  runWaitLookup: RunWaitLookup,
   runSettlement: RunSettlement,
   logger: Logger,
 ): TicketsModule {
@@ -170,6 +172,7 @@ function buildTicketsModule(
         (await projects.list()).map(({ id, repository }) => ({ projectId: id, repository })),
     },
     activeRunLookup,
+    runWaitLookup,
     ticketStatusWrites: new GhCliTicketStatusWrites(),
     runSettlement,
     logger,
@@ -371,6 +374,7 @@ const tickets = buildTicketsModule(
     activeRunTicketNumbers: async (projectId) =>
       (await runner.activeRuns(projectId)).map(({ run }) => run.ticketNumber),
   },
+  { waitsOf: (projectId) => runner.activeWaits(projectId) },
   { settle: (runId) => runner.settle(runId) },
   logger,
 );
