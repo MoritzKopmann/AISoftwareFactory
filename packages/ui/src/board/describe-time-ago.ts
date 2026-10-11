@@ -1,13 +1,6 @@
-const millisecondsPerMinute = 60_000;
-const minutesPerHour = 60;
+import { describeElapsedTime } from './describe-elapsed-time.js';
 
 export function describeTimeAgo(isoTime: string, now: Date): string {
-  const ageInMinutes = Math.floor((now.getTime() - Date.parse(isoTime)) / millisecondsPerMinute);
-  if (ageInMinutes < 1) {
-    return 'just now';
-  }
-  if (ageInMinutes < minutesPerHour) {
-    return `${ageInMinutes} min ago`;
-  }
-  return `${Math.floor(ageInMinutes / minutesPerHour)} h ago`;
+  const elapsedTime = describeElapsedTime(isoTime, now);
+  return elapsedTime === 'just now' ? elapsedTime : `${elapsedTime} ago`;
 }

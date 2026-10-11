@@ -12,15 +12,18 @@ describe('fetchNeedsYou', () => {
     expect(outcome).toEqual({ kind: 'answer', response: { rows: [] } });
   });
 
-  it('should return request-failed when the route answers an error', async () => {
+  it('should return request-failed with the status as detail when the route answers an error', async () => {
     const outcome = await fetchNeedsYou('o/n', () =>
-      Promise.resolve(new Response('{}', { status: 500 })),
+      Promise.resolve(new Response('{}', { status: 502, statusText: 'Bad Gateway' })),
     );
-    expect(outcome).toEqual({ kind: 'request-failed' });
+    expect(outcome).toEqual({
+      kind: 'request-failed',
+      detail: 'GET /needs-you · 502 Bad Gateway',
+    });
   });
 
-  it('should return request-failed when the request throws', async () => {
+  it('should return request-failed with the error message as detail when the request throws', async () => {
     const outcome = await fetchNeedsYou('o/n', () => Promise.reject(new Error('offline')));
-    expect(outcome).toEqual({ kind: 'request-failed' });
+    expect(outcome).toEqual({ kind: 'request-failed', detail: 'GET /needs-you · offline' });
   });
 });
