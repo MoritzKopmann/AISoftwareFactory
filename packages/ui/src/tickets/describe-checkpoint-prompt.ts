@@ -1,5 +1,4 @@
 import type { TicketRunResponse } from '@aisf/app/api-schemas/runs-schemas.js';
-import type { TicketStatusResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
 import type { AnswerCheckpointOutcome } from './answer-checkpoint.js';
 import { checkpointAnswerCharacterLimit } from './checkpoint-answer-character-limit.js';
 
@@ -43,8 +42,8 @@ function groupThousands(count: number): string {
   return String(count).replace(/\B(?=(\d{3})+$)/g, ' ');
 }
 
-function describeHeldSend(ticketStatus: TicketStatusResponse, draft: string): string | undefined {
-  if (ticketStatus !== 'waiting') {
+function describeHeldSend(ticketWaiting: boolean, draft: string): string | undefined {
+  if (!ticketWaiting) {
     return 'Waiting for GitHub to show the ticket as waiting. Send unlocks then, usually within 30 s.';
   }
   if (draft.trim() === '') {
@@ -79,7 +78,7 @@ export function settleCheckpointAnswer(
 
 export function describeCheckpointPrompt(
   response: TicketRunResponse | undefined,
-  ticketStatus: TicketStatusResponse,
+  ticketWaiting: boolean,
   answer: CheckpointAnswer | undefined,
 ): CheckpointPromptDescription {
   const wait = findShownWait(response);
@@ -105,7 +104,7 @@ export function describeCheckpointPrompt(
   if (send?.kind === 'sending') {
     return { ...prompt, sending: true, pressable: false, announcement: 'Sending your answer' };
   }
-  const reason = describeHeldSend(ticketStatus, draft);
+  const reason = describeHeldSend(ticketWaiting, draft);
   return {
     ...prompt,
     sending: false,

@@ -15,19 +15,7 @@ function rowTicketNumbers(board: ReturnType<typeof arrangeBoard>, key: string) {
 }
 
 describe('arrangeBoard', () => {
-  it('should put a waiting ticket in a waiting row between in-progress and in-review', () => {
-    const board = arrangeBoard({
-      ...emptySnapshot,
-      openTickets: [buildTicket({ number: 7, status: 'waiting' })],
-    });
-
-    const keys = board.rows.map((row) => row.key);
-    expect(keys.indexOf('waiting')).toBe(keys.indexOf('in-progress') + 1);
-    expect(keys.indexOf('in-review')).toBe(keys.indexOf('waiting') + 1);
-    expect(rowTicketNumbers(board, 'waiting')).toEqual([7]);
-  });
-
-  it('should return all eleven rows in lifecycle order without tickets when the snapshot is empty', () => {
+  it('should return all nine rows in lifecycle order without tickets when the snapshot is empty', () => {
     const board = arrangeBoard(emptySnapshot);
 
     expect(board.rows.map((row) => row.key)).toEqual([
@@ -37,9 +25,7 @@ describe('arrangeBoard', () => {
       'planned',
       'ready',
       'in-progress',
-      'waiting',
       'in-review',
-      'stuck',
       'conflict',
       'closed',
     ]);
@@ -105,11 +91,25 @@ describe('arrangeBoard', () => {
     const board = arrangeBoard({
       ...emptySnapshot,
       openTickets: [
-        buildTicket({ number: 1, status: 'stuck' }),
-        buildTicket({ number: 2, status: 'stuck' }),
+        buildTicket({ number: 1, status: 'in-review' }),
+        buildTicket({ number: 2, status: 'in-review' }),
       ],
     });
 
-    expect(board.rows.find((row) => row.key === 'stuck')?.totalCount).toBe(2);
+    expect(board.rows.find((row) => row.key === 'in-review')?.totalCount).toBe(2);
+  });
+
+  it('should keep waiting and stuck tickets in the row of their status and add no row for them', () => {
+    const board = arrangeBoard({
+      ...emptySnapshot,
+      openTickets: [
+        buildTicket({ number: 1, status: 'in-progress', waiting: true }),
+        buildTicket({ number: 2, status: 'in-progress', stuck: true }),
+      ],
+    });
+
+    expect(rowTicketNumbers(board, 'in-progress')).toEqual([1, 2]);
+    expect(board.rows.map((row) => row.key)).not.toContain('waiting');
+    expect(board.rows.map((row) => row.key)).not.toContain('stuck');
   });
 });

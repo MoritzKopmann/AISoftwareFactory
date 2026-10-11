@@ -1,5 +1,4 @@
 import type { RunEndingResponse, TicketRunResponse } from '@aisf/app/api-schemas/runs-schemas.js';
-import type { TicketStatusResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
 import { describeTimeAgo } from '../board/describe-time-ago.js';
 import { formatClockTime } from '../board/format-clock-time.js';
 import type { TicketRunPoll } from './fold-ticket-run-poll.js';
@@ -11,7 +10,7 @@ type ActiveRun = NonNullable<TicketRunResponse['activeRun']>;
 type LastRun = NonNullable<TicketRunResponse['lastRun']>;
 
 export type RunPanelInput = TicketRunPoll & {
-  readonly ticketStatus: TicketStatusResponse;
+  readonly ticketStuck: boolean;
   readonly stopping: boolean;
 };
 
@@ -110,7 +109,7 @@ export function describeRunPanel(input: RunPanelInput, now: Date): RunPanelDescr
     return describeLiveRun(activeRun, input, now);
   }
   const lastRun = input.response?.lastRun;
-  if (lastRun === undefined || input.ticketStatus !== 'stuck') {
+  if (lastRun === undefined || !input.ticketStuck) {
     return { kind: 'hidden' };
   }
   const note = endingNote(lastRun.ending);

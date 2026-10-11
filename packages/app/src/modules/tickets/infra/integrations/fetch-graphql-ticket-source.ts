@@ -1,3 +1,4 @@
+import { deriveSecondaryStates } from '../../../../shared/ticket-status/derive-secondary-states.js';
 import { deriveTicketStatus } from '../../../../shared/ticket-status/derive-ticket-status.js';
 import { deriveTicketTypes } from '../../../../shared/ticket-type/derive-ticket-types.js';
 import type { ClosingPullRequest } from '../../logic/domain/types/closing-pull-request.js';
@@ -231,6 +232,7 @@ function toTicket(node: IssueNode, state: 'open' | 'closed'): Ticket {
     status,
     conflictingStatuses,
     hitl: labelNames.includes('hitl'),
+    ...deriveSecondaryStates({ labelNames }),
     types: deriveTicketTypes(labelNames),
     ...(node.parent === null ? {} : { parent: node.parent }),
     subIssueNumbers: node.subIssues.nodes.map((subIssue) => subIssue.number),

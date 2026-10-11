@@ -5,7 +5,7 @@ import { FakeRegisteredRepositories } from '../../fakes/fake-tickets-ports.js';
 import { FakeTicketStatusWrites } from '../../fakes/fake-ticket-status-writes.js';
 
 describe('RevertTicketAnswerUseCase', () => {
-  it('should write waiting and announce it when an answer is reverted', async () => {
+  it('should restore the waiting label and announce it when an answer is reverted', async () => {
     const ticketStatusWrites = new FakeTicketStatusWrites();
     const events = new FakeEventPublisher();
     const useCase = new RevertTicketAnswerUseCase({
@@ -18,7 +18,7 @@ describe('RevertTicketAnswerUseCase', () => {
 
     await useCase.execute('moritz/aisf', 147);
 
-    expect(ticketStatusWrites.calls).toEqual(['setStatus #147 -> waiting']);
+    expect(ticketStatusWrites.calls).toEqual(['readState', 'setSecondaryState #147 waiting on']);
     expect(events.emittedEvents).toEqual([
       {
         name: 'ticket.status-written',
@@ -26,7 +26,9 @@ describe('RevertTicketAnswerUseCase', () => {
           projectId: 'moritz/aisf',
           ticketNumber: 147,
           from: 'in-progress',
-          to: 'waiting',
+          to: 'in-progress',
+          waiting: true,
+          stuck: false,
         },
       },
     ]);

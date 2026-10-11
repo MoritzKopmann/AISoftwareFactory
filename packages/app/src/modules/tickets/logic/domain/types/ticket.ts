@@ -10,6 +10,8 @@ export type Ticket = {
   readonly status: TicketStatus;
   readonly conflictingStatuses: ReadonlyArray<TicketStatus>;
   readonly hitl: boolean;
+  readonly waiting: boolean;
+  readonly stuck: boolean;
   readonly types: ReadonlyArray<TicketType>;
   readonly parent?: { readonly number: number; readonly title: string };
   readonly subIssueNumbers: ReadonlyArray<number>;

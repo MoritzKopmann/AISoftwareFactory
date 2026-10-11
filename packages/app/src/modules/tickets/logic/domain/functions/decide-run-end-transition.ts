@@ -1,30 +1,24 @@
 import type { RunEndTransition } from '../types/run-end-transition.js';
 import type { RunEnding } from '../types/run-ending.js';
+import type { TicketLiveState } from '../types/ticket-live-state.js';
 import type { TicketStatus } from '../../../../../shared/ticket-status/ticket-status.js';
 
-const runningStatuses: ReadonlyArray<TicketStatus> = ['ready', 'in-progress', 'waiting'];
+const runningStatuses: ReadonlyArray<TicketStatus> = ['ready', 'in-progress'];
 
-export function decideRunEndTransition(
-  ending: RunEnding,
-  liveStatus: TicketStatus,
-): RunEndTransition {
+export function decideRunEndTransition(ending: RunEnding, live: TicketLiveState): RunEndTransition {
   if (ending.kind === 'parked') {
-    return liveStatus === 'in-progress' ? { kind: 'transition', to: 'ready' } : { kind: 'none' };
+    return live.status === 'in-progress' ? { kind: 'return-to-ready' } : { kind: 'none' };
   }
-  if (!runningStatuses.includes(liveStatus)) {
+  if (!runningStatuses.includes(live.status) || live.stuck) {
     return { kind: 'none' };
   }
   if (ending.kind === 'checkpoint' || ending.kind === 'permission-needed') {
-    if (liveStatus === 'waiting') {
+    if (live.waiting) {
       return { kind: 'none' };
     }
-    return { kind: 'transition', to: 'waiting', comment: describeEnding(ending) };
+    return { kind: 'flag', state: 'waiting', comment: describeEnding(ending) };
   }
-  return {
-    kind: 'transition',
-    to: 'stuck',
-    comment: describeEnding(ending),
-  };
+  return { kind: 'flag', state: 'stuck', comment: describeEnding(ending) };
 }
 
 function describeEnding(ending: Exclude<RunEnding, { kind: 'parked' }>): string {

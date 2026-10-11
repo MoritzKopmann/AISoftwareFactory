@@ -179,7 +179,7 @@ function LoadedTicket({
         liveUpdates={liveUpdates}
         projectId={projectId}
         number={number}
-        ticketStatus={description.status}
+        ticketState={description}
         runSkill={description.runSkill}
       />
       <dl className="facts">

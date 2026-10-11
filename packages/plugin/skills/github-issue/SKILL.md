@@ -57,12 +57,13 @@ as given.
 aisf writes only these label families. The app's label sync creates them when a project is
 onboarded.
 
-| Dimension | Values                                                                                                                                                       |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Type      | `type: bug` · `type: enhancement` · `type: task` · `type: spike` · `type: ui`                                                                                |
-| Priority  | `priority: critical` · `priority: high` · `priority: medium` · `priority: low`                                                                               |
-| Status    | `status: backlog` · `status: plan` · `status: planned` · `status: ready` · `status: in-progress` · `status: waiting` · `status: in-review` · `status: stuck` |
-| Flag      | `hitl`: orthogonal to status. The leaf has one human checkpoint, named by its spec. The run works alone up to it, then waits.                                |
+| Dimension | Values                                                                                                                                                  |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type      | `type: bug` · `type: enhancement` · `type: task` · `type: spike` · `type: ui`                                                                           |
+| Priority  | `priority: critical` · `priority: high` · `priority: medium` · `priority: low`                                                                          |
+| Status    | `status: backlog` · `status: plan` · `status: planned` · `status: ready` · `status: in-progress` · `status: in-review`                                  |
+| Flag      | `hitl`: orthogonal to status. The leaf has one human checkpoint, named by its spec. The run works alone up to it, then waits.                           |
+| Flag      | `waiting`: orthogonal to status. A run waits at its human checkpoint; the ticket keeps its status. `stuck`: a run gave up; the ticket keeps its status. |
 
 - Every **labelled** issue has exactly one `type:`, one `priority:` and one `status:`.
   Bare ideas have none.
@@ -74,20 +75,24 @@ onboarded.
 
 An open issue with **no** `status:` label is an **idea**. Done is the closed state.
 
-| State           | Stored as                                          | Written by                                                                                                                                                                                                                              |
-| --------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **idea**        | open, no `status:` label                           | anyone opening an issue; `aisf:plan-ticket` sends a vague spec back (`plan → idea`)                                                                                                                                                     |
-| **backlog**     | `status: backlog`                                  | `aisf:create-ticket` (`idea → backlog`); `aisf:plan-ticket` for UI work awaiting a design (`plan → backlog`, and a new `type: ui` child)                                                                                                |
-| **plan**        | `status: plan`; may have an open spike child       | `aisf:create-ticket` (`idea → plan`); the human (`backlog → plan`, `stuck → plan`)                                                                                                                                                      |
-| **planned**     | `status: planned`, has sub-issues                  | `aisf:plan-ticket` (`plan → planned`)                                                                                                                                                                                                   |
-| **ready**       | `status: ready`, no sub-issues                     | `aisf:plan-ticket` (`plan → ready`, and new sub-issues); the human (`stuck → ready`); the app's Reset to ready (from `stuck` or `in-progress`)                                                                                          |
-| **in-progress** | `status: in-progress`                              | `aisf:implement-ticket` (`ready → in-progress`, and `in-review → in-progress` for rework); the app (`stuck → in-progress` on a permission answer, `waiting → in-progress` on a checkpoint answer)                                       |
-| **waiting**     | `status: waiting`, plus a comment with the request | the app (a run that ends at its human checkpoint)                                                                                                                                                                                       |
-| **in-review**   | `status: in-review`, plus a PR with `Closes #N`    | `aisf:implement-ticket` (`in-progress → in-review`)                                                                                                                                                                                     |
-| **stuck**       | `status: stuck`, plus a comment with the reason    | the app (`→ stuck` when a run gives up); by hand, the _Hand-run stuck_ operation                                                                                                                                                        |
-| _(closed)_      | closed state; leftover labels are ignored          | the app: it rebase-merges an approved PR, and `Closes #N` closes the ticket; it also closes a `planned` parent when its last child closes; `aisf:implement-ticket` closes a `hitl` leaf with no code change, after its evidence comment |
+| State           | Stored as                                       | Written by                                                                                                                                                                                                                              |
+| --------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **idea**        | open, no `status:` label                        | anyone opening an issue; `aisf:plan-ticket` sends a vague spec back (`plan → idea`)                                                                                                                                                     |
+| **backlog**     | `status: backlog`                               | `aisf:create-ticket` (`idea → backlog`); `aisf:plan-ticket` for UI work awaiting a design (`plan → backlog`, and a new `type: ui` child)                                                                                                |
+| **plan**        | `status: plan`; may have an open spike child    | `aisf:create-ticket` (`idea → plan`); the human (`backlog → plan`)                                                                                                                                                                      |
+| **planned**     | `status: planned`, has sub-issues               | `aisf:plan-ticket` (`plan → planned`)                                                                                                                                                                                                   |
+| **ready**       | `status: ready`, no sub-issues                  | `aisf:plan-ticket` (`plan → ready`, and new sub-issues); the app's Reset to ready (from `in-progress`, or any status with the `stuck` label; it removes both flag labels)                                                               |
+| **in-progress** | `status: in-progress`                           | `aisf:implement-ticket` (`ready → in-progress`, and `in-review → in-progress` for rework); the app removes the `waiting` label when a permission or checkpoint answer is given; the status stays `in-progress`                          |
+| **in-review**   | `status: in-review`, plus a PR with `Closes #N` | `aisf:implement-ticket` (`in-progress → in-review`)                                                                                                                                                                                     |
+| _(closed)_      | closed state; leftover labels are ignored       | the app: it rebase-merges an approved PR, and `Closes #N` closes the ticket; it also closes a `planned` parent when its last child closes; `aisf:implement-ticket` closes a `hitl` leaf with no code change, after its evidence comment |
 
 - Never `backlog → in-progress` — plan first.
+- **`waiting` and `stuck` are labels beside the status, not statuses.** A ticket keeps its
+  lifecycle status while it waits or is stuck. The app adds `waiting` (plus a comment with the
+  request) when a run ends at its human checkpoint, and removes it on the answer. It adds
+  `stuck` (plus a comment with the reason) and removes `waiting` when a run gives up. Reset
+  removes both. A legacy `status: waiting` or `status: stuck` label is not migrated: the ticket
+  shows as `conflict` until the label is removed by hand.
 - A `planned` parent is a tracking umbrella: it is never implemented and never closed by hand.
 - **A spike has no PR.** `aisf:spike` moves it `ready → in-progress` and closes it itself, once
   its verdict is in the parent's body.
@@ -106,7 +111,7 @@ Every status change is a guarded swap. The caller passes `<expected-from> → <t
 2. Compare with the expected state:
    - **Match** (for `idea`: the list is empty) → go on.
    - **Mismatch** → stop. Report the actual state to the caller and write nothing. The app
-     or the human may have moved the ticket (for example to `stuck` or `waiting`) mid-run; never overwrite that.
+     or the human may have moved the ticket (for example by adding the `stuck` or `waiting` label) mid-run; never overwrite that.
 3. Swap in one edit. Remove every `status:` label found in step 1 and add the new one, so
    exactly one remains:
 
@@ -213,13 +218,18 @@ gh issue comment <n> --body-file <tmp>
 
 ## The app died mid-answer
 
-The ticket is left `stuck`, or `in-progress` with no active run. The hand fix: press Reset to
+The ticket is left with the `stuck` label, or `in-progress` with no active run. The hand fix: press Reset to
 ready on the ticket page, then Run.
 
 ## Hand-run stuck
 
 The fallback when a run must give up and the app's `aisf_escalate` tool is absent:
 
-1. Guarded transition `<current> → stuck` (usually `in-progress → stuck`).
+1. Add the `stuck` label, and remove the `waiting` label if present. The status does not change:
+
+   ```bash
+   gh issue edit <n> --add-label "stuck" --remove-label "waiting"
+   ```
+
 2. A comment stating the reason: what was tried, what failed (paste the output), and what a
    human needs to decide.

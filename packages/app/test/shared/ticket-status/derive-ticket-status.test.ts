@@ -22,38 +22,32 @@ describe('deriveTicketStatus', () => {
     });
   });
 
-  it('should be idea when the only status label is unknown', () => {
-    expect(deriveTicketStatus({ state: 'open', labelNames: ['status: foo'] })).toEqual({
-      status: 'idea',
-      conflictingStatuses: [],
-    });
-  });
-
-  it('should ignore an unknown status label when a known one is present', () => {
-    expect(
-      deriveTicketStatus({ state: 'open', labelNames: ['status: foo', 'status: ready'] }),
-    ).toEqual({ status: 'ready', conflictingStatuses: [] });
-  });
-
   it('should be conflict naming both statuses when two known status labels are present', () => {
     expect(
       deriveTicketStatus({ state: 'open', labelNames: ['status: ready', 'status: in-review'] }),
     ).toEqual({ status: 'conflict', conflictingStatuses: ['ready', 'in-review'] });
   });
 
-  it('should be waiting with no conflict when the only status label is status: waiting', () => {
+  it('should be conflict when the only status label is the legacy status: waiting', () => {
     expect(deriveTicketStatus({ state: 'open', labelNames: ['status: waiting'] })).toEqual({
-      status: 'waiting',
+      status: 'conflict',
       conflictingStatuses: [],
     });
   });
 
-  it('should be conflict naming in-progress and waiting when both labels are present', () => {
+  it('should be conflict when the only status label is the legacy status: stuck', () => {
+    expect(deriveTicketStatus({ state: 'open', labelNames: ['status: stuck'] })).toEqual({
+      status: 'conflict',
+      conflictingStatuses: [],
+    });
+  });
+
+  it('should be conflict naming the known status when a legacy label sits beside it', () => {
     expect(
       deriveTicketStatus({
         state: 'open',
         labelNames: ['status: in-progress', 'status: waiting'],
       }),
-    ).toEqual({ status: 'conflict', conflictingStatuses: ['in-progress', 'waiting'] });
+    ).toEqual({ status: 'conflict', conflictingStatuses: ['in-progress'] });
   });
 });

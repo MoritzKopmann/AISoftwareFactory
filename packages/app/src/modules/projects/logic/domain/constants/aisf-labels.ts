@@ -31,13 +31,7 @@ export const aisfLabels: ReadonlyArray<AisfLabel> = [
     color: 'FBCA04',
     description: 'Implementation run in progress',
   },
-  {
-    name: 'status: waiting',
-    color: 'D876E3',
-    description: 'A run waits at its human checkpoint',
-  },
   { name: 'status: in-review', color: 'E4E669', description: 'PR open, awaiting review' },
-  { name: 'status: stuck', color: 'B60205', description: 'A run gave up; needs a human' },
   {
     name: 'hitl',
     color: 'F9A825',
@@ -48,4 +42,6 @@ export const aisfLabels: ReadonlyArray<AisfLabel> = [
     color: '1A7F37',
     description: 'Set by the human on a pull request; the app then rebase-merges it',
   },
+  { name: 'waiting', color: 'D876E3', description: 'A run waits at its human checkpoint' },
+  { name: 'stuck', color: 'B60205', description: 'A run gave up; needs a human' },
 ];

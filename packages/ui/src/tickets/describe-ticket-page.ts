@@ -29,6 +29,8 @@ export type TicketPageDescription =
       readonly numberLabel: string;
       readonly title: string;
       readonly status: TicketStatusResponse;
+      readonly waiting: boolean;
+      readonly stuck: boolean;
       readonly statusLabel: string;
       readonly statusMark: StatusMark;
       readonly url: string;
@@ -52,6 +54,8 @@ function describeLoadedTicket(ticket: TicketResponse, projectId: string): Ticket
     numberLabel: `#${ticket.number}`,
     title: ticket.title,
     status: ticket.status,
+    waiting: ticket.waiting,
+    stuck: ticket.stuck,
     statusLabel: ticketStatusLabel(ticket.status),
     statusMark: describeTicketStatusMark(ticket.status),
     url: ticket.url,

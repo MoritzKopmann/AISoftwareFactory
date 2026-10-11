@@ -8,7 +8,10 @@ export type StatusMark = {
   readonly pulses: boolean;
 };
 
-export function describeTicketStatusMark(status: TicketStatusResponse): StatusMark {
+// `waiting` and `stuck` are flags, not statuses; their markers reuse the same shapes.
+export type StatusMarkKey = TicketStatusResponse | 'waiting' | 'stuck';
+
+export function describeTicketStatusMark(status: StatusMarkKey): StatusMark {
   switch (status) {
     case 'idea':
     case 'backlog':

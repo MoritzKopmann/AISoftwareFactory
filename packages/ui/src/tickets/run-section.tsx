@@ -1,4 +1,4 @@
-import type { TicketStatusResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
+import type { TicketResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
 import type { TicketArtifactsResponse } from '@aisf/app/api-schemas/artifacts-schemas.js';
 import { useEffect, useState } from 'react';
 import type { LiveUpdates } from '../live/live-updates.js';
@@ -43,7 +43,7 @@ type RunSectionProps = {
   readonly liveUpdates: LiveUpdates;
   readonly projectId: string;
   readonly number: number;
-  readonly ticketStatus: TicketStatusResponse;
+  readonly ticketState: Pick<TicketResponse, 'status' | 'waiting' | 'stuck'>;
   readonly runSkill: RunSkill;
 };
 
@@ -51,9 +51,10 @@ export function RunSection({
   liveUpdates,
   projectId,
   number,
-  ticketStatus,
+  ticketState,
   runSkill,
 }: RunSectionProps) {
+  const { status: ticketStatus, stuck: ticketStuck } = ticketState;
   const { ticketRun, retry: retryRun } = useTicketRun(liveUpdates, projectId, number);
   const [start, setStart] = useState<StartState>({ kind: 'idle' });
   const [stoppingRunId, setStoppingRunId] = useState<string | undefined>(undefined);
@@ -94,8 +95,10 @@ export function RunSection({
   }, [ticketRun.response]);
 
   useEffect(() => {
-    setReset((current) => settleResetState(current, ticketRun.response, ticketStatus));
-  }, [ticketRun.response, ticketStatus]);
+    setReset((current) =>
+      settleResetState(current, ticketRun.response, { status: ticketStatus, stuck: ticketStuck }),
+    );
+  }, [ticketRun.response, ticketStatus, ticketStuck]);
 
   const run = async () => {
     setStart({ kind: 'starting' });
@@ -135,18 +138,22 @@ export function RunSection({
     if (outcome.kind === 'failed') setReset(outcome);
   };
 
-  const prompt = describePermissionPrompt(ticketRun.response, ticketStatus, permissionAnswer);
+  const prompt = describePermissionPrompt(
+    ticketRun.response,
+    ticketState.waiting,
+    permissionAnswer,
+  );
 
   const checkpointPrompt = describeCheckpointPrompt(
     ticketRun.response,
-    ticketStatus,
+    ticketState.waiting,
     checkpointAnswer,
   );
 
   const panel = describeRunPanel(
     {
       ...ticketRun,
-      ticketStatus,
+      ticketStuck: ticketState.stuck,
       stopping: activeRunId !== undefined && activeRunId === stoppingRunId,
     },
     new Date(),
@@ -155,7 +162,7 @@ export function RunSection({
   return (
     <>
       <RunBar
-        description={describeRunBar(ticketRun.response, ticketStatus, start, number, runSkill)}
+        description={describeRunBar(ticketRun.response, ticketState, start, number, runSkill)}
         onRun={() => void run()}
       />
       <PermissionPrompt
@@ -199,7 +206,7 @@ export function RunSection({
         }}
       />
       <ResetAction
-        description={describeResetAction(ticketRun.response, ticketStatus, reset, number)}
+        description={describeResetAction(ticketRun.response, ticketState, reset, number)}
         onReset={() => void resetToReady()}
       />
     </>

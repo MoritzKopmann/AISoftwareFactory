@@ -1,5 +1,6 @@
 import type { StatusWrite } from '../types/status-write.js';
 import type { TicketSnapshot } from '../types/ticket-snapshot.js';
+import { hasWrittenFlags } from './has-written-flags.js';
 import { isAwaitingConfirmation } from './is-awaiting-confirmation.js';
 
 const statusWriteWindowMilliseconds = 60_000;
@@ -15,7 +16,7 @@ export function pruneStatusWrites(
     );
     return (
       ticket !== undefined &&
-      ticket.status !== write.to &&
+      !(ticket.status === write.to && hasWrittenFlags(ticket, write)) &&
       isAwaitingConfirmation(ticket, write) &&
       Date.parse(now) - Date.parse(write.writtenAt) < statusWriteWindowMilliseconds
     );

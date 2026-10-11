@@ -67,9 +67,9 @@ Go on only for a leaf that is `status: ready` (new), `in-progress` (resume) or `
 (rework, §1), not `type: spike` or `type: ui`, with Scope, Landing zone and Acceptance criteria
 in its body (under `## Spec` on a one-PR ticket). `planned` → §1. Anything else → stop, name
 the next step (`aisf:spike`, `aisf:ui-ticket`, `aisf:plan-ticket`, `aisf:create-ticket`, or the
-human for `stuck`). A stop here writes nothing.
+human for a ticket with the `stuck` label). A stop here writes nothing.
 
-`status: waiting` → stop. The run waits at its human checkpoint. The human answers on the
+The `waiting` label → stop. The run waits at its human checkpoint. The human answers on the
 ticket page, and the app resumes the run.
 
 ## 1. Identify

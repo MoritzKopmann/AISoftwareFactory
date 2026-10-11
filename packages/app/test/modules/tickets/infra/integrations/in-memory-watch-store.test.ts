@@ -10,8 +10,10 @@ const watch: RepositoryWatch = {
 };
 const write: StatusWrite = {
   ticketNumber: 7,
-  from: 'stuck',
+  from: 'in-progress',
   to: 'ready',
+  waiting: false,
+  stuck: false,
   writtenAt: '2026-09-28T12:00:00.000Z',
 };
 

@@ -13,9 +13,7 @@ export const boardStatuses: ReadonlyArray<TicketStatusResponse> = [
   'planned',
   'ready',
   'in-progress',
-  'waiting',
   'in-review',
-  'stuck',
   'conflict',
   'closed',
 ];

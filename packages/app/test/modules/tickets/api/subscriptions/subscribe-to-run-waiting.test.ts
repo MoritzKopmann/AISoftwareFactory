@@ -35,7 +35,9 @@ describe('subscribeToRunWaiting', () => {
 
     bus.emit('run.waiting', runWaiting);
 
-    await vi.waitFor(() => expect(ticketStatusWrites.calls).toContain('setStatus #7 -> waiting'));
+    await vi.waitFor(() =>
+      expect(ticketStatusWrites.calls).toContain('setSecondaryState #7 waiting on'),
+    );
   });
 
   it('should log the failure and not throw when the write fails', async () => {

@@ -30,19 +30,46 @@ export class SettleWaitingRunUseCase {
     }
 
     // The run is still running: the same end rule applies, but nothing is settled.
-    const liveStatus = await ticketStatusWrites.readStatus(project.repository, ticketNumber);
-    const transition = decideRunEndTransition(wait, liveStatus);
+    const live = await ticketStatusWrites.readState(project.repository, ticketNumber);
+    const transition = decideRunEndTransition(wait, live);
     if (transition.kind === 'none') {
       return;
     }
-    await ticketStatusWrites.setStatus(project.repository, ticketNumber, transition.to);
-    events.emit('ticket.status-written', {
-      projectId,
-      ticketNumber,
-      from: liveStatus,
-      to: transition.to,
-    });
-    if (transition.comment !== undefined) {
+    if (transition.kind === 'return-to-ready') {
+      await ticketStatusWrites.setStatus(project.repository, ticketNumber, 'ready');
+      events.emit('ticket.status-written', {
+        projectId,
+        ticketNumber,
+        from: live.status,
+        to: 'ready',
+        waiting: live.waiting,
+        stuck: live.stuck,
+      });
+    }
+    if (transition.kind === 'flag') {
+      const becomesStuck = transition.state === 'stuck';
+      if (becomesStuck && live.waiting) {
+        await ticketStatusWrites.setSecondaryState(
+          project.repository,
+          ticketNumber,
+          'waiting',
+          false,
+        );
+      }
+      await ticketStatusWrites.setSecondaryState(
+        project.repository,
+        ticketNumber,
+        transition.state,
+        true,
+      );
+      events.emit('ticket.status-written', {
+        projectId,
+        ticketNumber,
+        from: live.status,
+        to: live.status,
+        waiting: !becomesStuck,
+        stuck: becomesStuck || live.stuck,
+      });
       await ticketStatusWrites.comment(project.repository, ticketNumber, transition.comment);
     }
   }

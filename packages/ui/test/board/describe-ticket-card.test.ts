@@ -73,8 +73,12 @@ describe('describeTicketCard', () => {
     expect(card.pullRequestChips).toEqual([{ label: 'PR #7' }]);
   });
 
-  it('should mark the card stuck when its status is stuck', () => {
-    const card = describeTicketCard(buildTicketResponse({ status: 'stuck' }), 'o/n', []);
+  it('should mark the card stuck when the ticket has the stuck flag', () => {
+    const card = describeTicketCard(
+      buildTicketResponse({ status: 'in-progress', stuck: true }),
+      'o/n',
+      [],
+    );
     expect(card.runMarker).toBe('stuck');
   });
 
@@ -89,7 +93,7 @@ describe('describeTicketCard', () => {
 
   it('should mark the card stuck when it is stuck and also the running ticket', () => {
     const card = describeTicketCard(
-      buildTicketResponse({ number: 43, status: 'stuck' }),
+      buildTicketResponse({ number: 43, status: 'in-progress', stuck: true }),
       'o/n',
       [43],
     );
@@ -112,14 +116,18 @@ describe('describeTicketCard', () => {
     expect(describeWith('')).toEqual(describeWith('# A long description'));
   });
 
-  it('should mark the card waiting when the ticket is waiting', () => {
-    const card = describeTicketCard(buildTicketResponse({ status: 'waiting' }), 'o/n', []);
+  it('should mark the card waiting when the ticket has the waiting flag', () => {
+    const card = describeTicketCard(
+      buildTicketResponse({ status: 'in-progress', waiting: true }),
+      'o/n',
+      [],
+    );
     expect(card.runMarker).toBe('waiting');
   });
 
   it('should mark the card waiting and not running when the waiting ticket is the running one', () => {
     const card = describeTicketCard(
-      buildTicketResponse({ number: 7, status: 'waiting' }),
+      buildTicketResponse({ number: 7, status: 'in-progress', waiting: true }),
       'o/n',
       [7],
     );
@@ -127,13 +135,13 @@ describe('describeTicketCard', () => {
   });
 
   it.each([
-    { status: 'stuck', running: [], marker: 'stuck' },
-    { status: 'in-progress', running: [1], marker: 'running' },
-    { status: 'ready', running: [], marker: undefined },
+    { stuck: true, status: 'in-progress', running: [], marker: 'stuck' },
+    { stuck: false, status: 'in-progress', running: [1], marker: 'running' },
+    { stuck: false, status: 'ready', running: [], marker: undefined },
   ] as const)(
-    'should mark the card $marker when the status is $status',
-    ({ status, running, marker }) => {
-      const card = describeTicketCard(buildTicketResponse({ status }), 'o/n', running);
+    'should mark the card $marker when the status is $status and stuck is $stuck',
+    ({ status, stuck, running, marker }) => {
+      const card = describeTicketCard(buildTicketResponse({ status, stuck }), 'o/n', running);
       expect(card.runMarker).toBe(marker);
     },
   );

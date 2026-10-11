@@ -21,15 +21,18 @@ export class BeginTicketAnswerUseCase {
     if (project === undefined) {
       throw new TicketNotAnswerableError(`${projectId} is unknown`);
     }
-    if ((await ticketStatusWrites.readStatus(project.repository, ticketNumber)) !== 'waiting') {
+    const live = await ticketStatusWrites.readState(project.repository, ticketNumber);
+    if (!live.waiting) {
       throw new TicketNotAnswerableError(`#${ticketNumber} is not waiting`);
     }
-    await ticketStatusWrites.setStatus(project.repository, ticketNumber, 'in-progress');
+    await ticketStatusWrites.setSecondaryState(project.repository, ticketNumber, 'waiting', false);
     events.emit('ticket.status-written', {
       projectId,
       ticketNumber,
-      from: 'waiting',
-      to: 'in-progress',
+      from: live.status,
+      to: live.status,
+      waiting: false,
+      stuck: live.stuck,
     });
   }
 }

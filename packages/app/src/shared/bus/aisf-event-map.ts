@@ -54,6 +54,8 @@ export type AisfEventMap = {
     readonly ticketNumber: number;
     readonly from: TicketStatus;
     readonly to: TicketStatus;
+    readonly waiting: boolean;
+    readonly stuck: boolean;
   };
   readonly 'run.started': {
     readonly runId: string;

@@ -7,9 +7,7 @@ export const ticketStatusSchema = z.enum([
   'planned',
   'ready',
   'in-progress',
-  'waiting',
   'in-review',
-  'stuck',
   'conflict',
   'closed',
 ]);
@@ -26,6 +24,8 @@ export const ticketResponseSchema = z.object({
   status: ticketStatusSchema,
   conflictingStatuses: z.array(ticketStatusSchema),
   hitl: z.boolean(),
+  waiting: z.boolean(),
+  stuck: z.boolean(),
   types: z.array(ticketTypeSchema),
   parent: z.object({ number: z.number(), title: z.string() }).optional(),
   subIssueNumbers: z.array(z.number()),

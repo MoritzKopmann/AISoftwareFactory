@@ -14,9 +14,13 @@ const lastRun: NonNullable<TicketRunResponse['lastRun']> = {
   ending: { kind: 'stopped' },
 };
 
+const stuckTicket = { status: 'in-progress', stuck: true } as const;
+const inProgressTicket = { status: 'in-progress', stuck: false } as const;
+const readyTicket = { status: 'ready', stuck: false } as const;
+
 describe('describeResetAction', () => {
   it('should show a pressable Reset when the ticket is stuck and no run is active', () => {
-    expect(describeResetAction(noRun, 'stuck', { kind: 'idle' }, 57)).toEqual({
+    expect(describeResetAction(noRun, stuckTicket, { kind: 'idle' }, 57)).toEqual({
       kind: 'shown',
       resetting: false,
     });
@@ -28,7 +32,7 @@ describe('describeResetAction', () => {
   ])(
     'should show a pressable Reset when the ticket is in progress with $name and none is active',
     ({ response }) => {
-      expect(describeResetAction(response, 'in-progress', { kind: 'idle' }, 57)).toEqual({
+      expect(describeResetAction(response, inProgressTicket, { kind: 'idle' }, 57)).toEqual({
         kind: 'shown',
         resetting: false,
       });
@@ -40,26 +44,26 @@ describe('describeResetAction', () => {
       ...noRun,
       lastRun: { ...lastRun, ending: { kind: 'checkpoint', request: 'Check the board.' } },
     };
-    expect(describeResetAction(response, 'stuck', { kind: 'idle' }, 57)).toEqual({
+    expect(describeResetAction(response, stuckTicket, { kind: 'idle' }, 57)).toEqual({
       kind: 'shown',
       resetting: false,
     });
   });
 
   it('should hide Reset when no answer has arrived yet', () => {
-    expect(describeResetAction(undefined, 'stuck', { kind: 'idle' }, 57)).toEqual({
+    expect(describeResetAction(undefined, stuckTicket, { kind: 'idle' }, 57)).toEqual({
       kind: 'hidden',
     });
   });
 
-  it.each(['stuck', 'in-progress'] as const)(
-    'should hide Reset when a run is active on the %s ticket',
-    (ticketStatus) => {
-      expect(describeResetAction(live, ticketStatus, { kind: 'idle' }, 57)).toEqual({
-        kind: 'hidden',
-      });
-    },
-  );
+  it.each([
+    { name: 'stuck', ticketState: stuckTicket },
+    { name: 'in-progress', ticketState: inProgressTicket },
+  ])('should hide Reset when a run is active on the $name ticket', ({ ticketState }) => {
+    expect(describeResetAction(live, ticketState, { kind: 'idle' }, 57)).toEqual({
+      kind: 'hidden',
+    });
+  });
 
   it.each([
     'idea',
@@ -67,12 +71,11 @@ describe('describeResetAction', () => {
     'plan',
     'planned',
     'ready',
-    'waiting',
     'in-review',
     'conflict',
     'closed',
-  ] as const)('should hide Reset when the ticket is %s', (ticketStatus) => {
-    expect(describeResetAction(noRun, ticketStatus, { kind: 'idle' }, 57)).toEqual({
+  ] as const)('should hide Reset when the ticket is %s', (status) => {
+    expect(describeResetAction(noRun, { status, stuck: false }, { kind: 'idle' }, 57)).toEqual({
       kind: 'hidden',
     });
   });
@@ -82,13 +85,13 @@ describe('describeResetAction', () => {
       ...noRun,
       lastRun: { ...lastRun, ending: { kind: 'checkpoint', request: 'Check the board.' } },
     };
-    expect(describeResetAction(response, 'in-progress', { kind: 'idle' }, 57)).toEqual({
+    expect(describeResetAction(response, inProgressTicket, { kind: 'idle' }, 57)).toEqual({
       kind: 'hidden',
     });
   });
 
   it('should show a busy Reset with an announcement when a reset is pending', () => {
-    expect(describeResetAction(noRun, 'stuck', { kind: 'resetting' }, 57)).toEqual({
+    expect(describeResetAction(noRun, stuckTicket, { kind: 'resetting' }, 57)).toEqual({
       kind: 'shown',
       resetting: true,
       announcement: 'Resetting #57',
@@ -101,7 +104,7 @@ describe('describeResetAction', () => {
       message: 'A run is active on this ticket.',
       status: 409,
     } as const;
-    expect(describeResetAction(noRun, 'stuck', failed, 57)).toEqual({
+    expect(describeResetAction(noRun, stuckTicket, failed, 57)).toEqual({
       kind: 'shown',
       resetting: false,
       error: { message: "Couldn't reset #57. A run is active on this ticket.", detail: '409' },
@@ -111,7 +114,7 @@ describe('describeResetAction', () => {
   it('should show the error without a detail line when the reset failed without a status', () => {
     const description = describeResetAction(
       noRun,
-      'stuck',
+      stuckTicket,
       { kind: 'failed', message: "Can't reach aisf." },
       57,
     );
@@ -124,24 +127,24 @@ describe('describeResetAction', () => {
 
   it('should end the error at the lead sentence when the server gave no message', () => {
     expect(
-      describeResetAction(noRun, 'stuck', { kind: 'failed', message: '', status: 500 }, 57),
+      describeResetAction(noRun, stuckTicket, { kind: 'failed', message: '', status: 500 }, 57),
     ).toMatchObject({ error: { message: "Couldn't reset #57.", detail: '500' } });
   });
 });
 
 describe('settleResetState', () => {
   it('should settle a pending reset when the ticket shows ready', () => {
-    expect(settleResetState({ kind: 'resetting' }, noRun, 'ready')).toEqual({ kind: 'idle' });
+    expect(settleResetState({ kind: 'resetting' }, noRun, readyTicket)).toEqual({ kind: 'idle' });
   });
 
   it('should keep a pending reset while the ticket still shows stuck', () => {
-    expect(settleResetState({ kind: 'resetting' }, noRun, 'stuck')).toEqual({
+    expect(settleResetState({ kind: 'resetting' }, noRun, stuckTicket)).toEqual({
       kind: 'resetting',
     });
   });
 
   it('should drop a failed reset when a run becomes active', () => {
     const failed = { kind: 'failed', message: '#57 has an active run', status: 409 } as const;
-    expect(settleResetState(failed, live, 'in-progress')).toEqual({ kind: 'idle' });
+    expect(settleResetState(failed, live, inProgressTicket)).toEqual({ kind: 'idle' });
   });
 });

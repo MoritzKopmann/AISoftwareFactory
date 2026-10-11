@@ -5,7 +5,10 @@ export function subscribeToTicketStatusWritten(
   subscriber: EventSubscriber,
   recordStatusWrite: (projectId: string, write: Omit<StatusWrite, 'writtenAt'>) => void,
 ): () => void {
-  return subscriber.on('ticket.status-written', ({ projectId, ticketNumber, from, to }) => {
-    recordStatusWrite(projectId, { ticketNumber, from, to });
-  });
+  return subscriber.on(
+    'ticket.status-written',
+    ({ projectId, ticketNumber, from, to, waiting, stuck }) => {
+      recordStatusWrite(projectId, { ticketNumber, from, to, waiting, stuck });
+    },
+  );
 }

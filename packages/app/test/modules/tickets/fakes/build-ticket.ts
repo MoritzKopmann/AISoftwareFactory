@@ -8,6 +8,8 @@ export function buildTicket(overrides: Partial<Ticket> & Pick<Ticket, 'number'>)
     status: 'idea',
     conflictingStatuses: [],
     hitl: false,
+    waiting: false,
+    stuck: false,
     types: [],
     subIssueNumbers: [],
     blockedBy: [],

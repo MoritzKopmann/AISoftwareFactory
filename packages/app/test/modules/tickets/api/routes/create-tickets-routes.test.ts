@@ -157,6 +157,20 @@ describe('createTicketsRoutes', () => {
       expect(tickets.ticketRequests).toEqual([{ projectId: 'owner/name', number: 7 }]);
     });
 
+    it('should answer 200 with status in-progress and the waiting flag when the ticket waits', async () => {
+      const tickets = new FakeTickets();
+      tickets.tickets.set('owner/name#5', {
+        projectId: 'owner/name',
+        sync: okSync,
+        ticket: buildTicket({ number: 5, status: 'in-progress', waiting: true }),
+      });
+
+      const response = await createTestApp(tickets).request('/projects/owner/name/tickets/5');
+
+      const body = projectTicketResponseSchema.parse(await response.json());
+      expect(body.ticket).toMatchObject({ status: 'in-progress', waiting: true, stuck: false });
+    });
+
     it('should answer 200 with the ticket types when the ticket has types', async () => {
       const tickets = new FakeTickets();
       tickets.tickets.set('owner/name#42', {
