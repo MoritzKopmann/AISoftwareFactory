@@ -45,7 +45,8 @@ invent what the spec left out.
 
 **Resume.** A `## Planning so far` section means planning paused for a spike. Its spike still
 open → stop and name it. Otherwise that section and the verdict under it are settled: they seed
-the ledger, and step 3 asks only what is still open.
+the ledger, and step 3 asks only what is still open. A resumed session reads the ledger and the
+findings log from `.aisf/artifacts/plan-<n>/` (`ledger.md`, `findings.md`).
 
 ## Your seat
 
@@ -73,7 +74,7 @@ before or between rounds, as many as the ticket needs. Sources: the codebase, th
 primary sources), and any project the human names. Each agent gets **one specific question**,
 and every prompt says: _"Do not edit files, commit, or open PRs — report findings only."_
 
-**Findings log.** One scratchpad file: question · finding · source. Read it before every
+**Findings log.** `.aisf/artifacts/plan-<n>/findings.md`: question · finding · source. Read it before every
 dispatch; a question it already answers is never sent again.
 
 **A dependency the project lacks** is checked against `project-toolchain`'s dependency bar and
@@ -109,15 +110,16 @@ Load `aisf:grilling` and follow it. Specific to planning:
   - **Ownership**: it is unclear which module owns the work.
 - **Group the frontier.** Every question whose answer does not depend on another open one goes
   in the same round. Research for the questions downstream runs meanwhile.
-- **Rounds go on the questionnaire page.** With the `Artifact` tool present, read
-  `questionnaire.md` (this folder) and ask every round there. Without it, ask in chat, each
-  question self-contained: Problem, Options with gain and cost, Suggestion.
+- **Rounds go on the bridge page.** With `aisf_show_artifact` present, read `questionnaire.md`
+  (this folder) and ask every round there: one page per session, id `plan-<n>`, each round one
+  `<aisf-round>`. A veto in a round's `vetoes` turns that decision into a question in the next
+  round. Without the tool, interview and Confirm run in chat, each question self-contained.
 - **Object immediately** to an answer breaking a hard ban or placement rule: one sentence, naming
   the rule and the legal alternative. If the human reaffirms, comply and record it under Risks
   as a knowing override.
 - **An answer contradicting a settled decision's `assumes:` reopens that decision.** Re-scan
   once per round.
-- **Ledger.** One scratchpad file, appended each round:
+- **Ledger.** `.aisf/artifacts/plan-<n>/ledger.md`, appended each round:
   `decision · resolution · assumes: … · round N`, precedent decisions included.
 - **Files are the memory.** After each round, the ledger and the findings log hold everything
   later steps need. Later steps read them, not the scrollback, so a compacted context loses
@@ -172,7 +174,9 @@ at Confirm with the reason, and goes to Risks.
 ## 6. Confirm
 
 Show the split as a table: **Title** · **Blocked-by** · **Proposed `hitl`** and its checkpoint.
-On the questionnaire page it is the last section, otherwise in chat.
+On the bridge page it is the last round: an `<aisf-confirm>` with one `<aisf-task>` per
+sub-issue and its `hitl` switch, plus the decision tree from the ledger as `<aisf-tree-node>`
+rows. Without `aisf_show_artifact`, the table goes in chat. Confirm locks the `hitl` flags.
 
 **This is the only gate.** Confirmed → the rest runs without further approval. Not confirmed →
 reopen that decision and go back to step 3.
@@ -215,7 +219,7 @@ spec**.
 - **A broken flow is a defect, not a footnote.** A step ending nowhere, a piece nothing calls:
   fix it here.
 - **A decision the plan leaves open comes back as a question**, never as a guess: put it to the
-  human, record the answer in the ledger, then go on.
+  human (on the same page, as a further round), record the answer in the ledger, then go on.
 
 **Three checks, once, on this document.** A failure is a defect in the split, not a note on the
 ticket: resplit or add a sub-issue, and take a changed split back to step 6.
