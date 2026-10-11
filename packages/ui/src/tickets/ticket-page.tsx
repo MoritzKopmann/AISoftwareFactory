@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { LiveUpdates } from '../live/live-updates.js';
 import { useLiveRead } from '../live/use-live-read.js';
+import { RunMarkerChip } from '../board/run-marker-chip.js';
 import { KnownBugs } from '../findings/known-bugs.js';
 import {
   describeTicketPage,
@@ -171,6 +172,7 @@ function LoadedTicket({
             </span>
             {description.statusLabel}
           </span>
+          {description.marker !== undefined && <RunMarkerChip marker={description.marker} />}
           <a className="ext" href={description.url} target="_blank" rel="noopener">
             Open on GitHub
           </a>

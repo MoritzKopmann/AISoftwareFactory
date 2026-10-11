@@ -4,6 +4,7 @@ import type {
   TicketResponse,
   TicketStatusResponse,
 } from '@aisf/app/api-schemas/tickets-schemas.js';
+import { describeLabelMarker, type LabelMarker } from '../board/describe-label-marker.js';
 import { describeTicketStatusMark, type StatusMark } from '../board/describe-ticket-status-mark.js';
 import { formatClockTime } from '../board/format-clock-time.js';
 import { ticketStatusLabel } from '../board/ticket-status-labels.js';
@@ -32,6 +33,7 @@ export type TicketPageDescription =
       readonly status: TicketStatusResponse;
       readonly waiting: boolean;
       readonly stuck: boolean;
+      readonly marker?: LabelMarker;
       readonly statusLabel: string;
       readonly statusMark: StatusMark;
       readonly url: string;
@@ -59,6 +61,7 @@ function runSkillFor(ticket: TicketResponse): RunSkill {
 
 function describeLoadedTicket(ticket: TicketResponse, projectId: string): TicketPageDescription {
   const reviewPanel = describeReviewPanel(ticket);
+  const marker = describeLabelMarker(ticket);
   return {
     kind: 'loaded',
     numberLabel: `#${ticket.number}`,
@@ -66,6 +69,7 @@ function describeLoadedTicket(ticket: TicketResponse, projectId: string): Ticket
     status: ticket.status,
     waiting: ticket.waiting,
     stuck: ticket.stuck,
+    ...(marker === undefined ? {} : { marker }),
     statusLabel: ticketStatusLabel(ticket.status),
     statusMark: describeTicketStatusMark(ticket.status),
     url: ticket.url,
