@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { EventSubscriber } from '../../shared/bus/event-subscriber.js';
 import type { Logger } from '../../shared/logger/create-logger.js';
+import { createNeedsYouRoutes } from './api/routes/create-needs-you-routes.js';
 import { createTicketResetRoutes } from './api/routes/create-ticket-reset-routes.js';
 import { createTicketsRoutes } from './api/routes/create-tickets-routes.js';
 import { subscribeToRunFinished } from './api/subscriptions/subscribe-to-run-finished.js';
@@ -14,6 +15,7 @@ import type { Ticket } from './logic/domain/types/ticket.js';
 import type { ActiveRunLookup } from './logic/ports/active-run-lookup.js';
 import type { IdeaCreation } from './logic/ports/idea-creation.js';
 import type { RegisteredRepositories } from './logic/ports/registered-repositories.js';
+import type { RunWaitLookup } from './logic/ports/run-wait-lookup.js';
 import type { RunSettlement } from './logic/ports/run-settlement.js';
 import type { TicketStatusWrites } from './logic/ports/ticket-status-writes.js';
 import { BeginTicketAnswerUseCase } from './logic/use-cases/begin-ticket-answer-use-case.js';
@@ -23,6 +25,7 @@ import {
   PollRepositoriesUseCase,
   type PollRepositoriesDependencies,
 } from './logic/use-cases/poll-repositories-use-case.js';
+import { ReadNeedsYouUseCase } from './logic/use-cases/read-needs-you-use-case.js';
 import { ReadOpenTicketsUseCase } from './logic/use-cases/read-open-tickets-use-case.js';
 import { ReadProjectBoardUseCase } from './logic/use-cases/read-project-board-use-case.js';
 import { ReadTicketUseCase } from './logic/use-cases/read-ticket-use-case.js';
@@ -35,6 +38,7 @@ import { WatchRepositoryUseCase } from './logic/use-cases/watch-repository-use-c
 
 export type { BoardRow } from './logic/domain/types/board-row.js';
 export type { BoardView } from './logic/domain/types/board-view.js';
+export type { NeedsYouRow } from './logic/domain/types/needs-you-row.js';
 export type { ProjectBoard } from './logic/domain/types/project-board.js';
 export type { ProjectTicket } from './logic/domain/types/project-ticket.js';
 export type { SnapshotDiff } from './logic/domain/types/snapshot-diff.js';
@@ -43,6 +47,7 @@ export type { Ticket } from './logic/domain/types/ticket.js';
 export type { TicketSnapshot } from './logic/domain/types/ticket-snapshot.js';
 export { TicketNotAnswerableError } from './logic/errors/ticket-not-answerable-error.js';
 export type { RunSettlement } from './logic/ports/run-settlement.js';
+export type { RunWait, RunWaitLookup } from './logic/ports/run-wait-lookup.js';
 export type { ActiveRunLookup } from './logic/ports/active-run-lookup.js';
 export type {
   RegisteredRepositories,
@@ -54,6 +59,7 @@ export type TicketsModuleDependencies = PollRepositoriesDependencies & {
   readonly ideaCreation: IdeaCreation;
   readonly registeredRepositories: RegisteredRepositories;
   readonly activeRunLookup: ActiveRunLookup;
+  readonly runWaitLookup: RunWaitLookup;
   readonly ticketStatusWrites: TicketStatusWrites;
   readonly runSettlement: RunSettlement;
   readonly logger: Logger;
@@ -81,6 +87,7 @@ export function createTicketsModule(dependencies: TicketsModuleDependencies): Ti
   const watchRepository = new WatchRepositoryUseCase(dependencies);
   const readTicket = new ReadTicketUseCase(dependencies);
   const readProjectBoard = new ReadProjectBoardUseCase(dependencies);
+  const readNeedsYou = new ReadNeedsYouUseCase(dependencies);
   const readOpenTickets = new ReadOpenTicketsUseCase(dependencies);
   const settleFinishedRun = new SettleFinishedRunUseCase(dependencies);
   const settleWaitingRun = new SettleWaitingRunUseCase(dependencies);
@@ -145,12 +152,18 @@ export function createTicketsModule(dependencies: TicketsModuleDependencies): Ti
   };
 
   return {
-    routes: new Hono().route('/projects', createTicketsRoutes(ticketReads)).route(
-      '/projects',
-      createTicketResetRoutes({
-        reset: (projectId, ticketNumber) => resetTicket.execute(projectId, ticketNumber),
-      }),
-    ),
+    routes: new Hono()
+      .route('/projects', createTicketsRoutes(ticketReads))
+      .route(
+        '/projects',
+        createNeedsYouRoutes({ read: (projectId) => readNeedsYou.execute(projectId) }),
+      )
+      .route(
+        '/projects',
+        createTicketResetRoutes({
+          reset: (projectId, ticketNumber) => resetTicket.execute(projectId, ticketNumber),
+        }),
+      ),
     start: async () => {
       stopped = false;
       unsubscribers = [

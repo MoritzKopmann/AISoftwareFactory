@@ -43,6 +43,7 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
     subscriber: events,
     registeredRepositories: new FakeRegisteredRepositories([registered]),
     activeRunLookup: { activeRunTicketNumbers: async () => runningTicketNumbers },
+    runWaitLookup: { waitsOf: async () => [] },
     ticketStatusWrites,
     runSettlement,
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
