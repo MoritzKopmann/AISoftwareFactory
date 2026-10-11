@@ -29,7 +29,7 @@ export const readyLeaf: SchedulableTicket = {
   types: [],
   isLeaf: true,
   hasOpenBlocker: false,
-  openSpikeNumbers: [],
+  subIssueNumbers: [],
   snapshotTakenAt: '2026-09-29T10:00:00.000Z',
 };
 
@@ -124,10 +124,13 @@ export class FakeRunnerPort implements RunnerPort {
 }
 
 export class FakeTicketLookup implements TicketLookup {
-  constructor(private readonly ticket: SchedulableTicket | undefined) {}
+  constructor(
+    private readonly ticket: SchedulableTicket | undefined,
+    private readonly subIssues: ReadonlyArray<SchedulableTicket> = [],
+  ) {}
 
-  async find(): Promise<SchedulableTicket | undefined> {
-    return this.ticket;
+  async find(_projectId: string, ticketNumber: number): Promise<SchedulableTicket | undefined> {
+    return this.subIssues.find(({ number }) => number === ticketNumber) ?? this.ticket;
   }
 }
 

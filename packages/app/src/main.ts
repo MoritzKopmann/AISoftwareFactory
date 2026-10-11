@@ -314,23 +314,13 @@ function buildSchedulerModule(
         }
         const snapshotTakenAt =
           projectTicket.sync.state === 'pending' ? undefined : projectTicket.sync.snapshotTakenAt;
-        const subIssues = await Promise.all(
-          ticket.subIssueNumbers.map((number) => tickets.ticket(projectId, number)),
-        );
-        const openSpikeNumbers = subIssues.flatMap((subIssue) =>
-          subIssue?.ticket !== undefined &&
-          subIssue.ticket.status !== 'closed' &&
-          subIssue.ticket.types.includes('spike')
-            ? [subIssue.ticket.number]
-            : [],
-        );
         return {
           number: ticket.number,
           status: ticket.status,
           types: ticket.types,
           isLeaf: ticket.subIssueNumbers.length === 0,
           hasOpenBlocker: ticket.blockedBy.some((blocker) => blocker.open),
-          openSpikeNumbers,
+          subIssueNumbers: ticket.subIssueNumbers,
           ...(snapshotTakenAt === undefined ? {} : { snapshotTakenAt }),
         };
       },

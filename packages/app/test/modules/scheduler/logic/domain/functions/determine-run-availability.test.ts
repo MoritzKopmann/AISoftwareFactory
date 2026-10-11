@@ -9,13 +9,14 @@ const readyLeaf: SchedulableTicket = {
   types: [],
   isLeaf: true,
   hasOpenBlocker: false,
-  openSpikeNumbers: [],
+  subIssueNumbers: [],
   snapshotTakenAt: '2026-09-29T10:00:00.000Z',
 };
 
 function buildInput(overrides: Partial<RunAvailabilityInput> = {}): RunAvailabilityInput {
   return {
     ticket: readyLeaf,
+    subIssues: [],
     ticketIsRunning: false,
     runsBlocked: { blocked: false },
     projectOnboarded: true,
@@ -30,6 +31,7 @@ describe('determineRunAvailability', () => {
 
   it('should be absent when the ticket is unknown', () => {
     const input: RunAvailabilityInput = {
+      subIssues: [],
       ticketIsRunning: false,
       runsBlocked: { blocked: false },
       projectOnboarded: true,
@@ -139,12 +141,34 @@ describe('determineRunAvailability', () => {
       number: 7,
       status: 'plan',
       isLeaf: false,
-      openSpikeNumbers: [9],
+      subIssueNumbers: [8, 9],
     };
+    const subIssues: ReadonlyArray<SchedulableTicket> = [
+      { ...readyLeaf, number: 8, status: 'closed', types: ['spike'] },
+      { ...readyLeaf, number: 9, types: ['spike'] },
+    ];
 
-    expect(determineRunAvailability(buildInput({ ticket }))).toEqual({
+    expect(determineRunAvailability(buildInput({ ticket, subIssues }))).toEqual({
       kind: 'disabled',
       reason: 'Waiting for spike #9',
+    });
+  });
+
+  it('should be available when a plan ticket has no open spike sub-issue', () => {
+    const ticket: SchedulableTicket = {
+      ...readyLeaf,
+      number: 7,
+      status: 'plan',
+      isLeaf: false,
+      subIssueNumbers: [8, 9],
+    };
+    const subIssues: ReadonlyArray<SchedulableTicket> = [
+      { ...readyLeaf, number: 8, status: 'closed', types: ['spike'] },
+      { ...readyLeaf, number: 9, types: ['task'] },
+    ];
+
+    expect(determineRunAvailability(buildInput({ ticket, subIssues }))).toEqual({
+      kind: 'available',
     });
   });
 });
