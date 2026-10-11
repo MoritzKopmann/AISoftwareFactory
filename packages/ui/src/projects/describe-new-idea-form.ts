@@ -7,33 +7,46 @@ export type NewIdeaStart =
 
 export type NewIdeaFormDescription = {
   readonly pressable: boolean;
+  readonly busy: boolean;
   readonly error?: {
+    readonly tone: 'danger' | 'warn';
     readonly message: string;
+    readonly detail?: string;
     readonly link?: { readonly label: string; readonly href: string };
   };
 };
 
 export function describeNewIdeaForm(
-  title: string,
+  text: string,
   start: NewIdeaStart,
   projectId: string,
 ): NewIdeaFormDescription {
-  const pressable = title.trim() !== '' && start.kind !== 'starting';
+  const busy = start.kind === 'starting';
+  const pressable = text.trim() !== '' && !busy;
   if (start.kind !== 'failed') {
-    return { pressable };
+    return { pressable, busy };
+  }
+  if (start.ticketNumber === undefined) {
+    return {
+      pressable,
+      busy,
+      error: {
+        tone: 'danger',
+        message: "Couldn't create the idea. Your text is kept; submit again.",
+        ...(start.message === '' ? {} : { detail: start.message }),
+      },
+    };
   }
   return {
     pressable,
+    busy,
     error: {
-      message: start.message,
-      ...(start.ticketNumber === undefined
-        ? {}
-        : {
-            link: {
-              label: `#${start.ticketNumber}`,
-              href: `#/projects/${projectId}/tickets/${start.ticketNumber}`,
-            },
-          }),
+      tone: 'warn',
+      message: 'The idea was created, but the session did not start.',
+      link: {
+        label: `Open #${start.ticketNumber}`,
+        href: `#/projects/${projectId}/tickets/${start.ticketNumber}`,
+      },
     },
   };
 }
