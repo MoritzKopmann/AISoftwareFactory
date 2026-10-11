@@ -64,9 +64,9 @@ describe('dependency-cruiser module rules', () => {
   describe('modules-only-through-index', () => {
     it('should fail when a module deep-imports another module', () => {
       const result = cruise({
-        'modules/scheduler/index.ts': "import '../watcher/logic/domain/types/snapshot.js';\n",
-        'modules/watcher/index.ts': exported,
-        'modules/watcher/logic/domain/types/snapshot.ts': exported,
+        'modules/scheduler/index.ts': "import '../tickets/logic/domain/types/snapshot.js';\n",
+        'modules/tickets/index.ts': exported,
+        'modules/tickets/logic/domain/types/snapshot.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -75,8 +75,8 @@ describe('dependency-cruiser module rules', () => {
 
     it('should pass when a module imports another module through its index', () => {
       const result = cruise({
-        'modules/scheduler/index.ts': "import '../watcher/index.js';\n",
-        'modules/watcher/index.ts': exported,
+        'modules/scheduler/index.ts': "import '../tickets/index.js';\n",
+        'modules/tickets/index.ts': exported,
       });
 
       expect(result.passed).toBe(true);
@@ -84,10 +84,10 @@ describe('dependency-cruiser module rules', () => {
 
     it('should pass when a module imports its own layers', () => {
       const result = cruise({
-        'modules/watcher/index.ts': "import './api/routes/snapshots.js';\n",
-        'modules/watcher/api/routes/snapshots.ts':
+        'modules/tickets/index.ts': "import './api/routes/snapshots.js';\n",
+        'modules/tickets/api/routes/snapshots.ts':
           "import '../../logic/domain/types/snapshot.js';\n",
-        'modules/watcher/logic/domain/types/snapshot.ts': exported,
+        'modules/tickets/logic/domain/types/snapshot.ts': exported,
       });
 
       expect(result.passed).toBe(true);
@@ -97,9 +97,9 @@ describe('dependency-cruiser module rules', () => {
   describe('outside-only-through-index', () => {
     it('should fail when shared code deep-imports a module', () => {
       const result = cruise({
-        'shared/helper.ts': "import '../modules/watcher/logic/domain/types/snapshot.js';\n",
-        'modules/watcher/index.ts': exported,
-        'modules/watcher/logic/domain/types/snapshot.ts': exported,
+        'shared/helper.ts': "import '../modules/tickets/logic/domain/types/snapshot.js';\n",
+        'modules/tickets/index.ts': exported,
+        'modules/tickets/logic/domain/types/snapshot.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -110,8 +110,8 @@ describe('dependency-cruiser module rules', () => {
   describe('logic-no-infra-or-api', () => {
     it('should fail when logic imports infra', () => {
       const result = cruise({
-        'modules/watcher/logic/use-cases/poll.ts': "import '../../infra/repositories/store.js';\n",
-        'modules/watcher/infra/repositories/store.ts': exported,
+        'modules/tickets/logic/use-cases/poll.ts': "import '../../infra/repositories/store.js';\n",
+        'modules/tickets/infra/repositories/store.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -120,8 +120,8 @@ describe('dependency-cruiser module rules', () => {
 
     it('should fail when logic imports api', () => {
       const result = cruise({
-        'modules/watcher/logic/use-cases/poll.ts': "import '../../api/routes/snapshots.js';\n",
-        'modules/watcher/api/routes/snapshots.ts': exported,
+        'modules/tickets/logic/use-cases/poll.ts': "import '../../api/routes/snapshots.js';\n",
+        'modules/tickets/api/routes/snapshots.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -130,8 +130,8 @@ describe('dependency-cruiser module rules', () => {
 
     it('should pass when infra imports logic', () => {
       const result = cruise({
-        'modules/watcher/infra/repositories/store.ts': "import '../../logic/ports/store.js';\n",
-        'modules/watcher/logic/ports/store.ts': exported,
+        'modules/tickets/infra/repositories/store.ts': "import '../../logic/ports/store.js';\n",
+        'modules/tickets/logic/ports/store.ts': exported,
       });
 
       expect(result.passed).toBe(true);
@@ -142,9 +142,9 @@ describe('dependency-cruiser module rules', () => {
     it('should fail when logic deep-imports another module', () => {
       const result = cruise({
         'modules/scheduler/logic/use-cases/start.ts':
-          "import '../../../watcher/logic/domain/types/snapshot.js';\n",
-        'modules/watcher/index.ts': exported,
-        'modules/watcher/logic/domain/types/snapshot.ts': exported,
+          "import '../../../tickets/logic/domain/types/snapshot.js';\n",
+        'modules/tickets/index.ts': exported,
+        'modules/tickets/logic/domain/types/snapshot.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -153,8 +153,8 @@ describe('dependency-cruiser module rules', () => {
 
     it('should fail when logic imports another module through its index', () => {
       const result = cruise({
-        'modules/scheduler/logic/use-cases/start.ts': "import '../../../watcher/index.js';\n",
-        'modules/watcher/index.ts': exported,
+        'modules/scheduler/logic/use-cases/start.ts': "import '../../../tickets/index.js';\n",
+        'modules/tickets/index.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -174,8 +174,8 @@ describe('dependency-cruiser module rules', () => {
   describe('ui-only-api-schemas-from-app', () => {
     it('should fail when packages/ui imports something other than an api schema from packages/app', () => {
       const result = cruiseAcrossPackages({
-        'packages/ui/src/main.ts': "import '../../app/src/modules/watcher/index.js';\n",
-        'packages/app/src/modules/watcher/index.ts': exported,
+        'packages/ui/src/main.ts': "import '../../app/src/modules/tickets/index.js';\n",
+        'packages/app/src/modules/tickets/index.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -185,8 +185,8 @@ describe('dependency-cruiser module rules', () => {
     it('should fail when packages/ui imports a route file of a module', () => {
       const result = cruiseAcrossPackages({
         'packages/ui/src/main.ts':
-          "import '../../app/src/modules/watcher/api/routes/create-snapshot-routes.js';\n",
-        'packages/app/src/modules/watcher/api/routes/create-snapshot-routes.ts': exported,
+          "import '../../app/src/modules/tickets/api/routes/create-snapshot-routes.js';\n",
+        'packages/app/src/modules/tickets/api/routes/create-snapshot-routes.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -196,8 +196,8 @@ describe('dependency-cruiser module rules', () => {
     it('should fail when packages/ui imports a use case of a module', () => {
       const result = cruiseAcrossPackages({
         'packages/ui/src/main.ts':
-          "import '../../app/src/modules/watcher/logic/use-cases/poll-use-case.js';\n",
-        'packages/app/src/modules/watcher/logic/use-cases/poll-use-case.ts': exported,
+          "import '../../app/src/modules/tickets/logic/use-cases/poll-use-case.js';\n",
+        'packages/app/src/modules/tickets/logic/use-cases/poll-use-case.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -207,8 +207,8 @@ describe('dependency-cruiser module rules', () => {
     it('should pass when packages/ui imports an api schema from packages/app', () => {
       const result = cruiseAcrossPackages({
         'packages/ui/src/main.ts':
-          "import '../../app/src/modules/watcher/api/schemas/projects-schemas.js';\n",
-        'packages/app/src/modules/watcher/api/schemas/projects-schemas.ts': exported,
+          "import '../../app/src/modules/tickets/api/schemas/projects-schemas.js';\n",
+        'packages/app/src/modules/tickets/api/schemas/projects-schemas.ts': exported,
       });
 
       expect(result.passed).toBe(true);
@@ -218,8 +218,8 @@ describe('dependency-cruiser module rules', () => {
   describe('infra-only-from-main', () => {
     it('should fail when an api adapter imports infra', () => {
       const result = cruise({
-        'modules/watcher/api/routes/snapshots.ts': "import '../../infra/repositories/store.js';\n",
-        'modules/watcher/infra/repositories/store.ts': exported,
+        'modules/tickets/api/routes/snapshots.ts': "import '../../infra/repositories/store.js';\n",
+        'modules/tickets/infra/repositories/store.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -228,8 +228,8 @@ describe('dependency-cruiser module rules', () => {
 
     it('should fail when shared code imports infra', () => {
       const result = cruise({
-        'shared/helper.ts': "import '../modules/watcher/infra/repositories/store.js';\n",
-        'modules/watcher/infra/repositories/store.ts': exported,
+        'shared/helper.ts': "import '../modules/tickets/infra/repositories/store.js';\n",
+        'modules/tickets/infra/repositories/store.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -237,8 +237,8 @@ describe('dependency-cruiser module rules', () => {
 
     it('should pass when main imports infra', () => {
       const result = cruise({
-        'main.ts': "import './modules/watcher/infra/repositories/store.js';\n",
-        'modules/watcher/infra/repositories/store.ts': exported,
+        'main.ts': "import './modules/tickets/infra/repositories/store.js';\n",
+        'modules/tickets/infra/repositories/store.ts': exported,
       });
 
       expect(result.passed).toBe(true);
@@ -246,8 +246,8 @@ describe('dependency-cruiser module rules', () => {
 
     it('should fail when main imports module logic', () => {
       const result = cruise({
-        'main.ts': "import './modules/watcher/logic/domain/types/snapshot.js';\n",
-        'modules/watcher/logic/domain/types/snapshot.ts': exported,
+        'main.ts': "import './modules/tickets/logic/domain/types/snapshot.js';\n",
+        'modules/tickets/logic/domain/types/snapshot.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -258,8 +258,8 @@ describe('dependency-cruiser module rules', () => {
   describe('domain-only-domain', () => {
     it('should fail when domain imports ports', () => {
       const result = cruise({
-        'modules/watcher/logic/domain/functions/diff.ts': "import '../../ports/store.js';\n",
-        'modules/watcher/logic/ports/store.ts': exported,
+        'modules/tickets/logic/domain/functions/diff.ts': "import '../../ports/store.js';\n",
+        'modules/tickets/logic/ports/store.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -268,7 +268,7 @@ describe('dependency-cruiser module rules', () => {
 
     it('should fail when domain imports shared', () => {
       const result = cruise({
-        'modules/watcher/logic/domain/types/snapshot.ts':
+        'modules/tickets/logic/domain/types/snapshot.ts':
           "import type { Clock } from '../../../../../shared/clock.js';\nexport type Snapshot = Clock;\n",
         'shared/clock.ts': 'export type Clock = number;\n',
       });
@@ -279,7 +279,7 @@ describe('dependency-cruiser module rules', () => {
 
     it('should pass when domain imports the shared ticket status', () => {
       const result = cruise({
-        'modules/watcher/logic/domain/functions/arrange.ts':
+        'modules/tickets/logic/domain/functions/arrange.ts':
           "import { ticketStatusOrder } from '../../../../../shared/ticket-status/ticket-status-order.js';\nexport const arranged = ticketStatusOrder;\n",
         'shared/ticket-status/ticket-status-order.ts': 'export const ticketStatusOrder = [];\n',
       });
@@ -291,8 +291,8 @@ describe('dependency-cruiser module rules', () => {
   describe('domain-types-only-types', () => {
     it('should fail when a domain type imports a constant', () => {
       const result = cruise({
-        'modules/watcher/logic/domain/types/snapshot.ts': "import '../constants/labels.js';\n",
-        'modules/watcher/logic/domain/constants/labels.ts': exported,
+        'modules/tickets/logic/domain/types/snapshot.ts': "import '../constants/labels.js';\n",
+        'modules/tickets/logic/domain/constants/labels.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -301,8 +301,8 @@ describe('dependency-cruiser module rules', () => {
 
     it('should pass when a domain type imports another type', () => {
       const result = cruise({
-        'modules/watcher/logic/domain/types/snapshot.ts': "import './ticket.js';\n",
-        'modules/watcher/logic/domain/types/ticket.ts': exported,
+        'modules/tickets/logic/domain/types/snapshot.ts': "import './ticket.js';\n",
+        'modules/tickets/logic/domain/types/ticket.ts': exported,
       });
 
       expect(result.passed).toBe(true);
@@ -312,8 +312,8 @@ describe('dependency-cruiser module rules', () => {
   describe('domain-constants-only-types', () => {
     it('should fail when a domain constant imports a function', () => {
       const result = cruise({
-        'modules/watcher/logic/domain/constants/labels.ts': "import '../functions/diff.js';\n",
-        'modules/watcher/logic/domain/functions/diff.ts': exported,
+        'modules/tickets/logic/domain/constants/labels.ts': "import '../functions/diff.js';\n",
+        'modules/tickets/logic/domain/functions/diff.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -322,8 +322,8 @@ describe('dependency-cruiser module rules', () => {
 
     it('should pass when a domain constant imports a type', () => {
       const result = cruise({
-        'modules/watcher/logic/domain/constants/labels.ts': "import '../types/label.js';\n",
-        'modules/watcher/logic/domain/types/label.ts': exported,
+        'modules/tickets/logic/domain/constants/labels.ts': "import '../types/label.js';\n",
+        'modules/tickets/logic/domain/types/label.ts': exported,
       });
 
       expect(result.passed).toBe(true);
@@ -333,8 +333,8 @@ describe('dependency-cruiser module rules', () => {
   describe('domain functions', () => {
     it('should fail when a domain function imports a use case', () => {
       const result = cruise({
-        'modules/watcher/logic/domain/functions/diff.ts': "import '../../use-cases/poll.js';\n",
-        'modules/watcher/logic/use-cases/poll.ts': exported,
+        'modules/tickets/logic/domain/functions/diff.ts': "import '../../use-cases/poll.js';\n",
+        'modules/tickets/logic/use-cases/poll.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -343,8 +343,8 @@ describe('dependency-cruiser module rules', () => {
 
     it('should pass when a domain function imports a constant', () => {
       const result = cruise({
-        'modules/watcher/logic/domain/functions/diff.ts': "import '../constants/labels.js';\n",
-        'modules/watcher/logic/domain/constants/labels.ts': exported,
+        'modules/tickets/logic/domain/functions/diff.ts': "import '../constants/labels.js';\n",
+        'modules/tickets/logic/domain/constants/labels.ts': exported,
       });
 
       expect(result.passed).toBe(true);
@@ -354,8 +354,8 @@ describe('dependency-cruiser module rules', () => {
   describe('domain-no-barrel', () => {
     it('should fail when something imports a domain subfolder index', () => {
       const result = cruise({
-        'modules/watcher/logic/use-cases/poll.ts': "import '../domain/types/index.js';\n",
-        'modules/watcher/logic/domain/types/index.ts': exported,
+        'modules/tickets/logic/use-cases/poll.ts': "import '../domain/types/index.js';\n",
+        'modules/tickets/logic/domain/types/index.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -366,7 +366,7 @@ describe('dependency-cruiser module rules', () => {
   describe('logic-shared-types-only', () => {
     it('should fail when logic imports a value from shared', () => {
       const result = cruise({
-        'modules/watcher/logic/use-cases/poll.ts': "import '../../../../shared/clock.js';\n",
+        'modules/tickets/logic/use-cases/poll.ts': "import '../../../../shared/clock.js';\n",
         'shared/clock.ts': exported,
       });
 
@@ -376,7 +376,7 @@ describe('dependency-cruiser module rules', () => {
 
     it('should pass when logic imports a value from the shared ticket status', () => {
       const result = cruise({
-        'modules/watcher/logic/use-cases/poll.ts':
+        'modules/tickets/logic/use-cases/poll.ts':
           "import '../../../../shared/ticket-status/derive-ticket-status.js';\n",
         'shared/ticket-status/derive-ticket-status.ts': exported,
       });
@@ -386,7 +386,7 @@ describe('dependency-cruiser module rules', () => {
 
     it('should pass when logic imports a type from shared', () => {
       const result = cruise({
-        'modules/watcher/logic/use-cases/poll.ts':
+        'modules/tickets/logic/use-cases/poll.ts':
           "import type { Clock } from '../../../../shared/clock.js';\nexport type Poll = Clock;\n",
         'shared/clock.ts': 'export type Clock = number;\n',
       });
@@ -398,8 +398,8 @@ describe('dependency-cruiser module rules', () => {
   describe('use-cases-only-domain-ports-errors', () => {
     it('should fail when a use case imports another use case', () => {
       const result = cruise({
-        'modules/watcher/logic/use-cases/poll.ts': "import './refresh.js';\n",
-        'modules/watcher/logic/use-cases/refresh.ts': exported,
+        'modules/tickets/logic/use-cases/poll.ts': "import './refresh.js';\n",
+        'modules/tickets/logic/use-cases/refresh.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -408,11 +408,11 @@ describe('dependency-cruiser module rules', () => {
 
     it('should pass when a use case imports domain, ports and errors', () => {
       const result = cruise({
-        'modules/watcher/logic/use-cases/poll.ts':
+        'modules/tickets/logic/use-cases/poll.ts':
           "import '../domain/types/snapshot.js';\nimport '../ports/store.js';\nimport '../errors/missing-error.js';\n",
-        'modules/watcher/logic/domain/types/snapshot.ts': exported,
-        'modules/watcher/logic/ports/store.ts': exported,
-        'modules/watcher/logic/errors/missing-error.ts': exported,
+        'modules/tickets/logic/domain/types/snapshot.ts': exported,
+        'modules/tickets/logic/ports/store.ts': exported,
+        'modules/tickets/logic/errors/missing-error.ts': exported,
       });
 
       expect(result.passed).toBe(true);
@@ -422,8 +422,8 @@ describe('dependency-cruiser module rules', () => {
   describe('infra-logic-only-ports-domain-errors', () => {
     it('should fail when infra imports a use case', () => {
       const result = cruise({
-        'modules/watcher/infra/repositories/store.ts': "import '../../logic/use-cases/poll.js';\n",
-        'modules/watcher/logic/use-cases/poll.ts': exported,
+        'modules/tickets/infra/repositories/store.ts': "import '../../logic/use-cases/poll.js';\n",
+        'modules/tickets/logic/use-cases/poll.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -432,11 +432,11 @@ describe('dependency-cruiser module rules', () => {
 
     it('should pass when infra imports ports, domain and errors', () => {
       const result = cruise({
-        'modules/watcher/infra/repositories/store.ts':
+        'modules/tickets/infra/repositories/store.ts':
           "import '../../logic/ports/store.js';\nimport '../../logic/domain/types/snapshot.js';\nimport '../../logic/errors/missing-error.js';\n",
-        'modules/watcher/logic/ports/store.ts': exported,
-        'modules/watcher/logic/domain/types/snapshot.ts': exported,
-        'modules/watcher/logic/errors/missing-error.ts': exported,
+        'modules/tickets/logic/ports/store.ts': exported,
+        'modules/tickets/logic/domain/types/snapshot.ts': exported,
+        'modules/tickets/logic/errors/missing-error.ts': exported,
       });
 
       expect(result.passed).toBe(true);
@@ -446,8 +446,8 @@ describe('dependency-cruiser module rules', () => {
   describe('api-logic-only-use-cases-domain-errors', () => {
     it('should fail when an api adapter imports a port', () => {
       const result = cruise({
-        'modules/watcher/api/routes/snapshots.ts': "import '../../logic/ports/store.js';\n",
-        'modules/watcher/logic/ports/store.ts': exported,
+        'modules/tickets/api/routes/snapshots.ts': "import '../../logic/ports/store.js';\n",
+        'modules/tickets/logic/ports/store.ts': exported,
       });
 
       expect(result.passed).toBe(false);
@@ -456,11 +456,11 @@ describe('dependency-cruiser module rules', () => {
 
     it('should pass when an api adapter imports a use case, a domain type and an error', () => {
       const result = cruise({
-        'modules/watcher/api/routes/snapshots.ts':
+        'modules/tickets/api/routes/snapshots.ts':
           "import '../../logic/use-cases/poll.js';\nimport '../../logic/domain/types/snapshot.js';\nimport '../../logic/errors/missing-error.js';\n",
-        'modules/watcher/logic/use-cases/poll.ts': exported,
-        'modules/watcher/logic/domain/types/snapshot.ts': exported,
-        'modules/watcher/logic/errors/missing-error.ts': exported,
+        'modules/tickets/logic/use-cases/poll.ts': exported,
+        'modules/tickets/logic/domain/types/snapshot.ts': exported,
+        'modules/tickets/logic/errors/missing-error.ts': exported,
       });
 
       expect(result.passed).toBe(true);

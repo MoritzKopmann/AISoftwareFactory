@@ -48,15 +48,15 @@ import {
   RunAlreadyActiveError,
   type SchedulerModule,
 } from './modules/scheduler/index.js';
-import { FetchGraphQLTicketSource } from './modules/watcher/infra/integrations/fetch-graphql-ticket-source.js';
-import { FetchIssueFeeds } from './modules/watcher/infra/integrations/fetch-issue-feeds.js';
-import { InMemoryWatchStore } from './modules/watcher/infra/integrations/in-memory-watch-store.js';
-import { GhCliGitHubToken } from './modules/watcher/infra/integrations/gh-cli-github-token.js';
+import { FetchGraphQLTicketSource } from './modules/tickets/infra/integrations/fetch-graphql-ticket-source.js';
+import { FetchIssueFeeds } from './modules/tickets/infra/integrations/fetch-issue-feeds.js';
+import { InMemoryWatchStore } from './modules/tickets/infra/integrations/in-memory-watch-store.js';
+import { GhCliGitHubToken } from './modules/tickets/infra/integrations/gh-cli-github-token.js';
 import {
-  createWatcherModule,
+  createTicketsModule,
   type ActiveRunLookup,
-  type WatcherModule,
-} from './modules/watcher/index.js';
+  type TicketsModule,
+} from './modules/tickets/index.js';
 import { findOnPath } from './cli/find-on-path.js';
 import { isOnPath } from './cli/is-on-path.js';
 import { openBrowser } from './cli/open-browser.js';
@@ -142,14 +142,14 @@ function buildSkillsModule(
   });
 }
 
-function buildWatcherModule(
+function buildTicketsModule(
   config: Config,
   events: EventPublisher & EventSubscriber,
   projects: ProjectsModule,
   activeRunLookup: ActiveRunLookup,
-): WatcherModule {
+): TicketsModule {
   const token = new GhCliGitHubToken();
-  return createWatcherModule({
+  return createTicketsModule({
     issueFeeds: new FetchIssueFeeds({ fetch: globalThis.fetch, token }),
     ticketSource: new FetchGraphQLTicketSource({
       fetch: globalThis.fetch,
@@ -196,7 +196,7 @@ function buildRunnerModule(
   database: DatabaseSync,
   events: EventPublisher,
   projects: ProjectsModule,
-  watcher: WatcherModule,
+  tickets: TicketsModule,
   claudeExecutablePath: string,
   appTools: ReadonlyArray<RunTool>,
   logger: Logger,
@@ -215,7 +215,7 @@ function buildRunnerModule(
     runTargets: {
       find: async (projectId, ticketNumber) => {
         const project = (await projects.list()).find(({ id }) => id === projectId);
-        const projectTicket = await watcher.ticket(projectId, ticketNumber);
+        const projectTicket = await tickets.ticket(projectId, ticketNumber);
         if (project === undefined || projectTicket?.ticket === undefined) {
           return undefined;
         }
@@ -244,7 +244,7 @@ function buildSchedulerModule(
   events: EventPublisher & EventSubscriber,
   projects: ProjectsModule,
   skills: SkillsModule,
-  watcher: WatcherModule,
+  tickets: TicketsModule,
   runner: RunnerModule,
   artifacts: ArtifactsModule,
   logger: Logger,
@@ -284,7 +284,7 @@ function buildSchedulerModule(
     runPageLookup: { find: artifacts.pageOf },
     ticketLookup: {
       find: async (projectId, ticketNumber) => {
-        const projectTicket = await watcher.ticket(projectId, ticketNumber);
+        const projectTicket = await tickets.ticket(projectId, ticketNumber);
         const ticket = projectTicket?.ticket;
         if (projectTicket === undefined || ticket === undefined) {
           return undefined;
@@ -302,7 +302,7 @@ function buildSchedulerModule(
       },
     },
     reviewedTicketLookup: {
-      list: async (projectId) => watcher.openTickets(projectId),
+      list: async (projectId) => tickets.openTickets(projectId),
     },
     runsGate: { check: () => skills.runsBlocked() },
     projectLookup: {
@@ -339,8 +339,8 @@ const eventBus = new TypedEventBus<AisfEventMap>();
 
 const skills = buildSkillsModule(config, pluginDirectory, eventBus);
 const projects = buildProjectsModule(database, eventBus, skills, logger);
-// The watcher is built before the runner, which needs watcher.ticket, so the lookup binds late.
-const watcher = buildWatcherModule(config, eventBus, projects, {
+// The tickets module is built before the runner, which needs tickets.ticket, so the lookup binds late.
+const tickets = buildTicketsModule(config, eventBus, projects, {
   activeRunTicketNumbers: async (projectId) =>
     (await runner.activeRuns(projectId)).map(({ run }) => run.ticketNumber),
 });
@@ -370,7 +370,7 @@ const runner = buildRunnerModule(
   database,
   eventBus,
   projects,
-  watcher,
+  tickets,
   findOnPath('claude') ?? 'claude',
   [...findings.tools, ...artifacts.tools],
   logger,
@@ -379,7 +379,7 @@ const scheduler = buildSchedulerModule(
   eventBus,
   projects,
   skills,
-  watcher,
+  tickets,
   runner,
   artifacts,
   logger,
@@ -408,7 +408,7 @@ const runningServer = await startServer({
       projects.routes,
       skills.routes,
       findings.routes,
-      watcher.routes,
+      tickets.routes,
       scheduler.routes,
       runner.routes,
       artifacts.routes,
@@ -423,8 +423,8 @@ if (options.openBrowser) {
   openBrowser(runningServer.url);
 }
 
-watcher.start().catch((error: unknown) => {
-  logger.error(`The watcher failed to start: ${String(error)}`);
+tickets.start().catch((error: unknown) => {
+  logger.error(`The tickets module failed to start: ${String(error)}`);
 });
 // Never-crash boundary: a failed label sync must not end the process or delay the boot.
 projects.start().catch((error: unknown) => {
