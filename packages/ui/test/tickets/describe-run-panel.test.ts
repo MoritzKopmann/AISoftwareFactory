@@ -25,6 +25,7 @@ function input(overrides: Partial<RunPanelInput>): RunPanelInput {
     lastPollFailed: false,
     ticketStuck: false,
     stopping: false,
+    runSkill: 'implement-ticket',
     ...overrides,
   };
 }
@@ -35,6 +36,7 @@ describe('describeRunPanel', () => {
       lastPollFailed: false,
       ticketStuck: false,
       stopping: false,
+      runSkill: 'implement-ticket',
     };
     expect(describeRunPanel(unanswered, now)).toEqual({ kind: 'hidden' });
   });
@@ -223,5 +225,21 @@ describe('describeRunPanel for a waiting run', () => {
   it('should describe the live run as not waiting when it works', () => {
     const working = live(localTime(9, 41), []);
     expect(describeRunPanel(input({ response: working }), now)).toMatchObject({ waiting: false });
+  });
+});
+
+describe('describeRunPanel for idea and plan tickets', () => {
+  it('should name create-ticket before the start time when a create-ticket run is live', () => {
+    const running = live(localTime(9, 44), []);
+    expect(
+      describeRunPanel(input({ response: running, runSkill: 'create-ticket' }), now),
+    ).toMatchObject({ startedLabel: 'create-ticket · started 1 min ago' });
+  });
+
+  it('should name plan-ticket before the start time when a plan-ticket run is live', () => {
+    const running = live(localTime(9, 44), []);
+    expect(
+      describeRunPanel(input({ response: running, runSkill: 'plan-ticket' }), now),
+    ).toMatchObject({ startedLabel: 'plan-ticket · started 1 min ago' });
   });
 });

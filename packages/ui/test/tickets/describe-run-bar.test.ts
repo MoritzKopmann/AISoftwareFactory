@@ -324,39 +324,57 @@ describe('describeRunBar', () => {
 });
 
 describe('describeRunBar for idea and plan tickets', () => {
-  it('should offer a pressable button naming the create skill when an idea ticket is available', () => {
+  it('should offer a pressable Start with the create-ticket hint when an idea ticket is available', () => {
     expect(
       describeRunBar(
         available,
         { status: 'idea', stuck: false },
         { kind: 'idle' },
-        12,
+        419,
         'create-ticket',
       ),
-    ).toMatchObject({ kind: 'shown', button: 'run', pressable: true, label: 'Run create-ticket' });
+    ).toEqual({
+      kind: 'shown',
+      button: 'run',
+      pressable: true,
+      label: 'Start',
+      hint: 'Runs create-ticket on #419.',
+    });
   });
 
-  it('should name the plan skill on the button when a plan ticket is available', () => {
+  it('should offer a pressable Plan with the plan-ticket hint when a plan ticket is available', () => {
     expect(
       describeRunBar(
         available,
         { status: 'plan', stuck: false },
         { kind: 'idle' },
-        12,
+        412,
         'plan-ticket',
       ),
-    ).toMatchObject({ pressable: true, label: 'Run plan-ticket' });
+    ).toEqual({
+      kind: 'shown',
+      button: 'run',
+      pressable: true,
+      label: 'Plan',
+      hint: 'Runs plan-ticket on #412.',
+    });
   });
 
-  it('should be disabled and show the reason when a plan ticket has an open spike', () => {
+  it("should keep the Plan label and show the server's reason when a plan ticket has an open spike", () => {
     expect(
       describeRunBar(
-        { availability: { kind: 'disabled', reason: 'Spike #9 is open.' } },
+        { availability: { kind: 'disabled', reason: 'Waiting for spike #417' } },
         { status: 'plan', stuck: false },
         { kind: 'idle' },
-        12,
+        412,
         'plan-ticket',
       ),
-    ).toMatchObject({ button: 'disabled', pressable: false, reason: 'Spike #9 is open.' });
+    ).toEqual({
+      kind: 'shown',
+      button: 'disabled',
+      pressable: false,
+      label: 'Plan',
+      reason: 'Waiting for spike #417',
+    });
   });
 });
