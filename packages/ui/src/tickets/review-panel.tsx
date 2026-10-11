@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import type { ReviewPanelDescription } from './describe-review-panel.js';
 
 export function ReviewPanel({ description }: { readonly description: ReviewPanelDescription }) {
@@ -5,23 +6,30 @@ export function ReviewPanel({ description }: { readonly description: ReviewPanel
     return null;
   }
   return (
-    <section aria-label="Review">
-      <h2>Review</h2>
-      <ul>
+    <section className={`review-panel ${description.state}`} aria-label="Review">
+      <div className="head">
+        <h2 className="lead">
+          <span className={`shape s-${description.heading.tone}`}>{description.heading.glyph}</span>
+          {description.heading.text}
+        </h2>
+      </div>
+      <div className="body">
         {description.pullRequests.map((pullRequest) => (
-          <li key={pullRequest.url}>
+          <Fragment key={pullRequest.url}>
             <a className="ext" href={pullRequest.url} target="_blank" rel="noopener">
               {pullRequest.label}
-            </a>{' '}
-            <span className="pr-state">{pullRequest.state}</span>
-            <span className="sm">
-              {' '}
-              · {pullRequest.approved ? 'approved' : 'not approved'} · checks {pullRequest.checks} ·{' '}
-              {pullRequest.mergeable}
-            </span>
-          </li>
+            </a>
+            <div className="chips">
+              {pullRequest.chips.map((chip) => (
+                <span key={chip.text} className={`chip ${chip.tone}`}>
+                  <span className={`shape s-${chip.tone}`}>{chip.glyph}</span>
+                  {chip.text}
+                </span>
+              ))}
+            </div>
+          </Fragment>
         ))}
-      </ul>
+      </div>
     </section>
   );
 }
