@@ -17,6 +17,7 @@ const findings = (n?: number): LiveView =>
     ? { kind: 'findings', projectId: p }
     : { kind: 'findings', projectId: p, ticketNumber: n };
 const skills: LiveView = { kind: 'skills' };
+const needsYou = (projectId = p): LiveView => ({ kind: 'needs-you', projectId });
 
 const on = (event: LiveNotice['event'], ticketNumber?: number): LiveNotice =>
   ticketNumber === undefined ? { event, projectId: p } : { event, projectId: p, ticketNumber };
@@ -66,5 +67,32 @@ describe('noticeConcernsView', () => {
     ['watch.updated changed', changed(), skills, false],
   ])('should map %s to the view as expected', (_name, notice, view, expected) => {
     expect(noticeConcernsView(notice, view)).toBe(expected);
+  });
+});
+
+describe('noticeConcernsView for needs-you', () => {
+  it.each<LiveNotice['event']>([
+    'ticket.status-written',
+    'run.waiting',
+    'run.wait-cleared',
+    'run.finished',
+  ])('should concern the list when %s arrives for the project', (event) => {
+    expect(noticeConcernsView(on(event, 7), needsYou())).toBe(true);
+  });
+
+  it('should concern the list when watch.updated changed something', () => {
+    expect(noticeConcernsView(changed(), needsYou())).toBe(true);
+  });
+
+  it('should not concern the list when watch.updated changed nothing', () => {
+    expect(noticeConcernsView(noChange(), needsYou())).toBe(false);
+  });
+
+  it('should not concern the list when the notice is of another project', () => {
+    expect(noticeConcernsView(on('run.waiting', 7), needsYou('octo/other'))).toBe(false);
+  });
+
+  it('should not concern the list when run.step-added arrives', () => {
+    expect(noticeConcernsView(on('run.step-added', 7), needsYou())).toBe(false);
   });
 });

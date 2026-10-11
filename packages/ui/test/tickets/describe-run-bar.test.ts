@@ -322,3 +322,41 @@ describe('describeRunBar', () => {
     ).toMatchObject({ error: { message: "Couldn't start the run.", detail: '500' } });
   });
 });
+
+describe('describeRunBar for idea and plan tickets', () => {
+  it('should offer a pressable button naming the create skill when an idea ticket is available', () => {
+    expect(
+      describeRunBar(
+        available,
+        { status: 'idea', stuck: false },
+        { kind: 'idle' },
+        12,
+        'create-ticket',
+      ),
+    ).toMatchObject({ kind: 'shown', button: 'run', pressable: true, label: 'Run create-ticket' });
+  });
+
+  it('should name the plan skill on the button when a plan ticket is available', () => {
+    expect(
+      describeRunBar(
+        available,
+        { status: 'plan', stuck: false },
+        { kind: 'idle' },
+        12,
+        'plan-ticket',
+      ),
+    ).toMatchObject({ pressable: true, label: 'Run plan-ticket' });
+  });
+
+  it('should be disabled and show the reason when a plan ticket has an open spike', () => {
+    expect(
+      describeRunBar(
+        { availability: { kind: 'disabled', reason: 'Spike #9 is open.' } },
+        { status: 'plan', stuck: false },
+        { kind: 'idle' },
+        12,
+        'plan-ticket',
+      ),
+    ).toMatchObject({ button: 'disabled', pressable: false, reason: 'Spike #9 is open.' });
+  });
+});

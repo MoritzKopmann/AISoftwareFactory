@@ -8,6 +8,7 @@ import { describeTicketStatusMark, type StatusMark } from '../board/describe-tic
 import { formatClockTime } from '../board/format-clock-time.js';
 import { ticketStatusLabel } from '../board/ticket-status-labels.js';
 import type { RunSkill } from './describe-run-bar.js';
+import { describeReviewPanel, type ReviewPanelDescription } from './describe-review-panel.js';
 
 export type TicketPageOutcome =
   | { readonly kind: 'loading' }
@@ -36,6 +37,7 @@ export type TicketPageDescription =
       readonly url: string;
       readonly body: string;
       readonly runSkill: RunSkill;
+      readonly reviewPanel?: ReviewPanelDescription;
       readonly parent?: {
         readonly href: string;
         readonly numberLabel: string;
@@ -48,7 +50,15 @@ export type TicketPageDescription =
       }>;
     };
 
+function runSkillFor(ticket: TicketResponse): RunSkill {
+  // Mirrors the runner's runStageFor.
+  if (ticket.status === 'idea') return 'create-ticket';
+  if (ticket.status === 'plan') return 'plan-ticket';
+  return ticket.types.includes('spike') ? 'spike' : 'implement-ticket';
+}
+
 function describeLoadedTicket(ticket: TicketResponse, projectId: string): TicketPageDescription {
+  const reviewPanel = describeReviewPanel(ticket);
   return {
     kind: 'loaded',
     numberLabel: `#${ticket.number}`,
@@ -60,8 +70,8 @@ function describeLoadedTicket(ticket: TicketResponse, projectId: string): Ticket
     statusMark: describeTicketStatusMark(ticket.status),
     url: ticket.url,
     body: ticket.body,
-    // Mirrors the runner's runStageFor: a spike ticket runs aisf:spike.
-    runSkill: ticket.types.includes('spike') ? 'spike' : 'implement-ticket',
+    runSkill: runSkillFor(ticket),
+    ...(reviewPanel.kind === 'shown' ? { reviewPanel } : {}),
     ...(ticket.parent === undefined
       ? {}
       : {

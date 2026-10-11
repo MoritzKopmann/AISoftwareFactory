@@ -6,6 +6,7 @@ export type LiveView =
   | { kind: 'run'; projectId: string; ticketNumber: number }
   | { kind: 'artifacts'; projectId: string; ticketNumber: number }
   | { kind: 'findings'; projectId: string; ticketNumber?: number }
+  | { kind: 'needs-you'; projectId: string }
   | { kind: 'skills' };
 
 export function noticeConcernsView(notice: LiveNotice, view: LiveView): boolean {
@@ -17,15 +18,23 @@ export function noticeConcernsView(notice: LiveNotice, view: LiveView): boolean 
     case 'watch.updated':
       if (notice.changed === false) return false;
       return (
-        view.kind === 'board' || view.kind === 'run' || (view.kind === 'ticket' && !view.closed)
+        view.kind === 'board' ||
+        view.kind === 'needs-you' ||
+        view.kind === 'run' ||
+        (view.kind === 'ticket' && !view.closed)
       );
     case 'ticket.status-written':
-    case 'run.started':
     case 'run.finished':
+      return (
+        view.kind === 'board' ||
+        view.kind === 'needs-you' ||
+        (isTicketScoped(view) && sameTicket(notice, view))
+      );
+    case 'run.started':
       return view.kind === 'board' || (isTicketScoped(view) && sameTicket(notice, view));
     case 'run.waiting':
     case 'run.wait-cleared':
-      return isTicketScoped(view) && sameTicket(notice, view);
+      return view.kind === 'needs-you' || (isTicketScoped(view) && sameTicket(notice, view));
     case 'run.step-added':
       return view.kind === 'run' && sameTicket(notice, view);
     case 'artifact.published':

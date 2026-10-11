@@ -1,5 +1,7 @@
 import type { LiveUpdates } from '../live/live-updates.js';
 import type { ProjectResponse } from '@aisf/app/api-schemas/projects-schemas.js';
+import { NeedsYou } from '../board/needs-you.js';
+import { NewIdeaForm } from './new-idea-form.js';
 import { Board, BoardSkeleton } from '../board/board.js';
 import { describeBoard } from '../board/describe-board.js';
 import { describeUpdatedTime } from '../board/describe-updated-time.js';
@@ -56,6 +58,8 @@ function RegisteredProjectPage({
           )}
         </div>
         <ContractReport report={project.contract} />
+        <NewIdeaForm projectId={project.id} />
+        <NeedsYou liveUpdates={liveUpdates} projectId={project.id} />
         {skeletonVisible ? (
           <BoardSkeleton />
         ) : (

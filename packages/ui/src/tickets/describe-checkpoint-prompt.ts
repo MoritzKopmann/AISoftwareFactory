@@ -57,7 +57,8 @@ type ShownWait = { readonly runId: string; readonly request: string };
 function findShownWait(response: TicketRunResponse | undefined): ShownWait | undefined {
   const activeRun = response?.activeRun;
   if (activeRun !== undefined) {
-    return activeRun.waitingFor?.kind !== 'checkpoint'
+    // A wait with a page is answered in the round panel, not here.
+    return activeRun.waitingFor?.kind !== 'checkpoint' || activeRun.waitingFor.page !== undefined
       ? undefined
       : { runId: activeRun.id, request: activeRun.waitingFor.request };
   }
