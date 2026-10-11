@@ -50,7 +50,13 @@ describe('WaitForRunAnswerUseCase', () => {
     expect(events.emittedEvents).toEqual([
       {
         name: 'run.waiting',
-        payload: { runId: 'run-1', projectId: 'moritz/aisf', ticketNumber: 137, wait },
+        payload: {
+          runId: 'run-1',
+          projectId: 'moritz/aisf',
+          ticketNumber: 137,
+          stage: 'implement',
+          wait,
+        },
       },
     ]);
     expect(finishedEndings).toEqual([]);

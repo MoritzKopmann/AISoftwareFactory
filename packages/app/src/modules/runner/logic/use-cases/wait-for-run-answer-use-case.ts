@@ -36,6 +36,7 @@ export class WaitForRunAnswerUseCase {
       runId: run.id,
       projectId: run.projectId,
       ticketNumber: run.ticketNumber,
+      stage: run.stage,
       wait,
     });
 

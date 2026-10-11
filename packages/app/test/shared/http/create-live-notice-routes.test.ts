@@ -57,6 +57,7 @@ describe('createLiveNoticeRoutes', () => {
       runId: 'run-1',
       projectId: 'octo/repo',
       ticketNumber: 7,
+      stage: 'implement',
       ending: { kind: 'finished' },
     });
     expect(await stream.next()).toBe(

@@ -32,7 +32,11 @@ export class ResetTicketUseCase {
       throw new TicketNotResettableError(`#${ticketNumber} is not stuck or in progress`);
     }
 
-    await ticketStatusWrites.setStatus(project.repository, ticketNumber, 'ready');
+    // An authoring ticket keeps its status: a failed create or plan run changed nothing.
+    const status = live.status === 'idea' || live.status === 'plan' ? live.status : 'ready';
+    if (status === 'ready') {
+      await ticketStatusWrites.setStatus(project.repository, ticketNumber, 'ready');
+    }
     for (const state of ['waiting', 'stuck'] as const) {
       if (live[state]) {
         await ticketStatusWrites.setSecondaryState(project.repository, ticketNumber, state, false);
@@ -42,7 +46,7 @@ export class ResetTicketUseCase {
       projectId,
       ticketNumber,
       from: live.status,
-      to: 'ready',
+      to: status,
       waiting: false,
       stuck: false,
     });

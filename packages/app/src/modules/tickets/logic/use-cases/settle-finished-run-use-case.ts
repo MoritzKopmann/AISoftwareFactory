@@ -20,7 +20,7 @@ export class SettleFinishedRunUseCase {
   async execute(finishedRun: FinishedRun): Promise<void> {
     const { ticketStatusWrites, runSettlement, registeredRepositories, events, logger } =
       this.dependencies;
-    const { runId, projectId, ticketNumber, ending } = finishedRun;
+    const { runId, projectId, ticketNumber, stage, ending } = finishedRun;
 
     const project = (await registeredRepositories.list()).find(
       (registered) => registered.projectId === projectId,
@@ -34,7 +34,7 @@ export class SettleFinishedRunUseCase {
     }
 
     const live = await ticketStatusWrites.readState(project.repository, ticketNumber);
-    const transition = decideRunEndTransition(ending, live);
+    const transition = decideRunEndTransition(ending, live, stage);
     if (transition.kind === 'return-to-ready') {
       await ticketStatusWrites.setStatus(project.repository, ticketNumber, 'ready');
       events.emit('ticket.status-written', {

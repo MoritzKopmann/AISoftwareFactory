@@ -26,6 +26,7 @@ export class RecoverInterruptedRunsUseCase {
           runId: run.id,
           projectId: run.projectId,
           ticketNumber: run.ticketNumber,
+          stage: run.stage,
           ending: run.ending,
         });
       }

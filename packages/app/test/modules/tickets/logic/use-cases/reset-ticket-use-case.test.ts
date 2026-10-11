@@ -162,4 +162,18 @@ describe('ResetTicketUseCase', () => {
     await expect(useCase.execute('moritz/aisf', 138)).rejects.toThrow('gh failed');
     expect(events.emittedEvents).toEqual([]);
   });
+
+  it.each(['idea', 'plan'] as const)(
+    'should clear the stuck label and keep the status when an authoring ticket at %s is reset',
+    async (status) => {
+      const { useCase, ticketStatusWrites, events } = buildSubject(status, { stuck: true });
+
+      await useCase.execute('moritz/aisf', 7);
+
+      expect(ticketStatusWrites.calls).toEqual(['readState', 'setSecondaryState #7 stuck off']);
+      expect(events.emittedEvents).toMatchObject([
+        { payload: { from: status, to: status, waiting: false, stuck: false } },
+      ]);
+    },
+  );
 });

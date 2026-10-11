@@ -10,6 +10,7 @@ const waitingRun: WaitingRun = {
   runId: 'r1',
   projectId: 'moritz/aisf',
   ticketNumber: 7,
+  stage: 'implement',
   wait: { kind: 'checkpoint', request: 'Pick A or B' },
 };
 
@@ -75,5 +76,18 @@ describe('SettleWaitingRunUseCase', () => {
     await useCase.execute(waitingRun);
 
     expect(ticketStatusWrites.calls).toEqual(['readState']);
+  });
+
+  it('should add the waiting label and keep the idea status when a create run waits at its page', async () => {
+    const { useCase, ticketStatusWrites } = buildSubject();
+    ticketStatusWrites.liveStatus = 'idea';
+
+    await useCase.execute({ ...waitingRun, stage: 'create' });
+
+    expect(ticketStatusWrites.calls).toEqual([
+      'readState',
+      'setSecondaryState #7 waiting on',
+      expect.stringContaining('comment #7:') as string,
+    ]);
   });
 });
