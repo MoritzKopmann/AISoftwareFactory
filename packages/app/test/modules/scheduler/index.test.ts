@@ -156,7 +156,7 @@ describe('createSchedulerModule', () => {
     const response = await scheduler.routes.request('/projects/moritz/aisf/ideas', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ title: 'Export trips as postcards' }),
+      body: JSON.stringify({ text: 'Export trips as postcards' }),
     });
 
     expect(response.status).toBe(201);
