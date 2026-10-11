@@ -58,7 +58,11 @@ export const ticketRunResponseSchema = z.object({
       steps: z.array(runStepResponseSchema),
       waitingFor: z
         .discriminatedUnion('kind', [
-          z.object({ kind: z.literal('checkpoint'), request: z.string() }),
+          z.object({
+            kind: z.literal('checkpoint'),
+            request: z.string(),
+            page: z.object({ title: z.string(), url: z.string() }).optional(),
+          }),
           z.object({
             kind: z.literal('permission-needed'),
             toolName: z.string(),

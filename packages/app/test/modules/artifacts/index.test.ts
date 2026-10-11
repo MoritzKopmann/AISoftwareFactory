@@ -57,4 +57,23 @@ describe('createArtifactsModule', () => {
       artifacts: [{ artifactId: 'plan', title: 'Plan review', url: '/a/T/', status: 'closed' }],
     });
   });
+
+  describe('pageOf', () => {
+    it('should return the title and url when the ticket has the artifact', async () => {
+      artifactRepository.add(buildArtifact({ artifactId: 'plan-12', title: 'Plan 12' }));
+
+      expect(await bridge.pageOf('o/n', 7, 'plan-12')).toEqual({ title: 'Plan 12', url: '/a/T/' });
+    });
+
+    it('should pick the project when another project has the same artifact id', async () => {
+      artifactRepository.add(buildArtifact({ projectId: 'o/other', token: 'X', title: 'Other' }));
+      artifactRepository.add(buildArtifact({ title: 'Mine' }));
+
+      expect(await bridge.pageOf('o/n', 7, 'plan')).toEqual({ title: 'Mine', url: '/a/T/' });
+    });
+
+    it('should return undefined when the artifact is unknown', async () => {
+      expect(await bridge.pageOf('o/n', 7, 'plan')).toBeUndefined();
+    });
+  });
 });

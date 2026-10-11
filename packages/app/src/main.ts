@@ -246,6 +246,7 @@ function buildSchedulerModule(
   skills: SkillsModule,
   watcher: WatcherModule,
   runner: RunnerModule,
+  artifacts: ArtifactsModule,
   logger: Logger,
 ): SchedulerModule {
   return createSchedulerModule({
@@ -280,6 +281,7 @@ function buildSchedulerModule(
       latestRun: runner.latestRun,
       settle: runner.settle,
     },
+    runPageLookup: { find: artifacts.pageOf },
     ticketLookup: {
       find: async (projectId, ticketNumber) => {
         const projectTicket = await watcher.ticket(projectId, ticketNumber);
@@ -373,7 +375,15 @@ const runner = buildRunnerModule(
   [...findings.tools, ...artifacts.tools],
   logger,
 );
-const scheduler = buildSchedulerModule(eventBus, projects, skills, watcher, runner, logger);
+const scheduler = buildSchedulerModule(
+  eventBus,
+  projects,
+  skills,
+  watcher,
+  runner,
+  artifacts,
+  logger,
+);
 scheduler.start();
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

@@ -53,7 +53,7 @@ const addPageHeaders: MiddlewareHandler = (context, next) =>
       fontSrc: ["'self'"],
       imgSrc: ["'self'", 'data:'],
       connectSrc: [`http://${context.req.header('host')}/a/${context.req.param('token')}/`],
-      frameAncestors: ["'none'"],
+      frameAncestors: ["'self'"],
       baseUri: ["'none'"],
       formAction: ["'none'"],
     },
