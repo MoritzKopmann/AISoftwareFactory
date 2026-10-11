@@ -307,6 +307,7 @@ function buildSchedulerModule(
       activeRuns: runner.activeRuns,
       latestRun: runner.latestRun,
     },
+    ideaCreation: { create: tickets.createIdea },
     runPageLookup: { find: artifacts.pageOf },
     ticketLookup: {
       find: async (projectId, ticketNumber) => {

@@ -8,6 +8,7 @@ import type { ReviewedTicket } from '../../../src/modules/scheduler/logic/domain
 import type { AisfEventMap } from '../../../src/shared/bus/aisf-event-map.js';
 import { TypedEventBus } from '../../../src/shared/bus/typed-event-bus.js';
 import {
+  FakeIdeaCreation,
   FakeProjectLookup,
   FakePullRequestMerges,
   FakeReviewedTicketLookup,
@@ -41,11 +42,13 @@ describe('createSchedulerModule', () => {
   let runner: FakeRunnerPort;
   let ticketAnswerGate: FakeTicketAnswerGate;
   let scheduler: SchedulerModule;
+  let ideaCreation: FakeIdeaCreation;
 
   beforeEach(() => {
     bus = new TypedEventBus<AisfEventMap>();
     pullRequestMerges = new FakePullRequestMerges();
     runner = new FakeRunnerPort();
+    ideaCreation = new FakeIdeaCreation();
     ticketAnswerGate = new FakeTicketAnswerGate();
     scheduler = createSchedulerModule({
       ticketAnswerGate,
@@ -56,6 +59,7 @@ describe('createSchedulerModule', () => {
       reviewedTicketLookup: new FakeReviewedTicketLookup([approvedTicket]),
       runsGate: new FakeRunsGate(),
       projectLookup: new FakeProjectLookup(),
+      ideaCreation,
       subscriber: bus,
       logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
     });
@@ -146,5 +150,18 @@ describe('createSchedulerModule', () => {
     bus.emit('snapshot.changed', snapshotChanged);
 
     await vi.waitFor(() => expect(pullRequestMerges.calls).toEqual(['merge #201 abc123']));
+  });
+
+  it('should create the idea and start its run when the ideas route is posted', async () => {
+    const response = await scheduler.routes.request('/projects/moritz/aisf/ideas', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ title: 'Export trips as postcards' }),
+    });
+
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ ticketNumber: 501 });
+    expect(ideaCreation.calls).toEqual(['create {"title":"Export trips as postcards","body":""}']);
+    expect(runner.calls).toEqual(['start moritz/aisf #501']);
   });
 });
