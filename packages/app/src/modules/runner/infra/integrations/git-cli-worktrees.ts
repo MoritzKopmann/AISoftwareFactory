@@ -1,11 +1,13 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { runProcess } from '../../../../shared/process/run-process.js';
+import type { DetachedWorktreeSpec } from '../../logic/domain/types/detached-worktree-spec.js';
 import type { WorktreeSpec } from '../../logic/domain/types/worktree-spec.js';
 import { WorktreeSetupFailedError } from '../../logic/errors/worktree-setup-failed-error.js';
 import type { Worktrees } from '../../logic/ports/worktrees.js';
 
 const gitTimeoutMilliseconds = 120_000;
+const detachedBaseRef = 'origin/HEAD';
 const fallbackBaseRef = 'origin/main';
 
 export class GitCliWorktrees implements Worktrees {
@@ -33,6 +35,22 @@ export class GitCliWorktrees implements Worktrees {
       spec.branchName,
       spec.worktreePath,
       startPoint,
+    ]);
+  }
+
+  async ensureDetached(spec: DetachedWorktreeSpec): Promise<void> {
+    await this.git(spec.checkoutPath, ['fetch', 'origin']);
+    if (existsSync(join(spec.worktreePath, '.git'))) {
+      await this.git(spec.worktreePath, ['checkout', '--detach', detachedBaseRef]);
+      return;
+    }
+    await this.git(spec.checkoutPath, ['worktree', 'prune']);
+    await this.git(spec.checkoutPath, [
+      'worktree',
+      'add',
+      '--detach',
+      spec.worktreePath,
+      detachedBaseRef,
     ]);
   }
 

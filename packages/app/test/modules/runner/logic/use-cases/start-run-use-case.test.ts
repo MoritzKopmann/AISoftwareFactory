@@ -8,6 +8,7 @@ import { WorktreeSetupFailedError } from '../../../../../src/modules/runner/logi
 import { FinishRunUseCase } from '../../../../../src/modules/runner/logic/use-cases/finish-run-use-case.js';
 import { LaunchRunSessionUseCase } from '../../../../../src/modules/runner/logic/use-cases/launch-run-session-use-case.js';
 import { StartRunUseCase } from '../../../../../src/modules/runner/logic/use-cases/start-run-use-case.js';
+import type { TicketStatus } from '../../../../../src/shared/ticket-status/ticket-status.js';
 import type { TicketType } from '../../../../../src/shared/ticket-type/ticket-type.js';
 import { FakeClock } from '../../../../fakes/fake-clock.js';
 import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
@@ -76,6 +77,7 @@ describe('StartRunUseCase', () => {
     checkoutPath: '/checkouts/aisf',
     repositoryName: 'aisf',
     ticketTitle: 'The runner takes a ticket',
+    status: 'ready' as TicketStatus,
     types: [] as ReadonlyArray<TicketType>,
   };
 
@@ -173,6 +175,44 @@ describe('StartRunUseCase', () => {
       expect(agentSessions.startedSpecs[0]).toMatchObject({ prompt, model });
     },
   );
+
+  it.each<[string, TicketStatus, 'create' | 'plan', string, string]>([
+    ['an idea', 'idea', 'create', '/aisf:create-ticket 137', 'sonnet'],
+    ['a plan ticket', 'plan', 'plan', '/aisf:plan-ticket 137', 'opus'],
+  ])(
+    'should save the stage, prompt and model of the authoring skill when the ticket is %s',
+    async (_name, status, stage, prompt, model) => {
+      startRun = buildStartRun(new FakeRunTargets({ ...target, status }));
+
+      const run = await startRun.execute(startRequest);
+
+      expect(run.stage).toBe(stage);
+      expect(agentSessions.startedSpecs[0]).toMatchObject({ prompt, model });
+    },
+  );
+
+  it('should ensure a detached worktree without a branch in its own directory when an authoring run starts', async () => {
+    startRun = buildStartRun(new FakeRunTargets({ ...target, status: 'plan' }));
+
+    const run = await startRun.execute(startRequest);
+
+    expect(run.branchName).toBe('');
+    expect(run.worktreePath).toBe('/worktrees/aisf/137-authoring');
+    expect(worktrees.ensuredSpecs).toEqual([]);
+    expect(worktrees.detachedSpecs).toEqual([
+      { checkoutPath: '/checkouts/aisf', worktreePath: '/worktrees/aisf/137-authoring' },
+    ]);
+  });
+
+  it('should refresh the detached worktree on every start when an authoring run starts twice', async () => {
+    startRun = buildStartRun(new FakeRunTargets({ ...target, status: 'idea' }));
+
+    await startRun.execute(startRequest);
+    await runRepository.markSettled('id-1');
+    await startRun.execute({ ...startRequest });
+
+    expect(worktrees.detachedSpecs).toHaveLength(2);
+  });
 
   it('should throw RunAlreadyActiveError and start nothing when the ticket already has a running run', async () => {
     await runRepository.insert(buildRun({ id: 'other-run' }));

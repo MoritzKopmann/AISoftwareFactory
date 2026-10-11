@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -88,5 +88,35 @@ describe('GitCliWorktrees', () => {
         branchName: 'aisf/137-runner',
       }),
     ).rejects.toThrow(WorktreeSetupFailedError);
+  });
+
+  describe('ensureDetached', () => {
+    it('should create a detached worktree at origin/HEAD when none exists', async () => {
+      await worktrees.ensureDetached({ checkoutPath, worktreePath });
+
+      expect(git(worktreePath, 'rev-parse', '--abbrev-ref', 'HEAD')).toBe('HEAD');
+      expect(git(worktreePath, 'rev-parse', 'HEAD')).toBe(
+        git(checkoutPath, 'rev-parse', 'origin/HEAD'),
+      );
+    });
+
+    it('should move an existing worktree to the new origin/HEAD and keep untracked files when it starts again', async () => {
+      await worktrees.ensureDetached({ checkoutPath, worktreePath });
+      mkdirSync(join(worktreePath, '.aisf'));
+      writeFileSync(join(worktreePath, '.aisf', 'page.html'), 'kept');
+      git(checkoutPath, 'commit', '--allow-empty', '-m', 'second');
+      git(checkoutPath, 'push', 'origin', 'HEAD:main');
+
+      await worktrees.ensureDetached({ checkoutPath, worktreePath });
+
+      expect(git(worktreePath, 'log', '-1', '--format=%s')).toBe('second');
+      expect(existsSync(join(worktreePath, '.aisf', 'page.html'))).toBe(true);
+    });
+
+    it('should throw WorktreeSetupFailedError when the checkout is not a repository', async () => {
+      await expect(
+        worktrees.ensureDetached({ checkoutPath: rootDirectory, worktreePath }),
+      ).rejects.toThrow(WorktreeSetupFailedError);
+    });
   });
 });

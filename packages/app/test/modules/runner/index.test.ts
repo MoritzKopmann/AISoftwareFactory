@@ -58,6 +58,7 @@ describe('createRunnerModule', () => {
         checkoutPath: '/checkouts/aisf',
         repositoryName: 'aisf',
         ticketTitle: 'The runner',
+        status: 'ready',
         types: [],
       }),
       recentRunSteps: new FakeRecentRunSteps(),
