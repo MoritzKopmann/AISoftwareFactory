@@ -5,6 +5,7 @@ import type {
   RegisteredRepositories,
   RegisteredRepository,
 } from '../../../../src/modules/tickets/logic/ports/registered-repositories.js';
+import type { IdeaCreation } from '../../../../src/modules/tickets/logic/ports/idea-creation.js';
 import type { IssueFeeds } from '../../../../src/modules/tickets/logic/ports/issue-feeds.js';
 import type { GitHubToken } from '../../../../src/modules/tickets/logic/ports/github-token.js';
 import type { TicketSource } from '../../../../src/modules/tickets/logic/ports/ticket-source.js';
@@ -115,4 +116,26 @@ export class ScriptedFetch {
     }
     return Promise.resolve(answer);
   };
+}
+
+export class FakeIdeaCreation implements IdeaCreation {
+  readonly created: Array<{
+    readonly repository: RepositoryReference;
+    readonly idea: { readonly title: string; readonly body: string };
+  }> = [];
+  createdNumber = 12;
+  failure: Error | undefined;
+  onCreate: () => void = () => undefined;
+
+  async create(
+    repository: RepositoryReference,
+    idea: { readonly title: string; readonly body: string },
+  ): Promise<number> {
+    if (this.failure !== undefined) {
+      throw this.failure;
+    }
+    this.created.push({ repository, idea });
+    this.onCreate();
+    return this.createdNumber;
+  }
 }

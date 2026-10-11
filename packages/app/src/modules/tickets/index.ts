@@ -9,12 +9,15 @@ import { subscribeToRunWaiting } from './api/subscriptions/subscribe-to-run-wait
 import { subscribeToTicketStatusWritten } from './api/subscriptions/subscribe-to-ticket-status-written.js';
 import { subscribeToProjectAdded } from './api/subscriptions/subscribe-to-project-added.js';
 import type { ProjectTicket } from './logic/domain/types/project-ticket.js';
+import type { RepositoryReference } from './logic/domain/types/repository-reference.js';
 import type { Ticket } from './logic/domain/types/ticket.js';
 import type { ActiveRunLookup } from './logic/ports/active-run-lookup.js';
+import type { IdeaCreation } from './logic/ports/idea-creation.js';
 import type { RegisteredRepositories } from './logic/ports/registered-repositories.js';
 import type { RunSettlement } from './logic/ports/run-settlement.js';
 import type { TicketStatusWrites } from './logic/ports/ticket-status-writes.js';
 import { BeginTicketAnswerUseCase } from './logic/use-cases/begin-ticket-answer-use-case.js';
+import { CreateIdeaUseCase } from './logic/use-cases/create-idea-use-case.js';
 import { FailWatchesUseCase } from './logic/use-cases/fail-watches-use-case.js';
 import {
   PollRepositoriesUseCase,
@@ -48,6 +51,7 @@ export type {
 
 export type TicketsModuleDependencies = PollRepositoriesDependencies & {
   readonly subscriber: EventSubscriber;
+  readonly ideaCreation: IdeaCreation;
   readonly registeredRepositories: RegisteredRepositories;
   readonly activeRunLookup: ActiveRunLookup;
   readonly ticketStatusWrites: TicketStatusWrites;
@@ -64,6 +68,10 @@ export type TicketsModule = {
   readonly ticket: (projectId: string, number: number) => Promise<ProjectTicket | undefined>;
   readonly beginAnswer: (projectId: string, ticketNumber: number) => Promise<void>;
   readonly revertAnswer: (projectId: string, ticketNumber: number) => Promise<void>;
+  readonly createIdea: (
+    repository: RepositoryReference,
+    idea: { readonly title: string; readonly body: string },
+  ) => Promise<number>;
 };
 
 export function createTicketsModule(dependencies: TicketsModuleDependencies): TicketsModule {
@@ -83,12 +91,13 @@ export function createTicketsModule(dependencies: TicketsModuleDependencies): Ti
   let unsubscribers: ReadonlyArray<() => void> = [];
   let runningPolls: Promise<void> | undefined;
   let pollRequested = false;
+  const forcedRepositories: RepositoryReference[] = [];
   let stopped = false;
 
   // The timer callback must never reject, or an unhandled rejection ends the process.
   async function runPoll(): Promise<void> {
     try {
-      await pollRepositories.execute();
+      await pollRepositories.execute(forcedRepositories.splice(0));
     } catch (error) {
       failWatches.execute(error);
     }
@@ -120,6 +129,15 @@ export function createTicketsModule(dependencies: TicketsModuleDependencies): Ti
     })();
     return runningPolls;
   }
+
+  const createIdea = new CreateIdeaUseCase({
+    ideaCreation: dependencies.ideaCreation,
+    // Joins the poll loop, so a snapshot never overlaps the timer poll.
+    refreshSnapshot: (repository) => {
+      forcedRepositories.push(repository);
+      return requestPoll();
+    },
+  });
 
   const ticketReads = {
     board: (projectId: string) => readProjectBoard.execute(projectId),
@@ -171,5 +189,6 @@ export function createTicketsModule(dependencies: TicketsModuleDependencies): Ti
     ticket: ticketReads.ticket,
     beginAnswer: (projectId, ticketNumber) => beginTicketAnswer.execute(projectId, ticketNumber),
     revertAnswer: (projectId, ticketNumber) => revertTicketAnswer.execute(projectId, ticketNumber),
+    createIdea: (repository, idea) => createIdea.execute(repository, idea),
   };
 }

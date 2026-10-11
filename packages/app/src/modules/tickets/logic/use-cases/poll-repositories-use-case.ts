@@ -7,6 +7,7 @@ import { hasSnapshotChanges } from '../domain/functions/has-snapshot-changes.js'
 import { hasWatchChanged } from '../domain/functions/has-watch-changed.js';
 import { pruneStatusWrites } from '../domain/functions/prune-status-writes.js';
 import { shouldTakeSnapshot } from '../domain/functions/should-take-snapshot.js';
+import type { RepositoryReference } from '../domain/types/repository-reference.js';
 import type { RateLimitGate } from '../domain/types/rate-limit-gate.js';
 import type { RepositoryWatch } from '../domain/types/repository-watch.js';
 import type { SyncFailureCause } from '../domain/types/sync-status.js';
@@ -29,10 +30,11 @@ export type PollRepositoriesDependencies = {
 export class PollRepositoriesUseCase {
   constructor(private readonly dependencies: PollRepositoriesDependencies) {}
 
-  async execute(): Promise<void> {
+  // A forced repository takes a snapshot even when its feeds report no change.
+  async execute(forced: ReadonlyArray<RepositoryReference> = []): Promise<void> {
     const { watchStore, clock, events } = this.dependencies;
     const previousWatches = watchStore.watches();
-    for (const watch of await this.pollAll(previousWatches)) {
+    for (const watch of await this.pollAll(previousWatches, forced)) {
       const previous = previousWatches.find(({ projectId }) => projectId === watch.projectId);
       const writesBefore = watchStore.statusWrites(watch.projectId).length;
       watchStore.saveWatch(watch);
@@ -53,6 +55,7 @@ export class PollRepositoriesUseCase {
 
   private async pollAll(
     watches: ReadonlyArray<RepositoryWatch>,
+    forced: ReadonlyArray<RepositoryReference>,
   ): Promise<ReadonlyArray<RepositoryWatch>> {
     const gate = findRateLimitGate(watches, this.dependencies.clock.now());
     if (gate !== undefined) {
@@ -66,6 +69,10 @@ export class PollRepositoriesUseCase {
           await this.pollRepository(
             watch,
             this.dependencies.watchStore.statusWrites(watch.projectId).length > 0,
+            forced.some(
+              ({ owner, name }) =>
+                owner === watch.repository.owner && name === watch.repository.name,
+            ),
           ),
         );
       } catch (error) {
@@ -86,10 +93,11 @@ export class PollRepositoriesUseCase {
   private async pollRepository(
     watch: RepositoryWatch,
     hasUnconfirmedStatusWrites: boolean,
+    isForced: boolean,
   ): Promise<RepositoryWatch> {
     const { issueFeeds, ticketSource, clock, events, snapshotIntervalMilliseconds } =
       this.dependencies;
-    const feedsChanged = await issueFeeds.changedSince(watch.repository);
+    const feedsChanged = isForced || (await issueFeeds.changedSince(watch.repository));
     const checkedAt = clock.now();
     const takeSnapshot = shouldTakeSnapshot({
       feedsChanged,
