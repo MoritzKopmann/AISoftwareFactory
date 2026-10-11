@@ -42,6 +42,11 @@ export class AisfRoundElement extends HTMLElement {
   }
 
   /** @returns {any} */
+  get precedent() {
+    return this.querySelector('aisf-precedent');
+  }
+
+  /** @returns {any} */
   get confirm() {
     return this.querySelector('aisf-confirm');
   }
@@ -82,6 +87,7 @@ export class AisfRoundElement extends HTMLElement {
         isRecord(answer) ? { question: name, ...answer } : undefined,
       );
     }
+    this.precedent?.restore(saved['vetoes']);
     this.confirm?.restore(saved);
   }
 
@@ -111,6 +117,7 @@ export class AisfRoundElement extends HTMLElement {
       }
       next['answers'] = answers;
     }
+    if (this.precedent !== null) next['vetoes'] = this.precedent.vetoes;
     if (this.confirm !== null) Object.assign(next, this.confirm.draft);
     this.session.state.rounds[key] = next;
   }
@@ -143,7 +150,9 @@ export class AisfRoundElement extends HTMLElement {
     if (!this.questions.every((question) => /** @type {any} */ (question).isAnswered)) return;
     this.collect();
     const answers = this.questions.map((question) => /** @type {any} */ (question).answer);
-    void this.send('submit', { answers });
+    const payload =
+      this.precedent === null ? { answers } : { answers, vetoes: this.precedent.vetoes };
+    void this.send('submit', payload);
   };
 
   /**
@@ -185,6 +194,7 @@ export class AisfRoundElement extends HTMLElement {
     this.lastStatus = this.status;
     const locked = this.locked;
     for (const question of this.questions) /** @type {any} */ (question).setLocked(locked);
+    this.precedent?.setLocked(locked);
     this.confirm?.setLocked(locked);
     this.renderBar(locked);
     const closed = this.status === 'closed';
