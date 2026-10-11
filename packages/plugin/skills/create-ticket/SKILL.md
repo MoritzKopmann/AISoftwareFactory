@@ -57,11 +57,14 @@ For issue `<n>`:
 
 ## Interview
 
+Load `aisf:grilling` and follow it. Specific to create-ticket:
+
 1. **Round 1.** Draft a one-sentence summary from the issue. Ask the human to confirm it and
    pick the type: `bug`, `enhancement` or `task` (a spike is a task whose deliverable is an
    answer). Hand run with no number: ask for the summary instead.
-2. **Next rounds.** One to three questions each, **one track area at a time**, in the track's
-   order. Cover every area. Skip one an earlier answer settled.
+2. **Group the frontier.** Every question whose answer does not depend on another open one goes
+   in the same round, across track areas. No cap on the count. The track lists the areas to
+   cover, in its order. Cover every area. Skip one an earlier answer settled.
 3. **Every question** has answer cards pre-drafted from the issue text and, when the slot
    exists, from `project-index`. Plus free text (the kit's Other). Mark a `suggested` card.
    Cards never offer an implementation choice.
