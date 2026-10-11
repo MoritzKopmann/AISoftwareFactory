@@ -3,6 +3,7 @@ import type { Clock } from '../../../../shared/clock/clock.js';
 import { branchNameFor } from '../domain/functions/branch-name-for.js';
 import { describeError } from '../domain/functions/describe-error.js';
 import { runStageFor } from '../domain/functions/run-stage-for.js';
+import { authoringWorktreePathFor } from '../domain/functions/authoring-worktree-path-for.js';
 import { worktreePathFor } from '../domain/functions/worktree-path-for.js';
 import { stageSkills } from '../domain/constants/stage-skills.js';
 import type { FinishRun } from '../domain/types/finish-run.js';
@@ -47,19 +48,22 @@ export class StartRunUseCase {
       );
     }
 
+    const stage = runStageFor(target);
+    const authoring = stage === 'create' || stage === 'plan';
+    const worktreePath = (authoring ? authoringWorktreePathFor : worktreePathFor)(
+      this.dependencies.worktreesDirectory,
+      target.repositoryName,
+      request.ticketNumber,
+    );
     const run: Run = {
       id: identifiers.next(),
       projectId: request.projectId,
       ticketNumber: request.ticketNumber,
-      stage: runStageFor(target),
+      stage,
       mode: request.mode,
       sessionId: identifiers.next(),
-      worktreePath: worktreePathFor(
-        this.dependencies.worktreesDirectory,
-        target.repositoryName,
-        request.ticketNumber,
-      ),
-      branchName: branchNameFor(request.ticketNumber, target.ticketTitle),
+      worktreePath,
+      branchName: authoring ? '' : branchNameFor(request.ticketNumber, target.ticketTitle),
       state: 'running',
       startedAt: clock.now(),
     };
@@ -71,11 +75,18 @@ export class StartRunUseCase {
     });
 
     try {
-      await worktrees.ensure({
-        checkoutPath: target.checkoutPath,
-        worktreePath: run.worktreePath,
-        branchName: run.branchName,
-      });
+      if (authoring) {
+        await worktrees.ensureDetached({
+          checkoutPath: target.checkoutPath,
+          worktreePath: run.worktreePath,
+        });
+      } else {
+        await worktrees.ensure({
+          checkoutPath: target.checkoutPath,
+          worktreePath: run.worktreePath,
+          branchName: run.branchName,
+        });
+      }
     } catch (error) {
       await finishRun(run.id, { kind: 'crashed', reason: describeError(error) });
       throw error;

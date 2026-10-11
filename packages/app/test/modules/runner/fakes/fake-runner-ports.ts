@@ -8,6 +8,7 @@ import type { RunTarget } from '../../../../src/modules/runner/logic/domain/type
 import type { SessionEvent } from '../../../../src/modules/runner/logic/domain/types/session-event.js';
 import type { ResumeSessionSpec } from '../../../../src/modules/runner/logic/domain/types/resume-session-spec.js';
 import type { SessionSpec } from '../../../../src/modules/runner/logic/domain/types/session-spec.js';
+import type { DetachedWorktreeSpec } from '../../../../src/modules/runner/logic/domain/types/detached-worktree-spec.js';
 import type { WorktreeSpec } from '../../../../src/modules/runner/logic/domain/types/worktree-spec.js';
 import type { AgentSessions } from '../../../../src/modules/runner/logic/ports/agent-sessions.js';
 import type { Identifiers } from '../../../../src/shared/identifiers/identifiers.js';
@@ -247,7 +248,15 @@ class SessionQueue implements AsyncIterable<SessionEvent> {
 
 export class FakeWorktrees implements Worktrees {
   readonly ensuredSpecs: WorktreeSpec[] = [];
+  readonly detachedSpecs: DetachedWorktreeSpec[] = [];
   failure: Error | undefined;
+
+  async ensureDetached(spec: DetachedWorktreeSpec): Promise<void> {
+    if (this.failure !== undefined) {
+      throw this.failure;
+    }
+    this.detachedSpecs.push(spec);
+  }
 
   async ensure(spec: WorktreeSpec): Promise<void> {
     if (this.failure !== undefined) {
