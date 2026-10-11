@@ -1,13 +1,20 @@
 import { Hono } from 'hono';
 import type { EventSubscriber } from '../../shared/bus/event-subscriber.js';
+import type { Logger } from '../../shared/logger/create-logger.js';
+import { createTicketResetRoutes } from './api/routes/create-ticket-reset-routes.js';
 import { createTicketsRoutes } from './api/routes/create-tickets-routes.js';
 import { subscribeToRunFinished } from './api/subscriptions/subscribe-to-run-finished.js';
+import { subscribeToRunFinishedSettlement } from './api/subscriptions/subscribe-to-run-finished-settlement.js';
+import { subscribeToRunWaiting } from './api/subscriptions/subscribe-to-run-waiting.js';
 import { subscribeToTicketStatusWritten } from './api/subscriptions/subscribe-to-ticket-status-written.js';
 import { subscribeToProjectAdded } from './api/subscriptions/subscribe-to-project-added.js';
 import type { ProjectTicket } from './logic/domain/types/project-ticket.js';
 import type { Ticket } from './logic/domain/types/ticket.js';
 import type { ActiveRunLookup } from './logic/ports/active-run-lookup.js';
 import type { RegisteredRepositories } from './logic/ports/registered-repositories.js';
+import type { RunSettlement } from './logic/ports/run-settlement.js';
+import type { TicketStatusWrites } from './logic/ports/ticket-status-writes.js';
+import { BeginTicketAnswerUseCase } from './logic/use-cases/begin-ticket-answer-use-case.js';
 import { FailWatchesUseCase } from './logic/use-cases/fail-watches-use-case.js';
 import {
   PollRepositoriesUseCase,
@@ -17,6 +24,10 @@ import { ReadOpenTicketsUseCase } from './logic/use-cases/read-open-tickets-use-
 import { ReadProjectBoardUseCase } from './logic/use-cases/read-project-board-use-case.js';
 import { ReadTicketUseCase } from './logic/use-cases/read-ticket-use-case.js';
 import { RecordStatusWriteUseCase } from './logic/use-cases/record-status-write-use-case.js';
+import { ResetTicketUseCase } from './logic/use-cases/reset-ticket-use-case.js';
+import { RevertTicketAnswerUseCase } from './logic/use-cases/revert-ticket-answer-use-case.js';
+import { SettleFinishedRunUseCase } from './logic/use-cases/settle-finished-run-use-case.js';
+import { SettleWaitingRunUseCase } from './logic/use-cases/settle-waiting-run-use-case.js';
 import { WatchRepositoryUseCase } from './logic/use-cases/watch-repository-use-case.js';
 
 export type { BoardRow } from './logic/domain/types/board-row.js';
@@ -27,6 +38,8 @@ export type { SnapshotDiff } from './logic/domain/types/snapshot-diff.js';
 export type { SyncFailureCause, SyncStatus } from './logic/domain/types/sync-status.js';
 export type { Ticket } from './logic/domain/types/ticket.js';
 export type { TicketSnapshot } from './logic/domain/types/ticket-snapshot.js';
+export { TicketNotAnswerableError } from './logic/errors/ticket-not-answerable-error.js';
+export type { RunSettlement } from './logic/ports/run-settlement.js';
 export type { ActiveRunLookup } from './logic/ports/active-run-lookup.js';
 export type {
   RegisteredRepositories,
@@ -37,6 +50,9 @@ export type TicketsModuleDependencies = PollRepositoriesDependencies & {
   readonly subscriber: EventSubscriber;
   readonly registeredRepositories: RegisteredRepositories;
   readonly activeRunLookup: ActiveRunLookup;
+  readonly ticketStatusWrites: TicketStatusWrites;
+  readonly runSettlement: RunSettlement;
+  readonly logger: Logger;
   readonly pollIntervalMilliseconds: number;
 };
 
@@ -46,6 +62,8 @@ export type TicketsModule = {
   readonly routes: Hono;
   readonly openTickets: (projectId: string) => ReadonlyArray<Ticket>;
   readonly ticket: (projectId: string, number: number) => Promise<ProjectTicket | undefined>;
+  readonly beginAnswer: (projectId: string, ticketNumber: number) => Promise<void>;
+  readonly revertAnswer: (projectId: string, ticketNumber: number) => Promise<void>;
 };
 
 export function createTicketsModule(dependencies: TicketsModuleDependencies): TicketsModule {
@@ -56,6 +74,11 @@ export function createTicketsModule(dependencies: TicketsModuleDependencies): Ti
   const readTicket = new ReadTicketUseCase(dependencies);
   const readProjectBoard = new ReadProjectBoardUseCase(dependencies);
   const readOpenTickets = new ReadOpenTicketsUseCase(dependencies);
+  const settleFinishedRun = new SettleFinishedRunUseCase(dependencies);
+  const settleWaitingRun = new SettleWaitingRunUseCase(dependencies);
+  const resetTicket = new ResetTicketUseCase(dependencies);
+  const beginTicketAnswer = new BeginTicketAnswerUseCase(dependencies);
+  const revertTicketAnswer = new RevertTicketAnswerUseCase(dependencies);
   let nextPollTimer: ReturnType<typeof setTimeout> | undefined;
   let unsubscribers: ReadonlyArray<() => void> = [];
   let runningPolls: Promise<void> | undefined;
@@ -104,7 +127,12 @@ export function createTicketsModule(dependencies: TicketsModuleDependencies): Ti
   };
 
   return {
-    routes: new Hono().route('/projects', createTicketsRoutes(ticketReads)),
+    routes: new Hono().route('/projects', createTicketsRoutes(ticketReads)).route(
+      '/projects',
+      createTicketResetRoutes({
+        reset: (projectId, ticketNumber) => resetTicket.execute(projectId, ticketNumber),
+      }),
+    ),
     start: async () => {
       stopped = false;
       unsubscribers = [
@@ -119,6 +147,12 @@ export function createTicketsModule(dependencies: TicketsModuleDependencies): Ti
         subscribeToRunFinished(dependencies.subscriber, () => {
           void requestPoll();
         }),
+        subscribeToRunFinishedSettlement(
+          dependencies.subscriber,
+          settleFinishedRun,
+          dependencies.logger,
+        ),
+        subscribeToRunWaiting(dependencies.subscriber, settleWaitingRun, dependencies.logger),
       ];
       for (const { projectId, repository } of await dependencies.registeredRepositories.list()) {
         watchRepository.execute(projectId, repository);
@@ -135,5 +169,7 @@ export function createTicketsModule(dependencies: TicketsModuleDependencies): Ti
     },
     openTickets: (projectId) => readOpenTickets.execute(projectId),
     ticket: ticketReads.ticket,
+    beginAnswer: (projectId, ticketNumber) => beginTicketAnswer.execute(projectId, ticketNumber),
+    revertAnswer: (projectId, ticketNumber) => revertTicketAnswer.execute(projectId, ticketNumber),
   };
 }

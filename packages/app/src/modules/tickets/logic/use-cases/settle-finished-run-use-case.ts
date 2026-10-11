@@ -2,14 +2,14 @@ import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
 import type { Logger } from '../../../../shared/logger/create-logger.js';
 import { decideRunEndTransition } from '../domain/functions/decide-run-end-transition.js';
 import type { FinishedRun } from '../domain/types/finished-run.js';
-import type { ProjectLookup } from '../ports/project-lookup.js';
-import type { RunnerPort } from '../ports/runner-port.js';
+import type { RegisteredRepositories } from '../ports/registered-repositories.js';
+import type { RunSettlement } from '../ports/run-settlement.js';
 import type { TicketStatusWrites } from '../ports/ticket-status-writes.js';
 
 export type SettleFinishedRunDependencies = {
   readonly ticketStatusWrites: TicketStatusWrites;
-  readonly runner: RunnerPort;
-  readonly projectLookup: ProjectLookup;
+  readonly runSettlement: RunSettlement;
+  readonly registeredRepositories: RegisteredRepositories;
   readonly events: EventPublisher;
   readonly logger: Logger;
 };
@@ -18,15 +18,18 @@ export class SettleFinishedRunUseCase {
   constructor(private readonly dependencies: SettleFinishedRunDependencies) {}
 
   async execute(finishedRun: FinishedRun): Promise<void> {
-    const { ticketStatusWrites, runner, projectLookup, events, logger } = this.dependencies;
+    const { ticketStatusWrites, runSettlement, registeredRepositories, events, logger } =
+      this.dependencies;
     const { runId, projectId, ticketNumber, ending } = finishedRun;
 
-    const project = await projectLookup.find(projectId);
+    const project = (await registeredRepositories.list()).find(
+      (registered) => registered.projectId === projectId,
+    );
     if (project === undefined) {
       logger.warn(
         `Run ${runId} ended but ${projectId} is unknown, so #${ticketNumber} is unchanged`,
       );
-      await runner.settle(runId);
+      await runSettlement.settle(runId);
       return;
     }
 
@@ -44,6 +47,6 @@ export class SettleFinishedRunUseCase {
         await ticketStatusWrites.comment(project.repository, ticketNumber, transition.comment);
       }
     }
-    await runner.settle(runId);
+    await runSettlement.settle(runId);
   }
 }

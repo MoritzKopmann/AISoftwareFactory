@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { WaitingRun } from '../../../../../src/modules/scheduler/logic/domain/types/waiting-run.js';
-import type { ProjectLookup } from '../../../../../src/modules/scheduler/logic/ports/project-lookup.js';
-import { SettleWaitingRunUseCase } from '../../../../../src/modules/scheduler/logic/use-cases/settle-waiting-run-use-case.js';
+import type { WaitingRun } from '../../../../../src/modules/tickets/logic/domain/types/waiting-run.js';
+import type { RegisteredRepositories } from '../../../../../src/modules/tickets/logic/ports/registered-repositories.js';
+import { SettleWaitingRunUseCase } from '../../../../../src/modules/tickets/logic/use-cases/settle-waiting-run-use-case.js';
 import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
-import { FakeProjectLookup, FakeTicketStatusWrites } from '../../fakes/fake-scheduler-ports.js';
+import { FakeRegisteredRepositories } from '../../fakes/fake-tickets-ports.js';
+import { FakeTicketStatusWrites } from '../../fakes/fake-ticket-status-writes.js';
 
 const waitingRun: WaitingRun = {
   runId: 'r1',
@@ -12,13 +13,17 @@ const waitingRun: WaitingRun = {
   wait: { kind: 'checkpoint', request: 'Pick A or B' },
 };
 
-function buildSubject(projectLookup: ProjectLookup = new FakeProjectLookup()) {
+function buildSubject(
+  registeredRepositories: RegisteredRepositories = new FakeRegisteredRepositories([
+    { projectId: 'moritz/aisf', repository: { owner: 'moritz', name: 'aisf' } },
+  ]),
+) {
   const ticketStatusWrites = new FakeTicketStatusWrites();
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
   const events = new FakeEventPublisher();
   const useCase = new SettleWaitingRunUseCase({
     ticketStatusWrites,
-    projectLookup,
+    registeredRepositories,
     events,
     logger,
   });
@@ -45,9 +50,9 @@ describe('SettleWaitingRunUseCase', () => {
   });
 
   it('should change nothing and warn when the project is unknown', async () => {
-    const { useCase, ticketStatusWrites, logger, events } = buildSubject({
-      find: async () => undefined,
-    });
+    const { useCase, ticketStatusWrites, logger, events } = buildSubject(
+      new FakeRegisteredRepositories([]),
+    );
 
     await useCase.execute(waitingRun);
 

@@ -1,11 +1,8 @@
 import { Hono } from 'hono';
-import type { EventPublisher } from '../../shared/bus/event-publisher.js';
 import type { EventSubscriber } from '../../shared/bus/event-subscriber.js';
 import type { Logger } from '../../shared/logger/create-logger.js';
 import { createRunAnswerRoutes } from './api/routes/create-run-answer-routes.js';
 import { createRunRoutes } from './api/routes/create-run-routes.js';
-import { subscribeToRunFinished } from './api/subscriptions/subscribe-to-run-finished.js';
-import { subscribeToRunWaiting } from './api/subscriptions/subscribe-to-run-waiting.js';
 import { subscribeToSnapshotChanged } from './api/subscriptions/subscribe-to-snapshot-changed.js';
 import { RunNotAnswerableError } from './logic/errors/run-not-answerable-error.js';
 import { RunAlreadyActiveError } from './logic/errors/run-already-active-error.js';
@@ -18,15 +15,12 @@ import type { ReviewedTicketLookup } from './logic/ports/reviewed-ticket-lookup.
 import type { RunPageLookup } from './logic/ports/run-page-lookup.js';
 import type { RunnerPort } from './logic/ports/runner-port.js';
 import type { RunsGate } from './logic/ports/runs-gate.js';
+import type { TicketAnswerGate } from './logic/ports/ticket-answer-gate.js';
 import type { TicketLookup } from './logic/ports/ticket-lookup.js';
-import type { TicketStatusWrites } from './logic/ports/ticket-status-writes.js';
 import { AnswerRunUseCase } from './logic/use-cases/answer-run-use-case.js';
 import { MergeApprovedPullRequestsUseCase } from './logic/use-cases/merge-approved-pull-requests-use-case.js';
 import { ReadRunAvailabilityUseCase } from './logic/use-cases/read-run-availability-use-case.js';
 import { ReadTicketRunUseCase } from './logic/use-cases/read-ticket-run-use-case.js';
-import { ResetTicketUseCase } from './logic/use-cases/reset-ticket-use-case.js';
-import { SettleFinishedRunUseCase } from './logic/use-cases/settle-finished-run-use-case.js';
-import { SettleWaitingRunUseCase } from './logic/use-cases/settle-waiting-run-use-case.js';
 import { StartTicketRunUseCase } from './logic/use-cases/start-ticket-run-use-case.js';
 
 export type { PermissionDecision } from './logic/domain/types/permission-decision.js';
@@ -39,7 +33,7 @@ export type { SchedulerProject } from './logic/ports/project-lookup.js';
 export { RunAlreadyActiveError, RunNotAnswerableError, RunNotAvailableError };
 
 export type SchedulerModuleDependencies = {
-  readonly ticketStatusWrites: TicketStatusWrites;
+  readonly ticketAnswerGate: TicketAnswerGate;
   readonly pullRequestMerges: PullRequestMerges;
   readonly runner: RunnerPort;
   readonly runPageLookup: RunPageLookup;
@@ -47,7 +41,6 @@ export type SchedulerModuleDependencies = {
   readonly reviewedTicketLookup: ReviewedTicketLookup;
   readonly runsGate: RunsGate;
   readonly projectLookup: ProjectLookup;
-  readonly events: EventPublisher;
   readonly subscriber: EventSubscriber;
   readonly logger: Logger;
 };
@@ -60,7 +53,7 @@ export type SchedulerModule = {
 
 export function createSchedulerModule(dependencies: SchedulerModuleDependencies): SchedulerModule {
   const {
-    ticketStatusWrites,
+    ticketAnswerGate,
     pullRequestMerges,
     runner,
     runPageLookup,
@@ -68,7 +61,6 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
     reviewedTicketLookup,
     runsGate,
     projectLookup,
-    events,
     subscriber,
     logger,
   } = dependencies;
@@ -90,31 +82,7 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
     runner,
     runPageLookup,
   });
-  const settleFinishedRun = new SettleFinishedRunUseCase({
-    ticketStatusWrites,
-    runner,
-    projectLookup,
-    events,
-    logger,
-  });
-  const settleWaitingRun = new SettleWaitingRunUseCase({
-    ticketStatusWrites,
-    projectLookup,
-    events,
-    logger,
-  });
-  const answerRun = new AnswerRunUseCase({
-    ticketStatusWrites,
-    runner,
-    projectLookup,
-    events,
-  });
-  const resetTicket = new ResetTicketUseCase({
-    ticketStatusWrites,
-    runner,
-    projectLookup,
-    events,
-  });
+  const answerRun = new AnswerRunUseCase({ ticketAnswerGate, runner });
   const mergeApprovedPullRequests = new MergeApprovedPullRequestsUseCase({
     pullRequestMerges,
     runner,
@@ -130,7 +98,6 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
         createRunRoutes({
           read: (projectId, ticketNumber) => readTicketRun.execute(projectId, ticketNumber),
           start: (projectId, ticketNumber) => startTicketRun.execute(projectId, ticketNumber),
-          reset: (projectId, ticketNumber) => resetTicket.execute(projectId, ticketNumber),
         }),
       )
       .route(
@@ -141,8 +108,6 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
       ),
     answer: (runId, answer) => answerRun.execute(runId, answer),
     start: () => {
-      subscribeToRunFinished(subscriber, settleFinishedRun, logger);
-      subscribeToRunWaiting(subscriber, settleWaitingRun, logger);
       subscribeToSnapshotChanged(subscriber, mergeApprovedPullRequests, logger);
     },
   };
