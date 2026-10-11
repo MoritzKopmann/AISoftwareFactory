@@ -10,7 +10,6 @@ import {
   type ArtifactsModule,
   type CheckpointAnswers,
 } from './modules/artifacts/index.js';
-import { GhCliTicketCreator } from './modules/findings/infra/integrations/gh-cli-ticket-creator.js';
 import { SqliteFindingRepository } from './modules/findings/infra/repositories/sqlite-finding-repository.js';
 import { createFindingsModule, type FindingsModule } from './modules/findings/index.js';
 import { GhCliLabelSync } from './modules/projects/infra/integrations/gh-cli-label-sync.js';
@@ -50,6 +49,7 @@ import {
 import { FetchGraphQLTicketSource } from './modules/tickets/infra/integrations/fetch-graphql-ticket-source.js';
 import { FetchIssueFeeds } from './modules/tickets/infra/integrations/fetch-issue-feeds.js';
 import { GhCliTicketStatusWrites } from './modules/tickets/infra/integrations/gh-cli-ticket-status-writes.js';
+import { GhCliIdeaCreation } from './modules/tickets/infra/integrations/gh-cli-idea-creation.js';
 import { InMemoryWatchStore } from './modules/tickets/infra/integrations/in-memory-watch-store.js';
 import { GhCliGitHubToken } from './modules/tickets/infra/integrations/gh-cli-github-token.js';
 import {
@@ -160,6 +160,7 @@ function buildTicketsModule(
       token,
       now: () => new Date(),
     }),
+    ideaCreation: new GhCliIdeaCreation(),
     clock: new SystemClock(),
     events,
     watchStore: new InMemoryWatchStore(),
@@ -180,11 +181,14 @@ function buildTicketsModule(
 function buildFindingsModule(
   database: DatabaseSync,
   projects: ProjectsModule,
+  tickets: TicketsModule,
   events: EventPublisher,
 ): FindingsModule {
   return createFindingsModule({
     findingRepository: new SqliteFindingRepository(database),
-    ticketCreator: new GhCliTicketCreator(),
+    ticketCreator: {
+      create: (repository, ticket) => tickets.createIdea(repository, ticket),
+    },
     projectLookup: {
       find: async (projectId) => {
         const project = (await projects.list()).find(({ id }) => id === projectId);
@@ -368,7 +372,7 @@ const tickets = buildTicketsModule(
   { settle: (runId) => runner.settle(runId) },
   logger,
 );
-const findings = buildFindingsModule(database, projects, eventBus);
+const findings = buildFindingsModule(database, projects, tickets, eventBus);
 // The artifacts module needs runner.latestRun and the runner needs its tools, so the lookup binds late.
 // The same goes for scheduler.answer, which delivers a page's event.
 const artifacts: ArtifactsModule = buildArtifactsModule(

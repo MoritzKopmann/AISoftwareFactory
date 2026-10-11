@@ -7,6 +7,7 @@ import { FakeClock } from '../../fakes/fake-clock.js';
 import { buildTicket } from './fakes/build-ticket.js';
 import { FakeRunSettlement, FakeTicketStatusWrites } from './fakes/fake-ticket-status-writes.js';
 import {
+  FakeIdeaCreation,
   FakeIssueFeeds,
   FakeRegisteredRepositories,
   FakeTicketSource,
@@ -26,6 +27,7 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
     recentlyClosedTickets: [],
     closedTotalCount: 0,
   });
+  const ideaCreation = new FakeIdeaCreation();
   const clock = new FakeClock(startedAt);
   const ticketStatusWrites = new FakeTicketStatusWrites();
   const runSettlement = new FakeRunSettlement();
@@ -34,6 +36,7 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
   const tickets = createTicketsModule({
     issueFeeds,
     ticketSource,
+    ideaCreation,
     clock,
     events,
     watchStore: new InMemoryWatchStore(),
@@ -51,6 +54,7 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
     events,
     issueFeeds,
     ticketSource,
+    ideaCreation,
     clock,
     snapshotChanges,
     ticketStatusWrites,
@@ -342,6 +346,90 @@ describe('createTicketsModule', () => {
 
       expect(failedSync).toMatchObject({ state: 'failed', cause: 'unexpected', message: 'boom' });
       expect((await readBoard(tickets, 'owner/name'))?.sync.state).toBe('ok');
+    });
+  });
+
+  describe('createIdea', () => {
+    const idea = { title: 'Export trips', body: '' };
+
+    it('should hand the title and body to idea creation and return the new number when the repository is watched', async () => {
+      const { tickets, ideaCreation } = createSubject();
+      await tickets.start();
+
+      const number = await tickets.createIdea(registered.repository, idea);
+      tickets.stop();
+
+      expect(number).toBe(12);
+      expect(ideaCreation.created).toEqual([{ repository: registered.repository, idea }]);
+    });
+
+    it('should show the new idea at once when the last snapshot is fresh and the feeds are unchanged', async () => {
+      const { tickets, ideaCreation, ticketSource } = createSubject();
+      await tickets.start();
+      ideaCreation.onCreate = () => {
+        ticketSource.snapshotToReturn = {
+          ...ticketSource.snapshotToReturn,
+          openTickets: [
+            ...ticketSource.snapshotToReturn.openTickets,
+            buildTicket({ number: 12, title: 'Export trips' }),
+          ],
+        };
+      };
+
+      await tickets.createIdea(registered.repository, idea);
+      tickets.stop();
+
+      expect(await tickets.ticket('owner/name', 12)).toMatchObject({ ticket: { number: 12 } });
+    });
+
+    it('should return the number when the fresh snapshot fails', async () => {
+      const { tickets, ticketSource } = createSubject();
+      await tickets.start();
+      ticketSource.failure = new Error('github down');
+
+      const number = await tickets.createIdea(registered.repository, idea);
+      tickets.stop();
+
+      expect(number).toBe(12);
+    });
+
+    it('should show the idea after the next timer poll when the fresh snapshot failed', async () => {
+      const { tickets, ideaCreation, ticketSource } = createSubject();
+      await tickets.start();
+      ticketSource.failure = new Error('github down');
+      ideaCreation.onCreate = () => {
+        ticketSource.snapshotToReturn = {
+          ...ticketSource.snapshotToReturn,
+          openTickets: [buildTicket({ number: 12 })],
+        };
+      };
+      await tickets.createIdea(registered.repository, idea);
+      ticketSource.failure = undefined;
+
+      await vi.advanceTimersByTimeAsync(pollIntervalMilliseconds);
+      tickets.stop();
+
+      expect(tickets.openTickets('owner/name').map(({ number }) => number)).toEqual([12]);
+    });
+
+    it('should snapshot once more after the running poll when a poll is in flight', async () => {
+      const { tickets, ticketSource } = createSubject();
+      let finishSnapshot: () => void = () => undefined;
+      ticketSource.release = new Promise((resolve) => {
+        finishSnapshot = resolve;
+      });
+      const started = tickets.start();
+      await vi.advanceTimersByTimeAsync(0);
+
+      const created = tickets.createIdea(registered.repository, idea);
+      await vi.advanceTimersByTimeAsync(0);
+      const snapshotsWhileRunning = ticketSource.snapshotRequests.length;
+      finishSnapshot();
+      await Promise.all([started, created]);
+      tickets.stop();
+
+      expect(snapshotsWhileRunning).toBe(1);
+      expect(ticketSource.snapshotRequests).toHaveLength(2);
     });
   });
 

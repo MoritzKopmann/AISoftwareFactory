@@ -326,6 +326,34 @@ describe('PollRepositoriesUseCase', () => {
       return { useCase, issueFeeds, ticketSource, clock, watchStore, seen };
     }
 
+    it('should snapshot a forced repository when its feeds are unchanged and its snapshot is fresh', async () => {
+      const { useCase, pollRepositories, watchStore, issueFeeds, ticketSource } = createSubject();
+      await useCase.execute([buildWatch('owner/name')]);
+      ticketSource.snapshotToReturn = buildSnapshot(startedAt, [
+        buildTicket({ number: 1 }),
+        buildTicket({ number: 2 }),
+      ]);
+
+      await pollRepositories.execute([{ owner: 'owner', name: 'name' }]);
+
+      expect(ticketSource.snapshotRequests).toHaveLength(2);
+      expect(issueFeeds.requests).toHaveLength(1);
+      expect(watchStore.watch('owner/name')?.snapshot?.openTickets).toHaveLength(2);
+    });
+
+    it('should skip the snapshot of an unforced repository when the feeds are unchanged', async () => {
+      const { useCase, pollRepositories, ticketSource } = createSubject();
+      await useCase.execute([buildWatch('owner/name'), buildWatch('owner/other')]);
+
+      await pollRepositories.execute([{ owner: 'owner', name: 'name' }]);
+
+      expect(ticketSource.snapshotRequests.map(({ name }) => name)).toEqual([
+        'name',
+        'other',
+        'name',
+      ]);
+    });
+
     it('should announce a watch after its poll is stored when the feeds are unchanged', async () => {
       const { useCase, watchStore, clock, seen } = createObservedSubject();
       watchStore.saveWatch(buildWatch('octo/repo'));

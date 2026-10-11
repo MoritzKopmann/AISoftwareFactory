@@ -1,14 +1,14 @@
 import { runProcess } from '../../../../shared/process/run-process.js';
 import type { RepositoryReference } from '../../logic/domain/types/repository-reference.js';
-import { TicketCreationFailedError } from '../../logic/errors/ticket-creation-failed-error.js';
-import type { TicketCreator } from '../../logic/ports/ticket-creator.js';
+import { IdeaCreationFailedError } from '../../logic/errors/idea-creation-failed-error.js';
+import type { IdeaCreation } from '../../logic/ports/idea-creation.js';
 
 const commandTimeoutMilliseconds = 30_000;
 
-export class GhCliTicketCreator implements TicketCreator {
+export class GhCliIdeaCreation implements IdeaCreation {
   async create(
     repository: RepositoryReference,
-    ticket: { readonly title: string; readonly body: string },
+    idea: { readonly title: string; readonly body: string },
   ): Promise<number> {
     const result = await runProcess(
       'gh',
@@ -16,20 +16,20 @@ export class GhCliTicketCreator implements TicketCreator {
         'issue',
         'create',
         '--title',
-        ticket.title,
+        idea.title,
         '--body',
-        ticket.body,
+        idea.body,
         '--repo',
         `${repository.owner}/${repository.name}`,
       ],
       { timeoutMilliseconds: commandTimeoutMilliseconds },
     );
     if (result.exitCode !== 0) {
-      throw new TicketCreationFailedError(result.standardError.trim() || 'gh issue create failed');
+      throw new IdeaCreationFailedError(result.standardError.trim() || 'gh issue create failed');
     }
     const createdNumber = /\/issues\/(\d+)\s*$/.exec(result.standardOutput)?.[1];
     if (createdNumber === undefined) {
-      throw new TicketCreationFailedError('gh issue create did not print the new issue URL');
+      throw new IdeaCreationFailedError('gh issue create did not print the new issue URL');
     }
     return Number(createdNumber);
   }
