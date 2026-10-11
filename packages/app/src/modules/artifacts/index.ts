@@ -8,10 +8,12 @@ import { createPageRoutes } from './api/routes/create-page-routes.js';
 import { createTicketArtifactsRoutes } from './api/routes/create-ticket-artifacts-routes.js';
 import { createShowArtifactTool } from './api/tools/create-show-artifact-tool.js';
 import type { TicketLatestRun } from './logic/domain/types/ticket-latest-run.js';
+import type { TicketPage } from './logic/domain/types/ticket-page.js';
 import type { ArtifactFiles } from './logic/ports/artifact-files.js';
 import type { ArtifactRepository } from './logic/ports/artifact-repository.js';
 import type { CheckpointAnswers } from './logic/ports/checkpoint-answers.js';
 import type { TicketRunLookup } from './logic/ports/ticket-run-lookup.js';
+import { FindTicketPageUseCase } from './logic/use-cases/find-ticket-page-use-case.js';
 import { ListTicketArtifactsUseCase } from './logic/use-cases/list-ticket-artifacts-use-case.js';
 import { PublishArtifactUseCase } from './logic/use-cases/publish-artifact-use-case.js';
 import { ReadPageAssetUseCase } from './logic/use-cases/read-page-asset-use-case.js';
@@ -22,7 +24,7 @@ import { SubmitPageEventUseCase } from './logic/use-cases/submit-page-event-use-
 import { WritePageUserInputStateUseCase } from './logic/use-cases/write-page-user-input-state-use-case.js';
 
 export { PageBusyError } from './logic/errors/page-busy-error.js';
-export type { CheckpointAnswers, TicketLatestRun, TicketRunLookup };
+export type { CheckpointAnswers, TicketLatestRun, TicketPage, TicketRunLookup };
 
 export type ArtifactsModuleDependencies = {
   readonly kitDirectory: string;
@@ -40,6 +42,11 @@ export type ArtifactsModule = {
   readonly kitRoutes: Hono;
   readonly pageRoutes: Hono;
   readonly routes: Hono;
+  readonly pageOf: (
+    projectId: string,
+    ticketNumber: number,
+    artifactId: string,
+  ) => Promise<TicketPage | undefined>;
 };
 
 export function createArtifactsModule(dependencies: ArtifactsModuleDependencies): ArtifactsModule {
@@ -65,6 +72,8 @@ export function createArtifactsModule(dependencies: ArtifactsModuleDependencies)
     ticketRunLookup,
   });
 
+  const findTicketPage = new FindTicketPageUseCase({ artifactRepository });
+
   return {
     tools: [createShowArtifactTool(publishArtifact)],
     kitRoutes: createKitRoutes({ kitDirectory: dependencies.kitDirectory }),
@@ -84,5 +93,7 @@ export function createArtifactsModule(dependencies: ArtifactsModuleDependencies)
       }),
     }),
     routes: new Hono().route('/projects', createTicketArtifactsRoutes(listTicketArtifacts)),
+    pageOf: (projectId, ticketNumber, artifactId) =>
+      findTicketPage.execute(projectId, ticketNumber, artifactId),
   };
 }

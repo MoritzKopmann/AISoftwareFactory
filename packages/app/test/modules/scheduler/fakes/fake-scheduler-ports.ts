@@ -16,6 +16,8 @@ import type { RunWait } from '../../../../src/modules/scheduler/logic/domain/typ
 import type { RunAnswer } from '../../../../src/modules/scheduler/logic/domain/types/run-answer.js';
 import type { RunRecord } from '../../../../src/modules/scheduler/logic/domain/types/run-record.js';
 import type { RunStep } from '../../../../src/modules/scheduler/logic/domain/types/run-step.js';
+import type { RunPage } from '../../../../src/modules/scheduler/logic/domain/types/run-page.js';
+import type { RunPageLookup } from '../../../../src/modules/scheduler/logic/ports/run-page-lookup.js';
 import type { RunnerPort } from '../../../../src/modules/scheduler/logic/ports/runner-port.js';
 import type { RunsGate } from '../../../../src/modules/scheduler/logic/ports/runs-gate.js';
 import type { TicketLookup } from '../../../../src/modules/scheduler/logic/ports/ticket-lookup.js';
@@ -171,5 +173,19 @@ export class FakeProjectLookup implements ProjectLookup {
 
   async find(): Promise<SchedulerProject | undefined> {
     return this.project;
+  }
+}
+
+export class FakeRunPageLookup implements RunPageLookup {
+  readonly calls: string[] = [];
+  readonly pages = new Map<string, RunPage>();
+
+  async find(
+    projectId: string,
+    ticketNumber: number,
+    artifactId: string,
+  ): Promise<RunPage | undefined> {
+    this.calls.push(`find ${projectId} #${ticketNumber} ${artifactId}`);
+    return this.pages.get(artifactId);
   }
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RunAvailability } from '../../../../../src/modules/scheduler/logic/domain/types/run-availability.js';
 import { ReadTicketRunUseCase } from '../../../../../src/modules/scheduler/logic/use-cases/read-ticket-run-use-case.js';
-import { FakeRunnerPort } from '../../fakes/fake-scheduler-ports.js';
+import { FakeRunnerPort, FakeRunPageLookup } from '../../fakes/fake-scheduler-ports.js';
 
 const startedAt = '2026-09-29T09:00:00.000Z';
 const endedAt = '2026-09-29T09:30:00.000Z';
@@ -9,8 +9,13 @@ const endedAt = '2026-09-29T09:30:00.000Z';
 function buildUseCase(
   runner: FakeRunnerPort,
   availability: RunAvailability = { kind: 'available' },
+  runPageLookup: FakeRunPageLookup = new FakeRunPageLookup(),
 ): ReadTicketRunUseCase {
-  return new ReadTicketRunUseCase({ readRunAvailability: async () => availability, runner });
+  return new ReadTicketRunUseCase({
+    readRunAvailability: async () => availability,
+    runner,
+    runPageLookup,
+  });
 }
 
 describe('ReadTicketRunUseCase', () => {
@@ -48,6 +53,52 @@ describe('ReadTicketRunUseCase', () => {
     const ticketRun = await buildUseCase(runner).execute('moritz/aisf', 138);
 
     expect(ticketRun.activeRun?.waitingFor).toEqual({ kind: 'checkpoint', request: 'Pick A or B' });
+  });
+
+  it('should add the page when the checkpoint wait names an artifact', async () => {
+    const runner = new FakeRunnerPort();
+    runner.activeTicketNumbers = [12];
+    runner.activeWaitingFor = { kind: 'checkpoint', request: 'Answer', artifactId: 'plan-12' };
+    const runPageLookup = new FakeRunPageLookup();
+    runPageLookup.pages.set('plan-12', { title: 'Plan 12', url: '/a/T/' });
+
+    const ticketRun = await buildUseCase(runner, { kind: 'available' }, runPageLookup).execute(
+      'moritz/aisf',
+      12,
+    );
+
+    expect(ticketRun.activeRun?.waitingFor).toEqual({
+      kind: 'checkpoint',
+      request: 'Answer',
+      artifactId: 'plan-12',
+      page: { title: 'Plan 12', url: '/a/T/' },
+    });
+    expect(runPageLookup.calls).toEqual(['find moritz/aisf #12 plan-12']);
+  });
+
+  it('should leave out the page when the checkpoint wait has no artifact', async () => {
+    const runner = new FakeRunnerPort();
+    runner.activeTicketNumbers = [12];
+    runner.activeWaitingFor = { kind: 'checkpoint', request: 'Answer' };
+    const runPageLookup = new FakeRunPageLookup();
+
+    const ticketRun = await buildUseCase(runner, { kind: 'available' }, runPageLookup).execute(
+      'moritz/aisf',
+      12,
+    );
+
+    expect(ticketRun.activeRun?.waitingFor).not.toHaveProperty('page');
+    expect(runPageLookup.calls).toEqual([]);
+  });
+
+  it('should leave out the page when the artifact is unknown', async () => {
+    const runner = new FakeRunnerPort();
+    runner.activeTicketNumbers = [12];
+    runner.activeWaitingFor = { kind: 'checkpoint', request: 'Answer', artifactId: 'gone' };
+
+    const ticketRun = await buildUseCase(runner).execute('moritz/aisf', 12);
+
+    expect(ticketRun.activeRun?.waitingFor).not.toHaveProperty('page');
   });
 
   it('should copy waitingSince when the active run waits', async () => {

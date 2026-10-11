@@ -32,7 +32,13 @@ function toTicketRunResponse({ availability, activeRun, lastRun }: TicketRun): T
               : {
                   waitingFor:
                     activeRun.waitingFor.kind === 'checkpoint'
-                      ? { kind: 'checkpoint', request: activeRun.waitingFor.request }
+                      ? {
+                          kind: 'checkpoint',
+                          request: activeRun.waitingFor.request,
+                          ...('page' in activeRun.waitingFor
+                            ? { page: activeRun.waitingFor.page }
+                            : {}),
+                        }
                       : {
                           kind: 'permission-needed',
                           toolName: activeRun.waitingFor.toolName,

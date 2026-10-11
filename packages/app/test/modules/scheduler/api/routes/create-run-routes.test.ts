@@ -129,6 +129,35 @@ describe('createRunRoutes', () => {
       expect(body.activeRun?.waitingFor).not.toHaveProperty('artifactId');
     });
 
+    it('should expose the page when the checkpoint wait has one', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.ticketRun = {
+        availability: { kind: 'disabled', reason: '#12 is running' },
+        activeRun: {
+          id: 'run-1',
+          startedAt,
+          steps: [],
+          waitingFor: {
+            kind: 'checkpoint',
+            request: 'Answer on the page Plan 12',
+            artifactId: 'plan-12',
+            page: { title: 'Plan 12', url: '/a/T/' },
+          },
+        },
+      };
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/12/run',
+      );
+
+      const body = ticketRunResponseSchema.parse(await response.json());
+      expect(body.activeRun?.waitingFor).toEqual({
+        kind: 'checkpoint',
+        request: 'Answer on the page Plan 12',
+        page: { title: 'Plan 12', url: '/a/T/' },
+      });
+    });
+
     it('should expose a permission wait and its start when the active run waits for a permission', async () => {
       const ticketRuns = new FakeTicketRuns();
       const waitingSince = '2026-10-07T10:00:00.000Z';

@@ -131,10 +131,17 @@ describe('createPageRoutes', () => {
       )?.[1];
 
       expect(response.headers.get('Content-Security-Policy')).toBe(
-        `default-src 'none'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src http://127.0.0.1:4000/a/T/; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`,
+        `default-src 'none'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src http://127.0.0.1:4000/a/T/; frame-ancestors 'self'; base-uri 'none'; form-action 'none'`,
       );
       expect(response.headers.get('Referrer-Policy')).toBe('no-referrer');
       expect(response.headers.get('Cache-Control')).toBe('no-store');
+    });
+
+    it('should allow the app to frame the page when it is served', async () => {
+      const response = await app.request('/a/T/', { headers: { Host: host } });
+
+      expect(response.headers.get('Content-Security-Policy')).toContain("frame-ancestors 'self'");
+      expect(response.headers.get('X-Frame-Options')).toBe('SAMEORIGIN');
     });
   });
 
