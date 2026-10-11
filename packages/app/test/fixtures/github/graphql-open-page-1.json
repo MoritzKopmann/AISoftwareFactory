@@ -27,6 +27,7 @@
               "nodes": [
                 { "name": "status: in-review" },
                 { "name": "hitl" },
+                { "name": "waiting" },
                 { "name": "priority: high" }
               ]
             },

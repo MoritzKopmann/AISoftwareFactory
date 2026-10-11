@@ -21,12 +21,15 @@ export class RevertTicketAnswerUseCase {
     if (project === undefined) {
       throw new TicketNotAnswerableError(`${projectId} is unknown`);
     }
-    await ticketStatusWrites.setStatus(project.repository, ticketNumber, 'waiting');
+    const live = await ticketStatusWrites.readState(project.repository, ticketNumber);
+    await ticketStatusWrites.setSecondaryState(project.repository, ticketNumber, 'waiting', true);
     events.emit('ticket.status-written', {
       projectId,
       ticketNumber,
-      from: 'in-progress',
-      to: 'waiting',
+      from: live.status,
+      to: live.status,
+      waiting: true,
+      stuck: live.stuck,
     });
   }
 }

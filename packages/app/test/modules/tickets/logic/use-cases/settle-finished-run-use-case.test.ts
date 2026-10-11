@@ -36,20 +36,20 @@ function buildSubject(
 }
 
 describe('SettleFinishedRunUseCase', () => {
-  it('should set the status, then comment, then settle the run when the ticket is in-progress after an escalation', async () => {
+  it('should add the stuck label, then comment, then settle the run when the ticket is in-progress after an escalation', async () => {
     const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
 
     await useCase.execute(escalatedRun);
 
     expect(ticketStatusWrites.calls).toEqual([
-      'readStatus',
-      'setStatus #138 -> stuck',
+      'readState',
+      'setSecondaryState #138 stuck on',
       'comment #138: The run escalated (spec): AC is vague',
     ]);
     expect(runSettlement.calls).toEqual(['settle run-1']);
   });
 
-  it('should set waiting, post the request and settle the run when the run reached its checkpoint', async () => {
+  it('should add the waiting label, post the request and settle the run when the run reached its checkpoint', async () => {
     const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
 
     await useCase.execute({
@@ -58,8 +58,8 @@ describe('SettleFinishedRunUseCase', () => {
     });
 
     expect(ticketStatusWrites.calls).toEqual([
-      'readStatus',
-      'setStatus #138 -> waiting',
+      'readState',
+      'setSecondaryState #138 waiting on',
       'comment #138: The run reached its human checkpoint and waits for an answer on the ticket page:\n\nCheck the waiting chip',
     ]);
     expect(runSettlement.calls).toEqual(['settle run-1']);
@@ -73,7 +73,7 @@ describe('SettleFinishedRunUseCase', () => {
       ending: { kind: 'parked', blockerNumber: 12 },
     });
 
-    expect(ticketStatusWrites.calls).toEqual(['readStatus', 'setStatus #138 -> ready']);
+    expect(ticketStatusWrites.calls).toEqual(['readState', 'setStatus #138 -> ready']);
     expect(runSettlement.calls).toEqual(['settle run-1']);
   });
 
@@ -83,17 +83,17 @@ describe('SettleFinishedRunUseCase', () => {
 
     await useCase.execute({ ...escalatedRun, ending: { kind: 'finished' } });
 
-    expect(ticketStatusWrites.calls).toEqual(['readStatus']);
+    expect(ticketStatusWrites.calls).toEqual(['readState']);
     expect(runSettlement.calls).toEqual(['settle run-1']);
   });
 
-  it('should write nothing and settle when the ticket was moved to stuck during the run', async () => {
+  it('should write nothing and settle when the ticket was marked stuck during the run', async () => {
     const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
-    ticketStatusWrites.liveStatus = 'stuck';
+    ticketStatusWrites.liveStuck = true;
 
     await useCase.execute(escalatedRun);
 
-    expect(ticketStatusWrites.calls).toEqual(['readStatus']);
+    expect(ticketStatusWrites.calls).toEqual(['readState']);
     expect(runSettlement.calls).toEqual(['settle run-1']);
   });
 
@@ -103,7 +103,36 @@ describe('SettleFinishedRunUseCase', () => {
 
     await useCase.execute({ ...escalatedRun, ending: { kind: 'parked', blockerNumber: 12 } });
 
-    expect(ticketStatusWrites.calls).toEqual(['readStatus']);
+    expect(ticketStatusWrites.calls).toEqual(['readState']);
+    expect(runSettlement.calls).toEqual(['settle run-1']);
+  });
+
+  it('should add stuck, remove waiting and keep the status when a waiting run crashed', async () => {
+    const { useCase, ticketStatusWrites, events, runSettlement } = buildSubject();
+    ticketStatusWrites.liveWaiting = true;
+
+    await useCase.execute({ ...escalatedRun, ending: { kind: 'crashed', reason: 'boom' } });
+
+    expect(ticketStatusWrites.calls).toEqual([
+      'readState',
+      'setSecondaryState #138 waiting off',
+      'setSecondaryState #138 stuck on',
+      'comment #138: The run crashed: boom',
+    ]);
+    expect(ticketStatusWrites.liveStatus).toBe('in-progress');
+    expect(events.emittedEvents).toEqual([
+      {
+        name: 'ticket.status-written',
+        payload: {
+          projectId: 'moritz/aisf',
+          ticketNumber: 138,
+          from: 'in-progress',
+          to: 'in-progress',
+          waiting: false,
+          stuck: true,
+        },
+      },
+    ]);
     expect(runSettlement.calls).toEqual(['settle run-1']);
   });
 
@@ -114,7 +143,7 @@ describe('SettleFinishedRunUseCase', () => {
     const callsAfterFirstSettlement = ticketStatusWrites.calls.length;
     await useCase.execute(escalatedRun);
 
-    expect(ticketStatusWrites.calls.slice(callsAfterFirstSettlement)).toEqual(['readStatus']);
+    expect(ticketStatusWrites.calls.slice(callsAfterFirstSettlement)).toEqual(['readState']);
   });
 
   it('should write nothing, log it and settle when the project is unknown', async () => {
@@ -139,7 +168,7 @@ describe('SettleFinishedRunUseCase', () => {
     expect(runSettlement.calls).toEqual([]);
   });
 
-  it('should announce the waiting write after setStatus and before comment when the run needs permission', async () => {
+  it('should announce the waiting write after the label write and before comment when the run needs permission', async () => {
     const { useCase, ticketStatusWrites, events } = buildSubject();
     let eventsSeenAtComment = -1;
     ticketStatusWrites.comment = async () => {
@@ -158,7 +187,9 @@ describe('SettleFinishedRunUseCase', () => {
           projectId: 'moritz/aisf',
           ticketNumber: 138,
           from: 'in-progress',
-          to: 'waiting',
+          to: 'in-progress',
+          waiting: true,
+          stuck: false,
         },
       },
     ]);
@@ -178,6 +209,8 @@ describe('SettleFinishedRunUseCase', () => {
           ticketNumber: 138,
           from: 'in-progress',
           to: 'ready',
+          waiting: false,
+          stuck: false,
         },
       },
     ]);
@@ -201,7 +234,7 @@ describe('SettleFinishedRunUseCase', () => {
     expect(events.emittedEvents).toEqual([]);
   });
 
-  it('should announce nothing and rethrow when setStatus throws', async () => {
+  it('should announce nothing and rethrow when the label write throws', async () => {
     const { useCase, ticketStatusWrites, events } = buildSubject();
     const failure = new Error('gh failed');
     ticketStatusWrites.setStatusFailure = failure;

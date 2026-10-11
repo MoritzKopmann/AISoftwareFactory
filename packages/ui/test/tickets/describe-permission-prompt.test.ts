@@ -56,30 +56,30 @@ const fallbackWaitId = { runId: 'run-1' };
 
 describe('describePermissionPrompt', () => {
   it('should hide the prompt when no answer has arrived yet', () => {
-    expect(describePermissionPrompt(undefined, 'waiting', noAnswer)).toEqual({ kind: 'hidden' });
+    expect(describePermissionPrompt(undefined, true, noAnswer)).toEqual({ kind: 'hidden' });
   });
 
   it('should hide the prompt when the last run ended for another reason', () => {
-    expect(describePermissionPrompt(endedWith({ kind: 'stopped' }), 'waiting', noAnswer)).toEqual({
+    expect(describePermissionPrompt(endedWith({ kind: 'stopped' }), true, noAnswer)).toEqual({
       kind: 'hidden',
     });
   });
 
   it('should hide the prompt when the ticket is stuck on a permission ending', () => {
-    expect(describePermissionPrompt(endedWith(bashPrompt), 'stuck', noAnswer)).toEqual({
+    expect(describePermissionPrompt(endedWith(bashPrompt), false, noAnswer)).toEqual({
       kind: 'hidden',
     });
   });
 
   it('should hide the prompt when the ticket label trails a live permission wait', () => {
-    expect(describePermissionPrompt(liveWait(), 'in-progress', noAnswer)).toEqual({
+    expect(describePermissionPrompt(liveWait(), false, noAnswer)).toEqual({
       kind: 'hidden',
     });
   });
 
   it('should hide the prompt when the live wait is a checkpoint', () => {
     const checkpoint = liveWait(T1, { kind: 'checkpoint', request: 'Pick A or B' });
-    expect(describePermissionPrompt(checkpoint, 'waiting', noAnswer)).toEqual({ kind: 'hidden' });
+    expect(describePermissionPrompt(checkpoint, true, noAnswer)).toEqual({ kind: 'hidden' });
   });
 
   it('should hide the prompt when the active run has no wait', () => {
@@ -87,11 +87,11 @@ describe('describePermissionPrompt', () => {
       ...endedWith(bashPrompt),
       activeRun: { id: 'run-2', startedAt: '2026-09-30T09:11:00Z', steps: [] },
     };
-    expect(describePermissionPrompt(working, 'waiting', noAnswer)).toEqual({ kind: 'hidden' });
+    expect(describePermissionPrompt(working, true, noAnswer)).toEqual({ kind: 'hidden' });
   });
 
   it('should show the live prompt for the active run when the ticket is waiting', () => {
-    expect(describePermissionPrompt(liveWait(), 'waiting', noAnswer)).toEqual({
+    expect(describePermissionPrompt(liveWait(), true, noAnswer)).toEqual({
       kind: 'shown',
       runId: 'run-1',
       waitingSince: T1,
@@ -108,7 +108,7 @@ describe('describePermissionPrompt', () => {
       toolName: 'Write',
       toolInput: { file_path: 'a.ts' },
     };
-    expect(describePermissionPrompt(endedWith(writePrompt), 'waiting', noAnswer)).toEqual({
+    expect(describePermissionPrompt(endedWith(writePrompt), true, noAnswer)).toEqual({
       kind: 'shown',
       runId: 'run-1',
       toolName: 'Write',
@@ -124,7 +124,7 @@ describe('describePermissionPrompt', () => {
       toolName: 'Bash',
       toolInput: { script: 'ls' },
     };
-    expect(describePermissionPrompt(endedWith(oddBash), 'waiting', noAnswer)).toMatchObject({
+    expect(describePermissionPrompt(endedWith(oddBash), true, noAnswer)).toMatchObject({
       inputText: '{\n  "script": "ls"\n}',
     });
   });
@@ -133,7 +133,7 @@ describe('describePermissionPrompt', () => {
     'should mark %s as resuming and hold both buttons when that answer was sent for the same wait',
     (decision) => {
       const answer: PermissionAnswer = { kind: 'answering', wait: liveWaitId, decision };
-      expect(describePermissionPrompt(liveWait(), 'waiting', answer)).toMatchObject({
+      expect(describePermissionPrompt(liveWait(), true, answer)).toMatchObject({
         guidance: false,
         pressable: false,
         resuming: decision,
@@ -148,7 +148,7 @@ describe('describePermissionPrompt', () => {
       wait: fallbackWaitId,
       decision: 'allow',
     };
-    expect(describePermissionPrompt(endedWith(bashPrompt), 'waiting', answer)).toMatchObject({
+    expect(describePermissionPrompt(endedWith(bashPrompt), true, answer)).toMatchObject({
       pressable: false,
       resuming: 'allow',
     });
@@ -156,16 +156,18 @@ describe('describePermissionPrompt', () => {
 
   it('should show a fresh prompt when the answer belongs to an earlier wait of the same run', () => {
     const answer: PermissionAnswer = { kind: 'answering', wait: liveWaitId, decision: 'allow' };
-    const second = describePermissionPrompt(liveWait(T2), 'waiting', answer);
+    const second = describePermissionPrompt(liveWait(T2), true, answer);
     expect(second).toMatchObject({ guidance: true, pressable: true });
     expect(second).not.toHaveProperty('resuming');
   });
 
   it('should show a fresh prompt when the answer belongs to an earlier run', () => {
     const answer: PermissionAnswer = { kind: 'answering', wait: liveWaitId, decision: 'allow' };
-    expect(
-      describePermissionPrompt(liveWait(T1, undefined, 'run-2'), 'waiting', answer),
-    ).toMatchObject({ runId: 'run-2', guidance: true, pressable: true });
+    expect(describePermissionPrompt(liveWait(T1, undefined, 'run-2'), true, answer)).toMatchObject({
+      runId: 'run-2',
+      guidance: true,
+      pressable: true,
+    });
   });
 
   it("should show the server's message and the status with both buttons pressable when the answer failed", () => {
@@ -175,7 +177,7 @@ describe('describePermissionPrompt', () => {
       message: 'Ticket is not waiting.',
       status: 409,
     };
-    expect(describePermissionPrompt(liveWait(), 'waiting', answer)).toMatchObject({
+    expect(describePermissionPrompt(liveWait(), true, answer)).toMatchObject({
       guidance: false,
       pressable: true,
       error: { message: "Couldn't send your answer. Ticket is not waiting.", detail: '409' },
@@ -188,7 +190,7 @@ describe('describePermissionPrompt', () => {
       wait: liveWaitId,
       message: "Can't reach aisf.",
     };
-    const description = describePermissionPrompt(liveWait(), 'waiting', answer);
+    const description = describePermissionPrompt(liveWait(), true, answer);
     expect(description).toMatchObject({
       error: { message: "Couldn't send your answer. Can't reach aisf." },
     });
@@ -267,30 +269,30 @@ const reasonWaitFor = {
 
 describe('describePermissionPrompt reason', () => {
   it('should carry the reason when a live wait has one', () => {
-    const result = describePermissionPrompt(liveWait(T1, reasonWaitFor), 'waiting', noAnswer);
+    const result = describePermissionPrompt(liveWait(T1, reasonWaitFor), true, noAnswer);
     expect(result).toMatchObject({ kind: 'shown', reason: REASON });
   });
 
   it('should carry the reason when the fallback wait has one', () => {
-    const result = describePermissionPrompt(endedWith(reasonWaitFor), 'waiting', noAnswer);
+    const result = describePermissionPrompt(endedWith(reasonWaitFor), true, noAnswer);
     expect(result).toMatchObject({ kind: 'shown', reason: REASON });
   });
 
   it('should leave out the reason key when the wait has none', () => {
-    const live = describePermissionPrompt(liveWait(), 'waiting', noAnswer);
-    const fallback = describePermissionPrompt(endedWith(bashPrompt), 'waiting', noAnswer);
+    const live = describePermissionPrompt(liveWait(), true, noAnswer);
+    const fallback = describePermissionPrompt(endedWith(bashPrompt), true, noAnswer);
     expect(live).not.toHaveProperty('reason');
     expect(fallback).not.toHaveProperty('reason');
   });
 
   it('should keep the reason when the answer is answering or failed', () => {
     const response = liveWait(T1, reasonWaitFor);
-    const answering = describePermissionPrompt(response, 'waiting', {
+    const answering = describePermissionPrompt(response, true, {
       kind: 'answering',
       wait: liveWaitId,
       decision: 'allow',
     });
-    const failed = describePermissionPrompt(response, 'waiting', {
+    const failed = describePermissionPrompt(response, true, {
       kind: 'failed',
       wait: liveWaitId,
       message: 'Nope.',

@@ -23,7 +23,7 @@ function input(overrides: Partial<RunPanelInput>): RunPanelInput {
     response: idle,
     answeredAt: localTime(9, 44, 58),
     lastPollFailed: false,
-    ticketStatus: 'in-progress',
+    ticketStuck: false,
     stopping: false,
     ...overrides,
   };
@@ -33,14 +33,14 @@ describe('describeRunPanel', () => {
   it('should hide the panel when no answer has arrived yet', () => {
     const unanswered: RunPanelInput = {
       lastPollFailed: false,
-      ticketStatus: 'in-progress',
+      ticketStuck: false,
       stopping: false,
     };
     expect(describeRunPanel(unanswered, now)).toEqual({ kind: 'hidden' });
   });
 
   it('should hide the panel when the ticket has no active run and is not stuck', () => {
-    expect(describeRunPanel(input({ ticketStatus: 'ready' }), now)).toEqual({ kind: 'hidden' });
+    expect(describeRunPanel(input({ ticketStuck: false }), now)).toEqual({ kind: 'hidden' });
   });
 
   it('should show a live panel with Stop and the starting line when the active run has no steps', () => {
@@ -118,7 +118,7 @@ describe('describeRunPanel', () => {
 
   it('should show the ended block with the end time, run length and reason when the stuck ticket ended on Stop', () => {
     const description = describeRunPanel(
-      input({ response: ended({ kind: 'stopped' }), ticketStatus: 'stuck' }),
+      input({ response: ended({ kind: 'stopped' }), ticketStuck: true }),
       now,
     );
 
@@ -154,14 +154,14 @@ describe('describeRunPanel', () => {
     ['parked', { kind: 'parked', blockerNumber: 42 }, 'Run ended: parked until #42 is done.'],
   ])('should state the reason when the run ended as %s', (_kind, ending, note) => {
     expect(
-      describeRunPanel(input({ response: ended(ending), ticketStatus: 'stuck' }), now),
+      describeRunPanel(input({ response: ended(ending), ticketStuck: true }), now),
     ).toMatchObject({ kind: 'ended', note });
   });
 
   it('should say the run took under a minute when it ended within its first minute', () => {
     const response = ended({ kind: 'stopped' }, localTime(9, 47), localTime(9, 47, 40));
 
-    expect(describeRunPanel(input({ response, ticketStatus: 'stuck' }), now)).toMatchObject({
+    expect(describeRunPanel(input({ response, ticketStuck: true }), now)).toMatchObject({
       endedLabel: 'Ended 09:47 · ran under 1 min',
     });
   });
@@ -169,7 +169,7 @@ describe('describeRunPanel', () => {
   it('should hide the panel when the stuck ticket ended on a permission prompt', () => {
     const response = ended({ kind: 'permission-needed', toolName: 'Bash', toolInput: {} });
 
-    expect(describeRunPanel(input({ response, ticketStatus: 'stuck' }), now)).toEqual({
+    expect(describeRunPanel(input({ response, ticketStuck: true }), now)).toEqual({
       kind: 'hidden',
     });
   });
@@ -177,18 +177,18 @@ describe('describeRunPanel', () => {
   it('should hide the panel when the ticket has an ended run but is not stuck', () => {
     const response = ended({ kind: 'stopped' });
 
-    expect(describeRunPanel(input({ response, ticketStatus: 'ready' }), now)).toEqual({
+    expect(describeRunPanel(input({ response, ticketStuck: false }), now)).toEqual({
       kind: 'hidden',
     });
   });
 });
 
 describe('describeRunPanel checkpoint ending', () => {
-  it.each(['stuck', 'waiting'] as const)(
-    'should hide the panel when the run ended on a checkpoint and the ticket is %s',
-    (ticketStatus) => {
+  it.each([true, false])(
+    'should hide the panel when the run ended on a checkpoint and the ticket stuck flag is %s',
+    (ticketStuck) => {
       const response = ended({ kind: 'checkpoint', request: 'Open the board.' });
-      expect(describeRunPanel(input({ response, ticketStatus }), now)).toEqual({ kind: 'hidden' });
+      expect(describeRunPanel(input({ response, ticketStuck }), now)).toEqual({ kind: 'hidden' });
     },
   );
 });

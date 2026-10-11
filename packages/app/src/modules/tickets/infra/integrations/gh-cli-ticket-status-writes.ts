@@ -1,4 +1,6 @@
 import { deriveTicketStatus } from '../../../../shared/ticket-status/derive-ticket-status.js';
+import { deriveSecondaryStates } from '../../../../shared/ticket-status/derive-secondary-states.js';
+import type { TicketLiveState } from '../../logic/domain/types/ticket-live-state.js';
 import type { TicketStatus } from '../../../../shared/ticket-status/ticket-status.js';
 import type { RepositoryReference } from '../../logic/domain/types/repository-reference.js';
 import { TicketWriteFailedError } from '../../logic/errors/ticket-write-failed-error.js';
@@ -13,12 +15,16 @@ type LiveTicket = {
 };
 
 export class GhCliTicketStatusWrites implements TicketStatusWrites {
-  async readStatus(repository: RepositoryReference, ticketNumber: number): Promise<TicketStatus> {
+  async readState(repository: RepositoryReference, ticketNumber: number): Promise<TicketLiveState> {
     const liveTicket = await this.readLiveTicket(repository, ticketNumber);
-    return deriveTicketStatus({
-      state: liveTicket.state === 'CLOSED' ? 'closed' : 'open',
-      labelNames: labelNamesOf(liveTicket),
-    }).status;
+    const labelNames = labelNamesOf(liveTicket);
+    return {
+      status: deriveTicketStatus({
+        state: liveTicket.state === 'CLOSED' ? 'closed' : 'open',
+        labelNames,
+      }).status,
+      ...deriveSecondaryStates({ labelNames }),
+    };
   }
 
   async setStatus(
@@ -37,6 +43,21 @@ export class GhCliTicketStatusWrites implements TicketStatusWrites {
       ...statusLabels.flatMap((label) => ['--remove-label', label]),
       '--add-label',
       `${statusLabelPrefix}${to}`,
+    ]);
+  }
+
+  async setSecondaryState(
+    repository: RepositoryReference,
+    ticketNumber: number,
+    state: 'waiting' | 'stuck',
+    on: boolean,
+  ): Promise<void> {
+    await this.runGh(repository, [
+      'issue',
+      'edit',
+      String(ticketNumber),
+      on ? '--add-label' : '--remove-label',
+      state,
     ]);
   }
 

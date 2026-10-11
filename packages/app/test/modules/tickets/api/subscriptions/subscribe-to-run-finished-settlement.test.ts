@@ -46,7 +46,7 @@ describe('subscribeToRunFinishedSettlement', () => {
 
   it('should log the failure and not throw when settling fails', async () => {
     const { bus, ticketStatusWrites, logger } = buildSubject();
-    ticketStatusWrites.readStatus = async () => {
+    ticketStatusWrites.readState = async () => {
       throw new Error('gh failed');
     };
 

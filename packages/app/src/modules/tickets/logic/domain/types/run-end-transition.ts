@@ -1,9 +1,8 @@
-import type { TicketStatus } from '../../../../../shared/ticket-status/ticket-status.js';
-
 export type RunEndTransition =
   | { readonly kind: 'none' }
+  | { readonly kind: 'return-to-ready' }
   | {
-      readonly kind: 'transition';
-      readonly to: TicketStatus;
-      readonly comment?: string;
+      readonly kind: 'flag';
+      readonly state: 'waiting' | 'stuck';
+      readonly comment: string;
     };

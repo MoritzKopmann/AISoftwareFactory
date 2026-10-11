@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { boardStatuses } from '../../src/board/board.js';
 
 describe('boardStatuses', () => {
-  it('should list the statuses in lifecycle order with waiting between in-progress and in-review', () => {
+  it('should list the statuses in lifecycle order without a waiting or stuck row', () => {
     expect(boardStatuses).toEqual(ticketStatusSchema.options);
-    expect(boardStatuses.indexOf('waiting')).toBe(boardStatuses.indexOf('in-progress') + 1);
-    expect(boardStatuses.indexOf('in-review')).toBe(boardStatuses.indexOf('waiting') + 1);
+    expect(boardStatuses).not.toContain('waiting');
+    expect(boardStatuses).not.toContain('stuck');
   });
 });

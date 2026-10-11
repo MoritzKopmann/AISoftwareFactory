@@ -2,7 +2,6 @@ import type {
   PermissionAnswerRequest,
   TicketRunResponse,
 } from '@aisf/app/api-schemas/runs-schemas.js';
-import type { TicketStatusResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
 
 export type PermissionDecision = PermissionAnswerRequest['decision'];
 
@@ -96,11 +95,11 @@ export function settlePermissionAnswer(
 
 export function describePermissionPrompt(
   response: TicketRunResponse | undefined,
-  ticketStatus: TicketStatusResponse,
+  ticketWaiting: boolean,
   answer: PermissionAnswer,
 ): PermissionPromptDescription {
   const wait = findShownWait(response);
-  if (wait === undefined || ticketStatus !== 'waiting') {
+  if (wait === undefined || !ticketWaiting) {
     return { kind: 'hidden' };
   }
   const { toolName, toolInput } = wait;

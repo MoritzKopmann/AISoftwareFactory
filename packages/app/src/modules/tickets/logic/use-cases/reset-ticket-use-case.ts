@@ -27,12 +27,24 @@ export class ResetTicketUseCase {
     if ((await activeRunLookup.activeRunTicketNumbers(projectId)).includes(ticketNumber)) {
       throw new TicketNotResettableError(`#${ticketNumber} has an active run`);
     }
-    const status = await ticketStatusWrites.readStatus(project.repository, ticketNumber);
-    if (status !== 'stuck' && status !== 'in-progress') {
+    const live = await ticketStatusWrites.readState(project.repository, ticketNumber);
+    if (live.status !== 'in-progress' && !live.stuck) {
       throw new TicketNotResettableError(`#${ticketNumber} is not stuck or in progress`);
     }
 
     await ticketStatusWrites.setStatus(project.repository, ticketNumber, 'ready');
-    events.emit('ticket.status-written', { projectId, ticketNumber, from: status, to: 'ready' });
+    for (const state of ['waiting', 'stuck'] as const) {
+      if (live[state]) {
+        await ticketStatusWrites.setSecondaryState(project.repository, ticketNumber, state, false);
+      }
+    }
+    events.emit('ticket.status-written', {
+      projectId,
+      ticketNumber,
+      from: live.status,
+      to: 'ready',
+      waiting: false,
+      stuck: false,
+    });
   }
 }

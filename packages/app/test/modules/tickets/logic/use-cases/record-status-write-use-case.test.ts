@@ -10,12 +10,21 @@ describe('RecordStatusWriteUseCase', () => {
 
     new RecordStatusWriteUseCase({ watchStore, clock: new FakeClock(now) }).execute('octo/repo', {
       ticketNumber: 7,
-      from: 'stuck',
+      from: 'in-progress',
       to: 'ready',
+      waiting: false,
+      stuck: false,
     });
 
     expect(watchStore.statusWrites('octo/repo')).toEqual([
-      { ticketNumber: 7, from: 'stuck', to: 'ready', writtenAt: now },
+      {
+        ticketNumber: 7,
+        from: 'in-progress',
+        to: 'ready',
+        waiting: false,
+        stuck: false,
+        writtenAt: now,
+      },
     ]);
   });
 });

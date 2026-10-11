@@ -6,7 +6,14 @@ import type { TicketStatus } from '../../../../../../src/shared/ticket-status/ti
 import { buildTicket } from '../../../fakes/build-ticket.js';
 
 const writtenAt = '2026-09-28T12:00:00.000Z';
-const write: StatusWrite = { ticketNumber: 12, from: 'in-progress', to: 'stuck', writtenAt };
+const write: StatusWrite = {
+  ticketNumber: 12,
+  from: 'in-progress',
+  to: 'in-review',
+  waiting: false,
+  stuck: false,
+  writtenAt,
+};
 
 function snapshotShowing(status: TicketStatus | undefined): TicketSnapshot {
   return {
@@ -32,7 +39,7 @@ describe('pruneStatusWrites', () => {
 
   it('should drop the write when the snapshot shows the to status', () => {
     expect(
-      pruneStatusWrites([write], snapshotShowing('stuck'), '2026-09-28T12:00:10.000Z'),
+      pruneStatusWrites([write], snapshotShowing('in-review'), '2026-09-28T12:00:10.000Z'),
     ).toEqual([]);
   });
 
@@ -58,5 +65,34 @@ describe('pruneStatusWrites', () => {
     expect(
       pruneStatusWrites([write], snapshotShowing('in-progress'), '2026-09-28T12:00:59.000Z'),
     ).toEqual([write]);
+  });
+
+  describe('flag write', () => {
+    const flagWrite: StatusWrite = {
+      ticketNumber: 12,
+      from: 'in-progress',
+      to: 'in-progress',
+      waiting: true,
+      stuck: false,
+      writtenAt,
+    };
+    const now = '2026-09-28T12:00:10.000Z';
+
+    function snapshotWithFlags(waiting: boolean): TicketSnapshot {
+      return {
+        takenAt: writtenAt,
+        openTickets: [buildTicket({ number: 12, status: 'in-progress', waiting })],
+        recentlyClosedTickets: [],
+        closedTotalCount: 0,
+      };
+    }
+
+    it('should keep the write when the snapshot still shows the old flags', () => {
+      expect(pruneStatusWrites([flagWrite], snapshotWithFlags(false), now)).toEqual([flagWrite]);
+    });
+
+    it('should drop the write when the snapshot shows the written flags', () => {
+      expect(pruneStatusWrites([flagWrite], snapshotWithFlags(true), now)).toEqual([]);
+    });
   });
 });

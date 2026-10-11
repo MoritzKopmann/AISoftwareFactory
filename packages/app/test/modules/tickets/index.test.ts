@@ -88,7 +88,7 @@ describe('createTicketsModule', () => {
   describe('ticket writes', () => {
     it('should reset a stuck ticket to ready and answer 204 when the reset is posted', async () => {
       const { tickets, ticketStatusWrites } = createSubject();
-      ticketStatusWrites.liveStatus = 'stuck';
+      ticketStatusWrites.liveStuck = true;
 
       const response = await tickets.routes.request('/projects/owner/name/tickets/5/reset', {
         method: 'POST',
@@ -100,7 +100,7 @@ describe('createTicketsModule', () => {
 
     it('should answer 409 and write nothing when the reset is posted for a ticket with an active run', async () => {
       const { tickets, ticketStatusWrites } = createSubject([5]);
-      ticketStatusWrites.liveStatus = 'stuck';
+      ticketStatusWrites.liveStuck = true;
 
       const response = await tickets.routes.request('/projects/owner/name/tickets/5/reset', {
         method: 'POST',
@@ -110,7 +110,7 @@ describe('createTicketsModule', () => {
       expect(ticketStatusWrites.calls).toEqual([]);
     });
 
-    it('should write waiting with the comment when run.waiting is emitted after start', async () => {
+    it('should add the waiting label with the comment when run.waiting is emitted after start', async () => {
       const { tickets, events, ticketStatusWrites, runSettlement } = createSubject();
       await tickets.start();
 
@@ -121,13 +121,15 @@ describe('createTicketsModule', () => {
         wait: { kind: 'checkpoint', request: 'Pick A or B' },
       });
 
-      await vi.waitFor(() => expect(ticketStatusWrites.calls).toContain('setStatus #5 -> waiting'));
+      await vi.waitFor(() =>
+        expect(ticketStatusWrites.calls).toContain('setSecondaryState #5 waiting on'),
+      );
       expect(ticketStatusWrites.calls.some((call) => call.startsWith('comment #5'))).toBe(true);
       expect(runSettlement.calls).toEqual([]);
       tickets.stop();
     });
 
-    it('should write stuck, announce it, then settle the run when run.finished ends crashed', async () => {
+    it('should add the stuck label, announce it, then settle the run when run.finished ends crashed', async () => {
       const { tickets, events, ticketStatusWrites, runSettlement } = createSubject();
       const written: Array<AisfEventMap['ticket.status-written']> = [];
       events.on('ticket.status-written', (payload) => written.push(payload));
@@ -141,12 +143,14 @@ describe('createTicketsModule', () => {
       });
 
       await vi.waitFor(() => expect(runSettlement.calls).toEqual(['settle r1']));
-      expect(ticketStatusWrites.calls).toContain('setStatus #5 -> stuck');
+      expect(ticketStatusWrites.calls).toContain('setSecondaryState #5 stuck on');
       expect(written).toContainEqual({
         projectId: 'owner/name',
         ticketNumber: 5,
         from: 'in-progress',
-        to: 'stuck',
+        to: 'in-progress',
+        waiting: false,
+        stuck: true,
       });
       tickets.stop();
     });
@@ -171,17 +175,26 @@ describe('createTicketsModule', () => {
       tickets.stop();
     });
 
-    it('should write in-progress on beginAnswer and waiting on revertAnswer when the ticket waits', async () => {
+    it('should refuse beginAnswer and write nothing when the ticket has no waiting label', async () => {
       const { tickets, ticketStatusWrites } = createSubject();
-      ticketStatusWrites.liveStatus = 'waiting';
+
+      await expect(tickets.beginAnswer('owner/name', 5)).rejects.toThrow('#5 is not waiting');
+
+      expect(ticketStatusWrites.calls).toEqual(['readState']);
+    });
+
+    it('should remove the waiting label on beginAnswer and restore it on revertAnswer when the ticket waits', async () => {
+      const { tickets, ticketStatusWrites } = createSubject();
+      ticketStatusWrites.liveWaiting = true;
 
       await tickets.beginAnswer('owner/name', 5);
       await tickets.revertAnswer('owner/name', 5);
 
       expect(ticketStatusWrites.calls).toEqual([
-        'readStatus',
-        'setStatus #5 -> in-progress',
-        'setStatus #5 -> waiting',
+        'readState',
+        'setSecondaryState #5 waiting off',
+        'readState',
+        'setSecondaryState #5 waiting on',
       ]);
     });
   });
@@ -469,7 +482,14 @@ describe('createTicketsModule', () => {
       from: AisfEventMap['ticket.status-written']['from'],
       to: AisfEventMap['ticket.status-written']['to'],
     ) {
-      events.emit('ticket.status-written', { projectId, ticketNumber: 12, from, to });
+      events.emit('ticket.status-written', {
+        projectId,
+        ticketNumber: 12,
+        from,
+        to,
+        waiting: false,
+        stuck: false,
+      });
     }
 
     async function rowOf(tickets: ReturnType<typeof createSubject>['tickets'], number: number) {
@@ -490,17 +510,17 @@ describe('createTicketsModule', () => {
     it('should show the announced status on the ticket read when a write is announced', async () => {
       const subject = await startWith(buildTicket({ number: 12, status: 'in-progress' }));
 
-      announce(subject.events, 'in-progress', 'stuck');
+      announce(subject.events, 'in-progress', 'in-review');
       const projectTicket = await subject.tickets.ticket(projectId, 12);
       subject.tickets.stop();
 
-      expect(projectTicket?.ticket?.status).toBe('stuck');
+      expect(projectTicket?.ticket?.status).toBe('in-review');
     });
 
     it('should poll at once when a write is announced', async () => {
       const subject = await startWith(buildTicket({ number: 12, status: 'in-progress' }));
 
-      announce(subject.events, 'in-progress', 'stuck');
+      announce(subject.events, 'in-progress', 'in-review');
       await vi.advanceTimersByTimeAsync(0);
       subject.tickets.stop();
 
@@ -508,9 +528,9 @@ describe('createTicketsModule', () => {
     });
 
     it('should show the ticket in its new board row when a write is announced', async () => {
-      const subject = await startWith(buildTicket({ number: 12, status: 'stuck' }));
+      const subject = await startWith(buildTicket({ number: 12, status: 'in-review' }));
 
-      announce(subject.events, 'stuck', 'in-progress');
+      announce(subject.events, 'in-review', 'in-progress');
       const row = await rowOf(subject.tickets, 12);
       subject.tickets.stop();
 
@@ -518,8 +538,8 @@ describe('createTicketsModule', () => {
     });
 
     it('should hide a mid-swap conflict read when a write is unconfirmed', async () => {
-      const subject = await startWith(buildTicket({ number: 12, status: 'stuck' }));
-      announce(subject.events, 'stuck', 'in-progress');
+      const subject = await startWith(buildTicket({ number: 12, status: 'in-review' }));
+      announce(subject.events, 'in-review', 'in-progress');
       subject.issueFeeds.changed = true;
 
       await nextPoll(
@@ -527,7 +547,7 @@ describe('createTicketsModule', () => {
         buildTicket({
           number: 12,
           status: 'conflict',
-          conflictingStatuses: ['stuck', 'in-progress'],
+          conflictingStatuses: ['in-review', 'in-progress'],
         }),
       );
       const projectTicket = await subject.tickets.ticket(projectId, 12);
@@ -542,8 +562,8 @@ describe('createTicketsModule', () => {
     });
 
     it('should hide a mid-swap idea read when a write is unconfirmed', async () => {
-      const subject = await startWith(buildTicket({ number: 12, status: 'stuck' }));
-      announce(subject.events, 'stuck', 'in-progress');
+      const subject = await startWith(buildTicket({ number: 12, status: 'in-review' }));
+      announce(subject.events, 'in-review', 'in-progress');
       subject.issueFeeds.changed = true;
 
       await nextPoll(subject, buildTicket({ number: 12, status: 'idea' }));
@@ -556,15 +576,15 @@ describe('createTicketsModule', () => {
     it('should show the announced status in openTickets when a write is unconfirmed', async () => {
       const subject = await startWith(buildTicket({ number: 12, status: 'in-progress' }));
 
-      announce(subject.events, 'in-progress', 'stuck');
+      announce(subject.events, 'in-progress', 'in-review');
       subject.tickets.stop();
 
-      expect(subject.tickets.openTickets(projectId)[0]?.status).toBe('stuck');
+      expect(subject.tickets.openTickets(projectId)[0]?.status).toBe('in-review');
     });
 
     it('should keep the write and snapshot again when the snapshot still shows the old status', async () => {
       const subject = await startWith(buildTicket({ number: 12, status: 'in-progress' }));
-      announce(subject.events, 'in-progress', 'stuck');
+      announce(subject.events, 'in-progress', 'in-review');
       subject.clock.setNow('2026-09-28T12:00:10.000Z');
       subject.issueFeeds.changed = true;
 
@@ -573,15 +593,15 @@ describe('createTicketsModule', () => {
       await nextPoll(subject);
       subject.tickets.stop();
 
-      expect((await subject.tickets.ticket(projectId, 12))?.ticket?.status).toBe('stuck');
+      expect((await subject.tickets.ticket(projectId, 12))?.ticket?.status).toBe('in-review');
       expect(subject.ticketSource.snapshotRequests).toHaveLength(3);
     });
 
     it('should drop the write and skip the snapshot when the snapshot confirms it', async () => {
       const subject = await startWith(buildTicket({ number: 12, status: 'in-progress' }));
-      announce(subject.events, 'in-progress', 'stuck');
+      announce(subject.events, 'in-progress', 'in-review');
       subject.ticketSource.snapshotToReturn = snapshotOf(
-        buildTicket({ number: 12, status: 'stuck' }),
+        buildTicket({ number: 12, status: 'in-review' }),
       );
       await vi.advanceTimersByTimeAsync(0);
       const snapshotsAfterConfirmation = subject.ticketSource.snapshotRequests.length;
@@ -594,7 +614,7 @@ describe('createTicketsModule', () => {
 
     it('should show the snapshot status when the write is 60 s old', async () => {
       const subject = await startWith(buildTicket({ number: 12, status: 'in-progress' }));
-      announce(subject.events, 'in-progress', 'stuck');
+      announce(subject.events, 'in-progress', 'in-review');
       subject.clock.setNow('2026-09-28T12:01:00.000Z');
 
       await vi.advanceTimersByTimeAsync(0);
@@ -604,27 +624,27 @@ describe('createTicketsModule', () => {
     });
 
     it('should drop an overtaken write when the snapshot shows another status', async () => {
-      const subject = await startWith(buildTicket({ number: 12, status: 'stuck' }));
-      announce(subject.events, 'stuck', 'in-progress');
+      const subject = await startWith(buildTicket({ number: 12, status: 'in-review' }));
+      announce(subject.events, 'in-review', 'in-progress');
       subject.ticketSource.snapshotToReturn = snapshotOf(
         buildTicket({ number: 12, status: 'ready' }),
       );
       await vi.advanceTimersByTimeAsync(0);
       const readyStatus = (await subject.tickets.ticket(projectId, 12))?.ticket?.status;
       subject.ticketSource.snapshotToReturn = snapshotOf(
-        buildTicket({ number: 12, status: 'stuck' }),
+        buildTicket({ number: 12, status: 'in-review' }),
       );
       subject.issueFeeds.changed = true;
       await nextPoll(subject);
       subject.tickets.stop();
 
       expect(readyStatus).toBe('ready');
-      expect((await subject.tickets.ticket(projectId, 12))?.ticket?.status).toBe('stuck');
+      expect((await subject.tickets.ticket(projectId, 12))?.ticket?.status).toBe('in-review');
     });
 
     it('should drop the write when the ticket is no longer open', async () => {
       const subject = await startWith(buildTicket({ number: 12, status: 'in-progress' }));
-      announce(subject.events, 'in-progress', 'stuck');
+      announce(subject.events, 'in-progress', 'in-review');
       subject.ticketSource.snapshotToReturn = snapshotOf(buildTicket({ number: 13 }));
       await vi.advanceTimersByTimeAsync(0);
       subject.ticketSource.snapshotToReturn = snapshotOf(
@@ -638,16 +658,16 @@ describe('createTicketsModule', () => {
     });
 
     it('should let a newer write replace the older one when both concern the same ticket', async () => {
-      const subject = await startWith(buildTicket({ number: 12, status: 'stuck' }));
-      announce(subject.events, 'stuck', 'in-progress');
-      announce(subject.events, 'in-progress', 'stuck');
+      const subject = await startWith(buildTicket({ number: 12, status: 'in-review' }));
+      announce(subject.events, 'in-review', 'in-progress');
+      announce(subject.events, 'in-progress', 'in-review');
       const status = (await subject.tickets.ticket(projectId, 12))?.ticket?.status;
       await vi.advanceTimersByTimeAsync(0);
       const snapshotsAfterConfirmation = subject.ticketSource.snapshotRequests.length;
       await nextPoll(subject);
       subject.tickets.stop();
 
-      expect(status).toBe('stuck');
+      expect(status).toBe('in-review');
       expect(subject.ticketSource.snapshotRequests).toHaveLength(snapshotsAfterConfirmation);
     });
 
@@ -663,18 +683,18 @@ describe('createTicketsModule', () => {
       const started = subject.tickets.start();
       await vi.advanceTimersByTimeAsync(0);
 
-      announce(subject.events, 'in-progress', 'stuck');
+      announce(subject.events, 'in-progress', 'in-review');
       finishSnapshot();
       await started;
       subject.tickets.stop();
 
-      expect((await subject.tickets.ticket(projectId, 12))?.ticket?.status).toBe('stuck');
+      expect((await subject.tickets.ticket(projectId, 12))?.ticket?.status).toBe('in-review');
       expect(subject.issueFeeds.requests).toHaveLength(2);
     });
 
     it('should take a fresh snapshot when a write is unconfirmed and the feeds are unchanged', async () => {
       const subject = await startWith(buildTicket({ number: 12, status: 'in-progress' }));
-      announce(subject.events, 'in-progress', 'stuck');
+      announce(subject.events, 'in-progress', 'in-review');
 
       await vi.advanceTimersByTimeAsync(0);
       subject.tickets.stop();
@@ -686,7 +706,7 @@ describe('createTicketsModule', () => {
     it('should leave a ticket alone when its status is neither from nor mid-swap', async () => {
       const subject = await startWith(buildTicket({ number: 12, status: 'planned' }));
 
-      announce(subject.events, 'in-progress', 'stuck');
+      announce(subject.events, 'in-progress', 'in-review');
       subject.tickets.stop();
 
       expect((await subject.tickets.ticket(projectId, 12))?.ticket?.status).toBe('planned');
@@ -696,7 +716,7 @@ describe('createTicketsModule', () => {
       const subject = await startWith(buildTicket({ number: 12, status: 'in-progress' }));
       subject.clock.setNow('2026-09-28T12:00:05.000Z');
 
-      announce(subject.events, 'in-progress', 'stuck');
+      announce(subject.events, 'in-progress', 'in-review');
       subject.tickets.stop();
 
       expect((await subject.tickets.ticket(projectId, 12))?.sync).toMatchObject({
@@ -706,10 +726,10 @@ describe('createTicketsModule', () => {
 
     it('should emit snapshot.changed from raw snapshots when the written status arrives', async () => {
       const subject = await startWith(buildTicket({ number: 12, status: 'in-progress' }));
-      announce(subject.events, 'in-progress', 'stuck');
+      announce(subject.events, 'in-progress', 'in-review');
       subject.snapshotChanges.length = 0;
       subject.ticketSource.snapshotToReturn = snapshotOf(
-        buildTicket({ number: 12, status: 'stuck' }),
+        buildTicket({ number: 12, status: 'in-review' }),
       );
 
       await vi.advanceTimersByTimeAsync(0);
@@ -739,7 +759,7 @@ describe('createTicketsModule', () => {
       const subject = await startWith(buildTicket({ number: 12, status: 'in-progress' }));
       subject.tickets.stop();
 
-      announce(subject.events, 'in-progress', 'stuck');
+      announce(subject.events, 'in-progress', 'in-review');
       subject.events.emit('run.finished', {
         runId: 'run-1',
         projectId,

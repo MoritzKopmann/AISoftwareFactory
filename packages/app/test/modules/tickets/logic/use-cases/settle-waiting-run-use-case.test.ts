@@ -31,20 +31,27 @@ function buildSubject(
 }
 
 describe('SettleWaitingRunUseCase', () => {
-  it('should set waiting, announce it and post the request once when the run waits live', async () => {
+  it('should add the waiting label, keep the status, announce it and post the request once when the run waits live', async () => {
     const { useCase, ticketStatusWrites, events } = buildSubject();
 
     await useCase.execute(waitingRun);
 
     expect(ticketStatusWrites.calls).toEqual([
-      'readStatus',
-      'setStatus #7 -> waiting',
+      'readState',
+      'setSecondaryState #7 waiting on',
       'comment #7: The run reached its human checkpoint and waits for an answer on the ticket page:\n\nPick A or B',
     ]);
     expect(events.emittedEvents).toEqual([
       {
         name: 'ticket.status-written',
-        payload: { projectId: 'moritz/aisf', ticketNumber: 7, from: 'in-progress', to: 'waiting' },
+        payload: {
+          projectId: 'moritz/aisf',
+          ticketNumber: 7,
+          from: 'in-progress',
+          to: 'in-progress',
+          waiting: true,
+          stuck: false,
+        },
       },
     ]);
   });
@@ -63,10 +70,10 @@ describe('SettleWaitingRunUseCase', () => {
 
   it('should write nothing when the ticket is already waiting', async () => {
     const { useCase, ticketStatusWrites } = buildSubject();
-    ticketStatusWrites.liveStatus = 'waiting';
+    ticketStatusWrites.liveWaiting = true;
 
     await useCase.execute(waitingRun);
 
-    expect(ticketStatusWrites.calls).toEqual(['readStatus']);
+    expect(ticketStatusWrites.calls).toEqual(['readState']);
   });
 });

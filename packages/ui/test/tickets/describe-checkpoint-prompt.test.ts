@@ -38,11 +38,11 @@ describe('describeCheckpointPrompt', () => {
       },
     };
 
-    expect(describeCheckpointPrompt(response, 'waiting', undefined)).toEqual({ kind: 'hidden' });
+    expect(describeCheckpointPrompt(response, true, undefined)).toEqual({ kind: 'hidden' });
   });
 
   it('should hide the prompt when the poll has not answered yet', () => {
-    expect(describeCheckpointPrompt(undefined, 'waiting', undefined)).toEqual({ kind: 'hidden' });
+    expect(describeCheckpointPrompt(undefined, true, undefined)).toEqual({ kind: 'hidden' });
   });
 
   it.each<[string, TicketRunResponse]>([
@@ -56,11 +56,11 @@ describe('describeCheckpointPrompt', () => {
       },
     ],
   ])('should hide the prompt when %s', (_condition, response) => {
-    expect(describeCheckpointPrompt(response, 'waiting', undefined)).toEqual({ kind: 'hidden' });
+    expect(describeCheckpointPrompt(response, true, undefined)).toEqual({ kind: 'hidden' });
   });
 
   it('should show the request with Send held and the catching-up reason when the ticket is not waiting yet', () => {
-    expect(describeCheckpointPrompt(endedWith(checkpoint), 'in-progress', undefined)).toEqual({
+    expect(describeCheckpointPrompt(endedWith(checkpoint), false, undefined)).toEqual({
       kind: 'shown',
       runId: 'run-1',
       request: 'Should the export include archived runs?',
@@ -81,7 +81,7 @@ describe('describeCheckpointPrompt', () => {
   ])(
     'should hold Send and ask for an answer when the ticket is waiting and %s',
     (_case, answer) => {
-      expect(describeCheckpointPrompt(endedWith(checkpoint), 'waiting', answer)).toMatchObject({
+      expect(describeCheckpointPrompt(endedWith(checkpoint), true, answer)).toMatchObject({
         kind: 'shown',
         pressable: false,
         reason: 'Write an answer to send it.',
@@ -95,7 +95,7 @@ describe('describeCheckpointPrompt', () => {
       draft: 'B. Leave archived runs out. Add the hint on the button, as you suggest.',
       send: { kind: 'idle' },
     };
-    expect(describeCheckpointPrompt(endedWith(checkpoint), 'waiting', answer)).toEqual({
+    expect(describeCheckpointPrompt(endedWith(checkpoint), true, answer)).toEqual({
       kind: 'shown',
       runId: 'run-1',
       request: 'Should the export include archived runs?',
@@ -114,7 +114,7 @@ describe('describeCheckpointPrompt', () => {
       draft: 'a'.repeat(1234),
       send: { kind: 'idle' },
     };
-    expect(describeCheckpointPrompt(endedWith(checkpoint), 'waiting', answer)).toMatchObject({
+    expect(describeCheckpointPrompt(endedWith(checkpoint), true, answer)).toMatchObject({
       counterText: '1 234 / 10 000',
       hint: 'Plain text. Up to 10 000 characters.',
       atLimit: false,
@@ -127,7 +127,7 @@ describe('describeCheckpointPrompt', () => {
       draft: 'a'.repeat(10_000),
       send: { kind: 'idle' },
     };
-    expect(describeCheckpointPrompt(endedWith(checkpoint), 'waiting', answer)).toMatchObject({
+    expect(describeCheckpointPrompt(endedWith(checkpoint), true, answer)).toMatchObject({
       counterText: '10 000 / 10 000',
       hint: 'Limit reached. Shorten the answer to add more.',
       atLimit: true,
@@ -137,7 +137,7 @@ describe('describeCheckpointPrompt', () => {
 
   it('should hold Send, mark it sending and announce it when the answer is being sent', () => {
     const answer: CheckpointAnswer = { runId: 'run-1', draft: 'B.', send: { kind: 'sending' } };
-    expect(describeCheckpointPrompt(endedWith(checkpoint), 'waiting', answer)).toEqual({
+    expect(describeCheckpointPrompt(endedWith(checkpoint), true, answer)).toEqual({
       kind: 'shown',
       runId: 'run-1',
       request: 'Should the export include archived runs?',
@@ -157,7 +157,7 @@ describe('describeCheckpointPrompt', () => {
       draft: 'B.',
       send: { kind: 'failed', message: 'The run is not waiting for an answer.', status: 409 },
     };
-    expect(describeCheckpointPrompt(endedWith(checkpoint), 'waiting', answer)).toEqual({
+    expect(describeCheckpointPrompt(endedWith(checkpoint), true, answer)).toEqual({
       kind: 'shown',
       runId: 'run-1',
       request: 'Should the export include archived runs?',
@@ -180,7 +180,7 @@ describe('describeCheckpointPrompt', () => {
       draft: 'B.',
       send: { kind: 'failed', message: "Can't reach aisf." },
     };
-    expect(describeCheckpointPrompt(endedWith(checkpoint), 'waiting', answer)).toMatchObject({
+    expect(describeCheckpointPrompt(endedWith(checkpoint), true, answer)).toMatchObject({
       error: { message: "Couldn't send your answer. Can't reach aisf." },
     });
   });
@@ -193,7 +193,7 @@ describe('describeCheckpointPrompt', () => {
     'should start with an empty answer when the $kind answer belongs to an earlier run',
     (send) => {
       const answer: CheckpointAnswer = { runId: 'run-1', draft: 'B.', send };
-      expect(describeCheckpointPrompt(endedWith(checkpoint, 'run-2'), 'waiting', answer)).toEqual({
+      expect(describeCheckpointPrompt(endedWith(checkpoint, 'run-2'), true, answer)).toEqual({
         kind: 'shown',
         runId: 'run-2',
         request: 'Should the export include archived runs?',
@@ -221,7 +221,7 @@ const waiting: TicketRunResponse = {
 
 describe('describeCheckpointPrompt for a live wait', () => {
   it('should show the live request for the active run when the ticket is waiting', () => {
-    const description = describeCheckpointPrompt(waiting, 'waiting', {
+    const description = describeCheckpointPrompt(waiting, true, {
       runId: 'run-7',
       draft: 'A',
       send: { kind: 'idle' },
@@ -236,7 +236,7 @@ describe('describeCheckpointPrompt for a live wait', () => {
   });
 
   it('should lock Send with the catching-up reason when the ticket is still in progress', () => {
-    expect(describeCheckpointPrompt(waiting, 'in-progress', undefined)).toMatchObject({
+    expect(describeCheckpointPrompt(waiting, false, undefined)).toMatchObject({
       kind: 'shown',
       pressable: false,
       reason:
@@ -246,7 +246,7 @@ describe('describeCheckpointPrompt for a live wait', () => {
 
   it('should prefer the live request over the last run ending', () => {
     const both: TicketRunResponse = { ...endedWith(checkpoint), ...waiting };
-    expect(describeCheckpointPrompt(both, 'waiting', undefined)).toMatchObject({
+    expect(describeCheckpointPrompt(both, true, undefined)).toMatchObject({
       runId: 'run-7',
       request: 'Pick A or B',
     });

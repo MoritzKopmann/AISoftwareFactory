@@ -20,10 +20,10 @@ function describeRunMarker(
   ticket: TicketResponse,
   runningTicketNumbers: ReadonlyArray<number>,
 ): RunMarker | undefined {
-  if (ticket.status === 'stuck') {
+  if (ticket.stuck) {
     return 'stuck';
   }
-  if (ticket.status === 'waiting') {
+  if (ticket.waiting) {
     return 'waiting';
   }
   if (runningTicketNumbers.includes(ticket.number)) {

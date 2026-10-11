@@ -86,6 +86,8 @@ describe('describeTicketPage', () => {
       numberLabel: '#36',
       title: 'Envelope flip animation',
       status: 'closed',
+      waiting: false,
+      stuck: false,
       statusLabel: 'Closed',
       statusMark: { shape: '✓', tone: 'done', pulses: false },
       url: 'https://github.com/MoritzKopmann/postkarte/issues/36',
@@ -119,11 +121,13 @@ describe('describeTicketPage', () => {
     });
   });
 
-  it('should pass the raw status on when the ticket loads', () => {
-    const ticket = buildTicketResponse({ status: 'stuck' });
+  it('should pass the raw status and the flags on when the ticket loads', () => {
+    const ticket = buildTicketResponse({ status: 'in-progress', stuck: true });
 
     expect(describeTicketPage(answered(ticket), projectId, 1)).toMatchObject({
-      status: 'stuck',
+      status: 'in-progress',
+      waiting: false,
+      stuck: true,
     });
   });
 

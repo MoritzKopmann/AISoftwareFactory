@@ -18,6 +18,8 @@ describe('TicketPageView', () => {
           numberLabel: '#56',
           title: 'Retry a failed upload',
           status: 'ready',
+          waiting: false,
+          stuck: false,
           statusLabel: 'Ready',
           statusMark: { shape: '○', tone: 'neutral', pulses: false },
           url: 'https://github.com/o/n/issues/56',

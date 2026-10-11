@@ -1,8 +1,7 @@
-import type { TicketStatus } from '../../../../../shared/ticket-status/ticket-status.js';
 import type { RunAnswer } from '../types/run-answer.js';
 import type { RunEnding } from '../types/run-ending.js';
 
-export function awaitedStatusFor(ending: RunEnding, answer: RunAnswer): TicketStatus | undefined {
+export function awaitedStatusFor(ending: RunEnding, answer: RunAnswer): 'waiting' | undefined {
   if (ending.kind === 'permission-needed' && answer.kind === 'permission') {
     return 'waiting';
   }

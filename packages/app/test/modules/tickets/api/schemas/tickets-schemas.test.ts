@@ -13,10 +13,20 @@ const closingPullRequest = {
 };
 
 describe('ticketResponseSchema', () => {
-  it('should parse when the ticket status is waiting', () => {
-    const ticket = buildTicket({ number: 1, status: 'waiting' });
+  it('should carry the waiting and stuck flags when the ticket has them', () => {
+    const ticket = buildTicket({ number: 1, status: 'in-progress', waiting: true });
 
-    expect(ticketResponseSchema.safeParse(ticket).success).toBe(true);
+    expect(ticketResponseSchema.parse(ticket)).toMatchObject({
+      status: 'in-progress',
+      waiting: true,
+      stuck: false,
+    });
+  });
+
+  it.each(['waiting', 'stuck'])('should reject %s as a status', (status) => {
+    const ticket = { ...buildTicket({ number: 1 }), status };
+
+    expect(ticketResponseSchema.safeParse(ticket).success).toBe(false);
   });
 
   it('should carry the approval as a boolean when the closing pull request has approved', () => {

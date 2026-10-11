@@ -42,7 +42,6 @@ describe('determineRunAvailability', () => {
     ['has an open blocker', { hasOpenBlocker: true }],
     ['is not a leaf', { isLeaf: false }],
     ['is in-progress', { status: 'in-progress' }],
-    ['is stuck', { status: 'stuck' }],
     ['is planned', { status: 'planned' }],
   ])('should be absent when the ticket %s', (_description, ticketOverrides) => {
     const ticket = { ...readyLeaf, ...ticketOverrides };

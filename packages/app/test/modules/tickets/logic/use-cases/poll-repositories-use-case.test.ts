@@ -54,6 +54,8 @@ function createSubject() {
           ticketNumber: 0,
           from: 'ready',
           to: 'ready',
+          waiting: false,
+          stuck: false,
           writtenAt: startedAt,
         });
       }
@@ -376,8 +378,10 @@ describe('PollRepositoriesUseCase', () => {
       seen.length = 0;
       watchStore.saveStatusWrite('octo/repo', {
         ticketNumber: 1,
-        from: 'stuck',
+        from: 'in-progress',
         to: 'ready',
+        waiting: false,
+        stuck: false,
         writtenAt: startedAt,
       });
       clock.setNow('2026-09-28T12:01:01.000Z');
@@ -521,8 +525,10 @@ describe('PollRepositoriesUseCase', () => {
       const [firstWatch] = await subject.useCase.execute([buildWatch('owner/name')]);
       subject.watchStore.saveStatusWrite('owner/name', {
         ticketNumber: 1,
-        from: 'stuck',
+        from: 'in-progress',
         to: 'ready',
+        waiting: false,
+        stuck: false,
         writtenAt: startedAt,
       });
       subject.clock.setNow('2026-09-28T12:01:01.000Z');

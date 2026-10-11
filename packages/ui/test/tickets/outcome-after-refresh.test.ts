@@ -15,7 +15,7 @@ describe('outcomeAfterRefresh', () => {
   const loaded = answered(buildTicketResponse({ status: 'in-progress' }));
 
   it('should take the new answer when the refresh answered', () => {
-    const refreshed = answered(buildTicketResponse({ status: 'stuck' }));
+    const refreshed = answered(buildTicketResponse({ status: 'in-review' }));
     expect(outcomeAfterRefresh(loaded, refreshed)).toBe(refreshed);
   });
 

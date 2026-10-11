@@ -14,7 +14,13 @@ export function presentSnapshot(
     openTickets: snapshot.openTickets.map((ticket) => {
       const write = statusWrites.find((candidate) => candidate.ticketNumber === ticket.number);
       return write !== undefined && isAwaitingConfirmation(ticket, write)
-        ? { ...ticket, status: write.to, conflictingStatuses: [] }
+        ? {
+            ...ticket,
+            status: write.to,
+            conflictingStatuses: [],
+            waiting: write.waiting,
+            stuck: write.stuck,
+          }
         : ticket;
     }),
   };

@@ -15,11 +15,14 @@ export function deriveTicketStatus(issue: {
   if (issue.state === 'closed') {
     return { status: 'closed', conflictingStatuses: [] };
   }
-  const knownStatuses = issue.labelNames
+  const statusLabelValues = issue.labelNames
     .filter((labelName) => labelName.startsWith(statusLabelPrefix))
-    .map((labelName) => labelName.slice(statusLabelPrefix.length))
-    .filter((value): value is TicketStatus => labelStatuses.some((status) => status === value));
-  if (knownStatuses.length > 1) {
+    .map((labelName) => labelName.slice(statusLabelPrefix.length));
+  const knownStatuses = statusLabelValues.filter((value): value is TicketStatus =>
+    labelStatuses.some((status) => status === value),
+  );
+  // A status label that names no lifecycle status (e.g. the legacy `status: stuck`) conflicts.
+  if (statusLabelValues.length > 1 || knownStatuses.length < statusLabelValues.length) {
     return { status: 'conflict', conflictingStatuses: knownStatuses };
   }
   return { status: knownStatuses[0] ?? 'idea', conflictingStatuses: [] };

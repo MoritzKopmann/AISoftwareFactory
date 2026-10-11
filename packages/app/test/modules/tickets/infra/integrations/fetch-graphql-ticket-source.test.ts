@@ -53,6 +53,8 @@ describe('FetchGraphQLTicketSource', () => {
         status: 'planned',
         conflictingStatuses: [],
         hitl: false,
+        waiting: false,
+        stuck: false,
         types: ['enhancement'],
         subIssueNumbers: [13, 14],
         blockedBy: [],
@@ -67,6 +69,8 @@ describe('FetchGraphQLTicketSource', () => {
         status: 'in-review',
         conflictingStatuses: [],
         hitl: true,
+        waiting: true,
+        stuck: false,
         types: [],
         parent: { number: 12, title: 'Epic: Watch a project' },
         subIssueNumbers: [],
@@ -123,7 +127,7 @@ describe('FetchGraphQLTicketSource', () => {
 
       expect(snapshot.openTickets[2]).toMatchObject({
         status: 'conflict',
-        conflictingStatuses: ['ready', 'stuck'],
+        conflictingStatuses: ['ready', 'in-review'],
       });
     });
 

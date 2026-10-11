@@ -12,15 +12,17 @@ describe('ReadOpenTicketsUseCase', () => {
       sync: { state: 'ok', checkedAt: 'x', snapshotTakenAt: 'x' },
       snapshot: {
         takenAt: 'x',
-        openTickets: [buildTicket({ number: 7, status: 'stuck' })],
+        openTickets: [buildTicket({ number: 7, status: 'in-progress' })],
         recentlyClosedTickets: [],
         closedTotalCount: 0,
       },
     });
     watchStore.saveStatusWrite('octo/repo', {
       ticketNumber: 7,
-      from: 'stuck',
+      from: 'in-progress',
       to: 'ready',
+      waiting: false,
+      stuck: false,
       writtenAt: '2026-09-28T12:00:00.000Z',
     });
 

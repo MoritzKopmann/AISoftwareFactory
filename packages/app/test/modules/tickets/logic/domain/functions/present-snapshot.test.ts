@@ -7,7 +7,9 @@ import { buildTicket } from '../../../fakes/build-ticket.js';
 const write: StatusWrite = {
   ticketNumber: 12,
   from: 'in-progress',
-  to: 'stuck',
+  to: 'in-review',
+  waiting: false,
+  stuck: false,
   writtenAt: '2026-09-28T12:00:00.000Z',
 };
 
@@ -27,7 +29,10 @@ describe('presentSnapshot', () => {
       [write],
     );
 
-    expect(presented.openTickets[0]).toMatchObject({ status: 'stuck', conflictingStatuses: [] });
+    expect(presented.openTickets[0]).toMatchObject({
+      status: 'in-review',
+      conflictingStatuses: [],
+    });
   });
 
   it('should show the written status when the snapshot shows idea mid-swap', () => {
@@ -35,7 +40,7 @@ describe('presentSnapshot', () => {
       write,
     ]);
 
-    expect(presented.openTickets[0]?.status).toBe('stuck');
+    expect(presented.openTickets[0]?.status).toBe('in-review');
   });
 
   it('should show the written status when the snapshot shows a conflict containing the to status', () => {
@@ -44,13 +49,16 @@ describe('presentSnapshot', () => {
         buildTicket({
           number: 12,
           status: 'conflict',
-          conflictingStatuses: ['in-progress', 'stuck'],
+          conflictingStatuses: ['in-progress', 'in-review'],
         }),
       ),
       [write],
     );
 
-    expect(presented.openTickets[0]).toMatchObject({ status: 'stuck', conflictingStatuses: [] });
+    expect(presented.openTickets[0]).toMatchObject({
+      status: 'in-review',
+      conflictingStatuses: [],
+    });
   });
 
   it('should leave the ticket alone when the snapshot shows another status', () => {
@@ -69,5 +77,25 @@ describe('presentSnapshot', () => {
 
     expect(presented.recentlyClosedTickets).toEqual(snapshot.recentlyClosedTickets);
     expect(presented.takenAt).toBe(snapshot.takenAt);
+  });
+
+  it('should show the written flags when the snapshot still shows the old flags on the same status', () => {
+    const flagWrite: StatusWrite = {
+      ...write,
+      from: 'in-progress',
+      to: 'in-progress',
+      waiting: true,
+    };
+
+    const presented = presentSnapshot(
+      snapshotOf(buildTicket({ number: 12, status: 'in-progress' })),
+      [flagWrite],
+    );
+
+    expect(presented.openTickets[0]).toMatchObject({
+      status: 'in-progress',
+      waiting: true,
+      stuck: false,
+    });
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AisfLabel } from '../../../../../../src/modules/projects/logic/domain/constants/aisf-labels.js';
+import { aisfLabels } from '../../../../../../src/modules/projects/logic/domain/constants/aisf-labels.js';
 import { findMissingLabels } from '../../../../../../src/modules/projects/logic/domain/functions/find-missing-labels.js';
 
 const readyLabel: AisfLabel = {
@@ -32,5 +33,16 @@ describe('findMissingLabels', () => {
 
   it('should ignore an existing label that is not an aisf label', () => {
     expect(findMissingLabels([readyLabel], ['bug'])).toEqual([readyLabel]);
+  });
+
+  it('should return the waiting and stuck labels when a project onboarded before them is checked', () => {
+    const existing = aisfLabels
+      .map((label) => label.name)
+      .filter((name) => name !== 'waiting' && name !== 'stuck');
+
+    expect(findMissingLabels(aisfLabels, existing).map((label) => label.name)).toEqual([
+      'waiting',
+      'stuck',
+    ]);
   });
 });

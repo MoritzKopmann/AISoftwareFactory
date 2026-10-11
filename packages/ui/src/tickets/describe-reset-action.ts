@@ -1,6 +1,5 @@
 import type { TicketRunResponse } from '@aisf/app/api-schemas/runs-schemas.js';
-import type { TicketStatusResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
-import { isResettable } from './is-resettable.js';
+import { isResettable, type ResettableTicketState } from './is-resettable.js';
 import type { ResetTicketOutcome } from './reset-ticket.js';
 
 export type ResetState =
@@ -23,18 +22,18 @@ export type ResetActionDescription =
 export function settleResetState(
   reset: ResetState,
   response: TicketRunResponse | undefined,
-  ticketStatus: TicketStatusResponse,
+  ticketState: ResettableTicketState,
 ): ResetState {
-  return reset.kind === 'idle' || isResettable(response, ticketStatus) ? reset : { kind: 'idle' };
+  return reset.kind === 'idle' || isResettable(response, ticketState) ? reset : { kind: 'idle' };
 }
 
 export function describeResetAction(
   response: TicketRunResponse | undefined,
-  ticketStatus: TicketStatusResponse,
+  ticketState: ResettableTicketState,
   reset: ResetState,
   number: number,
 ): ResetActionDescription {
-  if (!isResettable(response, ticketStatus)) {
+  if (!isResettable(response, ticketState)) {
     return { kind: 'hidden' };
   }
   if (reset.kind === 'resetting') {
