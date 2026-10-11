@@ -46,7 +46,17 @@ describe('createIdeaRoutes', () => {
     expect(ideaSessions.calls).toEqual(['start owner/name Export trips as postcards']);
   });
 
-  it.each([{ title: '   ' }, { title: 'x'.repeat(257) }, {}])(
+  it('should answer 201 and pass the whole text on when the idea is longer than a title', async () => {
+    const ideaSessions = new FakeIdeaSessions();
+    const text = 'x'.repeat(10_000);
+
+    const response = await post(ideaSessions, { title: text });
+
+    expect(response.status).toBe(201);
+    expect(ideaSessions.calls).toEqual([`start owner/name ${text}`]);
+  });
+
+  it.each([{ title: '   ' }, { title: 'x'.repeat(10_001) }, {}])(
     'should answer 400 and start nothing when the body is %j',
     async (body) => {
       const ideaSessions = new FakeIdeaSessions();
