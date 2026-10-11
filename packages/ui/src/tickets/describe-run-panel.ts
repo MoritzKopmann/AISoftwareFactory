@@ -2,10 +2,11 @@ import type { RunEndingResponse, TicketRunResponse } from '@aisf/app/api-schemas
 import { describeTimeAgo } from '../board/describe-time-ago.js';
 import { formatClockTime } from '../board/format-clock-time.js';
 import { isIdeaOrPlanSkill, type RunSkill } from './describe-run-bar.js';
+import { countRunMinutes } from './count-run-minutes.js';
+import { describeStopAction, type StopActionDescription } from './describe-stop-action.js';
 import type { TicketRunPoll } from './fold-ticket-run-poll.js';
 
 const shownStepCount = 5;
-const millisecondsPerMinute = 60_000;
 
 type ActiveRun = NonNullable<TicketRunResponse['activeRun']>;
 type LastRun = NonNullable<TicketRunResponse['lastRun']>;
@@ -32,11 +33,7 @@ type LiveRunDescription = {
   readonly kind: 'live';
   readonly waiting: boolean;
   readonly startedLabel: string;
-  readonly stop: {
-    readonly label: string;
-    readonly pressable: boolean;
-    readonly announcement?: string;
-  };
+  readonly stop: StopActionDescription;
   readonly banner?: string;
   readonly steps: ReadonlyArray<RunPanelStep>;
   readonly emptyMessage?: string;
@@ -61,9 +58,7 @@ function describeLiveRun(
     kind: 'live',
     waiting: activeRun.waitingFor !== undefined,
     startedLabel: describeStartedLabel(activeRun.startedAt, input.runSkill, now),
-    stop: input.stopping
-      ? { label: 'Stopping…', pressable: false, announcement: 'Stopping the run' }
-      : { label: 'Stop', pressable: true },
+    stop: describeStopAction(input.stopping),
     ...(input.lastPollFailed && input.answeredAt !== undefined
       ? {
           banner: `Can't reach aisf. Showing the steps from ${formatClockTime(input.answeredAt, 'minutes')}. Loads again on the next change, or on Retry.`,
@@ -104,9 +99,7 @@ function endingNote(ending: RunEndingResponse): string | undefined {
 }
 
 function describeRunLength(lastRun: LastRun): string {
-  const ranMinutes = Math.floor(
-    (Date.parse(lastRun.endedAt) - Date.parse(lastRun.startedAt)) / millisecondsPerMinute,
-  );
+  const ranMinutes = countRunMinutes(lastRun);
   return ranMinutes < 1 ? 'ran under 1 min' : `ran ${ranMinutes} min`;
 }
 

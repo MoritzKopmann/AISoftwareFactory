@@ -32,6 +32,7 @@ import { editCheckpointDraft } from './edit-checkpoint-draft.js';
 import { fetchTicketArtifacts, type TicketArtifactsFailure } from './fetch-ticket-artifacts.js';
 import { PermissionPrompt } from './permission-prompt.js';
 import { ResetAction } from './reset-action.js';
+import { rememberRoundRun } from './remember-round-run.js';
 import { resetTicket } from './reset-ticket.js';
 import { RoundPanel } from './round-panel.js';
 import { RunBar } from './run-bar.js';
@@ -63,6 +64,7 @@ export function RunSection({
   const [permissionAnswer, setPermissionAnswer] = useState<PermissionAnswer>({ kind: 'idle' });
   const [checkpointAnswer, setCheckpointAnswer] = useState<CheckpointAnswer | undefined>(undefined);
   const [reset, setReset] = useState<ResetState>({ kind: 'idle' });
+  const [roundRunId, setRoundRunId] = useState<string | undefined>(undefined);
   const [artifacts, setArtifacts] = useState<TicketArtifactsResponse | undefined>(undefined);
   const [artifactsFailure, setArtifactsFailure] = useState<TicketArtifactsFailure | undefined>(
     undefined,
@@ -75,6 +77,10 @@ export function RunSection({
 
   useEffect(() => {
     setCheckpointAnswer((current) => settleCheckpointAnswer(current, ticketRun.response));
+  }, [ticketRun.response]);
+
+  useEffect(() => {
+    setRoundRunId((current) => rememberRoundRun(current, ticketRun.response));
   }, [ticketRun.response]);
 
   // A failed read keeps the links from the last answer.
@@ -152,15 +158,23 @@ export function RunSection({
     checkpointAnswer,
   );
 
+  const stopping = activeRunId !== undefined && activeRunId === stoppingRunId;
+
   const panel = describeRunPanel(
-    {
-      ...ticketRun,
-      ticketStuck: ticketState.stuck,
-      runSkill,
-      stopping: activeRunId !== undefined && activeRunId === stoppingRunId,
-    },
+    { ...ticketRun, ticketStuck: ticketState.stuck, runSkill, stopping },
     new Date(),
   );
+
+  const roundPanel = describeRoundPanel(ticketRun.response, {
+    ticketStatus,
+    ticketNumber: number,
+    roundRunId,
+    stopping,
+  });
+
+  const stopActiveRun = () => {
+    if (activeRunId !== undefined) void stop(activeRunId);
+  };
 
   return (
     <>
@@ -182,7 +196,7 @@ export function RunSection({
           }
         }}
       />
-      <RoundPanel description={describeRoundPanel(ticketRun.response)} />
+      <RoundPanel description={roundPanel} onStop={stopActiveRun} />
       <CheckpointPrompt
         description={checkpointPrompt}
         onDraftChange={(draft) => {
@@ -202,13 +216,9 @@ export function RunSection({
         description={describeArtifactLinks(artifacts, artifactsFailure)}
         onRetry={retryArtifacts}
       />
-      <RunPanel
-        description={panel}
-        onRetry={retryRun}
-        onStop={() => {
-          if (activeRunId !== undefined) void stop(activeRunId);
-        }}
-      />
+      {roundPanel.kind === 'hidden' && (
+        <RunPanel description={panel} onRetry={retryRun} onStop={stopActiveRun} />
+      )}
       <ResetAction
         description={describeResetAction(ticketRun.response, ticketState, reset, number)}
         onReset={() => void resetToReady()}

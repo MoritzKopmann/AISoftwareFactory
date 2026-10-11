@@ -1,3 +1,4 @@
+import { StopButton } from './stop-button.js';
 import type { RunPanelDescription } from './describe-run-panel.js';
 
 type RunPanelProps = {
@@ -46,21 +47,7 @@ export function RunPanel({ description, onStop, onRetry }: RunPanelProps) {
         </span>
         <span className="sm">{startedLabel}</span>
         <span className="grow" />
-        <button
-          className="btn stop"
-          type="button"
-          aria-disabled={stop.pressable ? undefined : 'true'}
-          onClick={() => {
-            if (stop.pressable) onStop();
-          }}
-        >
-          {stop.label}
-        </button>
-        {stop.announcement !== undefined && (
-          <span className="vh" role="status">
-            {stop.announcement}
-          </span>
-        )}
+        <StopButton stop={stop} onStop={onStop} />
       </div>
       {banner !== undefined && (
         <div className="inline-banner" role="status">
