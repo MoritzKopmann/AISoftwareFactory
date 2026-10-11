@@ -1,13 +1,13 @@
 import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
 import { TicketNotResettableError } from '../errors/ticket-not-resettable-error.js';
-import type { ProjectLookup } from '../ports/project-lookup.js';
-import type { RunnerPort } from '../ports/runner-port.js';
+import type { ActiveRunLookup } from '../ports/active-run-lookup.js';
+import type { RegisteredRepositories } from '../ports/registered-repositories.js';
 import type { TicketStatusWrites } from '../ports/ticket-status-writes.js';
 
 export type ResetTicketDependencies = {
   readonly ticketStatusWrites: TicketStatusWrites;
-  readonly runner: RunnerPort;
-  readonly projectLookup: ProjectLookup;
+  readonly activeRunLookup: ActiveRunLookup;
+  readonly registeredRepositories: RegisteredRepositories;
   readonly events: EventPublisher;
 };
 
@@ -15,14 +15,16 @@ export class ResetTicketUseCase {
   constructor(private readonly dependencies: ResetTicketDependencies) {}
 
   async execute(projectId: string, ticketNumber: number): Promise<void> {
-    const { ticketStatusWrites, runner, projectLookup, events } = this.dependencies;
+    const { ticketStatusWrites, activeRunLookup, registeredRepositories, events } =
+      this.dependencies;
 
-    const project = await projectLookup.find(projectId);
+    const project = (await registeredRepositories.list()).find(
+      (registered) => registered.projectId === projectId,
+    );
     if (project === undefined) {
       throw new TicketNotResettableError(`${projectId} is unknown`);
     }
-    const activeRuns = await runner.activeRuns(projectId);
-    if (activeRuns.some(({ run }) => run.ticketNumber === ticketNumber)) {
+    if ((await activeRunLookup.activeRunTicketNumbers(projectId)).includes(ticketNumber)) {
       throw new TicketNotResettableError(`#${ticketNumber} has an active run`);
     }
     const status = await ticketStatusWrites.readStatus(project.repository, ticketNumber);

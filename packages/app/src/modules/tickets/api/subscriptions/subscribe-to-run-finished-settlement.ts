@@ -2,7 +2,7 @@ import type { EventSubscriber } from '../../../../shared/bus/event-subscriber.js
 import type { Logger } from '../../../../shared/logger/create-logger.js';
 import type { SettleFinishedRunUseCase } from '../../logic/use-cases/settle-finished-run-use-case.js';
 
-export function subscribeToRunFinished(
+export function subscribeToRunFinishedSettlement(
   subscriber: EventSubscriber,
   settleFinishedRun: SettleFinishedRunUseCase,
   logger: Logger,

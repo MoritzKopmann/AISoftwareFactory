@@ -41,7 +41,6 @@ import {
   type RunnerModule,
 } from './modules/runner/index.js';
 import { GhCliPullRequestMerges } from './modules/scheduler/infra/integrations/gh-cli-pull-request-merges.js';
-import { GhCliTicketStatusWrites } from './modules/scheduler/infra/integrations/gh-cli-ticket-status-writes.js';
 import {
   createSchedulerModule,
   RunNotAnswerableError,
@@ -50,11 +49,14 @@ import {
 } from './modules/scheduler/index.js';
 import { FetchGraphQLTicketSource } from './modules/tickets/infra/integrations/fetch-graphql-ticket-source.js';
 import { FetchIssueFeeds } from './modules/tickets/infra/integrations/fetch-issue-feeds.js';
+import { GhCliTicketStatusWrites } from './modules/tickets/infra/integrations/gh-cli-ticket-status-writes.js';
 import { InMemoryWatchStore } from './modules/tickets/infra/integrations/in-memory-watch-store.js';
 import { GhCliGitHubToken } from './modules/tickets/infra/integrations/gh-cli-github-token.js';
 import {
   createTicketsModule,
+  TicketNotAnswerableError,
   type ActiveRunLookup,
+  type RunSettlement,
   type TicketsModule,
 } from './modules/tickets/index.js';
 import { findOnPath } from './cli/find-on-path.js';
@@ -147,6 +149,8 @@ function buildTicketsModule(
   events: EventPublisher & EventSubscriber,
   projects: ProjectsModule,
   activeRunLookup: ActiveRunLookup,
+  runSettlement: RunSettlement,
+  logger: Logger,
 ): TicketsModule {
   const token = new GhCliGitHubToken();
   return createTicketsModule({
@@ -165,6 +169,9 @@ function buildTicketsModule(
         (await projects.list()).map(({ id, repository }) => ({ projectId: id, repository })),
     },
     activeRunLookup,
+    ticketStatusWrites: new GhCliTicketStatusWrites(),
+    runSettlement,
+    logger,
     pollIntervalMilliseconds: config.watcherPollIntervalMilliseconds,
     snapshotIntervalMilliseconds: config.watcherSnapshotIntervalMilliseconds,
   });
@@ -250,7 +257,19 @@ function buildSchedulerModule(
   logger: Logger,
 ): SchedulerModule {
   return createSchedulerModule({
-    ticketStatusWrites: new GhCliTicketStatusWrites(),
+    ticketAnswerGate: {
+      begin: async (projectId, ticketNumber) => {
+        try {
+          await tickets.beginAnswer(projectId, ticketNumber);
+        } catch (error) {
+          if (error instanceof TicketNotAnswerableError) {
+            throw new RunNotAnswerableError(error.message);
+          }
+          throw error;
+        }
+      },
+      revert: (projectId, ticketNumber) => tickets.revertAnswer(projectId, ticketNumber),
+    },
     pullRequestMerges: new GhCliPullRequestMerges(),
     runner: {
       start: async ({ projectId, ticketNumber }) => {
@@ -279,7 +298,6 @@ function buildSchedulerModule(
       findRun: runner.findRun,
       activeRuns: runner.activeRuns,
       latestRun: runner.latestRun,
-      settle: runner.settle,
     },
     runPageLookup: { find: artifacts.pageOf },
     ticketLookup: {
@@ -313,7 +331,6 @@ function buildSchedulerModule(
           : { repository: project.repository, onboarded: project.contract.passed };
       },
     },
-    events,
     subscriber: events,
     logger,
   });
@@ -340,10 +357,17 @@ const eventBus = new TypedEventBus<AisfEventMap>();
 const skills = buildSkillsModule(config, pluginDirectory, eventBus);
 const projects = buildProjectsModule(database, eventBus, skills, logger);
 // The tickets module is built before the runner, which needs tickets.ticket, so the lookup binds late.
-const tickets = buildTicketsModule(config, eventBus, projects, {
-  activeRunTicketNumbers: async (projectId) =>
-    (await runner.activeRuns(projectId)).map(({ run }) => run.ticketNumber),
-});
+const tickets = buildTicketsModule(
+  config,
+  eventBus,
+  projects,
+  {
+    activeRunTicketNumbers: async (projectId) =>
+      (await runner.activeRuns(projectId)).map(({ run }) => run.ticketNumber),
+  },
+  { settle: (runId) => runner.settle(runId) },
+  logger,
+);
 const findings = buildFindingsModule(database, projects, eventBus);
 // The artifacts module needs runner.latestRun and the runner needs its tools, so the lookup binds late.
 // The same goes for scheduler.answer, which delivers a page's event.
@@ -385,6 +409,10 @@ const scheduler = buildSchedulerModule(
   logger,
 );
 scheduler.start();
+// Subscribes the run settlement, so it starts before recover() replays unsettled runs.
+tickets.start().catch((error: unknown) => {
+  logger.error(`The tickets module failed to start: ${String(error)}`);
+});
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
@@ -423,9 +451,6 @@ if (options.openBrowser) {
   openBrowser(runningServer.url);
 }
 
-tickets.start().catch((error: unknown) => {
-  logger.error(`The tickets module failed to start: ${String(error)}`);
-});
 // Never-crash boundary: a failed label sync must not end the process or delay the boot.
 projects.start().catch((error: unknown) => {
   logger.error(`Syncing the project labels failed: ${String(error)}`);

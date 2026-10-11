@@ -1,24 +1,20 @@
-import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
 import { awaitedStatusFor } from '../domain/functions/awaited-status-for.js';
 import type { RunAnswer } from '../domain/types/run-answer.js';
 import type { StartedRun } from '../domain/types/started-run.js';
 import { RunNotAnswerableError } from '../errors/run-not-answerable-error.js';
-import type { ProjectLookup } from '../ports/project-lookup.js';
 import type { RunnerPort } from '../ports/runner-port.js';
-import type { TicketStatusWrites } from '../ports/ticket-status-writes.js';
+import type { TicketAnswerGate } from '../ports/ticket-answer-gate.js';
 
 export type AnswerRunDependencies = {
-  readonly ticketStatusWrites: TicketStatusWrites;
+  readonly ticketAnswerGate: TicketAnswerGate;
   readonly runner: RunnerPort;
-  readonly projectLookup: ProjectLookup;
-  readonly events: EventPublisher;
 };
 
 export class AnswerRunUseCase {
   constructor(private readonly dependencies: AnswerRunDependencies) {}
 
   async execute(runId: string, answer: RunAnswer): Promise<StartedRun> {
-    const { ticketStatusWrites, runner, projectLookup, events } = this.dependencies;
+    const { ticketAnswerGate, runner } = this.dependencies;
 
     const run = await runner.findRun(runId);
     if (run === undefined) {
@@ -35,31 +31,11 @@ export class AnswerRunUseCase {
     if (latestRun?.id !== runId) {
       throw new RunNotAnswerableError(`Run ${runId} is not the latest run of #${ticketNumber}`);
     }
-    const project = await projectLookup.find(projectId);
-    if (project === undefined) {
-      throw new RunNotAnswerableError(`${projectId} is unknown`);
-    }
-    if ((await ticketStatusWrites.readStatus(project.repository, ticketNumber)) !== awaitedStatus) {
-      throw new RunNotAnswerableError(`#${ticketNumber} is not ${awaitedStatus}`);
-    }
-
-    await ticketStatusWrites.setStatus(project.repository, ticketNumber, 'in-progress');
-    events.emit('ticket.status-written', {
-      projectId,
-      ticketNumber,
-      from: awaitedStatus,
-      to: 'in-progress',
-    });
+    await ticketAnswerGate.begin(projectId, ticketNumber);
     try {
       return await runner.answer(runId, answer);
     } catch (error) {
-      await ticketStatusWrites.setStatus(project.repository, ticketNumber, awaitedStatus);
-      events.emit('ticket.status-written', {
-        projectId,
-        ticketNumber,
-        from: 'in-progress',
-        to: awaitedStatus,
-      });
+      await ticketAnswerGate.revert(projectId, ticketNumber);
       throw error;
     }
   }

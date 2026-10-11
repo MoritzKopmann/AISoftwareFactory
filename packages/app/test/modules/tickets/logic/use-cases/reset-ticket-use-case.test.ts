@@ -1,25 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { TicketNotResettableError } from '../../../../../src/modules/scheduler/logic/errors/ticket-not-resettable-error.js';
-import type { ProjectLookup } from '../../../../../src/modules/scheduler/logic/ports/project-lookup.js';
-import { ResetTicketUseCase } from '../../../../../src/modules/scheduler/logic/use-cases/reset-ticket-use-case.js';
+import { TicketNotResettableError } from '../../../../../src/modules/tickets/logic/errors/ticket-not-resettable-error.js';
+import type { RegisteredRepositories } from '../../../../../src/modules/tickets/logic/ports/registered-repositories.js';
+import { ResetTicketUseCase } from '../../../../../src/modules/tickets/logic/use-cases/reset-ticket-use-case.js';
 import type { TicketStatus } from '../../../../../src/shared/ticket-status/ticket-status.js';
 import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
+import { FakeRegisteredRepositories } from '../../fakes/fake-tickets-ports.js';
 import {
-  FakeProjectLookup,
-  FakeRunnerPort,
+  FakeActiveRunLookup,
   FakeTicketStatusWrites,
-} from '../../fakes/fake-scheduler-ports.js';
+} from '../../fakes/fake-ticket-status-writes.js';
 
 function buildSubject(
   liveStatus: TicketStatus,
-  projectLookup: ProjectLookup = new FakeProjectLookup(),
+  registeredRepositories: RegisteredRepositories = new FakeRegisteredRepositories([
+    { projectId: 'moritz/aisf', repository: { owner: 'moritz', name: 'aisf' } },
+  ]),
 ) {
   const ticketStatusWrites = new FakeTicketStatusWrites();
   ticketStatusWrites.liveStatus = liveStatus;
-  const runner = new FakeRunnerPort();
+  const activeRunLookup = new FakeActiveRunLookup();
   const events = new FakeEventPublisher();
-  const useCase = new ResetTicketUseCase({ ticketStatusWrites, runner, projectLookup, events });
-  return { useCase, ticketStatusWrites, runner, events };
+  const useCase = new ResetTicketUseCase({
+    ticketStatusWrites,
+    activeRunLookup,
+    registeredRepositories,
+    events,
+  });
+  return { useCase, ticketStatusWrites, activeRunLookup, events };
 }
 
 describe('ResetTicketUseCase', () => {
@@ -35,8 +42,8 @@ describe('ResetTicketUseCase', () => {
   );
 
   it('should set the ticket ready when the active run is on another ticket', async () => {
-    const { useCase, ticketStatusWrites, runner } = buildSubject('stuck');
-    runner.activeTicketNumbers = [140];
+    const { useCase, ticketStatusWrites, activeRunLookup } = buildSubject('stuck');
+    activeRunLookup.activeTicketNumbers = [140];
 
     await useCase.execute('moritz/aisf', 138);
 
@@ -44,8 +51,8 @@ describe('ResetTicketUseCase', () => {
   });
 
   it('should throw and write nothing when the ticket has an active run', async () => {
-    const { useCase, ticketStatusWrites, runner } = buildSubject('in-progress');
-    runner.activeTicketNumbers = [138];
+    const { useCase, ticketStatusWrites, activeRunLookup } = buildSubject('in-progress');
+    activeRunLookup.activeTicketNumbers = [138];
 
     await expect(useCase.execute('moritz/aisf', 138)).rejects.toBeInstanceOf(
       TicketNotResettableError,
@@ -66,12 +73,10 @@ describe('ResetTicketUseCase', () => {
   );
 
   it('should throw and not touch the ticket when the project is unknown', async () => {
-    class UnknownProjectLookup implements ProjectLookup {
-      async find(): Promise<undefined> {
-        return undefined;
-      }
-    }
-    const { useCase, ticketStatusWrites } = buildSubject('stuck', new UnknownProjectLookup());
+    const { useCase, ticketStatusWrites } = buildSubject(
+      'stuck',
+      new FakeRegisteredRepositories([]),
+    );
 
     await expect(useCase.execute('moritz/unknown', 138)).rejects.toBeInstanceOf(
       TicketNotResettableError,
@@ -93,8 +98,8 @@ describe('ResetTicketUseCase', () => {
   });
 
   it('should emit nothing when the ticket has an active run', async () => {
-    const { useCase, runner, events } = buildSubject('stuck');
-    runner.activeTicketNumbers = [138];
+    const { useCase, activeRunLookup, events } = buildSubject('stuck');
+    activeRunLookup.activeTicketNumbers = [138];
 
     await expect(useCase.execute('moritz/aisf', 138)).rejects.toBeInstanceOf(
       TicketNotResettableError,

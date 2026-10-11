@@ -2,12 +2,12 @@ import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
 import type { Logger } from '../../../../shared/logger/create-logger.js';
 import { decideRunEndTransition } from '../domain/functions/decide-run-end-transition.js';
 import type { WaitingRun } from '../domain/types/waiting-run.js';
-import type { ProjectLookup } from '../ports/project-lookup.js';
+import type { RegisteredRepositories } from '../ports/registered-repositories.js';
 import type { TicketStatusWrites } from '../ports/ticket-status-writes.js';
 
 export type SettleWaitingRunDependencies = {
   readonly ticketStatusWrites: TicketStatusWrites;
-  readonly projectLookup: ProjectLookup;
+  readonly registeredRepositories: RegisteredRepositories;
   readonly events: EventPublisher;
   readonly logger: Logger;
 };
@@ -16,10 +16,12 @@ export class SettleWaitingRunUseCase {
   constructor(private readonly dependencies: SettleWaitingRunDependencies) {}
 
   async execute(waitingRun: WaitingRun): Promise<void> {
-    const { ticketStatusWrites, projectLookup, events, logger } = this.dependencies;
+    const { ticketStatusWrites, registeredRepositories, events, logger } = this.dependencies;
     const { runId, projectId, ticketNumber, wait } = waitingRun;
 
-    const project = await projectLookup.find(projectId);
+    const project = (await registeredRepositories.list()).find(
+      (registered) => registered.projectId === projectId,
+    );
     if (project === undefined) {
       logger.warn(
         `Run ${runId} waits but ${projectId} is unknown, so #${ticketNumber} is unchanged`,

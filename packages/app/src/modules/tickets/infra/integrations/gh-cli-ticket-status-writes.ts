@@ -3,7 +3,7 @@ import type { TicketStatus } from '../../../../shared/ticket-status/ticket-statu
 import type { RepositoryReference } from '../../logic/domain/types/repository-reference.js';
 import { TicketWriteFailedError } from '../../logic/errors/ticket-write-failed-error.js';
 import type { TicketStatusWrites } from '../../logic/ports/ticket-status-writes.js';
-import { runGhCommand } from './run-gh-command.js';
+import { runGhCommand } from '../../../../shared/process/run-gh-command.js';
 
 const statusLabelPrefix = 'status: ';
 

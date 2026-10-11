@@ -1,10 +1,9 @@
-import { runProcess } from '../../../../shared/process/run-process.js';
-import type { RepositoryReference } from '../../logic/domain/types/repository-reference.js';
+import { runProcess } from './run-process.js';
 
 const commandTimeoutMilliseconds = 30_000;
 
 export async function runGhCommand(
-  repository: RepositoryReference,
+  repository: { readonly owner: string; readonly name: string },
   argumentList: ReadonlyArray<string>,
   createError: (message: string) => Error,
 ): Promise<string> {

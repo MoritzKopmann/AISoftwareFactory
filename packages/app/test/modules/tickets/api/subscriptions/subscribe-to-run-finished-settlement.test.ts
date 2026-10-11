@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import { subscribeToRunFinished } from '../../../../../src/modules/scheduler/api/subscriptions/subscribe-to-run-finished.js';
-import { SettleFinishedRunUseCase } from '../../../../../src/modules/scheduler/logic/use-cases/settle-finished-run-use-case.js';
+import { subscribeToRunFinishedSettlement } from '../../../../../src/modules/tickets/api/subscriptions/subscribe-to-run-finished-settlement.js';
+import { SettleFinishedRunUseCase } from '../../../../../src/modules/tickets/logic/use-cases/settle-finished-run-use-case.js';
 import type { AisfEventMap } from '../../../../../src/shared/bus/aisf-event-map.js';
 import { TypedEventBus } from '../../../../../src/shared/bus/typed-event-bus.js';
+import { FakeRegisteredRepositories } from '../../fakes/fake-tickets-ports.js';
 import {
+  FakeRunSettlement,
   FakeTicketStatusWrites,
-  FakeProjectLookup,
-  FakeRunnerPort,
-} from '../../fakes/fake-scheduler-ports.js';
+} from '../../fakes/fake-ticket-status-writes.js';
 
 const runFinished: AisfEventMap['run.finished'] = {
   runId: 'run-1',
@@ -19,26 +19,28 @@ const runFinished: AisfEventMap['run.finished'] = {
 function buildSubject() {
   const bus = new TypedEventBus<AisfEventMap>();
   const ticketStatusWrites = new FakeTicketStatusWrites();
-  const runner = new FakeRunnerPort();
+  const runSettlement = new FakeRunSettlement();
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
   const settleFinishedRun = new SettleFinishedRunUseCase({
     ticketStatusWrites,
-    runner,
-    projectLookup: new FakeProjectLookup(),
+    runSettlement,
+    registeredRepositories: new FakeRegisteredRepositories([
+      { projectId: 'moritz/aisf', repository: { owner: 'moritz', name: 'aisf' } },
+    ]),
     events: bus,
     logger,
   });
-  const unsubscribe = subscribeToRunFinished(bus, settleFinishedRun, logger);
-  return { bus, ticketStatusWrites, runner, logger, unsubscribe };
+  const unsubscribe = subscribeToRunFinishedSettlement(bus, settleFinishedRun, logger);
+  return { bus, ticketStatusWrites, runSettlement, logger, unsubscribe };
 }
 
-describe('subscribeToRunFinished', () => {
-  it('should settle the run on GitHub and the runner when run.finished is emitted', async () => {
-    const { bus, ticketStatusWrites, runner } = buildSubject();
+describe('subscribeToRunFinishedSettlement', () => {
+  it('should settle the run on GitHub and the runSettlement when run.finished is emitted', async () => {
+    const { bus, ticketStatusWrites, runSettlement } = buildSubject();
 
     bus.emit('run.finished', runFinished);
 
-    await vi.waitFor(() => expect(runner.calls).toEqual(['settle run-1']));
+    await vi.waitFor(() => expect(runSettlement.calls).toEqual(['settle run-1']));
     expect(ticketStatusWrites.calls).toContain('comment #138: The run was stopped');
   });
 
@@ -56,12 +58,12 @@ describe('subscribeToRunFinished', () => {
   });
 
   it('should stop settling when the returned unsubscribe is called', async () => {
-    const { bus, runner, unsubscribe } = buildSubject();
+    const { bus, runSettlement, unsubscribe } = buildSubject();
 
     unsubscribe();
     bus.emit('run.finished', runFinished);
     await Promise.resolve();
 
-    expect(runner.calls).toEqual([]);
+    expect(runSettlement.calls).toEqual([]);
   });
 });

@@ -13,5 +13,4 @@ export interface RunnerPort {
   findRun(runId: string): Promise<RunRecord | undefined>;
   activeRuns(projectId: string): Promise<ReadonlyArray<ActiveTicketRun>>;
   latestRun(projectId: string, ticketNumber: number): Promise<LatestRun | undefined>;
-  settle(runId: string): Promise<void>;
 }

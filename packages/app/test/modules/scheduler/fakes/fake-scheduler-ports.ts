@@ -1,9 +1,8 @@
 import type { RepositoryReference } from '../../../../src/modules/scheduler/logic/domain/types/repository-reference.js';
 import type { RunsBlocked } from '../../../../src/modules/scheduler/logic/domain/types/runs-blocked.js';
 import type { SchedulableTicket } from '../../../../src/modules/scheduler/logic/domain/types/schedulable-ticket.js';
-import type { TicketStatus } from '../../../../src/shared/ticket-status/ticket-status.js';
+import type { TicketAnswerGate } from '../../../../src/modules/scheduler/logic/ports/ticket-answer-gate.js';
 import type { PullRequestMerges } from '../../../../src/modules/scheduler/logic/ports/pull-request-merges.js';
-import type { TicketStatusWrites } from '../../../../src/modules/scheduler/logic/ports/ticket-status-writes.js';
 import type {
   ProjectLookup,
   SchedulerProject,
@@ -33,34 +32,19 @@ export const readyLeaf: SchedulableTicket = {
   snapshotTakenAt: '2026-09-29T10:00:00.000Z',
 };
 
-export class FakeTicketStatusWrites implements TicketStatusWrites {
+export class FakeTicketAnswerGate implements TicketAnswerGate {
   readonly calls: string[] = [];
-  liveStatus: TicketStatus = 'in-progress';
-  setStatusFailure: Error | undefined;
+  beginFailure: Error | undefined;
 
-  async readStatus(): Promise<TicketStatus> {
-    this.calls.push('readStatus');
-    return this.liveStatus;
-  }
-
-  async setStatus(
-    _repository: RepositoryReference,
-    ticketNumber: number,
-    to: TicketStatus,
-  ): Promise<void> {
-    this.calls.push(`setStatus #${ticketNumber} -> ${to}`);
-    if (this.setStatusFailure !== undefined) {
-      throw this.setStatusFailure;
+  async begin(projectId: string, ticketNumber: number): Promise<void> {
+    this.calls.push(`begin ${projectId} #${ticketNumber}`);
+    if (this.beginFailure !== undefined) {
+      throw this.beginFailure;
     }
-    this.liveStatus = to;
   }
 
-  async comment(
-    _repository: RepositoryReference,
-    ticketNumber: number,
-    body: string,
-  ): Promise<void> {
-    this.calls.push(`comment #${ticketNumber}: ${body}`);
+  async revert(projectId: string, ticketNumber: number): Promise<void> {
+    this.calls.push(`revert ${projectId} #${ticketNumber}`);
   }
 }
 
@@ -135,10 +119,6 @@ export class FakeRunnerPort implements RunnerPort {
 
   async latestRun(): Promise<LatestRun | undefined> {
     return this.latest;
-  }
-
-  async settle(runId: string): Promise<void> {
-    this.calls.push(`settle ${runId}`);
   }
 }
 

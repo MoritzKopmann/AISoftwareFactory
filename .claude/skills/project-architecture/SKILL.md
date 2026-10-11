@@ -257,6 +257,7 @@ if (response.status === 304) return previousPage;
 
 - **No central Store module.** No module owns another module's data.
 - **No import that reaches past another module's `index.ts`** (`modules/x/logic/…` from `modules/y`).
+- **No app write to a ticket outside the `tickets` module:** no status, label, comment or creation write. No PR write outside the scheduler's merge. The label sync in `projects` stays an exception.
 - **No `new` of a concrete adapter outside `main.ts`.** No service locator, no global singletons.
 - **No second process:** no daemon plus separate UI process, and no process per project.
 - **No persistence besides `aisf.db`:** no JSON **app**-state files, no native SQLite binding.

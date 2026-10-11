@@ -5,6 +5,7 @@ import type { AisfEventMap } from '../../../src/shared/bus/aisf-event-map.js';
 import { TypedEventBus } from '../../../src/shared/bus/typed-event-bus.js';
 import { FakeClock } from '../../fakes/fake-clock.js';
 import { buildTicket } from './fakes/build-ticket.js';
+import { FakeRunSettlement, FakeTicketStatusWrites } from './fakes/fake-ticket-status-writes.js';
 import {
   FakeIssueFeeds,
   FakeRegisteredRepositories,
@@ -26,6 +27,8 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
     closedTotalCount: 0,
   });
   const clock = new FakeClock(startedAt);
+  const ticketStatusWrites = new FakeTicketStatusWrites();
+  const runSettlement = new FakeRunSettlement();
   const snapshotChanges: Array<AisfEventMap['snapshot.changed']> = [];
   events.on('snapshot.changed', (payload) => snapshotChanges.push(payload));
   const tickets = createTicketsModule({
@@ -37,10 +40,22 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
     subscriber: events,
     registeredRepositories: new FakeRegisteredRepositories([registered]),
     activeRunLookup: { activeRunTicketNumbers: async () => runningTicketNumbers },
+    ticketStatusWrites,
+    runSettlement,
+    logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
     pollIntervalMilliseconds,
     snapshotIntervalMilliseconds,
   });
-  return { tickets, events, issueFeeds, ticketSource, clock, snapshotChanges };
+  return {
+    tickets,
+    events,
+    issueFeeds,
+    ticketSource,
+    clock,
+    snapshotChanges,
+    ticketStatusWrites,
+    runSettlement,
+  };
 }
 
 type BoardBody = {
@@ -68,6 +83,107 @@ describe('createTicketsModule', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  describe('ticket writes', () => {
+    it('should reset a stuck ticket to ready and answer 204 when the reset is posted', async () => {
+      const { tickets, ticketStatusWrites } = createSubject();
+      ticketStatusWrites.liveStatus = 'stuck';
+
+      const response = await tickets.routes.request('/projects/owner/name/tickets/5/reset', {
+        method: 'POST',
+      });
+
+      expect(response.status).toBe(204);
+      expect(ticketStatusWrites.calls).toContain('setStatus #5 -> ready');
+    });
+
+    it('should answer 409 and write nothing when the reset is posted for a ticket with an active run', async () => {
+      const { tickets, ticketStatusWrites } = createSubject([5]);
+      ticketStatusWrites.liveStatus = 'stuck';
+
+      const response = await tickets.routes.request('/projects/owner/name/tickets/5/reset', {
+        method: 'POST',
+      });
+
+      expect(response.status).toBe(409);
+      expect(ticketStatusWrites.calls).toEqual([]);
+    });
+
+    it('should write waiting with the comment when run.waiting is emitted after start', async () => {
+      const { tickets, events, ticketStatusWrites, runSettlement } = createSubject();
+      await tickets.start();
+
+      events.emit('run.waiting', {
+        runId: 'r1',
+        projectId: 'owner/name',
+        ticketNumber: 5,
+        wait: { kind: 'checkpoint', request: 'Pick A or B' },
+      });
+
+      await vi.waitFor(() => expect(ticketStatusWrites.calls).toContain('setStatus #5 -> waiting'));
+      expect(ticketStatusWrites.calls.some((call) => call.startsWith('comment #5'))).toBe(true);
+      expect(runSettlement.calls).toEqual([]);
+      tickets.stop();
+    });
+
+    it('should write stuck, announce it, then settle the run when run.finished ends crashed', async () => {
+      const { tickets, events, ticketStatusWrites, runSettlement } = createSubject();
+      const written: Array<AisfEventMap['ticket.status-written']> = [];
+      events.on('ticket.status-written', (payload) => written.push(payload));
+      await tickets.start();
+
+      events.emit('run.finished', {
+        runId: 'r1',
+        projectId: 'owner/name',
+        ticketNumber: 5,
+        ending: { kind: 'crashed', reason: 'boom' },
+      });
+
+      await vi.waitFor(() => expect(runSettlement.calls).toEqual(['settle r1']));
+      expect(ticketStatusWrites.calls).toContain('setStatus #5 -> stuck');
+      expect(written).toContainEqual({
+        projectId: 'owner/name',
+        ticketNumber: 5,
+        from: 'in-progress',
+        to: 'stuck',
+      });
+      tickets.stop();
+    });
+
+    it('should settle a finished run only after start has been called', async () => {
+      const { tickets, events, runSettlement } = createSubject();
+      const finished = {
+        runId: 'r1',
+        projectId: 'owner/name',
+        ticketNumber: 5,
+        ending: { kind: 'stopped' },
+      } as const;
+
+      events.emit('run.finished', finished);
+      await Promise.resolve();
+      expect(runSettlement.calls).toEqual([]);
+
+      await tickets.start();
+      events.emit('run.finished', finished);
+
+      await vi.waitFor(() => expect(runSettlement.calls).toEqual(['settle r1']));
+      tickets.stop();
+    });
+
+    it('should write in-progress on beginAnswer and waiting on revertAnswer when the ticket waits', async () => {
+      const { tickets, ticketStatusWrites } = createSubject();
+      ticketStatusWrites.liveStatus = 'waiting';
+
+      await tickets.beginAnswer('owner/name', 5);
+      await tickets.revertAnswer('owner/name', 5);
+
+      expect(ticketStatusWrites.calls).toEqual([
+        'readStatus',
+        'setStatus #5 -> in-progress',
+        'setStatus #5 -> waiting',
+      ]);
+    });
   });
 
   describe('routes', () => {
@@ -604,6 +720,8 @@ describe('createTicketsModule', () => {
 
     it('should poll at once when a run finishes', async () => {
       const subject = await startWith(buildTicket({ number: 12 }));
+      // The ticket already left the run's statuses, so settling the run writes nothing.
+      subject.ticketStatusWrites.liveStatus = 'in-review';
 
       subject.events.emit('run.finished', {
         runId: 'run-1',
