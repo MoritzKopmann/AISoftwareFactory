@@ -1302,3 +1302,76 @@ details:not([open]) .t-hide {
   cursor: pointer;
   font-weight: 600;
 }
+
+.ny {
+  display: grid;
+  gap: 6px;
+  max-width: 720px;
+}
+
+.ny-h {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.ny-h h2 {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.ny-box {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: inset 4px 0 0 var(--hitl);
+  overflow: hidden;
+}
+
+.ny-row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  align-items: baseline;
+  padding: 10px 14px 10px 18px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.ny-row:first-child {
+  border-top: 0;
+}
+
+.ny-row:hover {
+  background: var(--surface-2);
+}
+
+/* The box clips overflow, so the ring sits inside the row. */
+.ny-row:focus-visible {
+  outline-offset: -2px;
+}
+
+.ny-num {
+  margin-right: 6px;
+}
+
+.ny-time {
+  font: 12px var(--font-mono);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ny-action {
+  grid-column: 2;
+}
+
+.ny-sk {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px 12px 18px;
+}
+
+.ny-sk + .ny-sk {
+  border-top: 1px solid var(--border);
+}
