@@ -35,6 +35,35 @@ describe('TicketPageView', () => {
     );
   });
 
+  it('should show the status chip, then the Waiting chip, then Open on GitHub when the ticket is marked waiting', () => {
+    const markup = renderToStaticMarkup(
+      <TicketPageView
+        liveUpdates={liveUpdates}
+        projectId="o/n"
+        number={407}
+        description={{
+          kind: 'loaded',
+          numberLabel: '#407',
+          title: 'Add a dark mode switch to the rail',
+          status: 'in-progress',
+          waiting: true,
+          stuck: false,
+          marker: 'waiting',
+          statusLabel: 'In progress',
+          statusMark: { shape: '●', tone: 'flow', pulses: false },
+          url: 'https://github.com/o/n/issues/407',
+          body: '',
+          runSkill: 'implement-ticket',
+          pullRequests: [],
+        }}
+        onRetry={ignore}
+      />,
+    );
+    expect(markup).toMatch(
+      /<div class="inline"><span class="chip flow">.*?In progress<\/span><span class="chip hitl">.*?Waiting<\/span><a class="ext"[^>]*>Open on GitHub<\/a><\/div>/,
+    );
+  });
+
   it('should show the message, the reload hint, Retry and the detail in that order when the ticket read failed', () => {
     const markup = renderToStaticMarkup(
       <TicketPageView

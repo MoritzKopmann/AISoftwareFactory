@@ -150,6 +150,28 @@ describe('describeTicketPage', () => {
     });
   });
 
+  it('should mark the head waiting when the ticket has the waiting label', () => {
+    const ticket = buildTicketResponse({ status: 'in-progress', waiting: true });
+
+    expect(describeTicketPage(answered(ticket), projectId, 1)).toMatchObject({
+      marker: 'waiting',
+    });
+  });
+
+  it('should mark the head stuck when the ticket has both the stuck and the waiting label', () => {
+    const ticket = buildTicketResponse({ status: 'in-progress', waiting: true, stuck: true });
+
+    expect(describeTicketPage(answered(ticket), projectId, 1)).toMatchObject({
+      marker: 'stuck',
+    });
+  });
+
+  it('should leave the head unmarked when the ticket has neither the stuck nor the waiting label', () => {
+    const ticket = buildTicketResponse({ status: 'in-progress' });
+
+    expect(describeTicketPage(answered(ticket), projectId, 1)).not.toHaveProperty('marker');
+  });
+
   it('should link the parent to its in-app ticket page when the ticket has a parent', () => {
     const ticket = buildTicketResponse({ parent: { number: 40, title: 'Small-screen polish' } });
 
