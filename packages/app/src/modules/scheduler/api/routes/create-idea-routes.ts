@@ -19,7 +19,7 @@ export function createIdeaRoutes(ideaSessions: IdeaSessions): Hono {
     try {
       const ticketNumber = await ideaSessions.start(
         `${context.req.param('owner')}/${context.req.param('name')}`,
-        parsedBody.data.title,
+        parsedBody.data.text,
       );
       return context.json({ ticketNumber }, 201);
     } catch (error) {
