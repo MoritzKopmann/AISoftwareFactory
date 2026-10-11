@@ -9,6 +9,7 @@ import {
   type TicketPageOutcome,
 } from './describe-ticket-page.js';
 import { outcomeAfterRefresh } from './outcome-after-refresh.js';
+import { ReviewPanel } from './review-panel.js';
 import { RunSection } from './run-section.js';
 import { RunLog } from './run-log.js';
 import { TicketBodySection } from './ticket-body-section.js';
@@ -182,6 +183,9 @@ function LoadedTicket({
         ticketState={description}
         runSkill={description.runSkill}
       />
+      {description.reviewPanel !== undefined && (
+        <ReviewPanel description={description.reviewPanel} />
+      )}
       <dl className="facts">
         {parent !== undefined && (
           <>

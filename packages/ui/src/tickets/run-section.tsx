@@ -33,7 +33,9 @@ import { fetchTicketArtifacts, type TicketArtifactsFailure } from './fetch-ticke
 import { PermissionPrompt } from './permission-prompt.js';
 import { ResetAction } from './reset-action.js';
 import { resetTicket } from './reset-ticket.js';
+import { RoundPanel } from './round-panel.js';
 import { RunBar } from './run-bar.js';
+import { describeRoundPanel } from './describe-round-panel.js';
 import { RunPanel } from './run-panel.js';
 import { startTicketRun } from './start-ticket-run.js';
 import { stopTicketRun } from './stop-ticket-run.js';
@@ -179,6 +181,7 @@ export function RunSection({
           }
         }}
       />
+      <RoundPanel description={describeRoundPanel(ticketRun.response)} />
       <CheckpointPrompt
         description={checkpointPrompt}
         onDraftChange={(draft) => {

@@ -11,7 +11,7 @@ export function RunBar({ description, onRun }: RunBarProps) {
   if (description.kind === 'hidden') {
     return null;
   }
-  const { button, reason, hint, announcement, error } = description;
+  const { button, reason, hint, announcement, error, label } = description;
   return (
     <div className="runbar">
       <div className="runline">
@@ -32,7 +32,7 @@ export function RunBar({ description, onRun }: RunBarProps) {
               Starting…
             </>
           ) : (
-            'Run'
+            (label ?? 'Run')
           )}
         </button>
         {reason !== undefined && (

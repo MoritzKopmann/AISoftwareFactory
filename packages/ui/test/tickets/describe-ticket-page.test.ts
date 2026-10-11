@@ -121,6 +121,25 @@ describe('describeTicketPage', () => {
     });
   });
 
+  it.each([
+    ['idea', 'create-ticket'],
+    ['plan', 'plan-ticket'],
+  ] as const)('should run the matching skill when the status is %s', (status, skill) => {
+    expect(
+      describeTicketPage(answered(buildTicketResponse({ status })), projectId, 1),
+    ).toMatchObject({ runSkill: skill });
+  });
+
+  it('should carry the review panel when the ticket is in review with a PR', () => {
+    const ticket = buildTicketResponse({
+      status: 'in-review',
+      closingPullRequests: [buildClosingPullRequestResponse({ number: 5 })],
+    });
+    expect(describeTicketPage(answered(ticket), projectId, 1)).toMatchObject({
+      reviewPanel: { kind: 'shown' },
+    });
+  });
+
   it('should pass the raw status and the flags on when the ticket loads', () => {
     const ticket = buildTicketResponse({ status: 'in-progress', stuck: true });
 
