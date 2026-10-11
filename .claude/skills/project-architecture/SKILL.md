@@ -211,7 +211,7 @@ interface RunRepository {
 
 ### Truth and persistence
 
-- **Must:** ticket status, hierarchy, blocking and PRs are read from GitHub, never mirrored into SQLite. The Watcher snapshot and ETags are in memory and rebuilt on boot.
+- **Must:** ticket status, hierarchy, blocking and PRs are read from GitHub, never mirrored into SQLite. The Tickets snapshot and ETags are in memory and rebuilt on boot.
 - **Must:** app facts live in `~/.aisf/aisf.db`. Session transcripts stay in Claude Code's own JSONL, read by sessionId. Artifacts stay in `<worktree>/.aisf/`.
 - **Must:** SQL is one template string per statement, one clause or column per line, with parameters bound, never interpolated.
 
