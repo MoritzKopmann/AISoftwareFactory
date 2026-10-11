@@ -122,6 +122,7 @@ describe('createTicketsModule', () => {
         runId: 'r1',
         projectId: 'owner/name',
         ticketNumber: 5,
+        stage: 'implement',
         wait: { kind: 'checkpoint', request: 'Pick A or B' },
       });
 
@@ -143,6 +144,7 @@ describe('createTicketsModule', () => {
         runId: 'r1',
         projectId: 'owner/name',
         ticketNumber: 5,
+        stage: 'implement',
         ending: { kind: 'crashed', reason: 'boom' },
       });
 
@@ -165,6 +167,7 @@ describe('createTicketsModule', () => {
         runId: 'r1',
         projectId: 'owner/name',
         ticketNumber: 5,
+        stage: 'implement',
         ending: { kind: 'stopped' },
       } as const;
 
@@ -835,6 +838,7 @@ describe('createTicketsModule', () => {
         runId: 'run-1',
         projectId,
         ticketNumber: 12,
+        stage: 'implement',
         ending: { kind: 'parked', blockerNumber: 1 },
       });
       await vi.advanceTimersByTimeAsync(0);
@@ -852,6 +856,7 @@ describe('createTicketsModule', () => {
         runId: 'run-1',
         projectId,
         ticketNumber: 12,
+        stage: 'implement',
         ending: { kind: 'parked', blockerNumber: 1 },
       });
       await vi.advanceTimersByTimeAsync(0);

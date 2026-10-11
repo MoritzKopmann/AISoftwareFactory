@@ -13,6 +13,7 @@ const escalatedRun: FinishedRun = {
   runId: 'run-1',
   projectId: 'moritz/aisf',
   ticketNumber: 138,
+  stage: 'implement',
   ending: { kind: 'escalated', escalation: 'spec', reason: 'AC is vague' },
 };
 
@@ -242,5 +243,34 @@ describe('SettleFinishedRunUseCase', () => {
     await expect(useCase.execute(escalatedRun)).rejects.toBe(failure);
 
     expect(events.emittedEvents).toEqual([]);
+  });
+
+  describe('authoring runs', () => {
+    it('should add the stuck label and comment and keep the status when a create run crashed at idea', async () => {
+      const { useCase, ticketStatusWrites } = buildSubject();
+      ticketStatusWrites.liveStatus = 'idea';
+
+      await useCase.execute({
+        ...escalatedRun,
+        stage: 'create',
+        ending: { kind: 'crashed', reason: 'boom' },
+      });
+
+      expect(ticketStatusWrites.calls).toEqual([
+        'readState',
+        'setSecondaryState #138 stuck on',
+        'comment #138: The run crashed: boom',
+      ]);
+    });
+
+    it('should add no label when a plan run finished at plan', async () => {
+      const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+      ticketStatusWrites.liveStatus = 'plan';
+
+      await useCase.execute({ ...escalatedRun, stage: 'plan', ending: { kind: 'finished' } });
+
+      expect(ticketStatusWrites.calls).toEqual(['readState']);
+      expect(runSettlement.calls).toEqual(['settle run-1']);
+    });
   });
 });

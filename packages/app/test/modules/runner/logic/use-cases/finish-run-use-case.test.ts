@@ -55,6 +55,7 @@ describe('FinishRunUseCase', () => {
           runId: 'run-1',
           projectId: 'moritz/aisf',
           ticketNumber: 137,
+          stage: 'implement',
           ending: { kind: 'escalated', escalation: 'red', reason: 'tests fail' },
         },
       },

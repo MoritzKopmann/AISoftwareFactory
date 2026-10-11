@@ -13,6 +13,7 @@ const runFinished: AisfEventMap['run.finished'] = {
   runId: 'run-1',
   projectId: 'moritz/aisf',
   ticketNumber: 138,
+  stage: 'implement',
   ending: { kind: 'stopped' },
 };
 

@@ -37,6 +37,7 @@ export class FinishRunUseCase {
       runId,
       projectId: run.projectId,
       ticketNumber: run.ticketNumber,
+      stage: run.stage,
       ending,
     });
   }

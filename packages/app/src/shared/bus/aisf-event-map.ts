@@ -16,6 +16,7 @@ export type AisfEventMap = {
     readonly runId: string;
     readonly projectId: string;
     readonly ticketNumber: number;
+    readonly stage: 'implement' | 'spike' | 'create' | 'plan';
     readonly ending:
       | {
           readonly kind: 'escalated';
@@ -40,6 +41,7 @@ export type AisfEventMap = {
     readonly runId: string;
     readonly projectId: string;
     readonly ticketNumber: number;
+    readonly stage: 'implement' | 'spike' | 'create' | 'plan';
     readonly wait:
       | { readonly kind: 'checkpoint'; readonly request: string; readonly artifactId?: string }
       | {

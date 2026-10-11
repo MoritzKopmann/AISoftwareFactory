@@ -10,6 +10,7 @@ const runWaiting: AisfEventMap['run.waiting'] = {
   runId: 'r1',
   projectId: 'moritz/aisf',
   ticketNumber: 7,
+  stage: 'implement',
   wait: { kind: 'checkpoint', request: 'Pick A or B' },
 };
 

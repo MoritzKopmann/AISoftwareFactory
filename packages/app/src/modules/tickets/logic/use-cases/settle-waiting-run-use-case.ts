@@ -17,7 +17,7 @@ export class SettleWaitingRunUseCase {
 
   async execute(waitingRun: WaitingRun): Promise<void> {
     const { ticketStatusWrites, registeredRepositories, events, logger } = this.dependencies;
-    const { runId, projectId, ticketNumber, wait } = waitingRun;
+    const { runId, projectId, ticketNumber, stage, wait } = waitingRun;
 
     const project = (await registeredRepositories.list()).find(
       (registered) => registered.projectId === projectId,
@@ -31,7 +31,7 @@ export class SettleWaitingRunUseCase {
 
     // The run is still running: the same end rule applies, but nothing is settled.
     const live = await ticketStatusWrites.readState(project.repository, ticketNumber);
-    const transition = decideRunEndTransition(wait, live);
+    const transition = decideRunEndTransition(wait, live, stage);
     if (transition.kind === 'none') {
       return;
     }

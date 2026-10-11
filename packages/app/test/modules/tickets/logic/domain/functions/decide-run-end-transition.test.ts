@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { decideRunEndTransition } from '../../../../../../src/modules/tickets/logic/domain/functions/decide-run-end-transition.js';
+import type { RunStage } from '../../../../../../src/modules/tickets/logic/domain/types/run-stage.js';
 import type { RunEnding } from '../../../../../../src/modules/tickets/logic/domain/types/run-ending.js';
 import type { TicketLiveState } from '../../../../../../src/modules/tickets/logic/domain/types/ticket-live-state.js';
 import type { TicketStatus } from '../../../../../../src/shared/ticket-status/ticket-status.js';
@@ -18,7 +19,7 @@ describe('decideRunEndTransition', () => {
         reason: 'tests still fail',
       };
 
-      expect(decideRunEndTransition(ending, live(status))).toEqual({
+      expect(decideRunEndTransition(ending, live(status), 'implement')).toEqual({
         kind: 'flag',
         state: 'stuck',
         comment: 'The run escalated (red): tests still fail',
@@ -35,7 +36,7 @@ describe('decideRunEndTransition', () => {
         toolInput: { command: 'date' },
       };
 
-      expect(decideRunEndTransition(ending, live(status))).toEqual({
+      expect(decideRunEndTransition(ending, live(status), 'implement')).toEqual({
         kind: 'flag',
         state: 'waiting',
         comment: 'The run needs permission for Bash with input {"command":"date"}',
@@ -51,7 +52,7 @@ describe('decideRunEndTransition', () => {
       reason: 'Needs network',
     };
 
-    expect(decideRunEndTransition(ending, live('in-progress'))).toEqual({
+    expect(decideRunEndTransition(ending, live('in-progress'), 'implement')).toEqual({
       kind: 'flag',
       state: 'waiting',
       comment:
@@ -62,7 +63,9 @@ describe('decideRunEndTransition', () => {
   it('should write nothing when a permission is needed while the ticket is already waiting', () => {
     const ending: RunEnding = { kind: 'permission-needed', toolName: 'Bash', toolInput: {} };
 
-    expect(decideRunEndTransition(ending, live('in-progress', { waiting: true }))).toEqual({
+    expect(
+      decideRunEndTransition(ending, live('in-progress', { waiting: true }), 'implement'),
+    ).toEqual({
       kind: 'none',
     });
   });
@@ -70,7 +73,9 @@ describe('decideRunEndTransition', () => {
   it('should write nothing when a permission is needed while the ticket is stuck', () => {
     const ending: RunEnding = { kind: 'permission-needed', toolName: 'Bash', toolInput: {} };
 
-    expect(decideRunEndTransition(ending, live('in-progress', { stuck: true }))).toEqual({
+    expect(
+      decideRunEndTransition(ending, live('in-progress', { stuck: true }), 'implement'),
+    ).toEqual({
       kind: 'none',
     });
   });
@@ -78,7 +83,7 @@ describe('decideRunEndTransition', () => {
   it('should return the ticket to ready without a comment when the run parked while it is in-progress', () => {
     const ending: RunEnding = { kind: 'parked', blockerNumber: 12 };
 
-    expect(decideRunEndTransition(ending, live('in-progress'))).toEqual({
+    expect(decideRunEndTransition(ending, live('in-progress'), 'implement')).toEqual({
       kind: 'return-to-ready',
     });
   });
@@ -92,7 +97,7 @@ describe('decideRunEndTransition', () => {
   ])(
     'should mark the ticket stuck with an exit reason when the run ended unplanned (%o)',
     (ending, comment) => {
-      expect(decideRunEndTransition(ending, live('in-progress'))).toEqual({
+      expect(decideRunEndTransition(ending, live('in-progress'), 'implement')).toEqual({
         kind: 'flag',
         state: 'stuck',
         comment,
@@ -110,24 +115,34 @@ describe('decideRunEndTransition', () => {
     { kind: 'permission-needed', toolName: 'Bash', toolInput: {} },
     { kind: 'parked', blockerNumber: 3 },
   ])('should write nothing when the ticket is in-review (%o)', (ending) => {
-    expect(decideRunEndTransition(ending, live('in-review'))).toEqual({ kind: 'none' });
+    expect(decideRunEndTransition(ending, live('in-review'), 'implement')).toEqual({
+      kind: 'none',
+    });
   });
 
   it.each<TicketStatus>(['closed', 'idea', 'conflict'])(
     'should write nothing when the ticket is %s',
     (status) => {
-      expect(decideRunEndTransition({ kind: 'finished' }, live(status))).toEqual({ kind: 'none' });
+      expect(decideRunEndTransition({ kind: 'finished' }, live(status), 'implement')).toEqual({
+        kind: 'none',
+      });
     },
   );
 
   it('should write nothing when the ticket is already stuck', () => {
     expect(
-      decideRunEndTransition({ kind: 'finished' }, live('in-progress', { stuck: true })),
+      decideRunEndTransition(
+        { kind: 'finished' },
+        live('in-progress', { stuck: true }),
+        'implement',
+      ),
     ).toEqual({ kind: 'none' });
   });
 
   it('should write nothing when a parked run finds the ticket ready', () => {
-    expect(decideRunEndTransition({ kind: 'parked', blockerNumber: 3 }, live('ready'))).toEqual({
+    expect(
+      decideRunEndTransition({ kind: 'parked', blockerNumber: 3 }, live('ready'), 'implement'),
+    ).toEqual({
       kind: 'none',
     });
   });
@@ -139,7 +154,7 @@ describe('decideRunEndTransition', () => {
     it.each<TicketStatus>(['ready', 'in-progress'])(
       'should mark the ticket waiting with the request comment when the run reached its checkpoint while it is %s',
       (status) => {
-        expect(decideRunEndTransition(ending, live(status))).toEqual({
+        expect(decideRunEndTransition(ending, live(status), 'implement')).toEqual({
           kind: 'flag',
           state: 'waiting',
           comment: `The run reached its human checkpoint and waits for an answer on the ticket page:\n\n${request}`,
@@ -150,12 +165,14 @@ describe('decideRunEndTransition', () => {
     it.each<TicketStatus>(['in-review', 'conflict', 'closed'])(
       'should write nothing when the checkpoint run finds the ticket %s',
       (status) => {
-        expect(decideRunEndTransition(ending, live(status))).toEqual({ kind: 'none' });
+        expect(decideRunEndTransition(ending, live(status), 'implement')).toEqual({ kind: 'none' });
       },
     );
 
     it('should write nothing when the checkpoint run finds the ticket already waiting', () => {
-      expect(decideRunEndTransition(ending, live('in-progress', { waiting: true }))).toEqual({
+      expect(
+        decideRunEndTransition(ending, live('in-progress', { waiting: true }), 'implement'),
+      ).toEqual({
         kind: 'none',
       });
     });
@@ -165,7 +182,7 @@ describe('decideRunEndTransition', () => {
     const waiting = live('in-progress', { waiting: true });
 
     it('should mark the ticket stuck when a waiting run was stopped', () => {
-      expect(decideRunEndTransition({ kind: 'stopped' }, waiting)).toEqual({
+      expect(decideRunEndTransition({ kind: 'stopped' }, waiting, 'implement')).toEqual({
         kind: 'flag',
         state: 'stuck',
         comment: 'The run was stopped',
@@ -173,7 +190,9 @@ describe('decideRunEndTransition', () => {
     });
 
     it('should mark the ticket stuck when a waiting run crashed', () => {
-      expect(decideRunEndTransition({ kind: 'crashed', reason: 'x' }, waiting)).toEqual({
+      expect(
+        decideRunEndTransition({ kind: 'crashed', reason: 'x' }, waiting, 'implement'),
+      ).toEqual({
         kind: 'flag',
         state: 'stuck',
         comment: 'The run crashed: x',
@@ -181,9 +200,75 @@ describe('decideRunEndTransition', () => {
     });
 
     it('should return the ticket to ready when a waiting run parked', () => {
-      expect(decideRunEndTransition({ kind: 'parked', blockerNumber: 3 }, waiting)).toEqual({
+      expect(
+        decideRunEndTransition({ kind: 'parked', blockerNumber: 3 }, waiting, 'implement'),
+      ).toEqual({
         kind: 'return-to-ready',
       });
+    });
+  });
+});
+
+describe('decideRunEndTransition for authoring runs', () => {
+  it.each<[Exclude<RunStage, 'implement' | 'spike'>, TicketStatus]>([
+    ['create', 'idea'],
+    ['plan', 'plan'],
+  ])(
+    'should mark the ticket waiting when a %s run reaches its checkpoint at %s',
+    (stage, status) => {
+      const ending: RunEnding = { kind: 'checkpoint', request: 'Answer on the page' };
+
+      expect(decideRunEndTransition(ending, live(status), stage)).toEqual({
+        kind: 'flag',
+        state: 'waiting',
+        comment: expect.stringContaining('Answer on the page') as string,
+      });
+    },
+  );
+
+  it.each<[Exclude<RunStage, 'implement' | 'spike'>, TicketStatus]>([
+    ['create', 'idea'],
+    ['plan', 'plan'],
+  ])('should mark the ticket stuck when a %s run crashed at %s', (stage, status) => {
+    expect(
+      decideRunEndTransition({ kind: 'crashed', reason: 'boom' }, live(status), stage),
+    ).toEqual({ kind: 'flag', state: 'stuck', comment: 'The run crashed: boom' });
+  });
+
+  it.each<[Exclude<RunStage, 'implement' | 'spike'>, TicketStatus]>([
+    ['create', 'idea'],
+    ['plan', 'plan'],
+    ['create', 'backlog'],
+    ['create', 'plan'],
+    ['plan', 'idea'],
+  ])('should write nothing when a %s run finished and the ticket is %s', (stage, status) => {
+    expect(decideRunEndTransition({ kind: 'finished' }, live(status), stage)).toEqual({
+      kind: 'none',
+    });
+  });
+
+  it('should write nothing when an authoring run parked', () => {
+    expect(
+      decideRunEndTransition({ kind: 'parked', blockerNumber: 3 }, live('plan'), 'plan'),
+    ).toEqual({ kind: 'none' });
+  });
+
+  it.each<[Exclude<RunStage, 'implement' | 'spike'>, TicketStatus]>([
+    ['create', 'plan'],
+    ['create', 'ready'],
+    ['plan', 'idea'],
+    ['plan', 'in-progress'],
+  ])('should write nothing when a %s run crashed and the ticket is %s', (stage, status) => {
+    expect(decideRunEndTransition({ kind: 'crashed', reason: 'x' }, live(status), stage)).toEqual({
+      kind: 'none',
+    });
+  });
+
+  it('should write nothing when an implement run ends on an idea ticket', () => {
+    expect(
+      decideRunEndTransition({ kind: 'crashed', reason: 'x' }, live('idea'), 'implement'),
+    ).toEqual({
+      kind: 'none',
     });
   });
 });

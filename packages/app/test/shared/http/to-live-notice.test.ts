@@ -8,6 +8,7 @@ describe('toLiveNotice', () => {
         runId: 'run-1',
         projectId: 'octo/repo',
         ticketNumber: 7,
+        stage: 'implement',
         ending: { kind: 'finished' },
       }),
     ).toEqual({ event: 'run.finished', projectId: 'octo/repo', ticketNumber: 7 });
@@ -33,6 +34,7 @@ describe('toLiveNotice', () => {
       runId: 'run-1',
       projectId: 'octo/repo',
       ticketNumber: 7,
+      stage: 'implement',
       ending: { kind: 'finished' },
     });
     expect(notice).not.toHaveProperty('changed');
@@ -50,6 +52,7 @@ describe('toLiveNotice', () => {
       runId: 'run-1',
       projectId: 'octo/repo',
       ticketNumber: 7,
+      stage: 'implement',
       wait: { kind: 'permission-needed', toolName: 'Bash', toolInput: { command: 'rm -rf build' } },
     });
     expect(Object.keys(notice).sort()).toEqual(['event', 'projectId', 'ticketNumber']);
