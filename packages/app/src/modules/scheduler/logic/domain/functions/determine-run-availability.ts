@@ -3,16 +3,19 @@ import type { SchedulableTicket } from '../types/schedulable-ticket.js';
 import type { RunAvailabilityInput } from '../types/run-availability-input.js';
 
 export function determineRunAvailability(input: RunAvailabilityInput): RunAvailability {
-  const { ticket, ticketIsRunning, runsBlocked, projectOnboarded, lastRunEndedAt } = input;
+  const { ticket, subIssues, ticketIsRunning, runsBlocked, projectOnboarded, lastRunEndedAt } =
+    input;
   if (ticket === undefined || ticket.hasOpenBlocker || !isRunnableTicket(ticket)) {
     return { kind: 'absent' };
   }
   if (ticketIsRunning) {
     return { kind: 'disabled', reason: `#${ticket.number} is running` };
   }
-  const [openSpikeNumber] = ticket.openSpikeNumbers;
-  if (ticket.status === 'plan' && openSpikeNumber !== undefined) {
-    return { kind: 'disabled', reason: `Waiting for spike #${openSpikeNumber}` };
+  const openSpike = subIssues.find(
+    ({ status, types }) => status !== 'closed' && types.includes('spike'),
+  );
+  if (ticket.status === 'plan' && openSpike !== undefined) {
+    return { kind: 'disabled', reason: `Waiting for spike #${openSpike.number}` };
   }
   if (runsBlocked.blocked) {
     return { kind: 'disabled', reason: runsBlocked.reason };

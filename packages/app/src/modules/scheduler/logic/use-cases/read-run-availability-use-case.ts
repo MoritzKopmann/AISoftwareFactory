@@ -25,9 +25,16 @@ export class ReadRunAvailabilityUseCase {
       projectLookup.find(projectId),
     ]);
 
+    const subIssues =
+      ticket?.status === 'plan'
+        ? await Promise.all(
+            ticket.subIssueNumbers.map((number) => ticketLookup.find(projectId, number)),
+          )
+        : [];
     const lastRunEndedAt = latestRun?.endedAt;
     return determineRunAvailability({
       ...(ticket === undefined ? {} : { ticket }),
+      subIssues: subIssues.filter((subIssue) => subIssue !== undefined),
       ticketIsRunning: activeRuns.some(({ run }) => run.ticketNumber === ticketNumber),
       ...(lastRunEndedAt === undefined ? {} : { lastRunEndedAt }),
       runsBlocked: runsGate.check(),

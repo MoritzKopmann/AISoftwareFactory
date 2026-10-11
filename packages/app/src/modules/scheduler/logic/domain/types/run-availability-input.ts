@@ -3,6 +3,7 @@ import type { SchedulableTicket } from './schedulable-ticket.js';
 
 export type RunAvailabilityInput = {
   readonly ticket?: SchedulableTicket;
+  readonly subIssues: ReadonlyArray<SchedulableTicket>;
   readonly ticketIsRunning: boolean;
   readonly runsBlocked: RunsBlocked;
   readonly projectOnboarded: boolean;

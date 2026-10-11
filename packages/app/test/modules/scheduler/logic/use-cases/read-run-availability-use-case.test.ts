@@ -87,4 +87,15 @@ describe('ReadRunAvailabilityUseCase', () => {
       reason: 'Waiting for GitHub to catch up',
     });
   });
+
+  it('should be disabled naming the spike when a plan ticket has an open spike sub-issue', async () => {
+    const ticket = { ...readyLeaf, status: 'plan' as const, isLeaf: false, subIssueNumbers: [9] };
+    const spike = { ...readyLeaf, number: 9, types: ['spike' as const] };
+    const useCase = buildUseCase({ ticketLookup: new FakeTicketLookup(ticket, [spike]) });
+
+    expect(await useCase.execute('moritz/aisf', 138)).toEqual({
+      kind: 'disabled',
+      reason: 'Waiting for spike #9',
+    });
+  });
 });
