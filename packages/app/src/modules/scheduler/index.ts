@@ -114,7 +114,7 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
       .route(
         '/projects',
         createIdeaRoutes({
-          start: (projectId, title) => startIdeaSession.execute(projectId, title),
+          start: (projectId, text) => startIdeaSession.execute(projectId, text),
         }),
       )
       .route(

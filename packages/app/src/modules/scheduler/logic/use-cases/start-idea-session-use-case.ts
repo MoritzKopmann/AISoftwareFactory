@@ -2,6 +2,7 @@ import { IdeaRunNotStartedError } from '../errors/idea-run-not-started-error.js'
 import { ProjectNotFoundError } from '../errors/project-not-found-error.js';
 import { RunAlreadyActiveError } from '../errors/run-already-active-error.js';
 import { RunNotAvailableError } from '../errors/run-not-available-error.js';
+import { ideaFromText } from '../domain/functions/idea-from-text.js';
 import type { StartedRun } from '../domain/types/started-run.js';
 import type { IdeaCreation } from '../ports/idea-creation.js';
 import type { ProjectLookup } from '../ports/project-lookup.js';
@@ -17,7 +18,7 @@ export type StartIdeaSessionDependencies = {
 export class StartIdeaSessionUseCase {
   constructor(private readonly dependencies: StartIdeaSessionDependencies) {}
 
-  async execute(projectId: string, title: string): Promise<number> {
+  async execute(projectId: string, text: string): Promise<number> {
     const { projectLookup, runsGate, ideaCreation, startTicketRun } = this.dependencies;
 
     const project = await projectLookup.find(projectId);
@@ -32,7 +33,7 @@ export class StartIdeaSessionUseCase {
       throw new RunNotAvailableError(runsBlocked.reason);
     }
 
-    const ticketNumber = await ideaCreation.create(project.repository, { title, body: '' });
+    const ticketNumber = await ideaCreation.create(project.repository, ideaFromText(text));
     try {
       await startTicketRun(projectId, ticketNumber);
     } catch (error) {

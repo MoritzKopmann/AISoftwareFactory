@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const ideaRequestSchema = z.object({
-  title: z.string().trim().min(1).max(256),
+  title: z.string().trim().min(1).max(10_000),
 });
 export type IdeaRequest = z.infer<typeof ideaRequestSchema>;
 

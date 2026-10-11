@@ -5,7 +5,7 @@ import { RunNotAvailableError } from '../../logic/errors/run-not-available-error
 import { ideaRequestSchema } from '../schemas/ideas-schemas.js';
 
 export type IdeaSessions = {
-  readonly start: (projectId: string, title: string) => Promise<number>;
+  readonly start: (projectId: string, text: string) => Promise<number>;
 };
 
 export function createIdeaRoutes(ideaSessions: IdeaSessions): Hono {

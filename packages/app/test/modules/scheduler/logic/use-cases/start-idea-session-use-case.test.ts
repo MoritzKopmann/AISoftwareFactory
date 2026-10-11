@@ -64,6 +64,16 @@ describe('StartIdeaSessionUseCase', () => {
     expect(runner.calls).toEqual(['start moritz/aisf #501']);
   });
 
+  it('should create the idea with its first line as title and the full text as body when the text has several lines', async () => {
+    const { useCase, ideaCreation } = build();
+
+    await useCase.execute('moritz/aisf', 'Export trips as postcards\nAs printable cards.');
+
+    expect(ideaCreation.calls).toEqual([
+      'create {"title":"Export trips as postcards","body":"Export trips as postcards\\nAs printable cards."}',
+    ]);
+  });
+
   it('should throw ProjectNotFoundError and create nothing when the project is unknown', async () => {
     const { useCase, ideaCreation } = build({ project: undefined });
 
