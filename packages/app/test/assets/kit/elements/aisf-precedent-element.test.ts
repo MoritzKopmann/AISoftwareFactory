@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '../../../../assets/kit/kit.js';
-import { $, FakeAisf, click, mount, startPage, type } from '../fakes/fake-aisf.js';
+import { $, $$, FakeAisf, click, mount, startPage, type } from '../fakes/fake-aisf.js';
 
 const precedentRound = `<aisf-round number="1">
   <aisf-precedent>
@@ -74,6 +74,52 @@ describe('AisfPrecedentElement', () => {
     await vi.advanceTimersByTimeAsync(600);
 
     expect(aisf.lastSave).toMatchObject({ rounds: { '1': { vetoes: { p1: '' } } } });
+  });
+
+  it('should show the heading once when the element renders', async () => {
+    await mount(precedentRound);
+
+    expect(
+      $$('aisf-precedent .aisf-precedent-heading').map((heading) => heading.textContent),
+    ).toEqual(['Settled by precedent']);
+  });
+
+  it('should prefix the source when the decision has a source', async () => {
+    await mount(precedentRound);
+
+    expect($('[name="p1"] .aisf-precedent-source').textContent).toBe('Source: #12');
+  });
+
+  it('should show no source line when the decision has no source', async () => {
+    await mount(`<aisf-round number="1"><aisf-precedent>
+      <div name="p1">Keep the old name</div></aisf-precedent></aisf-round>`);
+
+    expect($$('[name="p1"] .aisf-precedent-source')).toHaveLength(0);
+  });
+
+  it('should name the switch Veto beside a hidden indicator box when the element renders', async () => {
+    await mount(precedentRound);
+
+    expect(veto('p1').textContent).toBe('Veto');
+    expect(veto('p1').querySelector('.aisf-veto-box')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('should show the note under a visible label when a decision is vetoed', async () => {
+    await mount(precedentRound);
+    await click(veto('p1'));
+
+    const label = note('p1').closest('label');
+    expect(label?.hidden).toBe(false);
+    expect(label?.textContent).toBe('Note (optional)');
+    expect(note('p1').hasAttribute('aria-label')).toBe(false);
+  });
+
+  it('should hide the note label when a veto is lifted', async () => {
+    await mount(precedentRound);
+    await click(veto('p1'));
+    await click(veto('p1'));
+
+    expect(note('p1').closest('label')?.hidden).toBe(true);
   });
 
   it('should send no vetoes key when the round has no precedent', async () => {

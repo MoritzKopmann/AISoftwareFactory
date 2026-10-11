@@ -1,4 +1,4 @@
-import { announceChange, buildElement, isRecord } from '../support/dom.js';
+import { announceChange, buildElement, isRecord, setPart } from '../support/dom.js';
 
 /**
  * Decisions settled by precedent, each with a veto switch and an optional note. Items are the
@@ -68,18 +68,28 @@ export class AisfPrecedentElement extends HTMLElement {
   setVetoed(item, vetoed) {
     item.toggleAttribute('vetoed', vetoed);
     item.querySelector('.aisf-veto-switch')?.setAttribute('aria-checked', String(vetoed));
-    this.noteOf(item).hidden = !vetoed;
+    /** @type {HTMLLabelElement} */ (item.querySelector('.aisf-veto-note-label')).hidden = !vetoed;
   }
 
-  /** Internal. Builds each item's text, source, veto switch and note once. */
+  /** Internal. Builds the heading, and each item's text, source, veto switch and note once. */
   render() {
+    setPart(
+      this,
+      'aisf-precedent-heading',
+      buildElement('h3', 'aisf-precedent-heading', 'Settled by precedent'),
+      'start',
+    );
     for (const item of this.items) {
       if (item.querySelector('.aisf-veto-switch') !== null) continue;
       const text = buildElement('span', 'aisf-precedent-text', item.textContent ?? '');
       item.replaceChildren(text);
       const source = item.getAttribute('source');
-      if (source !== null) item.append(buildElement('span', 'aisf-precedent-source', source));
-      const toggle = buildElement('button', 'aisf-veto-switch', 'veto');
+      if (source !== null)
+        item.append(buildElement('span', 'aisf-precedent-source', `Source: ${source}`));
+      const box = buildElement('span', 'aisf-veto-box');
+      box.setAttribute('aria-hidden', 'true');
+      const toggle = buildElement('button', 'aisf-veto-switch');
+      toggle.append(box, 'Veto');
       toggle.type = 'button';
       toggle.setAttribute('role', 'switch');
       toggle.addEventListener('click', () => {
@@ -87,9 +97,10 @@ export class AisfPrecedentElement extends HTMLElement {
         announceChange(this);
       });
       const note = buildElement('textarea', 'aisf-veto-note');
-      note.setAttribute('aria-label', 'Veto note');
       note.addEventListener('input', () => announceChange(this));
-      item.append(toggle, note);
+      const noteLabel = buildElement('label', 'aisf-veto-note-label');
+      noteLabel.append(buildElement('span', 'label', 'Note (optional)'), note);
+      item.append(toggle, noteLabel);
       this.setVetoed(item, false);
     }
   }
