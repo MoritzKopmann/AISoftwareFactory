@@ -9,6 +9,15 @@ export type StartState =
 
 export type RunSkill = 'spike' | 'implement-ticket' | 'create-ticket' | 'plan-ticket';
 
+const ticketSkillLabels: Partial<Record<RunSkill, string>> = {
+  'create-ticket': 'Start',
+  'plan-ticket': 'Plan',
+};
+
+export function isIdeaOrPlanSkill(runSkill: RunSkill): boolean {
+  return ticketSkillLabels[runSkill] !== undefined;
+}
+
 type RunBarError = { readonly message: string; readonly detail?: string };
 
 export type RunBarDescription =
@@ -63,6 +72,7 @@ export function describeRunBar(
     };
   }
   const { availability } = response;
+  const label = ticketSkillLabels[runSkill];
   switch (availability.kind) {
     case 'absent':
       return ticketState.status === 'in-progress' &&
@@ -80,6 +90,7 @@ export function describeRunBar(
         kind: 'shown',
         button: 'disabled',
         pressable: false,
+        ...(label === undefined ? {} : { label }),
         reason: availability.reason,
         ...describeError(start),
       };
@@ -88,12 +99,12 @@ export function describeRunBar(
         kind: 'shown',
         button: 'run',
         pressable: true,
-        ...(runSkill === 'create-ticket' || runSkill === 'plan-ticket'
-          ? { label: `Run ${runSkill}` }
-          : {}),
+        ...(label === undefined ? {} : { label }),
         ...(start.kind === 'failed'
           ? describeError(start)
-          : { hint: `Runs ${runSkill} on #${number} in its own worktree.` }),
+          : {
+              hint: `Runs ${runSkill} on #${number}${label === undefined ? ' in its own worktree' : ''}.`,
+            }),
       };
   }
 }

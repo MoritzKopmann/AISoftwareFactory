@@ -1,6 +1,7 @@
 import type { RunEndingResponse, TicketRunResponse } from '@aisf/app/api-schemas/runs-schemas.js';
 import { describeTimeAgo } from '../board/describe-time-ago.js';
 import { formatClockTime } from '../board/format-clock-time.js';
+import { isIdeaOrPlanSkill, type RunSkill } from './describe-run-bar.js';
 import type { TicketRunPoll } from './fold-ticket-run-poll.js';
 
 const shownStepCount = 5;
@@ -12,7 +13,13 @@ type LastRun = NonNullable<TicketRunResponse['lastRun']>;
 export type RunPanelInput = TicketRunPoll & {
   readonly ticketStuck: boolean;
   readonly stopping: boolean;
+  readonly runSkill: RunSkill;
 };
+
+function describeStartedLabel(startedAt: string, runSkill: RunSkill, now: Date): string {
+  const timeAgo = describeTimeAgo(startedAt, now);
+  return isIdeaOrPlanSkill(runSkill) ? `${runSkill} · started ${timeAgo}` : `Started ${timeAgo}`;
+}
 
 export type RunPanelStep = {
   readonly at: string;
@@ -53,7 +60,7 @@ function describeLiveRun(
   return {
     kind: 'live',
     waiting: activeRun.waitingFor !== undefined,
-    startedLabel: `Started ${describeTimeAgo(activeRun.startedAt, now)}`,
+    startedLabel: describeStartedLabel(activeRun.startedAt, input.runSkill, now),
     stop: input.stopping
       ? { label: 'Stopping…', pressable: false, announcement: 'Stopping the run' }
       : { label: 'Stop', pressable: true },

@@ -156,6 +156,7 @@ export function RunSection({
     {
       ...ticketRun,
       ticketStuck: ticketState.stuck,
+      runSkill,
       stopping: activeRunId !== undefined && activeRunId === stoppingRunId,
     },
     new Date(),
