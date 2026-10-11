@@ -1,13 +1,26 @@
-# The questionnaire page
+# The bridge page
 
-Every interview round and the Confirm gate live on **one published page per planning session**.
-Chat gets the link only. Load `artifact-design` and `artifact-capabilities`, and
-`artifact-diagramming` for the figures. Declare `capabilities: {artifact: {}}`. Design freely:
-only this contract is fixed.
+Every interview round and the Confirm gate live on **one bridge page per planning session**.
+Build it with `aisf:artifacts` (read it and `references/elements.md` first) and show it with
+`aisf_show_artifact`. Chat gets no questions.
+
+- **Page id:** `plan-<n>`, in `.aisf/artifacts/plan-<n>/`. The ledger (`ledger.md`) and the
+  findings log (`findings.md`) live in the same folder.
+- **One `<aisf-round>` per grilling round.** Each question is an `<aisf-question>` with one
+  `<aisf-card>` per option, the suggestion marked `suggested`.
+- **Settled by precedent** is an `<aisf-precedent>` under the round's questions, one child per
+  decision. The answer is `{answers, vetoes}`. A veto turns that decision into a question in
+  the next round.
+- **A question a step 7 spec subagent returns** goes on the same page as a further round.
+- **Confirm** is the last `<aisf-confirm>` round: one `<aisf-task>` per sub-issue with its
+  `hitl` switch, and the decision tree from the ledger as `<aisf-tree-node>` rows. The answer
+  carries `hitl` per task. Confirm locks them.
+- **Next round:** edit the same `index.html`, then call `aisf_show_artifact` again with the
+  same id.
 
 ## The card
 
-One card per question. Each card is **self-contained**: someone who never saw the ticket answers
+One question per card. Each card is **self-contained**: someone who never saw the ticket answers
 it without scrolling elsewhere. Every term is defined on the card or common knowledge. Supplying
 the context is your job, never the human's.
 
@@ -44,29 +57,9 @@ the context is your job, never the human's.
 | Playback, round 1        | each acceptance criterion as a flow over today's system, new and changed marked |
 | `hitl` checkpoint        | the full checkpoint: what is set up, what the human does                        |
 
-## Settled by precedent
+## Reading the answer
 
-A section under each round's cards: the decisions settled by precedent, one line each:
-decision · source (path or symbol) · **Veto** with a note. A veto turns it into a card next
-round.
-
-## Saving
-
-**Submit** unlocks once every card is answered. **Accept all remaining** fills the open cards
-with the suggestion. Submit saves the answers and vetoes as data in the page, through
-`artifact.publish`. **Copy answers** exports `Q<n> · <title> · <answer> · note: …` as a
-fallback.
-
-**Read the answers** from the republish notice if the publish result confirmed a watch, else
-`read` the page, or take the pasted export. Answer Discuss notes briefly in chat.
-
-## Rounds
-
-**The next round** goes on the same page, in focus. Earlier rounds freeze into read-only
-summaries: decision · answer · `assumes:`. Reopening one goes through chat or a note.
-
-**Confirm** is the last section, after the final round: the step 6 table, a diagram only where
-it shows the split better than the table, and **Confirm** and **Reopen** (with a note), which
-save like Submit.
+Read it as `aisf:artifacts` says (_Reading the answer_). Answer Discuss notes briefly in chat.
+Earlier rounds freeze into read-only summaries: decision · answer · `assumes:`.
 
 The page is a decision device: disposable, and never linked from GitHub.
