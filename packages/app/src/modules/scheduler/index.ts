@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { EventSubscriber } from '../../shared/bus/event-subscriber.js';
 import type { Logger } from '../../shared/logger/create-logger.js';
+import { createIdeaRoutes } from './api/routes/create-idea-routes.js';
 import { createRunAnswerRoutes } from './api/routes/create-run-answer-routes.js';
 import { createRunRoutes } from './api/routes/create-run-routes.js';
 import { subscribeToSnapshotChanged } from './api/subscriptions/subscribe-to-snapshot-changed.js';
@@ -9,6 +10,7 @@ import { RunAlreadyActiveError } from './logic/errors/run-already-active-error.j
 import { RunNotAvailableError } from './logic/errors/run-not-available-error.js';
 import type { RunAnswer } from './logic/domain/types/run-answer.js';
 import type { StartedRun } from './logic/domain/types/started-run.js';
+import type { IdeaCreation } from './logic/ports/idea-creation.js';
 import type { ProjectLookup } from './logic/ports/project-lookup.js';
 import type { PullRequestMerges } from './logic/ports/pull-request-merges.js';
 import type { ReviewedTicketLookup } from './logic/ports/reviewed-ticket-lookup.js';
@@ -21,6 +23,7 @@ import { AnswerRunUseCase } from './logic/use-cases/answer-run-use-case.js';
 import { MergeApprovedPullRequestsUseCase } from './logic/use-cases/merge-approved-pull-requests-use-case.js';
 import { ReadRunAvailabilityUseCase } from './logic/use-cases/read-run-availability-use-case.js';
 import { ReadTicketRunUseCase } from './logic/use-cases/read-ticket-run-use-case.js';
+import { StartIdeaSessionUseCase } from './logic/use-cases/start-idea-session-use-case.js';
 import { StartTicketRunUseCase } from './logic/use-cases/start-ticket-run-use-case.js';
 
 export type { PermissionDecision } from './logic/domain/types/permission-decision.js';
@@ -41,6 +44,7 @@ export type SchedulerModuleDependencies = {
   readonly reviewedTicketLookup: ReviewedTicketLookup;
   readonly runsGate: RunsGate;
   readonly projectLookup: ProjectLookup;
+  readonly ideaCreation: IdeaCreation;
   readonly subscriber: EventSubscriber;
   readonly logger: Logger;
 };
@@ -61,6 +65,7 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
     reviewedTicketLookup,
     runsGate,
     projectLookup,
+    ideaCreation,
     subscriber,
     logger,
   } = dependencies;
@@ -75,6 +80,12 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
     readRunAvailability: (projectId, ticketNumber) =>
       readRunAvailability.execute(projectId, ticketNumber),
     runner,
+  });
+  const startIdeaSession = new StartIdeaSessionUseCase({
+    projectLookup,
+    runsGate,
+    ideaCreation,
+    startTicketRun: (projectId, ticketNumber) => startTicketRun.execute(projectId, ticketNumber),
   });
   const readTicketRun = new ReadTicketRunUseCase({
     readRunAvailability: (projectId, ticketNumber) =>
@@ -98,6 +109,12 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
         createRunRoutes({
           read: (projectId, ticketNumber) => readTicketRun.execute(projectId, ticketNumber),
           start: (projectId, ticketNumber) => startTicketRun.execute(projectId, ticketNumber),
+        }),
+      )
+      .route(
+        '/projects',
+        createIdeaRoutes({
+          start: (projectId, title) => startIdeaSession.execute(projectId, title),
         }),
       )
       .route(

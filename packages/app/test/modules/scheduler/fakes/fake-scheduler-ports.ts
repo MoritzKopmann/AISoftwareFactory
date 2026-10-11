@@ -18,6 +18,7 @@ import type { RunStep } from '../../../../src/modules/scheduler/logic/domain/typ
 import type { RunPage } from '../../../../src/modules/scheduler/logic/domain/types/run-page.js';
 import type { RunPageLookup } from '../../../../src/modules/scheduler/logic/ports/run-page-lookup.js';
 import type { RunnerPort } from '../../../../src/modules/scheduler/logic/ports/runner-port.js';
+import type { IdeaCreation } from '../../../../src/modules/scheduler/logic/ports/idea-creation.js';
 import type { RunsGate } from '../../../../src/modules/scheduler/logic/ports/runs-gate.js';
 import type { TicketLookup } from '../../../../src/modules/scheduler/logic/ports/ticket-lookup.js';
 
@@ -171,5 +172,18 @@ export class FakeRunPageLookup implements RunPageLookup {
   ): Promise<RunPage | undefined> {
     this.calls.push(`find ${projectId} #${ticketNumber} ${artifactId}`);
     return this.pages.get(artifactId);
+  }
+}
+
+export class FakeIdeaCreation implements IdeaCreation {
+  readonly calls: string[] = [];
+  createdNumber = 501;
+
+  async create(
+    _repository: RepositoryReference,
+    idea: { readonly title: string; readonly body: string },
+  ): Promise<number> {
+    this.calls.push(`create ${JSON.stringify(idea)}`);
+    return this.createdNumber;
   }
 }
