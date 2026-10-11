@@ -16,6 +16,7 @@ const documented: Record<string, string[]> = {
   'aisf-figure': ['caption'],
   'aisf-tree-node': ['round', 'question', 'resolution', 'rejected', 'assumes', 'fact'],
   'aisf-task': ['number', 'heading', 'blocked-by', 'files', 'risk', 'hitl'],
+  'aisf-precedent': [],
 };
 
 describe('kit', () => {

@@ -113,6 +113,24 @@ goes into the Confirm payload under `hitl`.
 ></aisf-task>
 ```
 
+## `<aisf-precedent>`
+
+Attributes: none
+
+Decisions settled by precedent, inside a round of questions. Each child with a `name` is one
+decision: its text is the decision, `source` is its source line. Each gets a veto switch and,
+once vetoed, an optional note. The round sends `vetoes` next to `answers`, only for vetoed
+decisions, the note being `""` when none was typed. A round without this element sends no
+`vetoes` key.
+
+Submit payload: `{"answers":[…],"vetoes":{"<name>":"<note>"}}`.
+
+```html
+<aisf-precedent>
+  <div name="p1" source="#12">Keep the old name</div>
+</aisf-precedent>
+```
+
 ## `<aisf-meta>`
 
 Attributes: `label`

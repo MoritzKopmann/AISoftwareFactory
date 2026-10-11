@@ -4,6 +4,7 @@ import { AisfConfirmElement } from './elements/aisf-confirm-element.js';
 import { AisfContextElement } from './elements/aisf-context-element.js';
 import { AisfFigureElement } from './elements/aisf-figure-element.js';
 import { AisfMetaElement } from './elements/aisf-meta-element.js';
+import { AisfPrecedentElement } from './elements/aisf-precedent-element.js';
 import { AisfQuestionElement } from './elements/aisf-question-element.js';
 import { AisfRoundElement } from './elements/aisf-round-element.js';
 import { AisfTaskElement } from './elements/aisf-task-element.js';
@@ -23,6 +24,7 @@ export const registry = {
   'aisf-figure': AisfFigureElement,
   'aisf-tree-node': AisfTreeNodeElement,
   'aisf-task': AisfTaskElement,
+  'aisf-precedent': AisfPrecedentElement,
 };
 
 for (const [tag, elementClass] of Object.entries(registry)) {
