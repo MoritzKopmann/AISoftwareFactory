@@ -24,6 +24,7 @@ and start work without asking the author anything.
 | **Edit in place**           | `aisf:create-ticket` on `#N`                                     | Rewrites title and body, adds `type:`, `priority:` and `status: backlog` or `status: plan`. See _Edit an idea in place_. |
 | **Bare idea**               | `aisf:create-ticket` spin-offs, `aisf:implement-ticket` findings | Minimal issue, no labels. See _Bare ideas_.                                                                              |
 | **Sub-issue**               | `aisf:plan-ticket`                                               | Child of a parent: `status: ready`, `hitl` where confirmed; a UI child is `status: backlog`. See _Relationships_.        |
+| **Split part**              | `aisf:plan-ticket`                                               | Child of a split umbrella: full anatomy, `status: plan`, parent's `type:` and `priority:`. See _Split part_.             |
 | **Direct create**           | any automation caller with a fully-formed finding                | Full anatomy, cold-read test, labels as for interview-driven                                                             |
 
 ## Anatomy of a good ticket
@@ -47,6 +48,8 @@ it fits. Checkable: ✓ "completes in under 2s for 95% of requests" ✗ "works b
 
 **Supporting material** — screenshots, design links, related tickets (`Related: #N`),
 pasted error text (paste it, don't describe it — it's searchable).
+
+**A split part** (see _Split part_) is a full ticket body, not a spec. It carries the anatomy above.
 
 **A sub-issue from `aisf:plan-ticket`** carries the body that skill hands over: a spec (Context ·
 Scope · Landing zone · Acceptance criteria), or for a `type: ui` child what is displayed. Post it
@@ -79,7 +82,7 @@ An open issue with **no** `status:` label is an **idea**. Done is the closed sta
 | --------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **idea**        | open, no `status:` label                        | anyone opening an issue; `aisf:plan-ticket` sends a vague spec back (`plan → idea`)                                                                                                                                                     |
 | **backlog**     | `status: backlog`                               | `aisf:create-ticket` (`idea → backlog`); `aisf:plan-ticket` for UI work awaiting a design (`plan → backlog`, and a new `type: ui` child)                                                                                                |
-| **plan**        | `status: plan`; may have an open spike child    | `aisf:create-ticket` (`idea → plan`); the human (`backlog → plan`)                                                                                                                                                                      |
+| **plan**        | `status: plan`; may have an open spike child    | `aisf:create-ticket` (`idea → plan`); the human (`backlog → plan`); `aisf:plan-ticket` (new split parts)                                                                                                                                |
 | **planned**     | `status: planned`, has sub-issues               | `aisf:plan-ticket` (`plan → planned`)                                                                                                                                                                                                   |
 | **ready**       | `status: ready`, no sub-issues                  | `aisf:plan-ticket` (`plan → ready`, and new sub-issues); the app's Reset to ready (from `in-progress`, or any status with the `stuck` label; it removes both flag labels)                                                               |
 | **in-progress** | `status: in-progress`                           | `aisf:implement-ticket` (`ready → in-progress`, and `in-review → in-progress` for rework); the app removes the `waiting` label when a permission or checkpoint answer is given; the status stays `in-progress`                          |
@@ -182,8 +185,8 @@ body text, because it isn't a dependency.
 ### Sub-issues
 
 - Split when work spans independent areas, each completable in one session. Each sub-issue
-  gets its own PR that closes it (`Closes #<sub>`).
-- Each child: full anatomy, cold-read test, `status: ready`, `hitl` where the human
+  (not a split part) gets its own PR that closes it (`Closes #<sub>`).
+- Each child (not a split part): full anatomy, cold-read test, `status: ready`, `hitl` where the human
   confirmed it. `type:` is per child (a spike is `type: spike`); `priority:` is inherited
   from the parent.
 - **A `type: ui` child is `status: backlog`**, not `ready`: it waits for a design and is built
@@ -205,6 +208,25 @@ body text, because it isn't a dependency.
 
   ```bash
   gh issue view <p> --json subIssuesSummary --jq .subIssuesSummary.total
+  ```
+
+### Split part
+
+For `aisf:plan-ticket`'s "Too big: split the ticket". Parts are full sub-issues under an
+umbrella, each planned later on its own. They are not bare ideas, and not `ready` specs.
+
+- Body: full anatomy, cold-read test. No `Split from #N`, no `Part of #N`: the native parent
+  link is the record.
+- Labels: the umbrella's `type:` and `priority:`, and `status: plan`.
+- `--parent <n>`, and `--blocked-by` between parts where one needs another. Create in
+  dependency order.
+- The umbrella's body stays unchanged. After all parts: the `subIssuesSummary.total` check,
+  then guard `plan → planned` on the umbrella.
+
+  ```bash
+  gh issue create --title "<title>" --body-file <tmp> \
+    --parent <n> --blocked-by <a>,<b> \
+    --label "type: <umbrella's>" --label "priority: <umbrella's>" --label "status: plan"
   ```
 
 ## Comments

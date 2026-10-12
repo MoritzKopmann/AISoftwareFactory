@@ -3,7 +3,8 @@ name: plan-ticket
 description: >
   Turn a settled GitHub ticket (status: plan) into a technical plan on the ticket and one spec
   per sub-issue, each buildable on its own by aisf:implement-ticket. UI work is split off as one
-  type: ui sub-issue for the design path. Interviews the human, always with a recommendation,
+  type: ui sub-issue for the design path. A ticket holding several independent features can be
+  split into smaller tickets at the round-1 playback. Interviews the human, always with a recommendation,
   until nothing is left open. Use when the user wants to plan a ticket or epic. Triggers:
   "plan #N", "plan ticket N", "plan this epic".
 ---
@@ -22,7 +23,8 @@ every issue write goes through `aisf:github-issue`.
 - **Never make a feature decision alone**, unless it follows directly from one already made.
 
 `aisf:create-ticket` settled _what_, this settles _how_, `aisf:implement-ticket` writes the
-code: one sub-issue, one branch, one PR. A parent with children is a tracking umbrella.
+code: one sub-issue, one branch, one PR. A parent with children is a tracking umbrella. A ticket
+that holds several independent features may instead be split into smaller tickets (step 3).
 
 ## Precondition
 
@@ -42,6 +44,10 @@ gh issue view <n> --json title,body,labels,state,subIssues
 **Spec check.** The body must state a clear desired outcome and acceptance criteria. Missing,
 vague or self-contradictory → stop: comment the concrete gaps and guard `plan → idea`. Don't
 invent what the spec left out.
+
+**Resume after a split.** `<n>` at `status: plan` with open non-spike children at
+`status: plan` means a split was accepted and posting stopped part-way. Post only the missing
+parts (_Too big: split the ticket_, Posting), guard `plan → planned`, report, stop.
 
 **Resume.** A `## Planning so far` section means planning paused for a spike. Its spike still
 open → stop and name it. Otherwise that section and the verdict under it are settled: they seed
@@ -125,6 +131,42 @@ Load `aisf:grilling` and follow it. Specific to planning:
   later steps need. Later steps read them, not the scrollback, so a compacted context loses
   nothing.
 
+## Too big: split the ticket
+
+Not step 4 "Split". That one splits a plan into sub-issues. This one splits the ticket itself
+into smaller tickets. It differs from `aisf:create-ticket`'s split: parts are full sub-issues
+under an umbrella, not bare ideas.
+
+**Rule.** Checked once, on a fresh round 1 (never on a spike resume). Split when the ticket asks
+for two or more features, each enhancing the app and usable completely without the others. One
+big feature is never split here. No token or count threshold. Rule does not fire → round 1 as
+above, no split question.
+
+**Round 1 when it fires:** the playback and one split question, nothing else. One
+`<aisf-question>`:
+
+- An `<aisf-context kind="mockup">` shows each part: title, drafted Context and Scope written
+  from `<n>`'s text, and its criteria numbered (A1, A2, B1 …).
+- **Part criteria:** `<n>`'s criteria regrouped verbatim. A criterion touching several parts goes
+  to each. New criteria only from the human's note.
+- Cards: accept (`suggested`) and reject. The card tells the human to use Discuss for long edits.
+
+**Answers.**
+
+- **Other or Discuss** → the next round redraws the revised split. Nothing is posted. Only a
+  clean accept posts.
+- **Reject** → the next round asks today's round-1 questions. Steps 4–8 run as today.
+- **Accept** → check each part body against the Spec check and `aisf:github-issue`'s cold-read
+  test, then post.
+
+**Posting.** Through `aisf:github-issue` mode **Split part**, one per part in dependency order:
+`--parent <n>`, `type:` and `priority:` from `<n>`, `status: plan`, `--blocked-by` between parts
+where one needs another. `<n>`'s body stays unchanged. Then the `subIssuesSummary.total` check,
+then guard `plan → planned` on `<n>`.
+
+**After posting:** report every part number and that each needs its own plan run. Stop. Steps
+4–8 never run after a split.
+
 **Done** when no decision in scope is open: every criterion has its flow, its landing module and
 its data settled in the ledger.
 
@@ -178,7 +220,7 @@ On the bridge page it is the last round: an `<aisf-confirm>` with one `<aisf-tas
 sub-issue and its `hitl` switch, plus the decision tree from the ledger as `<aisf-tree-node>`
 rows. Without `aisf_show_artifact`, the table goes in chat. Confirm locks the `hitl` flags.
 
-**This is the only gate.** Confirmed → the rest runs without further approval. Not confirmed →
+**This is the only gate** (besides an accepted split, which is its own gate). Confirmed → the rest runs without further approval. Not confirmed →
 reopen that decision and go back to step 3.
 
 ## 7. Write the plan
