@@ -55,6 +55,7 @@ the context is your job, never the human's.
 | Library                  | comparison table: fit, size, upkeep, precedent                                  |
 | Scope                    | in / out, two columns                                                           |
 | Playback, round 1        | each acceptance criterion as a flow over today's system, new and changed marked |
+| Split proposal           | each part as a box: title, Context, Scope, its numbered criteria (A1, A2, B1 …) |
 | `hitl` checkpoint        | the full checkpoint: what is set up, what the human does                        |
 
 ## Reading the answer
