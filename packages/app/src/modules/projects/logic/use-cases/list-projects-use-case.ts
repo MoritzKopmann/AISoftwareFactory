@@ -1,9 +1,7 @@
-import type { ContractPreflightReport } from '../domain/types/contract-preflight-report.js';
-import type { Project } from '../domain/types/project.js';
+import { attachContract } from '../domain/functions/attach-contract.js';
+import type { ProjectWithContract } from '../domain/types/project-with-contract.js';
 import type { ContractPreflight } from '../ports/contract-preflight.js';
 import type { ProjectRepository } from '../ports/project-repository.js';
-
-export type ProjectWithContract = Project & { readonly contract: ContractPreflightReport };
 
 export class ListProjectsUseCase {
   constructor(
@@ -14,10 +12,9 @@ export class ListProjectsUseCase {
   async execute(): Promise<ReadonlyArray<ProjectWithContract>> {
     const projects = await this.projectRepository.list();
     return Promise.all(
-      projects.map(async (project) => ({
-        ...project,
-        contract: await this.contractPreflight.check(project.checkoutPath),
-      })),
+      projects.map(async (project) =>
+        attachContract(project, await this.contractPreflight.check(project.checkoutPath)),
+      ),
     );
   }
 }

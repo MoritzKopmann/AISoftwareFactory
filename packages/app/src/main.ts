@@ -3,18 +3,19 @@ import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import type { DatabaseSync } from 'node:sqlite';
 import { FileSystemArtifactFiles } from './modules/artifacts/infra/integrations/file-system-artifact-files.js';
+import { RunnerModuleTicketRunLookup } from './modules/artifacts/infra/integrations/runner-module-ticket-run-lookup.js';
+import { SchedulerModuleCheckpointAnswers } from './modules/artifacts/infra/integrations/scheduler-module-checkpoint-answers.js';
 import { SqliteArtifactRepository } from './modules/artifacts/infra/repositories/sqlite-artifact-repository.js';
-import {
-  createArtifactsModule,
-  PageBusyError,
-  type ArtifactsModule,
-  type CheckpointAnswers,
-} from './modules/artifacts/index.js';
+import { createArtifactsModule, type ArtifactsModule } from './modules/artifacts/index.js';
+import { ProjectsModuleProjectLookup } from './modules/findings/infra/integrations/projects-module-project-lookup.js';
+import { TicketsModuleTicketCreator } from './modules/findings/infra/integrations/tickets-module-ticket-creator.js';
 import { SqliteFindingRepository } from './modules/findings/infra/repositories/sqlite-finding-repository.js';
 import { createFindingsModule, type FindingsModule } from './modules/findings/index.js';
 import { GhCliLabelSync } from './modules/projects/infra/integrations/gh-cli-label-sync.js';
 import { GhCliRepositoryResolver } from './modules/projects/infra/integrations/gh-cli-repository-resolver.js';
 import { SystemClock } from './shared/clock/system-clock.js';
+import { SkillsModuleContractPreflight } from './modules/projects/infra/integrations/skills-module-contract-preflight.js';
+import { SkillsModulePluginInstaller } from './modules/projects/infra/integrations/skills-module-plugin-installer.js';
 import { SqliteProjectRepository } from './modules/projects/infra/repositories/sqlite-project-repository.js';
 import { createProjectsModule, type ProjectsModule } from './modules/projects/index.js';
 import { ClaudeCliLocalPluginInstaller } from './modules/skills/infra/integrations/claude-cli-local-plugin-installer.js';
@@ -50,14 +51,15 @@ import { FetchGraphQLTicketSource } from './modules/tickets/infra/integrations/f
 import { FetchIssueFeeds } from './modules/tickets/infra/integrations/fetch-issue-feeds.js';
 import { GhCliTicketStatusWrites } from './modules/tickets/infra/integrations/gh-cli-ticket-status-writes.js';
 import { GhCliIdeaCreation } from './modules/tickets/infra/integrations/gh-cli-idea-creation.js';
+import { ProjectsModuleRegisteredRepositories } from './modules/tickets/infra/integrations/projects-module-registered-repositories.js';
+import { RunnerModuleActiveRunLookup } from './modules/tickets/infra/integrations/runner-module-active-run-lookup.js';
+import { RunnerModuleRunSettlement } from './modules/tickets/infra/integrations/runner-module-run-settlement.js';
+import { RunnerModuleRunWaitLookup } from './modules/tickets/infra/integrations/runner-module-run-wait-lookup.js';
 import { InMemoryWatchStore } from './modules/tickets/infra/integrations/in-memory-watch-store.js';
 import { GhCliGitHubToken } from './modules/tickets/infra/integrations/gh-cli-github-token.js';
 import {
   createTicketsModule,
   TicketNotAnswerableError,
-  type ActiveRunLookup,
-  type RunWaitLookup,
-  type RunSettlement,
   type TicketsModule,
 } from './modules/tickets/index.js';
 import { findOnPath } from './cli/find-on-path.js';
@@ -82,18 +84,16 @@ import { consoleLogSink, createLogger, type Logger } from './shared/logger/creat
 function buildArtifactsModule(
   kitDirectory: string,
   database: DatabaseSync,
-  runner: Pick<RunnerModule, 'latestRun'>,
-  checkpointAnswers: CheckpointAnswers,
+  getRunner: () => RunnerModule,
+  getScheduler: () => SchedulerModule,
   events: EventPublisher,
 ): ArtifactsModule {
   return createArtifactsModule({
     kitDirectory,
     artifactRepository: new SqliteArtifactRepository(database),
     artifactFiles: new FileSystemArtifactFiles(),
-    ticketRunLookup: {
-      latest: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber),
-    },
-    checkpointAnswers,
+    ticketRunLookup: new RunnerModuleTicketRunLookup(getRunner),
+    checkpointAnswers: new SchedulerModuleCheckpointAnswers(getScheduler),
     events,
     identifiers: new RandomUuidIdentifiers(),
     clock: new SystemClock(),
@@ -110,9 +110,9 @@ function buildProjectsModule(
     projectRepository: new SqliteProjectRepository(database),
     repositoryResolver: new GhCliRepositoryResolver(),
     labelSync: new GhCliLabelSync(),
-    pluginInstaller: { install: (checkoutPath) => skills.installPluginLocally(checkoutPath) },
+    pluginInstaller: new SkillsModulePluginInstaller(skills),
     clock: new SystemClock(),
-    contractPreflight: { check: (checkoutPath) => skills.runContractPreflight(checkoutPath) },
+    contractPreflight: new SkillsModuleContractPreflight(skills),
     events,
     logger,
   });
@@ -149,9 +149,7 @@ function buildTicketsModule(
   config: Config,
   events: EventPublisher & EventSubscriber,
   projects: ProjectsModule,
-  activeRunLookup: ActiveRunLookup,
-  runWaitLookup: RunWaitLookup,
-  runSettlement: RunSettlement,
+  getRunner: () => RunnerModule,
   logger: Logger,
 ): TicketsModule {
   const token = new GhCliGitHubToken();
@@ -167,14 +165,11 @@ function buildTicketsModule(
     events,
     watchStore: new InMemoryWatchStore(),
     subscriber: events,
-    registeredRepositories: {
-      list: async () =>
-        (await projects.list()).map(({ id, repository }) => ({ projectId: id, repository })),
-    },
-    activeRunLookup,
-    runWaitLookup,
+    registeredRepositories: new ProjectsModuleRegisteredRepositories(projects),
+    activeRunLookup: new RunnerModuleActiveRunLookup(getRunner),
+    runWaitLookup: new RunnerModuleRunWaitLookup(getRunner),
     ticketStatusWrites: new GhCliTicketStatusWrites(),
-    runSettlement,
+    runSettlement: new RunnerModuleRunSettlement(getRunner),
     logger,
     pollIntervalMilliseconds: config.watcherPollIntervalMilliseconds,
     snapshotIntervalMilliseconds: config.watcherSnapshotIntervalMilliseconds,
@@ -189,15 +184,8 @@ function buildFindingsModule(
 ): FindingsModule {
   return createFindingsModule({
     findingRepository: new SqliteFindingRepository(database),
-    ticketCreator: {
-      create: (repository, ticket) => tickets.createIdea(repository, ticket),
-    },
-    projectLookup: {
-      find: async (projectId) => {
-        const project = (await projects.list()).find(({ id }) => id === projectId);
-        return project === undefined ? undefined : { repository: project.repository };
-      },
-    },
+    ticketCreator: new TicketsModuleTicketCreator(tickets),
+    projectLookup: new ProjectsModuleProjectLookup(projects),
     events,
     clock: new SystemClock(),
   });
@@ -366,38 +354,15 @@ const eventBus = new TypedEventBus<AisfEventMap>();
 
 const skills = buildSkillsModule(config, pluginDirectory, eventBus);
 const projects = buildProjectsModule(database, eventBus, skills, logger);
-// The tickets module is built before the runner, which needs tickets.ticket, so the lookup binds late.
-const tickets = buildTicketsModule(
-  config,
-  eventBus,
-  projects,
-  {
-    activeRunTicketNumbers: async (projectId) =>
-      (await runner.activeRuns(projectId)).map(({ run }) => run.ticketNumber),
-  },
-  { waitsOf: (projectId) => runner.activeWaits(projectId) },
-  { settle: (runId) => runner.settle(runId) },
-  logger,
-);
+// The tickets module is built before the runner, which needs tickets.ticket, so its runner ports bind late.
+const tickets = buildTicketsModule(config, eventBus, projects, () => runner, logger);
 const findings = buildFindingsModule(database, projects, tickets, eventBus);
-// The artifacts module needs runner.latestRun and the runner needs its tools, so the lookup binds late.
-// The same goes for scheduler.answer, which delivers a page's event.
+// The artifacts module needs the runner and scheduler, and the runner needs its tools, so they bind late.
 const artifacts: ArtifactsModule = buildArtifactsModule(
   kitDirectory,
   database,
-  { latestRun: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber) },
-  {
-    answer: async (runId, text) => {
-      try {
-        await scheduler.answer(runId, { kind: 'checkpoint', text });
-      } catch (error) {
-        if (error instanceof RunNotAnswerableError || error instanceof RunAlreadyActiveError) {
-          throw new PageBusyError(error.message);
-        }
-        throw error;
-      }
-    },
-  },
+  () => runner,
+  () => scheduler,
   eventBus,
 );
 const runner = buildRunnerModule(

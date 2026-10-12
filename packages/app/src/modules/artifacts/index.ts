@@ -23,7 +23,6 @@ import { ReadPageUseCase } from './logic/use-cases/read-page-use-case.js';
 import { SubmitPageEventUseCase } from './logic/use-cases/submit-page-event-use-case.js';
 import { WritePageUserInputStateUseCase } from './logic/use-cases/write-page-user-input-state-use-case.js';
 
-export { PageBusyError } from './logic/errors/page-busy-error.js';
 export type { CheckpointAnswers, TicketLatestRun, TicketPage, TicketRunLookup };
 
 export type ArtifactsModuleDependencies = {

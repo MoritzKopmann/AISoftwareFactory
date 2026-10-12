@@ -46,9 +46,6 @@ export type { SyncFailureCause, SyncStatus } from './logic/domain/types/sync-sta
 export type { Ticket } from './logic/domain/types/ticket.js';
 export type { TicketSnapshot } from './logic/domain/types/ticket-snapshot.js';
 export { TicketNotAnswerableError } from './logic/errors/ticket-not-answerable-error.js';
-export type { RunSettlement } from './logic/ports/run-settlement.js';
-export type { RunWait, RunWaitLookup } from './logic/ports/run-wait-lookup.js';
-export type { ActiveRunLookup } from './logic/ports/active-run-lookup.js';
 export type {
   RegisteredRepositories,
   RegisteredRepository,
