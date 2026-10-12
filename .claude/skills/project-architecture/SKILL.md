@@ -43,7 +43,7 @@ packages/
 │   │           │   └── errors/       ← domain errors, one per file
 │   │           └── infra/            ← outbound adapters, implementing logic's ports
 │   │               ├── repositories/ ← SQLite implementations of repository ports
-│   │               └── integrations/ ← gh, Agent SDK, file system and process implementations
+│   │               └── integrations/ ← gh, Agent SDK, file system and process implementations, and port classes over another module's public interface
 │   └── test/                         ← mirrors src/
 ├── ui/                               ← the React SPA (@aisf/ui)
 └── plugin/                           ← the aisf Claude Code plugin: skills and agents (@aisf/plugin)
@@ -159,7 +159,7 @@ issues.map((issue) => issue.number);
 - **Must:** `index.ts` exports the module factory, its public interface and the types that interface uses. Nothing else.
 - **Must:** use a synchronous call through the public interface when the caller needs an answer (Scheduler → `runner.start`). Use a typed bus event for announcements nobody has to answer (`snapshot.changed`, `run.finished`).
 - **Must:** each module owns its tables. It persists through a repository in its own `infra/`, on top of `shared/db`. Another module never reads those tables. It asks the owning module through its public interface.
-- **Must:** `logic/` reaches another module only through its own ports, filled in by `main.ts`. It never imports another module directly, not even through that module's `index.ts`.
+- **Must:** `logic/` reaches another module only through its own ports, filled by its own port classes in `infra/integrations/`, which `main.ts` constructs. It never imports another module directly, not even through that module's `index.ts`.
 - **Must:** a use case announces something by depending on `EventPublisher` (`shared/bus/event-publisher.ts`), never a concrete bus.
 
 ### Composition
@@ -168,6 +168,8 @@ issues.map((issue) => issue.number);
 
 - **Must:** `main.ts` constructs every module's infra adapters and passes them to that module's factory. It is the only file outside a module that may import that module's `infra/`.
 - **Must:** each module's wiring is a `build<Name>Module(...)` function local to `main.ts` — it constructs that module's infra adapters and calls its `create<Name>Module` factory, returning the module's public interface. `main.ts`'s top level is then a flat list of `const <name> = build<Name>Module(...)` calls, in start-up order. This keeps every module's construction still in `main.ts` (the rule above still holds) while keeping the top level readable as the module count grows.
+- **Must:** every port a module fills from another module is an Integration impl in the consuming module's `infra/integrations/`, named `<Producer>Module<PortName>` (e.g. `TicketsModuleTicketLookup`). It takes `Pick<ProducerModule, …>`, or a getter `() => …` when the producer is built later in `main.ts`. It renames, reshapes and translates the producer's domain errors into the consumer's. Filtering, deriving, deciding and sequencing belong in a use case of the consuming module.
+- **Must:** `main.ts` holds no inline port adapters. It constructs adapters and modules, passes infra constructor arguments (clocks, `fetch`, paths, config values, tool lists) and runs the boot sequence (pre-flight, start order, never-crash catches).
 - **Must:** everything under `~/.aisf` is reached through `shared/config`, whose home is overridable, so tests use a temp dir.
 - **Must:** `shared/` holds cross-cutting infrastructure (bus, clock, db, config, logger, process, http). It may also hold a domain concept that no single module owns (`TicketStatus`, with its label-to-status function). Other domain logic never goes there.
 
@@ -177,7 +179,7 @@ issues.map((issue) => issue.number);
 
 - **Must:** never leak SQL, HTTP, `gh` flags, SDK message shapes, retries or mapping to callers.
 - **Must:** if one logical action needs two or more calls in sequence, a use case owns that sequence. An api adapter never sequences use cases.
-- **Must:** infra catches library and process errors and throws domain errors, e.g. `GitHubRateLimitedError`. Callers catch the named domain error, never a bare `catch` or `Error`. The only exception is a documented "never crash" boundary, like the server's top-level error handler.
+- **Must:** infra catches library and process errors and throws domain errors, e.g. `GitHubRateLimitedError`. This covers another module's domain errors too: a port class over that module translates them into the consumer's. Callers catch the named domain error, never a bare `catch` or `Error`. The only exception is a documented "never crash" boundary, like the server's top-level error handler.
 
 ```ts
 // Shallow: leaks storage
@@ -258,6 +260,7 @@ if (response.status === 304) return previousPage;
 - **No central Store module.** No module owns another module's data.
 - **No import that reaches past another module's `index.ts`** (`modules/x/logic/…` from `modules/y`).
 - **No app write to a ticket outside the `tickets` module:** no status, label, comment or creation write. No PR write outside the scheduler's merge. The label sync in `projects` stays an exception.
+- **No logic in `main.ts`.** It constructs, wires and starts. No inline port adapter; no filtering, deriving, deciding, sequencing or error translation.
 - **No `new` of a concrete adapter outside `main.ts`.** No service locator, no global singletons.
 - **No second process:** no daemon plus separate UI process, and no process per project.
 - **No persistence besides `aisf.db`:** no JSON **app**-state files, no native SQLite binding.
