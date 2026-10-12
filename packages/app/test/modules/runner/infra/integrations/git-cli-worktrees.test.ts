@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -111,6 +111,42 @@ describe('GitCliWorktrees', () => {
 
       expect(git(worktreePath, 'log', '-1', '--format=%s')).toBe('second');
       expect(existsSync(join(worktreePath, '.aisf', 'page.html'))).toBe(true);
+    });
+
+    describe('without origin/HEAD', () => {
+      beforeEach(() => {
+        git(checkoutPath, 'remote', 'set-head', 'origin', '--delete');
+      });
+
+      it('should create a detached worktree at origin/main when none exists', async () => {
+        await worktrees.ensureDetached({ checkoutPath, worktreePath });
+
+        expect(git(worktreePath, 'rev-parse', '--abbrev-ref', 'HEAD')).toBe('HEAD');
+        expect(git(worktreePath, 'rev-parse', 'HEAD')).toBe(
+          git(checkoutPath, 'rev-parse', 'origin/main'),
+        );
+      });
+
+      it('should move an existing worktree to the new origin/main and keep untracked files when it starts again', async () => {
+        await worktrees.ensureDetached({ checkoutPath, worktreePath });
+        mkdirSync(join(worktreePath, '.aisf'));
+        writeFileSync(join(worktreePath, '.aisf', 'page.html'), 'kept');
+        git(checkoutPath, 'commit', '--allow-empty', '-m', 'second');
+        git(checkoutPath, 'push', 'origin', 'HEAD:main');
+
+        await worktrees.ensureDetached({ checkoutPath, worktreePath });
+
+        expect(git(worktreePath, 'log', '-1', '--format=%s')).toBe('second');
+        expect(existsSync(join(worktreePath, '.aisf', 'page.html'))).toBe(true);
+      });
+    });
+
+    it('should keep unstaged changes in the project checkout when it runs', async () => {
+      writeFileSync(join(checkoutPath, 'readme.md'), 'changed');
+
+      await worktrees.ensureDetached({ checkoutPath, worktreePath });
+
+      expect(readFileSync(join(checkoutPath, 'readme.md'), 'utf8')).toBe('changed');
     });
 
     it('should throw WorktreeSetupFailedError when the checkout is not a repository', async () => {
