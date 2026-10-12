@@ -7,7 +7,6 @@ import { WorktreeSetupFailedError } from '../../logic/errors/worktree-setup-fail
 import type { Worktrees } from '../../logic/ports/worktrees.js';
 
 const gitTimeoutMilliseconds = 120_000;
-const detachedBaseRef = 'origin/HEAD';
 const fallbackBaseRef = 'origin/main';
 
 export class GitCliWorktrees implements Worktrees {
@@ -40,18 +39,13 @@ export class GitCliWorktrees implements Worktrees {
 
   async ensureDetached(spec: DetachedWorktreeSpec): Promise<void> {
     await this.git(spec.checkoutPath, ['fetch', 'origin']);
+    const baseRef = await this.defaultBaseRef(spec.checkoutPath);
     if (existsSync(join(spec.worktreePath, '.git'))) {
-      await this.git(spec.worktreePath, ['checkout', '--detach', detachedBaseRef]);
+      await this.git(spec.worktreePath, ['checkout', '--detach', baseRef]);
       return;
     }
     await this.git(spec.checkoutPath, ['worktree', 'prune']);
-    await this.git(spec.checkoutPath, [
-      'worktree',
-      'add',
-      '--detach',
-      spec.worktreePath,
-      detachedBaseRef,
-    ]);
+    await this.git(spec.checkoutPath, ['worktree', 'add', '--detach', spec.worktreePath, baseRef]);
   }
 
   private async refExists(checkoutPath: string, ref: string): Promise<boolean> {
