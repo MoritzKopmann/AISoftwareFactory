@@ -141,12 +141,12 @@ describe('GitCliWorktrees', () => {
       });
     });
 
-    it('should keep unstaged changes in the project checkout when it runs', async () => {
+    it('should not carry unstaged changes of the project checkout into the worktree when it runs', async () => {
       writeFileSync(join(checkoutPath, 'readme.md'), 'changed');
 
       await worktrees.ensureDetached({ checkoutPath, worktreePath });
 
-      expect(readFileSync(join(checkoutPath, 'readme.md'), 'utf8')).toBe('changed');
+      expect(readFileSync(join(worktreePath, 'readme.md'), 'utf8')).toBe('hello');
     });
 
     it('should throw WorktreeSetupFailedError when the checkout is not a repository', async () => {
