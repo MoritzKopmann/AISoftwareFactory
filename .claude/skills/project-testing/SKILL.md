@@ -15,6 +15,7 @@ user-invocable: false
 - **What gets tested where:**
   - `logic/`: most tests. Pure use cases against fakes of their ports.
   - `infra/`: repositories against a real `node:sqlite` database in a temp dir. Adapters to `gh` and the SDK are thin and are covered by the smoke checks below, not by unit tests.
+  - A port class over another module (`infra/integrations/`) is unit-tested when it reshapes or maps errors, against a hand-written fake of the producer's `Pick` in `test/modules/<consumer>/fakes/`. A pure forward is not.
   - `api/`: Hono routes through `app.request()`, with the module's logic behind fakes.
   - `packages/ui`: component logic and state. Visual layout is not unit-tested.
 
