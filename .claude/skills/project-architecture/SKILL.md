@@ -1,297 +1,182 @@
 ---
 name: project-architecture
-description: >
-  AISoftwareFactory architecture reference: stack, module and folder layout, class types,
-  naming, placement rules and hard bans for the aisf app. Use when placing files, naming
-  things, choosing a module or layer, wiring modules together, or making any structural decision.
 user-invocable: false
+description: Rules and a working reference implementation for a TypeScript modular monolith built from modules that each have three layers (presentation / business / infrastructure), with constructor-based dependency injection, internal facades and event-bus communication between modules, and dependency-cruiser enforcement. Use this skill whenever writing, moving, reviewing or planning backend TypeScript code in a project that follows this structure, and whenever the user asks where a file belongs, how to add a module/use case/endpoint/repository/event handler/cron job/queue consumer, how modules should talk to each other, how to wire dependencies, how to structure DTOs or mappers, or wants a new TypeScript backend set up with a clean layered or hexagonal architecture — even if they don't say "architecture".
 ---
 
-## Stack
+# Layered modular architecture (TypeScript)
 
-- **TypeScript**, strict (`tsconfig.base.json`: `NodeNext`, ESM only, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`).
-- **Node ≥22**, one process. `node:sqlite` for persistence (no native deps).
-- **npm workspaces** monorepo, published as the npm CLI **`aisf`**.
-- **Server:** Hono on `@hono/node-server`, SSE, Zod schemas shared between API and UI.
-- **Sessions:** the Claude Agent SDK. Each Claude session is its own `claude` subprocess spawned by the SDK. GitHub is reached through `gh` and its GraphQL/REST APIs.
-- **UI:** a React SPA built with Vite. Bridge pages are plain HTML using the `<aisf-*>` elements from the app-served `/aisf/kit.js` and the `kit.css` tokens.
-- **Tooling:** vitest, ESLint (`typescript-eslint` strict), Prettier, dependency-cruiser.
+The application is a modular monolith. Each feature module (`users`, `orders`, …) is split into three
+layers, and modules talk to each other only through narrow, explicit contracts. The goal is that any
+module can be understood, tested and replaced on its own, and that a module could later become a
+separate service without its business code changing.
+
+The **complete rule set** is in `references/rules.md`. Read it before making non-trivial changes: it
+holds the full placement table, all 39 rules, and the checklist for new modules. This file gives you the
+mental model, the workflows, and a map of the example app.
+
+A **working example app** that follows every rule is in `assets/example-app/`. When you are unsure how
+something should look, open the matching file there and copy its shape. The map below tells you which
+file shows what.
+
+## The model in one picture
+
+```
+presentation  ──►  business  ◄──  infrastructure
+   (in)             (core)            (out)
+```
+
+- **business** is the core: entities, use cases, and the *interfaces* for everything it needs
+  (repositories, mailers, other modules). It imports nothing outside itself except `shared/errors.ts`
+  and `shared/event-bus.ts`. No HTTP, SQL, ORM, SDK or DTOs.
+- **presentation** holds every way *into* the module: HTTP controllers, event-bus subscribers,
+  CLI/cron/queue entry points, and the internal API other modules call. It parses input, calls
+  services, maps entities to DTOs and translates errors.
+- **infrastructure** holds every way *out*: repository implementations, external clients, and adapters
+  that call other modules. It implements business interfaces.
+
+The arrows matter more than the folders. Interfaces live where they are *used* (business), so
+infrastructure depends on business, never the other way round. If you find yourself importing
+something "upward", stop: the interface is in the wrong place.
 
 ## Module layout
 
 ```
-packages/
-├── app/                              ← the server and CLI (@aisf/app)
-│   ├── src/
-│   │   ├── main.ts                   ← composition root
-│   │   ├── shared/                   ← typed event bus, clock, db (connection + migrations), config, logger, process, http
-│   │   └── modules/
-│   │       └── <name>/               ← module root
-│   │           ├── index.ts          ← the module's only public surface
-│   │           ├── api/              ← inbound adapters
-│   │           │   ├── routes/       ← Hono routes, one file per resource
-│   │           │   ├── schemas/      ← zod request/response schemas, shared with packages/ui
-│   │           │   ├── subscriptions/← bus subscriptions, one per event handled
-│   │           │   └── tools/        ← MCP tool handlers, one per tool
-│   │           ├── logic/            ← pure TS, no I/O
-│   │           │   ├── domain/
-│   │           │   │   ├── types/    ← immutable domain types
-│   │           │   │   ├── functions/← pure functions over domain types
-│   │           │   │   └── constants/← fixed domain data, one canonical value per file
-│   │           │   ├── use-cases/    ← one use case per file
-│   │           │   ├── ports/        ← interfaces logic needs: repositories, integrations
-│   │           │   └── errors/       ← domain errors, one per file
-│   │           └── infra/            ← outbound adapters, implementing logic's ports
-│   │               ├── repositories/ ← SQLite implementations of repository ports
-│   │               └── integrations/ ← gh, Agent SDK, file system and process implementations, and port classes over another module's public interface
-│   └── test/                         ← mirrors src/
-├── ui/                               ← the React SPA (@aisf/ui)
-└── plugin/                           ← the aisf Claude Code plugin: skills and agents (@aisf/plugin)
+src/
+├── main.ts                     starts the transport
+├── composition-root.ts         wires modules to each other (only imports module index.ts files)
+├── shared/                     errors.ts, event-bus.ts (+ impl), http.ts, jobs.ts — last resort, no business rules
+└── modules/<module>/
+    ├── index.ts                create<Module>Module(deps) → { routes, jobs, internal }
+    ├── presentation/
+    │   ├── api/                HTTP controllers + <module>.routes.ts
+    │   ├── internal/           <module>.api.ts (interface) + <module>.facade.ts — for other modules
+    │   ├── bus/  cli/  cron/  queue/<queue-name>/
+    │   └── dto/
+    │       ├── api/            HTTP DTOs (JSON-serializable)
+    │       ├── internal/       internal-API DTOs (plain readonly data)
+    │       └── mapper/         entity ↔ DTO — the only place that sees both
+    ├── business/
+    │   ├── domain/             entities, value objects (pure)
+    │   ├── service/            use cases — all rules live here
+    │   ├── repository/         repository interfaces
+    │   └── <capability>/       other needs: mail/, payments/, customer/ …
+    └── infrastructure/
+        ├── repository/         repository implementations
+        ├── <capability>/       mirrors business/<capability>/
+        └── internal/           adapters calling other modules
 ```
 
-**Rule:** every file lives in the folder its class type names (see `## Class types`).
+Only create the folders a module needs.
 
-- **Must:** only create folders that contain files.
-- **Must:** a module root holds `index.ts` and the three layer folders, nothing else.
-- **Should:** files stay under 500 lines. Over that, split.
+## Example app map
 
-**Module-root pattern:** `packages/app/src/modules/<name>/`.
+All paths are relative to `assets/example-app/`. Run `npm install && npm run check` there to typecheck,
+run the architecture linter and the tests. `npm run demo` exercises the whole flow.
 
-### When something is its own module
-
-**Rule:** a module serves one concern end to end and passes the module test: it owns a table, or it holds at least two decisions.
-
-- **Decision:** a domain function whose result picks what the app does next (a status transition, run or block, merge or skip), called by one of the module's own use cases. A function that builds names, paths, prompts, text or views is not a decision, and neither is a use case that passes a port's result through.
-- **Thin integration:** a port, its adapter, and at most functions that build names, paths or text. It fails the module test and stays in the module that uses it.
-- **Must:** split a module exactly when a split is due: it holds two parts that each pass the module test, at least one by owning a table, and they share no table, use case or domain type.
-- **Must:** new code joins the module whose domain types or ports it uses. It becomes its own module only when joining would make a split due.
-- **Must:** `index.ts` exports exactly one factory (plus its public interface and the types that interface uses).
-- **Must:** a module is named after its concern, never after its provider. Only `infra/` knows it is GitHub.
-- **Must:** infra stays inside the module that uses it. It moves to `shared/` only when a second module uses the same infra.
-
-## Class types
-
-**Rule:** every file has one type, one form, one location.
-
-| Type | Form | Location | Example |
-|---|---|---|---|
-| Domain type | `type` with `readonly` fields | `logic/domain/types/` | `Run`, `TicketSnapshot` |
-| Domain function | pure function over domain types | `logic/domain/functions/` | `diffSnapshots` |
-| Domain constant | `const` typed by a readonly domain type | `logic/domain/constants/` | `projectContract`, `aisfLabels` |
-| Use case | class, constructed with its ports, one public method `execute` | `logic/use-cases/` | `StartRunUseCase` |
-| Repository port | `interface` | `logic/ports/` | `RunRepository` |
-| Integration port | `interface` | `logic/ports/` | `GitHubIntegration`, `TicketSource` |
-| Domain error | class `extends Error` | `logic/errors/` | `WorktreeMissingError` |
-| API schema | zod schema and its inferred type, one file per resource; `packages/ui` imports it through an `exports` entry `./api-schemas/<resource>-schemas.js` in `packages/app/package.json` | `<module>/api/schemas/` | `projects-schemas.ts` |
-| Route | function returning a Hono app | `api/routes/` | `createRunRoutes` |
-| Subscription | function registering one bus handler | `api/subscriptions/` | `subscribeToSnapshotChanged` |
-| MCP tool handler | function returning the tool definition | `api/tools/` | `createShowArtifactTool` |
-| Repository impl | class `implements` a repository port | `infra/repositories/` | `SqliteRunRepository` |
-| Integration impl | class `implements` an integration port | `infra/integrations/` | `GhCliGitHubIntegration`, `FetchIssueFeeds` |
-| Module factory | function taking the module's adapters, returning its public interface | `index.ts` | `createRunnerModule` |
-
-### Where does X go?
-
-| I need to… | Build |
+| To see how to… | Open |
 |---|---|
-| Model a thing the module reasons about | Domain type in `logic/domain/types/` |
-| Compute something from domain data, no I/O | Domain function in `logic/domain/functions/` |
-| Encode fixed domain knowledge (a canonical list or spec) | Domain constant in `logic/domain/constants/` |
-| Add an operation the outside world triggers | Use case in `logic/use-cases/`, called from an `api/` adapter |
-| Persist data | Repository port in `logic/ports/`, impl in `infra/repositories/`, plus a migration |
-| Call GitHub, the SDK, the file system or a process | Integration port in `logic/ports/`, impl in `infra/integrations/` |
-| Expose an HTTP endpoint or SSE stream | Route in `api/routes/`. The SPA's data endpoints are ordinary `api/routes` of the module that owns the data; there is no `ui` module. |
-| React to another module's announcement | Subscription in `api/subscriptions/` |
-| Give sessions a new tool | MCP tool handler in `api/tools/` |
-| Let another module ask this one something | A method on the public interface in `index.ts`, backed by a use case |
-| Announce something | A bus event, typed in `shared/`'s event map, emitted from a use case through a bus port |
-| Signal a failure the caller must handle | Domain error in `logic/errors/` |
+| Structure a module's entry point (deps in, `{ routes, jobs, internal }` out) | `src/modules/users/index.ts` |
+| Wire modules together | `src/composition-root.ts` |
+| Write a use case with injected interfaces | `src/modules/orders/business/service/order.service.ts` |
+| Test a use case with plain fakes | `src/modules/orders/business/service/order.service.test.ts` |
+| Declare a repository interface / implement it | `users/business/repository/user.repository.ts` → `users/infrastructure/repository/in-memory-user.repository.ts` |
+| Declare a capability interface / implement it | `notifications/business/mail/mailer.ts` → `notifications/infrastructure/mail/console-mailer.ts` |
+| Write an HTTP controller + route table | `users/presentation/api/user.controller.ts`, `user.routes.ts` |
+| Separate HTTP DTOs from internal DTOs | `users/presentation/dto/api/user.dto.ts` vs `users/presentation/dto/internal/user-summary.dto.ts` |
+| Map entities to DTOs | `users/presentation/dto/mapper/user.mapper.ts` |
+| Offer an internal API to other modules | `users/presentation/internal/users.api.ts` + `users.facade.ts` |
+| Consume another module's API (anti-corruption adapter) | `orders/business/customer/customer-lookup.ts` → `orders/infrastructure/internal/users-customer-lookup.ts` |
+| React to events from other modules | `notifications/presentation/bus/event-handlers.ts` |
+| Publish an event | `orders/business/service/order.service.ts` (`bus.publish`) + `src/shared/event-bus.ts` (`DomainEvents`) |
+| Enforce the rules automatically | `.dependency-cruiser.cjs` (rule IDs match `[L1]`, `[B2]` … in rules.md) |
 
-## Naming conventions
+(`users/…`, `orders/…`, `notifications/…` are under `src/modules/`.)
 
-**Rule:** names state what a thing is or holds. Full English words only.
+## Workflows
 
-### Files and types
+### Placing a single file
+Find it in the "What goes where" table in `references/rules.md`. If nothing fits, ask which layer it
+belongs to by direction: is it a way *in* (presentation), a rule (business), or a way *out*
+(infrastructure)? Interfaces go to the layer that *uses* them.
 
-- **Must:** file names are kebab-case and named after the one thing they export: `StartRunUseCase` lives in `start-run-use-case.ts`.
-- **Must:** a class name ends in its type where the table above gives one (`…UseCase`, `…Repository`, `…Integration`, `…Error`). An implementation is prefixed with what it's built on: `SqliteRunRepository`, `GhCliGitHubIntegration`.
-- **Must:** a port is named after its role, never `I…` or `…Interface`.
+### Adding a use case or endpoint to an existing module
+1. Entity changes → `business/domain/`. Rules → a method on a service in `business/service/`.
+2. New persistence needs → extend the interface in `business/repository/`, then the implementation(s)
+   in `infrastructure/repository/`.
+3. HTTP: request/response DTOs in `dto/api/`, mapper in `dto/mapper/`, controller method in
+   `presentation/api/`, route in `<module>.routes.ts`.
+4. Keep checks split: shape checks (is it a number?) in the controller, business rules (is it > 0?)
+   in the service.
 
-### Variables
+### Deciding whether something is a new module
+Do this before writing code for any new feature, and especially when building from an empty project —
+that is where it is most tempting to fold everything into one or two modules "because nothing else
+needs it yet". A module is a **business capability that owns its own data and rules**; size and
+current number of consumers don't matter.
 
-- **Must:** no abbreviations, no single letters, no truncation. The name states what the value holds.
-- **Exception:** a classic numeric `for` loop counter may be `index`. Prefer `for … of` with a real name.
-- **Applies to:** locals, fields, parameters, constants, callback and lambda parameters, destructured names, generic type parameters beyond a single obvious `T`.
+Create a module when **any** of these holds:
+1. **Own data** — it has records only it writes (payments: charges, status, refunds).
+2. **Own rules and vocabulary** that change for different reasons than its neighbours'.
+3. **Several modules need it.**
+4. **It could plausibly become a separate service or another team's responsibility.**
 
-```ts
-// Bad
-const d = Date.now() - start;
-const n = runs.length;
-const cfg = loadConfig();
-const res = await gh.graphql(q);
-issues.map((i) => i.number);
+Keep it inside an existing module when:
+- it only exists as part of another entity's lifecycle (order lines → `orders`);
+- it is a purely technical capability without business state (sending mail, storing files, SMS) — an
+  adapter in `infrastructure/<capability>/` of the module that uses it;
+- the two parts would need constant synchronous calls in both directions (the boundary is wrong).
 
-// Good
-const elapsedMilliseconds = Date.now() - startedAt;
-const runCount = runs.length;
-const config = loadConfig();
-const snapshotResponse = await gitHub.graphql(snapshotQuery);
-issues.map((issue) => issue.number);
-```
+Test: *"If this feature were deleted, which data and rules would disappear with it?"* A coherent set
+that belongs to nobody else is a module. Example: storing "paid" status on the order inside `orders`
+is wrong — payment records belong to a `payments` module, and `orders` asks it for status through its
+internal API. The "When to create a module" section in `references/rules.md` has the full version with more examples.
 
-## Placement rules
+### Adding a module
+Follow the checklist at the end of `references/rules.md`. Every module's `index.ts` exports exactly one
+`create<Module>Module(deps)` factory returning `{ routes, jobs, internal }` (all always present, possibly
+empty; cron/CLI entry points go into `jobs`, keyed `<module>.<job-name>`), plus type-only re-exports of its `presentation/internal` API and `dto/internal` types — nothing
+from `business/` or `infrastructure/`.
 
-### Dependency direction
+### Module A needs something from module B
+Decide first: **does A need an answer to continue?**
+- **Yes → synchronous call through B's internal API.**
+  1. In B: add the method to `presentation/internal/<b>.api.ts`; inputs and outputs are `dto/internal/`
+     types or primitives. Implement it in the facade by calling B's *services* (never repositories),
+     mapping with B's mapper. Only `shared/errors.ts` errors (or `null` for expected absence) may escape.
+  2. In A: declare what A needs as an interface in `business/<capability>/`, named in A's vocabulary
+     (orders has `CustomerLookup.exists()`, not `UsersApi`).
+  3. In A: implement it in `infrastructure/internal/<b>-<capability>.ts`, importing only B's `index.ts`.
+  4. Add B's API type to A's factory deps; pass `b.internal.x` in `composition-root.ts`.
+- **No, A is announcing that something happened → event.** Add the payload to `DomainEvents` in
+  `shared/event-bus.ts` (it's a public contract), publish from A's service, subscribe in B's
+  `presentation/bus/`.
 
-**Rule:** dependencies point inward: `api → logic ← infra`.
+The module graph must stay acyclic: the composition root calls factories in dependency order, so if
+A and B need each other, turn one direction into an event.
 
-- **Must:** `logic/` imports only `logic/` and `shared/`'s types and domain concepts. Never `api/`, `infra/`, Node I/O, `node:sqlite`, Hono, the Agent SDK or `gh`.
-- **Must:** inside `logic/`, `domain/` imports nothing but `domain/` and `shared/`'s domain concepts. `use-cases/` import `domain/`, `ports/` and `errors/`.
-- **Must:** inside `domain/`, `types/` imports only `types/`, `constants/` imports only `types/`, and `functions/` may import `types/`, `constants/` and `functions/`. Any of the three may also import `shared/`'s domain concepts.
-- **Must:** no barrel `index.ts` in a `domain/` subfolder.
-- **Must:** `api/` calls use cases only. It never imports `infra/` or a port implementation.
-- **Must:** `infra/` imports only `ports/`, `domain/` and `errors/` from `logic/`.
+### Dependency injection
+Constructor injection only, wired by hand: each module wires its own classes in `index.ts`; the
+composition root only creates shared infrastructure (bus, DB pool, config), calls module factories and
+passes facades between them. No DI container, decorators, `reflect-metadata`, service locators or
+module-level singletons — the compiler checks plain wiring for free, and tests just pass fakes.
+Factories accept optional overrides (`repo?`, `mailer?`) for tests and other environments.
 
-### Between modules
+### Reviewing code
+Check imports against the dependency direction first; that catches most violations. Then the rules the
+linter cannot see: entities leaking through DTOs, business rules in controllers, facades going to
+repositories, module-specific errors escaping a facade, `index.ts` re-exporting business types. Cite
+the rule number from `references/rules.md` so the author can look it up.
 
-**Rule:** another module is reached only through its `index.ts`.
+## Enforcement
 
-- **Must:** `index.ts` exports the module factory, its public interface and the types that interface uses. Nothing else.
-- **Must:** use a synchronous call through the public interface when the caller needs an answer (Scheduler → `runner.start`). Use a typed bus event for announcements nobody has to answer (`snapshot.changed`, `run.finished`).
-- **Must:** each module owns its tables. It persists through a repository in its own `infra/`, on top of `shared/db`. Another module never reads those tables. It asks the owning module through its public interface.
-- **Must:** `logic/` reaches another module only through its own ports, filled by its own port classes in `infra/integrations/`, which `main.ts` constructs. It never imports another module directly, not even through that module's `index.ts`.
-- **Must:** a use case announces something by depending on `EventPublisher` (`shared/bus/event-publisher.ts`), never a concrete bus.
+`assets/example-app/.dependency-cruiser.cjs` enforces the import rules (dependency-cruiser 16).
+For a new project, copy it to the repo root, `npm i -D dependency-cruiser@16`, and add
+`"lint:arch": "depcruise src --config .dependency-cruiser.cjs"`. If the project already uses these
+folder names, it works unchanged. Always run it (and `tsc`) after structural changes — it is much
+faster than reasoning about imports by hand, and every rule ID in its output maps to `references/rules.md`.
 
-### Composition
-
-**Rule:** `main.ts` is the only place that builds concrete classes.
-
-- **Must:** `main.ts` constructs every module's infra adapters and passes them to that module's factory. It is the only file outside a module that may import that module's `infra/`.
-- **Must:** each module's wiring is a `build<Name>Module(...)` function local to `main.ts` — it constructs that module's infra adapters and calls its `create<Name>Module` factory, returning the module's public interface. `main.ts`'s top level is then a flat list of `const <name> = build<Name>Module(...)` calls, in start-up order. This keeps every module's construction still in `main.ts` (the rule above still holds) while keeping the top level readable as the module count grows.
-- **Must:** every port a module fills from another module is an Integration impl in the consuming module's `infra/integrations/`, named `<Producer>Module<PortName>` (e.g. `TicketsModuleTicketLookup`). It takes `Pick<ProducerModule, …>`, or a getter `() => …` when the producer is built later in `main.ts`. It renames, reshapes and translates the producer's domain errors into the consumer's. Filtering, deriving, deciding and sequencing belong in a use case of the consuming module.
-- **Must:** `main.ts` holds no inline port adapters. It constructs adapters and modules, passes infra constructor arguments (clocks, `fetch`, paths, config values, tool lists) and runs the boot sequence (pre-flight, start order, never-crash catches).
-- **Must:** everything under `~/.aisf` is reached through `shared/config`, whose home is overridable, so tests use a temp dir.
-- **Must:** `shared/` holds cross-cutting infrastructure (bus, clock, db, config, logger, process, http). It may also hold a domain concept that no single module owns (`TicketStatus`, with its label-to-status function). Other domain logic never goes there.
-
-### Deep modules
-
-**Rule:** ports, use cases and public interfaces expose domain-level operations only.
-
-- **Must:** never leak SQL, HTTP, `gh` flags, SDK message shapes, retries or mapping to callers.
-- **Must:** if one logical action needs two or more calls in sequence, a use case owns that sequence. An api adapter never sequences use cases.
-- **Must:** infra catches library and process errors and throws domain errors, e.g. `GitHubRateLimitedError`. This covers another module's domain errors too: a port class over that module translates them into the consumer's. Callers catch the named domain error, never a bare `catch` or `Error`. The only exception is a documented "never crash" boundary, like the server's top-level error handler.
-
-```ts
-// Shallow: leaks storage
-interface RunRepository {
-  query(sql: string, parameters: unknown[]): Promise<unknown[]>;
-}
-
-// Deep: domain-level
-interface RunRepository {
-  listActive(projectId: ProjectId): Promise<ReadonlyArray<Run>>;
-  save(run: Run): Promise<void>;
-}
-```
-
-### Adapters hold no logic
-
-**Rule:** an `api/` adapter parses input, calls one use case and maps the result. Nothing else.
-
-- **Must:** no business decisions in routes, subscriptions or tool handlers. Move them into a use case.
-- **Must:** input from HTTP or MCP is validated with a Zod schema at the adapter, before it reaches logic.
-
-### Domain types are immutable
-
-**Rule:** a domain value never changes. A change produces a new value.
-
-- **Must:** `readonly` fields and `ReadonlyArray`/`ReadonlyMap` collections.
-- **Must:** no classes with mutable state in `domain/`. Use plain types, constants and pure functions.
-- **Must:** a constant uses `readonly` fields and `ReadonlyArray`/`ReadonlyMap` types.
-- **Must:** a type lives in its constant's file while that constant is the type's only production instance. Use as a parameter or in tests doesn't move it. Once a second production instance exists, the type moves to `types/`.
-- **Must:** a constant private to one function stays in that function's file. `constants/` holds canonical domain data used by more than one file.
-
-### Truth and persistence
-
-- **Must:** ticket status, hierarchy, blocking and PRs are read from GitHub, never mirrored into SQLite. The Tickets snapshot and ETags are in memory and rebuilt on boot.
-- **Must:** app facts live in `~/.aisf/aisf.db`. Session transcripts stay in Claude Code's own JSONL, read by sessionId. Artifacts stay in `<worktree>/.aisf/`.
-- **Must:** SQL is one template string per statement, one clause or column per line, with parameters bound, never interpolated.
-
-```ts
-database.prepare(`
-  SELECT id, ticket, stage, state
-  FROM runs
-  WHERE project_id = ?
-`);
-```
-
-Dependency direction and the module boundaries are enforced by dependency-cruiser in `analyze`.
-
-## Comments
-
-**Rule:** code is simple and explains itself. Comments are rare and describe the current code only.
-
-**Must not:**
-- **Document history or decisions.** No "changed from X", "previously", "we chose", ticket or PR refs. How we got here lives in git and the tickets.
-- **Restate the code.** `// increment counter` above `counter++` is noise.
-- **Comment out code.** Delete it. Git has it.
-- **Add banners.** No `// ---- Helpers ----`. Split the file instead.
-- **Leave a TODO without a ticket.** Use `// TODO(#123): …`, or open an issue.
-- **Add a JSDoc block that repeats the name and signature.** Types already document parameters and return values.
-
-**Must:**
-- **Rename before commenting.** If a name needs a comment, fix the name first.
-- **Comment only when the code can't explain itself:** how a function works when its name and body don't show it, why unusual code is the way it is, or a constraint from outside the code (an API quirk, a protocol rule).
-- **Keep comments true.** Change the code, update or delete its comment in the same change.
-- **Follow the same rules in tests.** A short comment on a non-obvious arrange step is fine.
-
-```ts
-// Bad: history and restating
-// Switched to a Set in #123 (was an array)
-const seenIssueNumbers = new Set<number>(); // set of seen numbers
-
-// Good: explains an outside constraint
-// GitHub returns 304 without a body for an unchanged ETag, so keep the previous page.
-if (response.status === 304) return previousPage;
-```
-
-## Hard bans
-
-- **No central Store module.** No module owns another module's data.
-- **No import that reaches past another module's `index.ts`** (`modules/x/logic/…` from `modules/y`).
-- **No app write to a ticket outside the `tickets` module:** no status, label, comment or creation write. No PR write outside the scheduler's merge. The label sync in `projects` stays an exception.
-- **No logic in `main.ts`.** It constructs, wires and starts. No inline port adapter; no filtering, deriving, deciding, sequencing or error translation.
-- **No `new` of a concrete adapter outside `main.ts`.** No service locator, no global singletons.
-- **No second process:** no daemon plus separate UI process, and no process per project.
-- **No persistence besides `aisf.db`:** no JSON **app**-state files, no native SQLite binding.
-- **Rejected stacks stay rejected:** htmx, Fastify, Svelte, Docker, a single binary.
-- **No global 3-layer split** (a top-level `api/`, `logic/`, `infra/` across modules). Layers live inside each module.
-
-## Plan vocabulary
-
-A plan names its changes by the types in `## Class types` (domain type, use case, port, route, …), plus the module each belongs to, the bus events it adds and the tables it migrates.
-
-Confirm-page lanes, left to right: **UI** · **api** · **logic** · **infra** · **GitHub / Claude**.
-
-## UI
-
-The user-facing surfaces:
-
-- **The browser app** (`packages/ui`, a React SPA): project board, ticket pages, "Needs you", run transcripts, Known bugs, settings.
-- **Bridge pages**: the interview and confirm pages sessions show under `.aisf/artifacts`, built from the `<aisf-*>` kit elements.
-
-## Easy-to-miss wiring
-
-- **A new module** needs its `index.ts` factory and a `build<Name>Module` function in `main.ts`.
-- **A new table** needs a migration in `shared/db`. Never edit an applied migration.
-- **A new bus event** needs its type added to the bus's event map in `shared/`, or subscribers don't type-check.
-- **A new API route** needs its Zod schema shared with `packages/ui`, so the SPA and server agree: put it in the module's `api/schemas/` and add its `./api-schemas/<resource>-schemas.js` entry to `exports` in `packages/app/package.json`.
-- **A new app MCP tool** (`aisf_*`) needs registering in the in-process MCP server that `runner` hands to each `query()`, and allowing in the session's tool permissions.
-- **A new config key** goes through `shared/config`, so tests can override `~/.aisf`.
-- **Changes under `packages/plugin`** reach sessions only after the `skills` module mirrors the plugin into `~/.aisf/plugins/aisf/` (on app start). Hand-run sessions use the marketplace path.
-- **A new external CLI dependency** (beyond `gh` and `claude`) needs adding to the `aisf` CLI's start-up pre-flight.
-- **`.aisf/` is gitignored** in every worktree. Artifacts are never committed.
-
-## Load also
-
-None yet.
+When the user's project deviates from these rules on purpose (different folder names, an existing DI
+container, a framework like NestJS with its own module system), follow the project and say which rule
+you are adapting and why. The rules exist to keep dependencies pointing one way and contracts narrow;
+honour that intent rather than the literal folder names.

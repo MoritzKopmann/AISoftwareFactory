@@ -1,0 +1,23 @@
+{
+  "name": "layered-ts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "tsc && node --test 'dist/**/*.test.js'",
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "demo": "tsc && node dist/main.js --demo",
+    "lint:arch": "depcruise src --config .dependency-cruiser.cjs",
+    "check": "npm run lint:arch && npm test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "dependency-cruiser": "^16.10.4",
+    "typescript": "^5.9.3"
+  },
+  "type": "module"
+}
