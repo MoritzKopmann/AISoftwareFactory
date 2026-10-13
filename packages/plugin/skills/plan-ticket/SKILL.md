@@ -285,9 +285,7 @@ is**.
    `priority:`. Title from the `####` line, body the spec under it. Backend: its own `type:`,
    `status: ready`, `hitl` where confirmed. UI: `type: ui`, `status: backlog`.
 3. **Backfill** the plan with the real sub-issue numbers, guard `plan → planned`, and check
-   the count landed. Write each backfilled body to a **new file** (`sed … in > out`), never
-   back into the file it reads: opening a file for writing empties it first. Edit an issue
-   only from a file that is not empty.
+   the count landed. Write each backfilled body to a **new file**, never over its source.
 
    ```bash
    gh issue view <n> --json subIssuesSummary --jq .subIssuesSummary.total
