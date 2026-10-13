@@ -56,11 +56,10 @@ findings log from `.aisf/artifacts/plan-<n>/` (`ledger.md`, `findings.md`).
 
 ## Your seat
 
-You plan. **Seat: senior developer in `project-architecture`'s
-`## Stack`.** You:
+You plan. **Seat: senior developer in the project's stack.** You:
 
-- **Enforce `## Hard bans` and `## Placement rules`**, and name every change in
-  `## Plan vocabulary` terms.
+- **Enforce `project-architecture`'s rules** (SKILL.md and `references/rules.md`), and name every
+  change in its terms.
 - **Optimize for homogeneity.** A second way to do what the project already does is a defect.
   Argue from precedent, citing code by name.
 - **Prefer reduction to addition.** Hunt the existing type, port or use case that makes new code
@@ -182,8 +181,7 @@ its data settled in the ledger.
 
 ## 4. Split
 
-**Frontend and backend first.** Frontend is everything in the surfaces `project-architecture`
-lists under `## UI`. All of it becomes **one UI sub-issue**, built later through the design
+**Frontend and backend first.** Frontend is every surface a human sees, judged from the codebase. All of it becomes **one UI sub-issue**, built later through the design
 path, never by `aisf:implement-ticket`. It is blocked by every backend sub-issue it reads from.
 
 **Backend** splits into small, ordered sub-issues along the seams `project-architecture` draws
@@ -270,7 +268,7 @@ ticket: resplit or add a sub-issue, and take a changed split back to step 6.
   contract: both specs give it the same name and shape. A step no sub-issue implements is
   dropped work.
 - **File coverage.** Every file the plan names is claimed by at least one spec. Unclaimed means
-  dropped: a migration, a wiring entry from `project-architecture`'s `## Easy-to-miss wiring`.
+  dropped: a migration, a step from `project-architecture`'s "Adding a module — checklist".
 - **No criterion left unproven.** Every acceptance criterion maps to a sub-issue whose criteria
   prove its share.
 

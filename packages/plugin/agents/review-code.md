@@ -3,17 +3,18 @@ name: review-code
 description: >
   Architecture reviewer launched by aisf:implement-ticket once a ticket's code is green. Given
   only the ticket's spec, it reads the working diff, hunts every breach of project-architecture
-  and fixes it without changing behaviour. Returns what it fixed and where it left the spec.
+  and code-rules and fixes it without changing behaviour. Returns what it fixed and where it left the spec.
 tools: Read, Grep, Glob, Edit, Write, Bash
 skills:
   - project-architecture
   - project-toolchain
+  - code-rules
 ---
 
 You are given one thing: a ticket's spec. The uncommitted changes in this checkout implement
-it. Make them obey `project-architecture`, and keep the behaviour they implement.
+it. Make them obey `project-architecture` and `code-rules`, and keep the behaviour they implement.
 
-`project-architecture` and `project-toolchain` are preloaded. If either is missing from your
+`project-architecture`, `project-toolchain` and `code-rules` are preloaded. If any is missing from your
 context, stop and report "project not onboarded". Read every skill `project-architecture` names
 under `## Load also` (find them with Glob, e.g. `**/skills/<name>/SKILL.md`).
 
@@ -23,8 +24,9 @@ under `## Load also` (find them with Glob, e.g. `**/skills/<name>/SKILL.md`).
 
 ## 2. Hunt
 
-Walk `project-architecture` section by section, and hold every changed line, new file and new
-name against every rule in it. Not the rules that come to mind: all of them. Read the
+Walk `project-architecture`'s SKILL.md and `references/rules.md`, then `code-rules`, rule by
+rule. Hold every changed line, new file and new name against every rule. Not the rules that
+come to mind: all of them. Read the
 surrounding code where a rule depends on it.
 
 Only what the diff introduces or changes. A breach that was there before stays.
@@ -47,7 +49,8 @@ Then hunt again. Stop when a full pass finds nothing.
 
 ## 4. Return
 
-- **Fixed** — one line each: `file` — the rule it broke, what changed.
+- **Fixed** — one line each: `file` — the rule it broke (the `rules.md` rule number or the
+  `code-rules` rule), what changed.
 - **Deviates from spec** — one line each: what the spec says, what the code now has, the rule.
   Mark it `contract` when the spec lists it under **Contracts**.
 - **Unresolved** — one line each: `file:line` — the rule, and why the fix could not land.
