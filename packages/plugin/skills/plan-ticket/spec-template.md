@@ -17,7 +17,7 @@ sibling. Read the code you name.
     - **Deletes:** what this replaces. Omit if nothing.
     - **Contracts:** each route, schema, bus event or table shared with a sibling, with its
       shape, and whether this sub-issue provides or consumes it.
-    - **Wiring:** the `## Easy-to-miss wiring` entries that apply.
+    - **Wiring:** the steps of `project-architecture`'s new-module checklist that apply.
     - **Decisions:** every plan decision and risk that binds this work, one line each.
 
     ##### Acceptance criteria
@@ -39,7 +39,7 @@ Rules:
   other step must run without them. A `hitl` leaf with no code change says so in its spec, and
   ends in an evidence comment on the ticket and a closed ticket.
 - **Exact names.** A shared contract keeps the plan's name and shape, verbatim. Name everything
-  else by `project-architecture`'s `## Naming conventions`, so the implementer can carry the
+  else by `project-architecture`'s terms and its example app, so the implementer can carry the
   names straight into tests.
 - **No code bodies, test design, step order, line numbers, lists of tests to edit, or shapes no
   sibling reads.** `aisf:implement-ticket` owns those.

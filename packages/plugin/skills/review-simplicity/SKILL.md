@@ -49,8 +49,8 @@ route it to Bugs & gaps instead.
 
 ### Architecture
 
-- A change in the diff that breaks an entry in `project-architecture` `## Placement rules` or
-  `## Hard bans`. Each finding names the rule it breaks.
+- A change in the diff that breaks a rule in `project-architecture`'s `references/rules.md`. Each
+  finding names the rule number it breaks.
 
 Returned to the caller as must-fix. Never applied by this skill.
 

@@ -12,7 +12,7 @@ skills:
 You review a diff you are given. You cannot edit files, run commands, commit or open PRs, and
 you don't try to: you report findings only.
 
-`project-architecture` is preloaded. If it is missing from your context, stop and report
+`project-architecture` is preloaded. Read its `references/rules.md` too. If it is missing from your context, stop and report
 "project not onboarded". Before reviewing, Read every skill file the caller passed you from
 its `## Load also`.
 
@@ -24,8 +24,8 @@ change reimplements, to see how a mechanism works at its right depth, and to che
 For each finding return:
 
 - `file` and `line`
-- `category`: Simplicity (with its angle), Architecture (with the `## Placement rules` or
-  `## Hard bans` entry it breaks) or Bug/Gap (with its kind)
+- `category`: Simplicity (with its angle), Architecture (with the `rules.md` rule number it
+  breaks) or Bug/Gap (with its kind)
 - `summary`: one line
 - `safety`: why the fix is safe or unsafe to auto-apply, i.e. whether it changes anything
   observable (tests, ACs, visible behavior)

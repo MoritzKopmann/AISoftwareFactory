@@ -30,7 +30,7 @@ gh issue view <n> --json title,body,labels,state,comments
   seeds the first rounds.
 
 **Project slots.** Load `project-toolchain` with the Skill tool (bare name). Load
-`project-architecture` too (its `## UI` decides a question below). `Unknown skill` → stop:
+`project-architecture` too (it decides a question below). `Unknown skill` → stop:
 "project not onboarded". Load `project-index` if it exists. Skip silently if absent.
 
 **Resume.** `.aisf/artifacts/create-<n>/ledger.md` exists → read it. Continue from it. Never
@@ -86,8 +86,8 @@ Load `aisf:grilling` and follow it. Specific to create-ticket:
 **Enhancement or feature**
 
 1. User and goal.
-2. Trigger or entry point: where in the app the flow starts. Ask only when the feature has UI
-   per `project-architecture`'s `## UI`.
+2. Trigger or entry point: where in the app the flow starts. Ask only when the feature has a
+   surface a human sees.
 3. Core behaviour: the happy path, step by step.
 4. Edge cases and error states.
 5. Non-goals: out of scope, explicitly. Use the `project-index` recall of the touched feature
