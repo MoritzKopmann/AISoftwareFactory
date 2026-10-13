@@ -139,6 +139,18 @@ gh issue create \
 
 It prints the new issue URL on stdout.
 
+### Read back
+
+After every `gh issue create` or `gh issue edit` that sets a body, read the body back before
+moving on. Stop and report if it is empty or much shorter than the file you sent:
+
+```bash
+gh issue view <n> --json body --jq '.body | length'
+wc -c < <tmp>
+```
+
+Never send a `--body-file` you have not checked is non-empty.
+
 ### Edit an idea in place
 
 For `aisf:create-ticket` on an existing idea `#N`:
