@@ -13,6 +13,7 @@ export type ProjectContract = {
 export const projectContract: ProjectContract = {
   slots: [
     { kind: 'skill', name: 'project-architecture' },
+    { kind: 'skill', name: 'code-rules' },
     { kind: 'skill', name: 'project-testing' },
     {
       kind: 'toolchain',

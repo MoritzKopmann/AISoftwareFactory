@@ -133,6 +133,7 @@ describe('createSkillsModule', () => {
       expect(report.passed).toBe(false);
       expect(report.missingSlots).toEqual([
         'project-architecture',
+        'code-rules',
         'project-testing',
         'project-toolchain',
       ]);

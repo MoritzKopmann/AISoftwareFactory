@@ -15,14 +15,43 @@ describe('ContractPreflightUseCase', () => {
       expect(report.passed).toBe(false);
       expect(report.missingSlots).toEqual([
         'project-architecture',
+        'code-rules',
         'project-testing',
         'project-toolchain',
       ]);
     });
 
+    it('should report code-rules as missing when only that slot is absent', async () => {
+      const slotReader = new FakeSlotReader();
+      slotReader.setSlotText(checkoutPath, 'project-architecture', 'any shape');
+      slotReader.setSlotText(checkoutPath, 'project-testing', 'any shape');
+      slotReader.setSlotText(
+        checkoutPath,
+        'project-toolchain',
+        [
+          '```yaml aisf-toolchain',
+          'format: a',
+          'analyze: a',
+          'test: a',
+          'test_file: a',
+          'manifests: a',
+          'registry: a',
+          'platforms: a',
+          '```',
+        ].join('\n'),
+      );
+      const useCase = new ContractPreflightUseCase({ slotReader });
+
+      const report = await useCase.execute(checkoutPath);
+
+      expect(report.passed).toBe(false);
+      expect(report.missingSlots).toEqual(['code-rules']);
+    });
+
     it('should pass when the checkout has every slot and toolchain key', async () => {
       const slotReader = new FakeSlotReader();
       slotReader.setSlotText(checkoutPath, 'project-architecture', 'any shape');
+      slotReader.setSlotText(checkoutPath, 'code-rules', 'any shape');
       slotReader.setSlotText(checkoutPath, 'project-testing', 'any shape');
       slotReader.setSlotText(
         checkoutPath,
@@ -51,6 +80,7 @@ describe('ContractPreflightUseCase', () => {
     it('should fail with only project-testing missing when that slot is absent', async () => {
       const slotReader = new FakeSlotReader();
       slotReader.setSlotText(checkoutPath, 'project-architecture', 'any shape');
+      slotReader.setSlotText(checkoutPath, 'code-rules', 'any shape');
       slotReader.setSlotText(
         checkoutPath,
         'project-toolchain',
