@@ -18,7 +18,6 @@ import {
 const passingReport = {
   passed: true,
   missingSlots: [],
-  missingHeadings: [],
   missingKeys: [],
 };
 

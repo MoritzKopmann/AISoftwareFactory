@@ -8,7 +8,6 @@ export type AddProjectRequest = z.infer<typeof addProjectRequestSchema>;
 export const contractPreflightReportSchema = z.object({
   passed: z.boolean(),
   missingSlots: z.array(z.string()),
-  missingHeadings: z.array(z.object({ slot: z.string(), heading: z.string() })),
   missingKeys: z.array(z.string()),
 });
 export type ContractPreflightReportResponse = z.infer<typeof contractPreflightReportSchema>;

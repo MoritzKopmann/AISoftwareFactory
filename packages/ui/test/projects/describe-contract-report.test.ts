@@ -6,7 +6,6 @@ describe('describeContractReport', () => {
     const description = describeContractReport({
       passed: true,
       missingSlots: [],
-      missingHeadings: [],
       missingKeys: [],
     });
 
@@ -17,7 +16,6 @@ describe('describeContractReport', () => {
     const description = describeContractReport({
       passed: false,
       missingSlots: ['project-architecture'],
-      missingHeadings: [],
       missingKeys: [],
     });
 
@@ -27,17 +25,16 @@ describe('describeContractReport', () => {
     });
   });
 
-  it('should name a missing heading with its slot and pluralize the count', () => {
+  it('should list slots and keys and pluralize the count', () => {
     const description = describeContractReport({
       passed: false,
-      missingSlots: [],
-      missingHeadings: [{ slot: 'project-architecture', heading: '## Hard bans' }],
-      missingKeys: ['format'],
+      missingSlots: ['project-testing'],
+      missingKeys: ['test'],
     });
 
     expect(description).toEqual({
       headline: 'Contract pre-flight: 2 parts missing',
-      missingItems: ['project-architecture: ## Hard bans', 'format'],
+      missingItems: ['project-testing', 'test'],
     });
   });
 });

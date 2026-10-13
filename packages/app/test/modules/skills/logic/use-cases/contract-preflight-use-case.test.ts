@@ -20,29 +20,10 @@ describe('ContractPreflightUseCase', () => {
       ]);
     });
 
-    it('should pass when the checkout has every slot, heading and toolchain key', async () => {
+    it('should pass when the checkout has every slot and toolchain key', async () => {
       const slotReader = new FakeSlotReader();
-      slotReader.setSlotText(
-        checkoutPath,
-        'project-architecture',
-        [
-          '## Stack',
-          '## Module layout',
-          '## Placement rules',
-          '## Hard bans',
-          '## Plan vocabulary',
-          '## UI',
-          '## Easy-to-miss wiring',
-          '## Load also',
-        ].join('\n'),
-      );
-      slotReader.setSlotText(
-        checkoutPath,
-        'project-testing',
-        ['## Mechanics', '## Layout and naming', '## Fakes and fixtures', '## Load also'].join(
-          '\n',
-        ),
-      );
+      slotReader.setSlotText(checkoutPath, 'project-architecture', 'any shape');
+      slotReader.setSlotText(checkoutPath, 'project-testing', 'any shape');
       slotReader.setSlotText(
         checkoutPath,
         'project-toolchain',
@@ -63,9 +44,34 @@ describe('ContractPreflightUseCase', () => {
       expect(await useCase.execute(checkoutPath)).toEqual({
         passed: true,
         missingSlots: [],
-        missingHeadings: [],
         missingKeys: [],
       });
+    });
+
+    it('should fail with only project-testing missing when that slot is absent', async () => {
+      const slotReader = new FakeSlotReader();
+      slotReader.setSlotText(checkoutPath, 'project-architecture', 'any shape');
+      slotReader.setSlotText(
+        checkoutPath,
+        'project-toolchain',
+        [
+          '```yaml aisf-toolchain',
+          'format: a',
+          'analyze: a',
+          'test: a',
+          'test_file: a',
+          'manifests: a',
+          'registry: a',
+          'platforms: a',
+          '```',
+        ].join('\n'),
+      );
+      const useCase = new ContractPreflightUseCase({ slotReader });
+
+      const report = await useCase.execute(checkoutPath);
+
+      expect(report.passed).toBe(false);
+      expect(report.missingSlots).toEqual(['project-testing']);
     });
 
     it("should pass for this repository's own checkout", async () => {
@@ -74,7 +80,6 @@ describe('ContractPreflightUseCase', () => {
       expect(await useCase.execute(process.cwd())).toEqual({
         passed: true,
         missingSlots: [],
-        missingHeadings: [],
         missingKeys: [],
       });
     });

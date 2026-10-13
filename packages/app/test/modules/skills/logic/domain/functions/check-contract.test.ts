@@ -4,12 +4,8 @@ import type { ProjectContract } from '../../../../../../src/modules/skills/logic
 
 const contract: ProjectContract = {
   slots: [
-    {
-      kind: 'headings',
-      name: 'project-architecture',
-      requiredHeadings: ['## Stack', '## Hard bans'],
-    },
-    { kind: 'headings', name: 'project-testing', requiredHeadings: ['## Mechanics'] },
+    { kind: 'skill', name: 'project-architecture' },
+    { kind: 'skill', name: 'project-testing' },
     {
       kind: 'toolchain',
       name: 'project-toolchain',
@@ -27,24 +23,23 @@ const completeToolchainText = [
 ].join('\n');
 
 describe('checkContract', () => {
-  it('should pass when every slot has every heading and key', () => {
+  it('should pass when every skill slot exists and every key is present', () => {
     const slotTexts = new Map([
-      ['project-architecture', '## Stack\n## Hard bans'],
-      ['project-testing', '## Mechanics'],
+      ['project-architecture', 'any shape'],
+      ['project-testing', 'any shape'],
       ['project-toolchain', completeToolchainText],
     ]);
 
     expect(checkContract(contract, slotTexts)).toEqual({
       passed: true,
       missingSlots: [],
-      missingHeadings: [],
       missingKeys: [],
     });
   });
 
-  it('should list a slot as missing when its text is absent, without listing its headings', () => {
+  it('should list a slot as missing when its text is absent', () => {
     const slotTexts = new Map([
-      ['project-testing', '## Mechanics'],
+      ['project-testing', 'any shape'],
       ['project-toolchain', completeToolchainText],
     ]);
 
@@ -52,28 +47,12 @@ describe('checkContract', () => {
 
     expect(report.passed).toBe(false);
     expect(report.missingSlots).toEqual(['project-architecture']);
-    expect(report.missingHeadings).toEqual([]);
-  });
-
-  it('should list a missing heading by slot and heading name', () => {
-    const slotTexts = new Map([
-      ['project-architecture', '## Stack'],
-      ['project-testing', '## Mechanics'],
-      ['project-toolchain', completeToolchainText],
-    ]);
-
-    const report = checkContract(contract, slotTexts);
-
-    expect(report.passed).toBe(false);
-    expect(report.missingHeadings).toEqual([
-      { slot: 'project-architecture', heading: '## Hard bans' },
-    ]);
   });
 
   it('should list every required key as missing when the toolchain fence is absent', () => {
     const slotTexts = new Map([
-      ['project-architecture', '## Stack\n## Hard bans'],
-      ['project-testing', '## Mechanics'],
+      ['project-architecture', 'any shape'],
+      ['project-testing', 'any shape'],
       ['project-toolchain', 'no fence here'],
     ]);
 
@@ -85,8 +64,8 @@ describe('checkContract', () => {
 
   it('should list only the missing keys when the fence has some of them', () => {
     const slotTexts = new Map([
-      ['project-architecture', '## Stack\n## Hard bans'],
-      ['project-testing', '## Mechanics'],
+      ['project-architecture', 'any shape'],
+      ['project-testing', 'any shape'],
       ['project-toolchain', ['```yaml aisf-toolchain', 'format: npm run format', '```'].join('\n')],
     ]);
 

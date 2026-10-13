@@ -8,7 +8,7 @@ function project(owner: string, name: string): ProjectResponse {
     repository: { owner, name },
     checkoutPath: `/checkouts/${name}`,
     addedAt: '2026-01-01T00:00:00Z',
-    contract: { passed: true, missingSlots: [], missingHeadings: [], missingKeys: [] },
+    contract: { passed: true, missingSlots: [], missingKeys: [] },
   };
 }
 

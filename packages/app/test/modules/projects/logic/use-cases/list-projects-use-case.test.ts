@@ -5,7 +5,6 @@ import { FakeContractPreflight, FakeProjectRepository } from '../../fakes/fake-p
 const failingReport = {
   passed: false,
   missingSlots: ['project-architecture'],
-  missingHeadings: [],
   missingKeys: [],
 };
 
@@ -54,7 +53,6 @@ describe('ListProjectsUseCase', () => {
       contractPreflight.setReport(project.checkoutPath, {
         passed: true,
         missingSlots: [],
-        missingHeadings: [],
         missingKeys: [],
       });
       const [secondListing] = await useCase.execute();
@@ -63,7 +61,6 @@ describe('ListProjectsUseCase', () => {
       expect(secondListing?.contract).toEqual({
         passed: true,
         missingSlots: [],
-        missingHeadings: [],
         missingKeys: [],
       });
     });
