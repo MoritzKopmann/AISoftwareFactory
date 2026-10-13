@@ -5,9 +5,7 @@ import { ContractReport } from '../../src/projects/contract-report.js';
 describe('ContractReport', () => {
   it('should render nothing when the contract check passed', () => {
     const markup = renderToStaticMarkup(
-      <ContractReport
-        report={{ passed: true, missingSlots: [], missingHeadings: [], missingKeys: [] }}
-      />,
+      <ContractReport report={{ passed: true, missingSlots: [], missingKeys: [] }} />,
     );
 
     expect(markup).toBe('');
@@ -19,7 +17,6 @@ describe('ContractReport', () => {
         report={{
           passed: false,
           missingSlots: ['project-testing', 'project-toolchain'],
-          missingHeadings: [],
           missingKeys: [],
         }}
       />,
@@ -34,9 +31,7 @@ describe('ContractReport', () => {
 
   it('should render no list when the check failed with nothing to name', () => {
     const markup = renderToStaticMarkup(
-      <ContractReport
-        report={{ passed: false, missingSlots: [], missingHeadings: [], missingKeys: [] }}
-      />,
+      <ContractReport report={{ passed: false, missingSlots: [], missingKeys: [] }} />,
     );
 
     expect(markup).not.toContain('<ul');

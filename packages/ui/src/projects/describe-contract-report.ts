@@ -12,11 +12,7 @@ export function describeContractReport(
     return { headline: 'Contract pre-flight passed', missingItems: [] };
   }
 
-  const missingItems = [
-    ...report.missingSlots,
-    ...report.missingHeadings.map((missing) => `${missing.slot}: ${missing.heading}`),
-    ...report.missingKeys,
-  ];
+  const missingItems = [...report.missingSlots, ...report.missingKeys];
 
   return {
     headline: `Contract pre-flight: ${missingItems.length} part${missingItems.length === 1 ? '' : 's'} missing`,

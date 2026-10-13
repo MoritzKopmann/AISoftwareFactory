@@ -28,25 +28,11 @@ function findMissingKeys(slot: ContractSlot, slotText: string): ReadonlyArray<st
   return slot.requiredKeys.filter((key) => !foundKeys.includes(key));
 }
 
-function findMissingHeadings(
-  slot: ContractSlot,
-  slotText: string,
-): ReadonlyArray<{ readonly slot: string; readonly heading: string }> {
-  if (slot.kind !== 'headings') {
-    return [];
-  }
-
-  return slot.requiredHeadings
-    .filter((heading) => !slotText.includes(heading))
-    .map((heading) => ({ slot: slot.name, heading }));
-}
-
 export function checkContract(
   contract: ProjectContract,
   slotTexts: ReadonlyMap<string, string | undefined>,
 ): ContractPreflightReport {
   const missingSlots: string[] = [];
-  const missingHeadings: Array<{ slot: string; heading: string }> = [];
   const missingKeys: string[] = [];
 
   for (const slot of contract.slots) {
@@ -56,14 +42,12 @@ export function checkContract(
       continue;
     }
 
-    missingHeadings.push(...findMissingHeadings(slot, slotText));
     missingKeys.push(...findMissingKeys(slot, slotText));
   }
 
   return {
-    passed: missingSlots.length === 0 && missingHeadings.length === 0 && missingKeys.length === 0,
+    passed: missingSlots.length === 0 && missingKeys.length === 0,
     missingSlots,
-    missingHeadings,
     missingKeys,
   };
 }

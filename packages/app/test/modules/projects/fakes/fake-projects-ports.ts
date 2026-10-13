@@ -13,7 +13,6 @@ import type {
 const passingReport: ContractPreflightReport = {
   passed: true,
   missingSlots: [],
-  missingHeadings: [],
   missingKeys: [],
 };
 

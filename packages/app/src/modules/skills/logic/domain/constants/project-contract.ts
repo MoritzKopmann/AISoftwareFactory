@@ -1,9 +1,5 @@
 export type ContractSlot =
-  | {
-      readonly kind: 'headings';
-      readonly name: string;
-      readonly requiredHeadings: ReadonlyArray<string>;
-    }
+  | { readonly kind: 'skill'; readonly name: string }
   | {
       readonly kind: 'toolchain';
       readonly name: string;
@@ -16,30 +12,8 @@ export type ProjectContract = {
 
 export const projectContract: ProjectContract = {
   slots: [
-    {
-      kind: 'headings',
-      name: 'project-architecture',
-      requiredHeadings: [
-        '## Stack',
-        '## Module layout',
-        '## Placement rules',
-        '## Hard bans',
-        '## Plan vocabulary',
-        '## UI',
-        '## Easy-to-miss wiring',
-        '## Load also',
-      ],
-    },
-    {
-      kind: 'headings',
-      name: 'project-testing',
-      requiredHeadings: [
-        '## Mechanics',
-        '## Layout and naming',
-        '## Fakes and fixtures',
-        '## Load also',
-      ],
-    },
+    { kind: 'skill', name: 'project-architecture' },
+    { kind: 'skill', name: 'project-testing' },
     {
       kind: 'toolchain',
       name: 'project-toolchain',
