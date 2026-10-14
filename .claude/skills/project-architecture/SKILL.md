@@ -41,34 +41,7 @@ something "upward", stop: the interface is in the wrong place.
 
 ## Module layout
 
-```
-src/
-├── main.ts                     starts the transport
-├── composition-root.ts         wires modules to each other (only imports module index.ts files)
-├── shared/                     errors.ts, event-bus.ts (+ impl), http.ts, jobs.ts — last resort, no business rules
-└── modules/<module>/
-    ├── index.ts                create<Module>Module(deps) → { routes, jobs, internal }
-    ├── presentation/
-    │   ├── api/                HTTP controllers + <module>.routes.ts
-    │   ├── internal/           <module>.api.ts (interface) + <module>.facade.ts — for other modules
-    │   ├── bus/  cli/  cron/  queue/<queue-name>/
-    │   └── dto/
-    │       ├── api/            HTTP DTOs (JSON-serializable)
-    │       ├── internal/       internal-API DTOs (plain readonly data)
-    │       └── mapper/         entity ↔ DTO — the only place that sees both
-    ├── business/
-    │   ├── domain/             entities, value objects (pure)
-    │   ├── service/            use cases — all rules live here
-    │   └── port/               interfaces business needs, one folder per capability
-    │       ├── repository/     repository interfaces
-    │       └── <capability>/   other needs: mail/, payments/, customer/ …
-    └── infrastructure/
-        ├── repository/         repository implementations
-        ├── <capability>/       mirrors business/port/<capability>/
-        └── internal/           adapters calling other modules
-```
-
-Only create the folders a module needs.
+The folder tree is in `references/rules.md`, section "Folder layout". It is the only copy, so read it there.
 
 ## Example app map
 
