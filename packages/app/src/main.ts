@@ -43,13 +43,14 @@ runJob(application.jobs, 'tickets.start').catch((error: unknown) => {
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
-    application.abortSessions();
+    // The job stops the sessions before its first await, so it is done when the process exits.
+    runJob(application.jobs, 'runner.abort-sessions').catch(() => undefined);
     process.exit(0);
   });
 }
 
 try {
-  await runJob(application.jobs, 'runner.recover');
+  await runJob(application.jobs, 'runner.recover-interrupted-runs');
 } catch (error) {
   logger.error(`Recovering interrupted runs failed: ${String(error)}`);
 }

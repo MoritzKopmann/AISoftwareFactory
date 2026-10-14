@@ -1,183 +1,126 @@
-import { Hono } from 'hono';
-import type { EventPublisher } from '../../shared/event-bus.js';
-import type { Clock } from '../../shared/clock/clock.js';
-import type { AgentToolRegistry } from '../../shared/agent-tools.js';
-import type { Logger } from '../../shared/logger/create-logger.js';
-import { createRunLogRoutes } from './api/routes/create-run-log-routes.js';
-import { createStopRunRoutes } from './api/routes/create-stop-run-routes.js';
-import { createCheckpointTool } from './api/tools/create-checkpoint-tool.js';
-import { createEscalateTool } from './api/tools/create-escalate-tool.js';
-import { createParkTool } from './api/tools/create-park-tool.js';
-import type { FinishRun } from './logic/domain/types/finish-run.js';
-import type { LaunchRunSession } from './logic/domain/types/launch-run-session.js';
-import type { RunAnswer } from './logic/domain/types/run-answer.js';
-import type { Run } from './logic/domain/types/run.js';
-import { RunAlreadyActiveError } from './logic/errors/run-already-active-error.js';
-import { RunNotActiveError } from './logic/errors/run-not-active-error.js';
-import { RunNotResumableError } from './logic/errors/run-not-resumable-error.js';
-import { RunTargetNotFoundError } from './logic/errors/run-target-not-found-error.js';
-import { WorktreeSetupFailedError } from './logic/errors/worktree-setup-failed-error.js';
-import type { AgentSessions } from './logic/ports/agent-sessions.js';
-import type { Identifiers } from '../../shared/identifiers/identifiers.js';
-import type { RunAnswerWaits } from './logic/ports/run-answer-waits.js';
-import type { RecentRunSteps } from './logic/ports/recent-run-steps.js';
-import type { RunRepository } from './logic/ports/run-repository.js';
-import type { RunTargets } from './logic/ports/run-targets.js';
-import type { RunTranscripts } from './logic/ports/run-transcripts.js';
-import type { Worktrees } from './logic/ports/worktrees.js';
-import type { ActiveWait } from './logic/domain/types/active-wait.js';
-import { DeliverRunAnswerUseCase } from './logic/use-cases/deliver-run-answer-use-case.js';
-import { FinishRunUseCase } from './logic/use-cases/finish-run-use-case.js';
-import { LaunchRunSessionUseCase } from './logic/use-cases/launch-run-session-use-case.js';
-import {
-  ReadActiveRunsUseCase,
-  type ActiveRun,
-} from './logic/use-cases/read-active-runs-use-case.js';
-import { ReadActiveWaitsUseCase } from './logic/use-cases/read-active-waits-use-case.js';
-import { ReadLatestRunUseCase } from './logic/use-cases/read-latest-run-use-case.js';
-import { ReadRunUseCase } from './logic/use-cases/read-run-use-case.js';
-import { ReadTicketRunLogUseCase } from './logic/use-cases/read-ticket-run-log-use-case.js';
-import { RecoverInterruptedRunsUseCase } from './logic/use-cases/recover-interrupted-runs-use-case.js';
-import { ResumeRunUseCase } from './logic/use-cases/resume-run-use-case.js';
-import { SettleRunUseCase } from './logic/use-cases/settle-run-use-case.js';
-import { StartRunUseCase, type StartRunRequest } from './logic/use-cases/start-run-use-case.js';
-import { StopRunUseCase } from './logic/use-cases/stop-run-use-case.js';
-import { WaitForRunAnswerUseCase } from './logic/use-cases/wait-for-run-answer-use-case.js';
+import type { AgentSessions } from './business/port/session/agent-sessions.js';
+import type { RecentRunSteps } from './business/port/repository/recent-run-steps.js';
+import type { RunAnswerWaits } from './business/port/repository/run-answer-waits.js';
+import type { RunRepository } from './business/port/repository/run-repository.js';
+import { RunAnswerService } from './business/service/run-answer-service.js';
+import { RunEndService } from './business/service/run-end-service.js';
+import { RunQueryService } from './business/service/run-query-service.js';
+import { RunStartService } from './business/service/run-start-service.js';
+import type { RunTargets } from './business/port/target/run-targets.js';
+import type { RunTranscripts } from './business/port/transcript/run-transcripts.js';
+import type { Worktrees } from './business/port/worktree/worktrees.js';
+import { InMemoryRecentRunSteps } from './infrastructure/repository/in-memory-recent-run-steps.js';
+import { InMemoryRunAnswerWaits } from './infrastructure/repository/in-memory-run-answer-waits.js';
+import { SqliteRunRepository } from './infrastructure/repository/sqlite-run-repository.js';
+import { ProjectsRunTargets } from './infrastructure/internal/projects-run-targets.js';
+import { ClaudeAgentSdkSessions } from './infrastructure/session/claude-agent-sdk-sessions.js';
+import { ClaudeAgentSdkRunTranscripts } from './infrastructure/transcript/claude-agent-sdk-run-transcripts.js';
+import { GitCliWorktrees } from './infrastructure/worktree/git-cli-worktrees.js';
+import { createRunnerRoutes } from './presentation/api/runner-routes.js';
+import { createRunnerAbortSessionsJob } from './presentation/cron/runner-abort-sessions-job.js';
+import { createRunnerRecoverInterruptedRunsJob } from './presentation/cron/runner-recover-interrupted-runs-job.js';
+import { RunnerFacade } from './presentation/internal/runner-facade.js';
+import type {
+  RunnerModule,
+  RunnerModuleDependencies,
+} from './presentation/internal/runner-module.js';
+import { createCheckpointTool } from './presentation/tool/create-checkpoint-tool.js';
+import { createEscalateTool } from './presentation/tool/create-escalate-tool.js';
+import { createParkTool } from './presentation/tool/create-park-tool.js';
+import type { ProjectsApi } from '../projects/index.js';
 
-export type { PermissionDecision } from './logic/domain/types/permission-decision.js';
-export type { RunAnswer } from './logic/domain/types/run-answer.js';
-export type { Run } from './logic/domain/types/run.js';
-export type { RunWait } from './logic/domain/types/run-wait.js';
-export type { RunWaitOutcome } from './logic/domain/types/run-wait-outcome.js';
-export type { RunEnding } from './logic/domain/types/run-ending.js';
-export type { RunMode } from './logic/domain/types/run-mode.js';
-export type { RunStage } from './logic/domain/types/run-stage.js';
-export type { RunStep } from './logic/domain/types/run-step.js';
-export type { ActiveWait } from './logic/domain/types/active-wait.js';
-export type { ActiveRun } from './logic/use-cases/read-active-runs-use-case.js';
-export type { StartRunRequest } from './logic/use-cases/start-run-use-case.js';
-export {
-  RunAlreadyActiveError,
-  RunNotActiveError,
-  RunNotResumableError,
-  RunTargetNotFoundError,
-  WorktreeSetupFailedError,
-};
+export type { RunnerApi } from './presentation/internal/runner-api.js';
+export type {
+  RunnerModule,
+  RunnerModuleDependencies,
+} from './presentation/internal/runner-module.js';
+export type { ActiveRunDto } from './presentation/dto/internal/active-run-dto.js';
+export type { ActiveWaitDto } from './presentation/dto/internal/active-wait-dto.js';
+export type { AnswerRunResultDto } from './presentation/dto/internal/answer-run-result-dto.js';
+export type { RunAnswerDto } from './presentation/dto/internal/run-answer-dto.js';
+export type { RunDto } from './presentation/dto/internal/run-dto.js';
+export type { RunEndingDto, RunWaitDto } from './presentation/dto/internal/run-ending-dto.js';
+export type { RunStepDto } from './presentation/dto/internal/run-step-dto.js';
+export type { StartRunRequestDto } from './presentation/dto/internal/start-run-request-dto.js';
+export type { StartRunResultDto } from './presentation/dto/internal/start-run-result-dto.js';
 
-export type RunnerModuleDependencies = {
+type RunnerInfrastructure = {
   readonly runRepository: RunRepository;
   readonly agentSessions: AgentSessions;
   readonly worktrees: Worktrees;
   readonly runTargets: RunTargets;
   readonly recentRunSteps: RecentRunSteps;
   readonly runTranscripts: RunTranscripts;
-  readonly identifiers: Identifiers;
   readonly runAnswerWaits: RunAnswerWaits;
-  readonly liveAnswerWindowMilliseconds: number;
-  readonly clock: Clock;
-  readonly events: EventPublisher;
-  readonly worktreesDirectory: string;
-  readonly agentTools: AgentToolRegistry;
-  readonly logger: Logger;
 };
 
-export type RunnerModule = {
-  readonly routes: Hono;
-  readonly start: (request: StartRunRequest) => Promise<Run>;
-  readonly answer: (runId: string, answer: RunAnswer) => Promise<Run>;
-  readonly findRun: (runId: string) => Promise<Run | undefined>;
-  readonly activeRuns: (projectId: string) => Promise<ReadonlyArray<ActiveRun>>;
-  readonly activeWaits: (projectId: string) => Promise<ReadonlyArray<ActiveWait>>;
-  readonly latestRun: (projectId: string, ticketNumber: number) => Promise<Run | undefined>;
-  readonly settle: (runId: string) => Promise<void>;
-  readonly recover: () => Promise<void>;
-  readonly abortSessions: () => void;
-};
+const answerTimeoutMarginMilliseconds = 600_000;
 
-export function createRunnerModule(dependencies: RunnerModuleDependencies): RunnerModule {
-  const { runRepository, agentSessions, recentRunSteps, runAnswerWaits, clock, events } =
-    dependencies;
+export function createRunnerModule(
+  dependencies: RunnerModuleDependencies & { readonly projects: ProjectsApi },
+  overrides: Partial<RunnerInfrastructure> = {},
+): RunnerModule {
+  const { clock, events } = dependencies;
+  const infrastructure: RunnerInfrastructure = {
+    runRepository: new SqliteRunRepository(dependencies.database),
+    agentSessions: new ClaudeAgentSdkSessions({
+      claudeExecutablePath: dependencies.claudeExecutablePath,
+      pluginDirectory: dependencies.pluginDirectory,
+      now: () => clock.now(),
+      answerTimeoutMilliseconds:
+        dependencies.liveAnswerWindowMilliseconds + answerTimeoutMarginMilliseconds,
+    }),
+    worktrees: new GitCliWorktrees(),
+    runTargets: new ProjectsRunTargets(dependencies.projects),
+    recentRunSteps: new InMemoryRecentRunSteps(),
+    runTranscripts: new ClaudeAgentSdkRunTranscripts(),
+    runAnswerWaits: new InMemoryRunAnswerWaits(),
+    ...overrides,
+  };
+  const { runRepository, agentSessions, recentRunSteps, runAnswerWaits } = infrastructure;
 
-  const finishRunUseCase = new FinishRunUseCase({
+  const runEndService = new RunEndService({
     runRepository,
     agentSessions,
     runAnswerWaits,
     clock,
     events,
-  });
-  const finishRun: FinishRun = (runId, ending) => finishRunUseCase.execute(runId, ending);
-  const waitForRunAnswer = new WaitForRunAnswerUseCase({
-    runRepository,
-    runAnswerWaits,
-    clock,
-    events,
-    finishRun,
-    windowMilliseconds: dependencies.liveAnswerWindowMilliseconds,
   });
   const ownTools = [createEscalateTool(), createParkTool(), createCheckpointTool()];
-  const launchRunSessionUseCase = new LaunchRunSessionUseCase({
+  const runStartService = new RunStartService({
+    runRepository,
+    worktrees: infrastructure.worktrees,
+    runTargets: infrastructure.runTargets,
     agentSessions,
     recentRunSteps,
-    runRepository,
-    finishRun,
-    events,
-    waitForRunAnswer: (run, wait) => waitForRunAnswer.execute(run, wait),
-    tools: () => [...ownTools, ...dependencies.agentTools.list()],
-    logger: dependencies.logger,
-  });
-  const launchRunSession: LaunchRunSession = (run, launch) =>
-    launchRunSessionUseCase.execute(run, launch);
-  const startRun = new StartRunUseCase({
-    runRepository,
-    worktrees: dependencies.worktrees,
-    runTargets: dependencies.runTargets,
-    identifiers: dependencies.identifiers,
-    clock,
-    finishRun,
-    events,
-    launchRunSession,
-    worktreesDirectory: dependencies.worktreesDirectory,
-  });
-  const resumeRun = new ResumeRunUseCase({
-    runRepository,
-    identifiers: dependencies.identifiers,
-    clock,
-    events,
-    launchRunSession,
-  });
-  const deliverRunAnswer = new DeliverRunAnswerUseCase({
-    runRepository,
     runAnswerWaits,
-    resumeRun: (runId, answer) => resumeRun.execute(runId, answer),
-  });
-  const readRun = new ReadRunUseCase({ runRepository });
-  const stopRun = new StopRunUseCase({ runRepository, finishRun });
-  const readActiveRuns = new ReadActiveRunsUseCase({ runRepository, recentRunSteps });
-  const readActiveWaits = new ReadActiveWaitsUseCase({ runRepository });
-  const readLatestRun = new ReadLatestRunUseCase({ runRepository });
-  const readTicketRunLog = new ReadTicketRunLogUseCase({
-    runRepository,
-    runTranscripts: dependencies.runTranscripts,
-  });
-  const settleRun = new SettleRunUseCase({ runRepository, clock });
-  const recoverInterruptedRuns = new RecoverInterruptedRunsUseCase({
-    runRepository,
-    finishRun,
+    identifiers: dependencies.identifiers,
+    clock,
     events,
+    logger: dependencies.logger,
+    runEndService,
+    tools: () => [...ownTools, ...dependencies.agentTools.list()],
+    worktreesDirectory: dependencies.worktreesDirectory,
+    windowMilliseconds: dependencies.liveAnswerWindowMilliseconds,
+  });
+  const runAnswerService = new RunAnswerService({ runRepository, runAnswerWaits, runStartService });
+  const runQueryService = new RunQueryService({
+    runRepository,
+    recentRunSteps,
+    runTranscripts: infrastructure.runTranscripts,
   });
 
   return {
-    routes: new Hono()
-      .route('/runs', createStopRunRoutes(stopRun))
-      .route('/projects', createRunLogRoutes(readTicketRunLog)),
-    start: (request) => startRun.execute(request),
-    answer: (runId, answer) => deliverRunAnswer.execute(runId, answer),
-    findRun: (runId) => readRun.execute(runId),
-    activeRuns: (projectId) => readActiveRuns.execute(projectId),
-    activeWaits: (projectId) => readActiveWaits.execute(projectId),
-    latestRun: (projectId, ticketNumber) => readLatestRun.execute(projectId, ticketNumber),
-    settle: (runId) => settleRun.execute(runId),
-    recover: () => recoverInterruptedRuns.execute(),
-    abortSessions: () => agentSessions.stopAll(),
+    routes: createRunnerRoutes({ runEndService, runQueryService }),
+    jobs: {
+      'runner.recover-interrupted-runs': createRunnerRecoverInterruptedRunsJob(runEndService),
+      'runner.abort-sessions': createRunnerAbortSessionsJob(runEndService),
+    },
+    internal: new RunnerFacade({
+      runStartService,
+      runEndService,
+      runAnswerService,
+      runQueryService,
+    }),
   };
 }

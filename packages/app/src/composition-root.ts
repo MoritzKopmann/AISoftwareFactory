@@ -18,19 +18,8 @@ import {
   type ProjectsModule,
 } from './modules/projects/index.js';
 import { createSkillsModule, type SkillsApi, type SkillsModule } from './modules/skills/index.js';
-import { ClaudeAgentSdkRunTranscripts } from './modules/runner/infra/integrations/claude-agent-sdk-run-transcripts.js';
-import { ClaudeAgentSdkSessions } from './modules/runner/infra/integrations/claude-agent-sdk-sessions.js';
-import { GitCliWorktrees } from './modules/runner/infra/integrations/git-cli-worktrees.js';
-import { InMemoryRunAnswerWaits } from './modules/runner/infra/integrations/in-memory-run-answer-waits.js';
-import { InMemoryRecentRunSteps } from './modules/runner/infra/integrations/in-memory-recent-run-steps.js';
 import { RandomUuidIdentifiers } from './shared/identifiers/random-uuid-identifiers.js';
-import { SqliteRunRepository } from './modules/runner/infra/repositories/sqlite-run-repository.js';
-import {
-  createRunnerModule,
-  RunAlreadyActiveError as RunnerRunAlreadyActiveError,
-  RunNotResumableError,
-  type RunnerModule,
-} from './modules/runner/index.js';
+import { createRunnerModule, type RunnerApi, type RunnerModule } from './modules/runner/index.js';
 import { GhCliPullRequestMerges } from './modules/scheduler/infra/integrations/gh-cli-pull-request-merges.js';
 import {
   createSchedulerModule,
@@ -68,7 +57,7 @@ function buildArtifactsModule(
   kitDirectory: string,
   database: DatabaseSync,
   agentTools: AgentToolRegistry,
-  runner: Pick<RunnerModule, 'latestRun'>,
+  runner: Pick<RunnerApi, 'latestRun'>,
   checkpointAnswers: CheckpointAnswers,
   events: EventPublisher,
 ): ArtifactsModule {
@@ -173,8 +162,6 @@ function buildFindingsModule(
   });
 }
 
-const answerTimeoutMarginMilliseconds = 600_000;
-
 function buildRunnerModule(
   config: Config,
   database: DatabaseSync,
@@ -184,35 +171,18 @@ function buildRunnerModule(
   agentTools: AgentToolRegistry,
   logger: Logger,
 ): RunnerModule {
-  const clock = new SystemClock();
   return createRunnerModule({
-    runRepository: new SqliteRunRepository(database),
-    agentSessions: new ClaudeAgentSdkSessions({
-      claudeExecutablePath,
-      pluginDirectory: config.pluginMirrorDirectory,
-      now: () => clock.now(),
-      answerTimeoutMilliseconds:
-        config.liveAnswerWindowMilliseconds + answerTimeoutMarginMilliseconds,
-    }),
-    worktrees: new GitCliWorktrees(),
-    runTargets: {
-      find: async (projectId) => {
-        const project = (await projects.list()).find(({ id }) => id === projectId);
-        return project === undefined
-          ? undefined
-          : { checkoutPath: project.checkoutPath, repositoryName: project.repository.name };
-      },
-    },
-    recentRunSteps: new InMemoryRecentRunSteps(),
-    runTranscripts: new ClaudeAgentSdkRunTranscripts(),
+    database,
+    projects,
+    clock: new SystemClock(),
     identifiers: new RandomUuidIdentifiers(),
-    runAnswerWaits: new InMemoryRunAnswerWaits(),
-    liveAnswerWindowMilliseconds: config.liveAnswerWindowMilliseconds,
-    clock,
     events,
-    worktreesDirectory: config.worktreesDirectory,
     agentTools,
     logger,
+    claudeExecutablePath,
+    pluginDirectory: config.pluginMirrorDirectory,
+    worktreesDirectory: config.worktreesDirectory,
+    liveAnswerWindowMilliseconds: config.liveAnswerWindowMilliseconds,
   });
 }
 
@@ -221,7 +191,7 @@ function buildSchedulerModule(
   projects: ProjectsApi,
   skills: SkillsApi,
   tickets: TicketsModule,
-  runner: RunnerModule,
+  runner: RunnerApi,
   logger: Logger,
 ): SchedulerModule {
   return createSchedulerModule({
@@ -241,31 +211,26 @@ function buildSchedulerModule(
     pullRequestMerges: new GhCliPullRequestMerges(),
     runner: {
       start: async (request) => {
-        try {
-          return await runner.start({ ...request, mode: 'afk' });
-        } catch (error) {
-          if (error instanceof RunnerRunAlreadyActiveError) {
-            throw new RunAlreadyActiveError(error.message);
-          }
-          throw error;
+        const result = await runner.start({ ...request, mode: 'afk' });
+        if (result.kind === 'already-active') {
+          throw new RunAlreadyActiveError(result.message);
         }
+        return result.run;
       },
       answer: async (runId, answer) => {
-        try {
-          return await runner.answer(runId, answer);
-        } catch (error) {
-          if (error instanceof RunnerRunAlreadyActiveError) {
-            throw new RunAlreadyActiveError(error.message);
-          }
-          if (error instanceof RunNotResumableError) {
-            throw new RunNotAnswerableError(error.message);
-          }
-          throw error;
+        const result = await runner.answer(runId, answer);
+        switch (result.kind) {
+          case 'already-active':
+            throw new RunAlreadyActiveError(result.message);
+          case 'not-resumable':
+            throw new RunNotAnswerableError(result.message);
+          case 'answered':
+            return result.run;
         }
       },
-      findRun: runner.findRun,
-      activeRuns: runner.activeRuns,
-      latestRun: runner.latestRun,
+      findRun: (runId) => runner.findRun(runId),
+      activeRuns: (projectId) => runner.activeRuns(projectId),
+      latestRun: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber),
     },
     ideaCreation: { create: tickets.createIdea },
     ticketLookup: {
@@ -317,7 +282,6 @@ export type Application = {
   readonly routes: ReadonlyArray<Hono>;
   /** Start-up jobs, keyed `<module>.<job-name>`. main.ts runs them by name. */
   readonly jobs: Jobs;
-  readonly abortSessions: () => void;
 };
 
 /** The one place the modules are wired to each other. */
@@ -347,10 +311,10 @@ export function composeApplication(options: ApplicationOptions): Application {
     projects.internal,
     {
       activeRunTicketNumbers: async (projectId) =>
-        (await runner.activeRuns(projectId)).map(({ run }) => run.ticketNumber),
+        (await runner.internal.activeRuns(projectId)).map(({ run }) => run.ticketNumber),
     },
-    { waitsOf: (projectId) => runner.activeWaits(projectId) },
-    { settle: (runId) => runner.settle(runId) },
+    { waitsOf: (projectId) => runner.internal.activeWaits(projectId) },
+    { settle: (runId) => runner.internal.settle(runId) },
     logger,
   );
   const findings = buildFindingsModule(database, agentTools, projects.internal, tickets, eventBus);
@@ -359,14 +323,14 @@ export function composeApplication(options: ApplicationOptions): Application {
     projects.internal,
     skills.internal,
     tickets,
-    runner,
+    runner.internal,
     logger,
   );
   const artifacts = buildArtifactsModule(
     kitDirectory,
     database,
     agentTools,
-    runner,
+    runner.internal,
     {
       answer: async (runId, text) => {
         try {
@@ -386,16 +350,12 @@ export function composeApplication(options: ApplicationOptions): Application {
   const routes = [
     skills.routes,
     projects.routes,
+    runner.routes,
     new Hono().route('/aisf', artifacts.kitRoutes),
     new Hono().route('/a', artifacts.pageRoutes),
-    ...[
-      findings.routes,
-      tickets.routes,
-      scheduler.routes,
-      runner.routes,
-      artifacts.routes,
-      live.routes,
-    ].map((moduleRoutes) => new Hono().route('/api', moduleRoutes)),
+    ...[findings.routes, tickets.routes, scheduler.routes, artifacts.routes, live.routes].map(
+      (moduleRoutes) => new Hono().route('/api', moduleRoutes),
+    ),
   ];
 
   const jobs: Jobs = {
@@ -404,11 +364,11 @@ export function composeApplication(options: ApplicationOptions): Application {
       scheduler.start();
       return Promise.resolve();
     },
-    // Subscribes the run settlement, so it runs before runner.recover replays unsettled runs.
+    // Subscribes the run settlement, so it runs before the runner replays unsettled runs.
     'tickets.start': () => tickets.start(),
-    'runner.recover': () => runner.recover(),
+    ...runner.jobs,
     ...projects.jobs,
   };
 
-  return { routes, jobs, abortSessions: () => runner.abortSessions() };
+  return { routes, jobs };
 }

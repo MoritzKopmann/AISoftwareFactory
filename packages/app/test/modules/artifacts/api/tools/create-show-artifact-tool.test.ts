@@ -3,7 +3,7 @@ import { createShowArtifactTool } from '../../../../../src/modules/artifacts/api
 import { PublishArtifactUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/publish-artifact-use-case.js';
 import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 import { FakeClock } from '../../../../../src/shared/testing/fake-clock.js';
-import { textResult } from '../../../runner/fakes/text-result.js';
+import { textResult } from '../../../../../src/shared/testing/text-result.js';
 import { FakeArtifactFiles } from '../../fakes/fake-artifact-files.js';
 import { InMemoryArtifactRepository } from '../../fakes/in-memory-artifact-repository.js';
 
