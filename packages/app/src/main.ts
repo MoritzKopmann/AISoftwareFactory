@@ -65,7 +65,7 @@ if (options.openBrowser) {
 }
 
 // Never-crash boundary: a failed label sync must not end the process or delay the boot.
-runJob(application.jobs, 'projects.start').catch((error: unknown) => {
+runJob(application.jobs, 'projects.sync-labels').catch((error: unknown) => {
   logger.error(`Syncing the project labels failed: ${String(error)}`);
 });
 

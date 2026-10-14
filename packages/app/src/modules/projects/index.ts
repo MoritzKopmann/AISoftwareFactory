@@ -1,43 +1,63 @@
-import { Hono } from 'hono';
-import { createProjectsRoutes } from './api/routes/create-projects-routes.js';
-import type { Logger } from '../../shared/logger/create-logger.js';
-import type { ContractPreflight } from './logic/ports/contract-preflight.js';
-import {
-  AddProjectUseCase,
-  type AddProjectDependencies,
-} from './logic/use-cases/add-project-use-case.js';
-import {
-  ListProjectsUseCase,
-  type ProjectWithContract,
-} from './logic/use-cases/list-projects-use-case.js';
-import { SyncProjectLabelsUseCase } from './logic/use-cases/sync-project-labels-use-case.js';
+import type { RepositoryResolver } from './business/port/github/repository-resolver.js';
+import type { LabelSync } from './business/port/github/label-sync.js';
+import type { ProjectRepository } from './business/port/repository/project-repository.js';
+import { ProjectLabelService } from './business/service/project-label-service.js';
+import { ProjectService } from './business/service/project-service.js';
+import { GhCliLabelSync } from './infrastructure/github/gh-cli-label-sync.js';
+import { GhCliRepositoryResolver } from './infrastructure/github/gh-cli-repository-resolver.js';
+import { SkillsContractPreflight } from './infrastructure/internal/skills-contract-preflight.js';
+import { SkillsPluginInstaller } from './infrastructure/internal/skills-plugin-installer.js';
+import { SqliteProjectRepository } from './infrastructure/repository/sqlite-project-repository.js';
+import { createProjectsRoutes } from './presentation/api/projects-routes.js';
+import { createProjectsSyncLabelsJob } from './presentation/cron/projects-sync-labels-job.js';
+import { ProjectsFacade } from './presentation/internal/projects-facade.js';
+import type {
+  ProjectsModule,
+  ProjectsModuleDependencies,
+} from './presentation/internal/projects-module.js';
+import type { SkillsApi } from '../skills/index.js';
 
-export type { Project } from './logic/domain/types/project.js';
-export type { ContractPreflightReport } from './logic/domain/types/contract-preflight-report.js';
-export type { ProjectWithContract } from './logic/use-cases/list-projects-use-case.js';
+export type { ProjectsApi } from './presentation/internal/projects-api.js';
+export type {
+  ProjectsModule,
+  ProjectsModuleDependencies,
+} from './presentation/internal/projects-module.js';
+export type { ContractPreflightReportDto } from './presentation/dto/internal/contract-preflight-report-dto.js';
+export type { ProjectDto } from './presentation/dto/internal/project-dto.js';
 
-export type ProjectsModuleDependencies = AddProjectDependencies & {
-  readonly contractPreflight: ContractPreflight;
-  readonly logger: Logger;
+type ProjectsInfrastructure = {
+  readonly repositoryResolver: RepositoryResolver;
+  readonly projectRepository: ProjectRepository;
+  readonly labelSync: LabelSync;
 };
 
-export type ProjectsModule = {
-  readonly routes: Hono;
-  readonly list: () => Promise<ReadonlyArray<ProjectWithContract>>;
-  readonly start: () => Promise<void>;
-};
-
-export function createProjectsModule(dependencies: ProjectsModuleDependencies): ProjectsModule {
-  const addProject = new AddProjectUseCase(dependencies);
-  const listProjects = new ListProjectsUseCase(
-    dependencies.projectRepository,
-    dependencies.contractPreflight,
-  );
-  const syncProjectLabels = new SyncProjectLabelsUseCase(dependencies);
-
+export function createProjectsModule(
+  dependencies: ProjectsModuleDependencies & { readonly skills: SkillsApi },
+  overrides: Partial<ProjectsInfrastructure> = {},
+): ProjectsModule {
+  const { repositoryResolver, projectRepository, labelSync }: ProjectsInfrastructure = {
+    repositoryResolver: new GhCliRepositoryResolver(),
+    projectRepository: new SqliteProjectRepository(dependencies.database),
+    labelSync: new GhCliLabelSync(),
+    ...overrides,
+  };
+  const projectService = new ProjectService({
+    repositoryResolver,
+    projectRepository,
+    labelSync,
+    pluginInstaller: new SkillsPluginInstaller(dependencies.skills),
+    contractPreflight: new SkillsContractPreflight(dependencies.skills),
+    clock: dependencies.clock,
+    events: dependencies.events,
+  });
+  const projectLabelService = new ProjectLabelService({
+    projectRepository,
+    labelSync,
+    logger: dependencies.logger,
+  });
   return {
-    routes: new Hono().route('/projects', createProjectsRoutes(listProjects, addProject)),
-    list: () => listProjects.execute(),
-    start: () => syncProjectLabels.execute(),
+    routes: createProjectsRoutes(projectService),
+    jobs: { 'projects.sync-labels': createProjectsSyncLabelsJob(projectLabelService) },
+    internal: new ProjectsFacade(projectService),
   };
 }
