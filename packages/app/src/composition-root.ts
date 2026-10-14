@@ -54,7 +54,7 @@ import {
 import type { AgentToolRegistry } from './shared/agent-tools.js';
 import { InMemoryAgentToolRegistry } from './shared/in-memory-agent-tool-registry.js';
 import type { DomainEvents, EventPublisher, EventSubscriber } from './shared/event-bus.js';
-import { createLiveNoticeRoutes } from './shared/http/create-live-notice-routes.js';
+import { createLiveModule } from './modules/live/index.js';
 import { InMemoryEventBus } from './shared/in-memory-event-bus.js';
 import type { Config } from './shared/config/load-config.js';
 import { migrations } from './shared/db/migrations.js';
@@ -338,6 +338,7 @@ export function composeApplication(options: ApplicationOptions): Application {
   const agentTools = new InMemoryAgentToolRegistry();
 
   const skills = buildSkillsModule(config, pluginDirectory, eventBus, logger);
+  const live = createLiveModule({ events: eventBus });
   const projects = buildProjectsModule(database, eventBus, skills.internal, logger);
   const runner = buildRunnerModule(
     config,
@@ -401,7 +402,7 @@ export function composeApplication(options: ApplicationOptions): Application {
       scheduler.routes,
       runner.routes,
       artifacts.routes,
-      createLiveNoticeRoutes(eventBus),
+      live.routes,
     ].map((moduleRoutes) => new Hono().route('/api', moduleRoutes)),
   ];
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { liveNoticeSchema } from './schemas/live-notice-schemas.js';
+import { liveNoticeSchema } from './live-notice-schemas.js';
 
 describe('liveNoticeSchema', () => {
   it('should parse when a watch.updated notice has no changed and no polledAt', () => {

@@ -137,7 +137,6 @@ module.exports = {
         pathNot: [
           '^packages/app/src/modules/[^/]+/api/schemas/',
           '^packages/app/src/modules/[^/]+/presentation/dto/api/',
-          '^packages/app/src/shared/http/schemas/',
         ],
       },
     },
@@ -208,11 +207,15 @@ module.exports = {
     {
       name: 'L6-dto-is-data-only',
       comment:
-        'presentation/dto/ imports only dto/ and (for mappers) business/domain/. Named deviation: dto/api/ may import the npm package zod.',
+        'presentation/dto/ imports only dto/ and (for mappers) business/domain/. Named deviations: dto/api/ may import the npm package zod; dto/ may import shared/event-bus.ts (event names and payload types).',
       severity: 'error',
       from: { path: `${layerModule}presentation/dto/(?!api/)` },
       to: {
-        pathNot: [`${modulesRoot}/$1/presentation/dto/`, `${modulesRoot}/$1/business/domain/`],
+        pathNot: [
+          `${modulesRoot}/$1/presentation/dto/`,
+          `${modulesRoot}/$1/business/domain/`,
+          '^packages/app/src/shared/event-bus\\.ts$',
+        ],
       },
     },
     {
@@ -224,6 +227,7 @@ module.exports = {
         pathNot: [
           `${modulesRoot}/$1/presentation/dto/`,
           `${modulesRoot}/$1/business/domain/`,
+          '^packages/app/src/shared/event-bus\\.ts$',
           '(^|/)node_modules/zod/',
         ],
       },
