@@ -1,4 +1,5 @@
 import type { SkillsStatusResponse } from './describe-skills-status.js';
+import { isRequestFailure } from '../shared/is-request-failure.js';
 
 export type SkillsStatusOutcome =
   | { readonly kind: 'answer'; readonly status: SkillsStatusResponse }
@@ -11,7 +12,8 @@ export async function fetchSkillsStatus(
     const response = await request('/api/skills/status');
     if (!response.ok) return { kind: 'request-failed' };
     return { kind: 'answer', status: (await response.json()) as SkillsStatusResponse };
-  } catch {
+  } catch (error) {
+    if (!isRequestFailure(error)) throw error;
     return { kind: 'request-failed' };
   }
 }

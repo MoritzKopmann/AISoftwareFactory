@@ -77,7 +77,8 @@ function parseNotice(data: string) {
   try {
     const parsed = liveNoticeSchema.safeParse(JSON.parse(data));
     return parsed.success ? parsed.data : undefined;
-  } catch {
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
     return undefined;
   }
 }

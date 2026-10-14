@@ -1,4 +1,5 @@
 import type { TicketRunResponse } from '@aisf/app/api-schemas/runs-schemas.js';
+import { isRequestFailure } from '../shared/is-request-failure.js';
 
 export type TicketRunOutcome =
   | { readonly kind: 'answer'; readonly response: TicketRunResponse }
@@ -15,7 +16,8 @@ export async function fetchTicketRun(
       return { kind: 'request-failed' };
     }
     return { kind: 'answer', response: (await response.json()) as TicketRunResponse };
-  } catch {
+  } catch (error) {
+    if (!isRequestFailure(error)) throw error;
     return { kind: 'request-failed' };
   }
 }

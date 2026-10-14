@@ -34,9 +34,9 @@ function ClosedSummary({
   label,
   children,
 }: {
-  status: TicketStatusResponse;
-  label: string;
-  children: ReactNode;
+  readonly status: TicketStatusResponse;
+  readonly label: string;
+  readonly children: ReactNode;
 }) {
   return (
     <summary className="row-h">
@@ -71,9 +71,9 @@ function BoardRow({
   projectId,
   runningTicketNumbers,
 }: {
-  row: BoardRowDescription;
-  projectId: string;
-  runningTicketNumbers: ReadonlyArray<number>;
+  readonly row: BoardRowDescription;
+  readonly projectId: string;
+  readonly runningTicketNumbers: ReadonlyArray<number>;
 }) {
   const isEmpty = row.tickets.length === 0;
   const cards = (
@@ -124,9 +124,9 @@ export function Board({
   projectId,
   runningTicketNumbers,
 }: {
-  rows: ReadonlyArray<BoardRowDescription>;
-  projectId: string;
-  runningTicketNumbers: ReadonlyArray<number>;
+  readonly rows: ReadonlyArray<BoardRowDescription>;
+  readonly projectId: string;
+  readonly runningTicketNumbers: ReadonlyArray<number>;
 }) {
   return (
     <div className="board">

@@ -1,4 +1,5 @@
 import type { RunLogResponse } from '@aisf/app/api-schemas/run-log-schemas.js';
+import { isRequestFailure } from '../shared/is-request-failure.js';
 
 export type RunLogOutcome =
   | { readonly kind: 'answer'; readonly response: RunLogResponse }
@@ -17,9 +18,10 @@ export async function fetchRunLog(
     }
     return { kind: 'answer', response: (await response.json()) as RunLogResponse };
   } catch (error) {
+    if (!isRequestFailure(error)) throw error;
     return {
       kind: 'request-failed',
-      message: error instanceof Error ? error.message : String(error),
+      message: error.message,
     };
   }
 }

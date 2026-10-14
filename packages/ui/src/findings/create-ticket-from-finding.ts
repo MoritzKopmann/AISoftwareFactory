@@ -1,5 +1,6 @@
 import type { FindingResponse } from '@aisf/app/api-schemas/findings-schemas.js';
 import type { FindingsFailure } from './fold-findings-poll.js';
+import { isRequestFailure } from '../shared/is-request-failure.js';
 
 export type CreateTicketOutcome =
   { readonly kind: 'created'; readonly ticketNumber: number } | FindingsFailure;
@@ -22,6 +23,7 @@ export async function createTicketFromFinding(
     }
     return { kind: 'created', ticketNumber: finding.createdTicketNumber };
   } catch (error) {
-    return { kind: 'unreachable', message: error instanceof Error ? error.message : String(error) };
+    if (!isRequestFailure(error)) throw error;
+    return { kind: 'unreachable', message: error.message };
   }
 }

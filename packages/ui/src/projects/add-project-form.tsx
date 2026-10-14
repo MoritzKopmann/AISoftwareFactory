@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ProjectResponse } from '@aisf/app/api-schemas/projects-schemas.js';
 import { describeAddProjectFailure } from './describe-add-project-failure.js';
+import { isRequestFailure } from '../shared/is-request-failure.js';
 
 type AddProjectFormProps = {
   readonly onAdded: (project: ProjectResponse) => void;
@@ -22,13 +23,17 @@ export function AddProjectForm({ onAdded }: AddProjectFormProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ checkoutPath }),
       });
-      const body = await response.json().catch(() => undefined);
+      const body = await response.json().catch((error: unknown) => {
+        if (!(error instanceof SyntaxError)) throw error;
+        return undefined;
+      });
       if (!response.ok) {
         setErrorMessage(describeAddProjectFailure(response.status, body));
         return;
       }
       onAdded(body as ProjectResponse);
-    } catch {
+    } catch (error) {
+      if (!isRequestFailure(error)) throw error;
       setErrorMessage(describeAddProjectFailure(undefined, undefined));
     } finally {
       setPending(false);

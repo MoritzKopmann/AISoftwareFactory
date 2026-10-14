@@ -1,3 +1,5 @@
+import { isRequestFailure } from '../shared/is-request-failure.js';
+
 export type StopRunOutcome = { readonly kind: 'requested' } | { readonly kind: 'failed' };
 
 const runAlreadyEndedStatus = 409;
@@ -12,7 +14,8 @@ export async function stopTicketRun(
       return { kind: 'requested' };
     }
     return { kind: 'failed' };
-  } catch {
+  } catch (error) {
+    if (!isRequestFailure(error)) throw error;
     return { kind: 'failed' };
   }
 }

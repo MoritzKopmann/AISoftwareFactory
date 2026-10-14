@@ -1,4 +1,5 @@
 import type { NeedsYouResponse } from '@aisf/app/api-schemas/needs-you-schemas.js';
+import { isRequestFailure } from '../shared/is-request-failure.js';
 
 export type NeedsYouOutcome =
   | { readonly kind: 'answer'; readonly response: NeedsYouResponse }
@@ -18,7 +19,8 @@ export async function fetchNeedsYou(
     }
     return { kind: 'answer', response: (await response.json()) as NeedsYouResponse };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    if (!isRequestFailure(error)) throw error;
+    const message = error.message;
     return { kind: 'request-failed', detail: `${requestLabel} · ${message}` };
   }
 }

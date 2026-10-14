@@ -1,5 +1,6 @@
 import { readErrorMessage } from '../shared/read-error-message.js';
 import type { PermissionDecision } from './describe-permission-prompt.js';
+import { isRequestFailure } from '../shared/is-request-failure.js';
 
 export type AnswerPermissionOutcome =
   | { readonly kind: 'answered' }
@@ -17,7 +18,8 @@ export async function answerPermissionPrompt(
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ decision }),
     });
-  } catch {
+  } catch (error) {
+    if (!isRequestFailure(error)) throw error;
     return { kind: 'failed', message: "Can't reach aisf." };
   }
   if (response.ok) {
