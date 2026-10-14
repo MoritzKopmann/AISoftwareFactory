@@ -2,7 +2,7 @@
 // IN:  every external dependency (shared infra + other modules' internal APIs) + optional overrides.
 // OUT: routes (HTTP), jobs (cron/CLI) and internal facades other modules may use.
 import type { EventBus } from "../../shared/event-bus.js";
-import type { UserRepository } from "./business/repository/user.repository.js";
+import type { UserRepository } from "./business/port/repository/user.repository.js";
 import { UserService } from "./business/service/user.service.js";
 import { InMemoryUserRepository } from "./infrastructure/repository/in-memory-user.repository.js";
 import { UserController } from "./presentation/api/user.controller.js";

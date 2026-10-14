@@ -1,5 +1,5 @@
 // Mail implementation. Swap for SMTP/SES without touching business/.
-import type { Mailer } from "../../business/mail/mailer.js";
+import type { Mailer } from "../../business/port/mail/mailer.js";
 
 export class ConsoleMailer implements Mailer {
   async send(to: string, subject: string) {

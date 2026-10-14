@@ -1,5 +1,5 @@
-import type { CredentialSnapshot } from '../domain/types/credential-snapshot.js';
-import type { SkillsStatus } from '../domain/types/skills-status.js';
+import type { CredentialSnapshot } from '../../domain/types/credential-snapshot.js';
+import type { SkillsStatus } from '../../domain/types/skills-status.js';
 
 export interface SkillsStatusRepository {
   status(): SkillsStatus;

@@ -2,7 +2,7 @@ import { access, cp, mkdir, rm } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { SkillsSetupError } from '../../business/errors/skills-setup-error.js';
 import { isSystemError } from '../process/is-system-error.js';
-import type { PluginMirror } from '../../business/plugin/plugin-mirror.js';
+import type { PluginMirror } from '../../business/port/plugin/plugin-mirror.js';
 
 export type FileSystemPluginMirrorOptions = {
   readonly sourceDirectory: string;

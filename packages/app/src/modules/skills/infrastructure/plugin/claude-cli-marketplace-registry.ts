@@ -1,5 +1,5 @@
 import { SkillsSetupError } from '../../business/errors/skills-setup-error.js';
-import type { MarketplaceRegistry } from '../../business/plugin/marketplace-registry.js';
+import type { MarketplaceRegistry } from '../../business/port/plugin/marketplace-registry.js';
 import { runClaude } from '../process/run-claude.js';
 
 const marketplaceName = 'aisf';

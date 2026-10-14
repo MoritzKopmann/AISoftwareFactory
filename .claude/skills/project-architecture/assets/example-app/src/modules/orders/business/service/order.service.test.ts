@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { EventBus } from "../../../../shared/event-bus.js";
 import type { Order } from "../domain/order.js";
-import type { OrderRepository } from "../repository/order.repository.js";
+import type { OrderRepository } from "../port/repository/order.repository.js";
 import { OrderService } from "./order.service.js";
 
 const fakes = (customerExists: boolean) => {

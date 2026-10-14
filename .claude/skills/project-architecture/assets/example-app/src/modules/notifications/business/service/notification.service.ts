@@ -1,5 +1,5 @@
 // USE CASES: what to tell whom. Knows nothing about the event bus — it's just called.
-import type { Mailer } from "../mail/mailer.js";
+import type { Mailer } from "../port/mail/mailer.js";
 
 export class NotificationService {
   constructor(private readonly mailer: Mailer) {}

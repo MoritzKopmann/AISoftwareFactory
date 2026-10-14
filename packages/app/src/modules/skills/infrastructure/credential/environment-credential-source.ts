@@ -1,7 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { CredentialSnapshot } from '../../business/domain/types/credential-snapshot.js';
-import type { CredentialSource } from '../../business/credential/credential-source.js';
+import type { CredentialSource } from '../../business/port/credential/credential-source.js';
 
 export type EnvironmentCredentialSourceOptions = {
   readonly environment: Readonly<Record<string, string | undefined>>;

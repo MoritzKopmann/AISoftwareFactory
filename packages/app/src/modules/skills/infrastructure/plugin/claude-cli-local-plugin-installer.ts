@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join } from 'node:path';
 import type { ProcessResult } from '../../../../shared/process/run-process.js';
 import { runProcess } from '../../../../shared/process/run-process.js';
 import { SkillsSetupError } from '../../business/errors/skills-setup-error.js';
-import type { LocalPluginInstaller } from '../../business/plugin/local-plugin-installer.js';
+import type { LocalPluginInstaller } from '../../business/port/plugin/local-plugin-installer.js';
 import { isSystemError } from '../process/is-system-error.js';
 import { runClaude } from '../process/run-claude.js';
 

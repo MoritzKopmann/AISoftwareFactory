@@ -1,13 +1,13 @@
-import type { SlotReader } from '../business/contract/slot-reader.js';
-import type { CredentialSource } from '../business/credential/credential-source.js';
+import type { SlotReader } from '../business/port/contract/slot-reader.js';
+import type { CredentialSource } from '../business/port/credential/credential-source.js';
 import type { CredentialSnapshot } from '../business/domain/types/credential-snapshot.js';
 import type { SkillsStatus } from '../business/domain/types/skills-status.js';
 import type { SmokeProbeReport } from '../business/domain/types/smoke-probe-report.js';
-import type { LocalPluginInstaller } from '../business/plugin/local-plugin-installer.js';
-import type { MarketplaceRegistry } from '../business/plugin/marketplace-registry.js';
-import type { PluginMirror } from '../business/plugin/plugin-mirror.js';
-import type { SkillsStatusRepository } from '../business/repository/skills-status-repository.js';
-import type { SmokeProbe } from '../business/smoke/smoke-probe.js';
+import type { LocalPluginInstaller } from '../business/port/plugin/local-plugin-installer.js';
+import type { MarketplaceRegistry } from '../business/port/plugin/marketplace-registry.js';
+import type { PluginMirror } from '../business/port/plugin/plugin-mirror.js';
+import type { SkillsStatusRepository } from '../business/port/repository/skills-status-repository.js';
+import type { SmokeProbe } from '../business/port/smoke/smoke-probe.js';
 
 export class FakePluginMirror implements PluginMirror {
   replaceCount = 0;

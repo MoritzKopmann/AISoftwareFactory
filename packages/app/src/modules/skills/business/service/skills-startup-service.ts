@@ -1,13 +1,13 @@
 import type { EventPublisher } from '../../../../shared/event-bus.js';
-import type { CredentialSource } from '../credential/credential-source.js';
+import type { CredentialSource } from '../port/credential/credential-source.js';
 import { evaluateSmokeProbe } from '../domain/functions/evaluate-smoke-probe.js';
 import { determineRunsBlocked } from '../domain/functions/determine-runs-blocked.js';
 import type { RunsBlocked, SkillsStatus, SmokeTestResult } from '../domain/types/skills-status.js';
 import { SkillsSetupError } from '../errors/skills-setup-error.js';
-import type { MarketplaceRegistry } from '../plugin/marketplace-registry.js';
-import type { PluginMirror } from '../plugin/plugin-mirror.js';
-import type { SkillsStatusRepository } from '../repository/skills-status-repository.js';
-import type { SmokeProbe } from '../smoke/smoke-probe.js';
+import type { MarketplaceRegistry } from '../port/plugin/marketplace-registry.js';
+import type { PluginMirror } from '../port/plugin/plugin-mirror.js';
+import type { SkillsStatusRepository } from '../port/repository/skills-status-repository.js';
+import type { SmokeProbe } from '../port/smoke/smoke-probe.js';
 
 export type SkillsStartupServiceDependencies = {
   readonly pluginMirror: PluginMirror;

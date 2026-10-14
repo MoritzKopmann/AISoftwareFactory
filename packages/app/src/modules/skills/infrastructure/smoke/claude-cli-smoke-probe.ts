@@ -2,7 +2,7 @@ import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { SmokeProbeReport } from '../../business/domain/types/smoke-probe-report.js';
 import { SkillsSetupError } from '../../business/errors/skills-setup-error.js';
-import type { SmokeProbe } from '../../business/smoke/smoke-probe.js';
+import type { SmokeProbe } from '../../business/port/smoke/smoke-probe.js';
 import { isSystemError } from '../process/is-system-error.js';
 import { runClaude } from '../process/run-claude.js';
 

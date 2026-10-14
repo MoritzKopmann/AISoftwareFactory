@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { SlotReader } from '../../business/contract/slot-reader.js';
+import type { SlotReader } from '../../business/port/contract/slot-reader.js';
 
 function isFileNotFoundError(error: unknown): boolean {
   return error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT';
