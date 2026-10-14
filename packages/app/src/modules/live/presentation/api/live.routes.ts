@@ -1,12 +1,12 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import { domainEventNames } from '../event-bus.js';
-import type { EventSubscriber } from '../event-bus.js';
-import { toLiveNotice } from './to-live-notice.js';
+import { domainEventNames } from '../../../../shared/event-bus.js';
+import type { EventSubscriber } from '../../../../shared/event-bus.js';
+import { toLiveNotice } from '../dto/mapper/live-notice-mapper.js';
 
 const heartbeatIntervalMilliseconds = 25_000;
 
-export function createLiveNoticeRoutes(subscriber: EventSubscriber): Hono {
+export function createLiveRoutes(subscriber: EventSubscriber): Hono {
   return new Hono().get('/events', (context) =>
     streamSSE(context, async (stream) => {
       let closed = false;

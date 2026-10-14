@@ -16,7 +16,7 @@
     "./api-schemas/findings-schemas.js": "./src/modules/findings/api/schemas/findings-schemas.ts",
     "./api-schemas/artifacts-schemas.js": "./src/modules/artifacts/api/schemas/artifacts-schemas.ts",
     "./api-schemas/page-events-schemas.js": "./src/modules/artifacts/api/schemas/page-events-schemas.ts",
-    "./api-schemas/live-notice-schemas.js": "./src/shared/http/schemas/live-notice-schemas.ts"
+    "./api-schemas/live-notice-schemas.js": "./src/modules/live/presentation/dto/api/live-notice-schemas.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.kit.json",

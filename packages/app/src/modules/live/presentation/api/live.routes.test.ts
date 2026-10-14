@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { DomainEvents, EventSubscriber } from '../event-bus.js';
-import { domainEventNames } from '../event-bus.js';
-import { InMemoryEventBus } from '../in-memory-event-bus.js';
-import { createLiveNoticeRoutes } from './create-live-notice-routes.js';
-import { liveNoticeSchema } from './schemas/live-notice-schemas.js';
+import type { DomainEvents, EventSubscriber } from '../../../../shared/event-bus.js';
+import { domainEventNames } from '../../../../shared/event-bus.js';
+import { InMemoryEventBus } from '../../../../shared/in-memory-event-bus.js';
+import { createLiveRoutes } from './live.routes.js';
+import { liveNoticeSchema } from '../dto/api/live-notice-schemas.js';
 
 class CountingSubscriber implements EventSubscriber {
   activeHandlers = 0;
@@ -22,7 +22,7 @@ class CountingSubscriber implements EventSubscriber {
 }
 
 async function openStream(subscriber: EventSubscriber) {
-  const response = await createLiveNoticeRoutes(subscriber).request('/events');
+  const response = await createLiveRoutes(subscriber).request('/events');
   const body = response.body;
   if (body === null) throw new Error('no body');
   const reader = body.getReader();
@@ -37,7 +37,7 @@ async function openStream(subscriber: EventSubscriber) {
   };
 }
 
-describe('createLiveNoticeRoutes', () => {
+describe('createLiveRoutes', () => {
   afterEach(() => {
     vi.useRealTimers();
   });

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { domainEventNames } from '../../event-bus.js';
+import { domainEventNames } from '../../../../../shared/event-bus.js';
 
 export const liveNoticeSchema = z.object({
   event: z.enum(domainEventNames),

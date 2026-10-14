@@ -1,5 +1,5 @@
-import type { DomainEvents } from '../event-bus.js';
-import type { LiveNotice } from './schemas/live-notice-schemas.js';
+import type { DomainEvents } from '../../../../../shared/event-bus.js';
+import type { LiveNotice } from '../api/live-notice-schemas.js';
 
 /** Keeps only the event name, the project id and the ticket number, plus `changed` and `polledAt` for `watch.updated`. Everything else stays on the server. */
 export function toLiveNotice<Name extends keyof DomainEvents>(

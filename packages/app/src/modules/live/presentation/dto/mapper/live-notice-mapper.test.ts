@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toLiveNotice } from './to-live-notice.js';
+import { toLiveNotice } from './live-notice-mapper.js';
 
 describe('toLiveNotice', () => {
   it('should keep event, project and ticket when the payload has them', () => {
