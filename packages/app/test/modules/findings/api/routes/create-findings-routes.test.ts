@@ -6,7 +6,7 @@ import { CreateTicketFromFindingUseCase } from '../../../../../src/modules/findi
 import { DismissFindingUseCase } from '../../../../../src/modules/findings/logic/use-cases/dismiss-finding-use-case.js';
 import { ListFindingsUseCase } from '../../../../../src/modules/findings/logic/use-cases/list-findings-use-case.js';
 import { InMemoryFindingRepository } from '../../fakes/in-memory-finding-repository.js';
-import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
+import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 import { FakeProjectLookup, FakeTicketCreator } from '../../fakes/fake-findings-ports.js';
 
 const reportedAt = '2026-09-29T10:00:00.000Z';

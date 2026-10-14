@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import { subscribeToRunFinishedSettlement } from '../../../../../src/modules/tickets/api/subscriptions/subscribe-to-run-finished-settlement.js';
 import { SettleFinishedRunUseCase } from '../../../../../src/modules/tickets/logic/use-cases/settle-finished-run-use-case.js';
-import type { AisfEventMap } from '../../../../../src/shared/bus/aisf-event-map.js';
-import { TypedEventBus } from '../../../../../src/shared/bus/typed-event-bus.js';
+import type { DomainEvents } from '../../../../../src/shared/event-bus.js';
+import { InMemoryEventBus } from '../../../../../src/shared/in-memory-event-bus.js';
 import { FakeRegisteredRepositories } from '../../fakes/fake-tickets-ports.js';
 import {
   FakeRunSettlement,
   FakeTicketStatusWrites,
 } from '../../fakes/fake-ticket-status-writes.js';
 
-const runFinished: AisfEventMap['run.finished'] = {
+const runFinished: DomainEvents['run.finished'] = {
   runId: 'run-1',
   projectId: 'moritz/aisf',
   ticketNumber: 138,
@@ -18,7 +18,7 @@ const runFinished: AisfEventMap['run.finished'] = {
 };
 
 function buildSubject() {
-  const bus = new TypedEventBus<AisfEventMap>();
+  const bus = new InMemoryEventBus<DomainEvents>();
   const ticketStatusWrites = new FakeTicketStatusWrites();
   const runSettlement = new FakeRunSettlement();
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };

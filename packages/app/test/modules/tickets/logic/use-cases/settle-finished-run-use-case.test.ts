@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { FinishedRun } from '../../../../../src/modules/tickets/logic/domain/types/finished-run.js';
 import type { RegisteredRepositories } from '../../../../../src/modules/tickets/logic/ports/registered-repositories.js';
 import { SettleFinishedRunUseCase } from '../../../../../src/modules/tickets/logic/use-cases/settle-finished-run-use-case.js';
-import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
+import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 import { FakeRegisteredRepositories } from '../../fakes/fake-tickets-ports.js';
 import {
   FakeRunSettlement,

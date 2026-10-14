@@ -6,8 +6,8 @@ import { GitHubRateLimitedError } from '../../../../../src/modules/tickets/logic
 import { GitHubRequestError } from '../../../../../src/modules/tickets/logic/errors/github-request-error.js';
 import { InMemoryWatchStore } from '../../../../../src/modules/tickets/infra/integrations/in-memory-watch-store.js';
 import { PollRepositoriesUseCase } from '../../../../../src/modules/tickets/logic/use-cases/poll-repositories-use-case.js';
-import { FakeClock } from '../../../../fakes/fake-clock.js';
-import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
+import { FakeClock } from '../../../../../src/shared/testing/fake-clock.js';
+import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 import { buildTicket } from '../../fakes/build-ticket.js';
 import { FakeIssueFeeds, FakeTicketSource } from '../../fakes/fake-tickets-ports.js';
 

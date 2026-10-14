@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { WaitingRun } from '../../../../../src/modules/tickets/logic/domain/types/waiting-run.js';
 import type { RegisteredRepositories } from '../../../../../src/modules/tickets/logic/ports/registered-repositories.js';
 import { SettleWaitingRunUseCase } from '../../../../../src/modules/tickets/logic/use-cases/settle-waiting-run-use-case.js';
-import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
+import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 import { FakeRegisteredRepositories } from '../../fakes/fake-tickets-ports.js';
 import { FakeTicketStatusWrites } from '../../fakes/fake-ticket-status-writes.js';
 

@@ -1,5 +1,5 @@
 import { Hono, type Context } from 'hono';
-import { ticketNumberParameterSchema } from '../../../../shared/http/ticket-number-parameter-schema.js';
+import { ticketNumberParameterSchema } from '../../../../shared/http.js';
 import type { ProjectBoard } from '../../logic/domain/types/project-board.js';
 import type { ProjectTicket } from '../../logic/domain/types/project-ticket.js';
 

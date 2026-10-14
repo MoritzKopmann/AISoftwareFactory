@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createProjectsModule } from '../../../src/modules/projects/index.js';
 import { createLogger } from '../../../src/shared/logger/create-logger.js';
-import { FakeClock } from '../../fakes/fake-clock.js';
-import { FakeEventPublisher } from '../../fakes/fake-event-publisher.js';
+import { FakeClock } from '../../../src/shared/testing/fake-clock.js';
+import { FakeEventPublisher } from '../../../src/shared/testing/fake-event-publisher.js';
 import {
   FakeContractPreflight,
   FakeLabelSync,

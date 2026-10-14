@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import { aisfEventNames } from '../bus/aisf-event-names.js';
-import type { EventSubscriber } from '../bus/event-subscriber.js';
+import { domainEventNames } from '../event-bus.js';
+import type { EventSubscriber } from '../event-bus.js';
 import { toLiveNotice } from './to-live-notice.js';
 
 const heartbeatIntervalMilliseconds = 25_000;
@@ -25,7 +25,7 @@ export function createLiveNoticeRoutes(subscriber: EventSubscriber): Hono {
         wake();
       });
 
-      for (const name of aisfEventNames) {
+      for (const name of domainEventNames) {
         unsubscribes.push(
           subscriber.on(name, (payload) => {
             void stream

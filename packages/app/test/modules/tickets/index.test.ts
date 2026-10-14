@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { InMemoryWatchStore } from '../../../src/modules/tickets/infra/integrations/in-memory-watch-store.js';
 import { createTicketsModule } from '../../../src/modules/tickets/index.js';
-import type { AisfEventMap } from '../../../src/shared/bus/aisf-event-map.js';
-import { TypedEventBus } from '../../../src/shared/bus/typed-event-bus.js';
-import { FakeClock } from '../../fakes/fake-clock.js';
+import type { DomainEvents } from '../../../src/shared/event-bus.js';
+import { InMemoryEventBus } from '../../../src/shared/in-memory-event-bus.js';
+import { FakeClock } from '../../../src/shared/testing/fake-clock.js';
 import { buildTicket } from './fakes/build-ticket.js';
 import { FakeRunSettlement, FakeTicketStatusWrites } from './fakes/fake-ticket-status-writes.js';
 import {
@@ -19,7 +19,7 @@ const snapshotIntervalMilliseconds = 300_000;
 const registered = { projectId: 'owner/name', repository: { owner: 'owner', name: 'name' } };
 
 function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
-  const events = new TypedEventBus<AisfEventMap>();
+  const events = new InMemoryEventBus<DomainEvents>();
   const issueFeeds = new FakeIssueFeeds();
   const ticketSource = new FakeTicketSource({
     takenAt: startedAt,
@@ -31,7 +31,7 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
   const clock = new FakeClock(startedAt);
   const ticketStatusWrites = new FakeTicketStatusWrites();
   const runSettlement = new FakeRunSettlement();
-  const snapshotChanges: Array<AisfEventMap['snapshot.changed']> = [];
+  const snapshotChanges: Array<DomainEvents['snapshot.changed']> = [];
   events.on('snapshot.changed', (payload) => snapshotChanges.push(payload));
   const tickets = createTicketsModule({
     issueFeeds,
@@ -137,7 +137,7 @@ describe('createTicketsModule', () => {
 
     it('should add the stuck label, announce it, then settle the run when run.finished ends crashed', async () => {
       const { tickets, events, ticketStatusWrites, runSettlement } = createSubject();
-      const written: Array<AisfEventMap['ticket.status-written']> = [];
+      const written: Array<DomainEvents['ticket.status-written']> = [];
       events.on('ticket.status-written', (payload) => written.push(payload));
       await tickets.start();
 
@@ -570,9 +570,9 @@ describe('createTicketsModule', () => {
     }
 
     function announce(
-      events: TypedEventBus<AisfEventMap>,
-      from: AisfEventMap['ticket.status-written']['from'],
-      to: AisfEventMap['ticket.status-written']['to'],
+      events: InMemoryEventBus<DomainEvents>,
+      from: DomainEvents['ticket.status-written']['from'],
+      to: DomainEvents['ticket.status-written']['to'],
     ) {
       events.emit('ticket.status-written', {
         projectId,

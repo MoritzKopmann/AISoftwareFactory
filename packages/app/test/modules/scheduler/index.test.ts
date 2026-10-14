@@ -5,8 +5,8 @@ import {
   type SchedulerModule,
 } from '../../../src/modules/scheduler/index.js';
 import type { ReviewedTicket } from '../../../src/modules/scheduler/logic/domain/types/reviewed-ticket.js';
-import type { AisfEventMap } from '../../../src/shared/bus/aisf-event-map.js';
-import { TypedEventBus } from '../../../src/shared/bus/typed-event-bus.js';
+import type { DomainEvents } from '../../../src/shared/event-bus.js';
+import { InMemoryEventBus } from '../../../src/shared/in-memory-event-bus.js';
 import {
   FakeIdeaCreation,
   FakeProjectLookup,
@@ -37,7 +37,7 @@ const approvedTicket: ReviewedTicket = {
 };
 
 describe('createSchedulerModule', () => {
-  let bus: TypedEventBus<AisfEventMap>;
+  let bus: InMemoryEventBus<DomainEvents>;
   let pullRequestMerges: FakePullRequestMerges;
   let runner: FakeRunnerPort;
   let ticketAnswerGate: FakeTicketAnswerGate;
@@ -45,7 +45,7 @@ describe('createSchedulerModule', () => {
   let ideaCreation: FakeIdeaCreation;
 
   beforeEach(() => {
-    bus = new TypedEventBus<AisfEventMap>();
+    bus = new InMemoryEventBus<DomainEvents>();
     pullRequestMerges = new FakePullRequestMerges();
     runner = new FakeRunnerPort();
     ideaCreation = new FakeIdeaCreation();

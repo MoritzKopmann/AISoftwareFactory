@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { subscribeToSnapshotChanged } from '../../../../../src/modules/scheduler/api/subscriptions/subscribe-to-snapshot-changed.js';
 import type { ReviewedTicket } from '../../../../../src/modules/scheduler/logic/domain/types/reviewed-ticket.js';
 import { MergeApprovedPullRequestsUseCase } from '../../../../../src/modules/scheduler/logic/use-cases/merge-approved-pull-requests-use-case.js';
-import type { AisfEventMap } from '../../../../../src/shared/bus/aisf-event-map.js';
-import { TypedEventBus } from '../../../../../src/shared/bus/typed-event-bus.js';
+import type { DomainEvents } from '../../../../../src/shared/event-bus.js';
+import { InMemoryEventBus } from '../../../../../src/shared/in-memory-event-bus.js';
 import {
   FakePullRequestMerges,
   FakeProjectLookup,
@@ -27,7 +27,7 @@ const approvedTicket: ReviewedTicket = {
   ],
 };
 
-const snapshotChanged: AisfEventMap['snapshot.changed'] = {
+const snapshotChanged: DomainEvents['snapshot.changed'] = {
   projectId: 'moritz/aisf',
   addedTicketNumbers: [],
   changedTicketNumbers: [140],
@@ -35,7 +35,7 @@ const snapshotChanged: AisfEventMap['snapshot.changed'] = {
 };
 
 function buildSubject() {
-  const bus = new TypedEventBus<AisfEventMap>();
+  const bus = new InMemoryEventBus<DomainEvents>();
   const pullRequestMerges = new FakePullRequestMerges();
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
   const mergeApprovedPullRequests = new MergeApprovedPullRequestsUseCase({

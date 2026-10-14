@@ -1,5 +1,5 @@
 import { Hono, type Context } from 'hono';
-import { ticketNumberParameterSchema } from '../../../../shared/http/ticket-number-parameter-schema.js';
+import { ticketNumberParameterSchema } from '../../../../shared/http.js';
 import type { StartedRun } from '../../logic/domain/types/started-run.js';
 import type { TicketRun } from '../../logic/domain/types/ticket-run.js';
 import { RunAlreadyActiveError } from '../../logic/errors/run-already-active-error.js';

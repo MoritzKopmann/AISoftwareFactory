@@ -1,4 +1,4 @@
-import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
+import type { EventPublisher } from '../../../../shared/event-bus.js';
 import type { Clock } from '../../../../shared/clock/clock.js';
 import { endingForWaitingRun } from '../domain/functions/ending-for-waiting-run.js';
 import type { RunEnding } from '../domain/types/run-ending.js';

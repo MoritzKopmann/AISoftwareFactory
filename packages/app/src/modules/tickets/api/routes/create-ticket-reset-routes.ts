@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { ticketNumberParameterSchema } from '../../../../shared/http/ticket-number-parameter-schema.js';
+import { ticketNumberParameterSchema } from '../../../../shared/http.js';
 import { TicketNotResettableError } from '../../logic/errors/ticket-not-resettable-error.js';
 
 export type TicketResets = {

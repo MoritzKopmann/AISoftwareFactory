@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { ticketNumberParameterSchema } from '../../../../shared/http/ticket-number-parameter-schema.js';
+import { ticketNumberParameterSchema } from '../../../../shared/http.js';
 import type { ListTicketArtifactsUseCase } from '../../logic/use-cases/list-ticket-artifacts-use-case.js';
 import type { TicketArtifactsResponse } from '../schemas/artifacts-schemas.js';
 

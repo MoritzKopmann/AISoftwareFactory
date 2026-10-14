@@ -1,4 +1,4 @@
-import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
+import type { EventPublisher } from '../../../../shared/event-bus.js';
 import type { Clock } from '../../../../shared/clock/clock.js';
 import { failWatch } from '../domain/functions/fail-watch.js';
 import { hasWatchChanged } from '../domain/functions/has-watch-changed.js';

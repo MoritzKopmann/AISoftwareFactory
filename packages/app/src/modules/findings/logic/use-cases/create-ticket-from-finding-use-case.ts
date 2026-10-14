@@ -1,4 +1,4 @@
-import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
+import type { EventPublisher } from '../../../../shared/event-bus.js';
 import type { Clock } from '../../../../shared/clock/clock.js';
 import { describeFindingIssue } from '../domain/functions/describe-finding-issue.js';
 import type { Finding } from '../domain/types/finding.js';

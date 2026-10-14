@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RevertTicketAnswerUseCase } from '../../../../../src/modules/tickets/logic/use-cases/revert-ticket-answer-use-case.js';
-import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
+import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 import { FakeRegisteredRepositories } from '../../fakes/fake-tickets-ports.js';
 import { FakeTicketStatusWrites } from '../../fakes/fake-ticket-status-writes.js';
 

@@ -1,4 +1,4 @@
-import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
+import type { EventPublisher } from '../../../../shared/event-bus.js';
 import { TicketNotResettableError } from '../errors/ticket-not-resettable-error.js';
 import type { ActiveRunLookup } from '../ports/active-run-lookup.js';
 import type { RegisteredRepositories } from '../ports/registered-repositories.js';

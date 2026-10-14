@@ -3,7 +3,7 @@ import { TicketNotResettableError } from '../../../../../src/modules/tickets/log
 import type { RegisteredRepositories } from '../../../../../src/modules/tickets/logic/ports/registered-repositories.js';
 import { ResetTicketUseCase } from '../../../../../src/modules/tickets/logic/use-cases/reset-ticket-use-case.js';
 import type { TicketStatus } from '../../../../../src/shared/ticket-status/ticket-status.js';
-import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
+import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 import { FakeRegisteredRepositories } from '../../fakes/fake-tickets-ports.js';
 import {
   FakeActiveRunLookup,

@@ -10,8 +10,8 @@ import { LaunchRunSessionUseCase } from '../../../../../src/modules/runner/logic
 import { StartRunUseCase } from '../../../../../src/modules/runner/logic/use-cases/start-run-use-case.js';
 import type { TicketStatus } from '../../../../../src/shared/ticket-status/ticket-status.js';
 import type { TicketType } from '../../../../../src/shared/ticket-type/ticket-type.js';
-import { FakeClock } from '../../../../fakes/fake-clock.js';
-import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
+import { FakeClock } from '../../../../../src/shared/testing/fake-clock.js';
+import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 import {
   buildRun,
   FakeAgentSessions,

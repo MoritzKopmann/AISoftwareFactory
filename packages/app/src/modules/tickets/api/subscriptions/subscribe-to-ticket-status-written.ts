@@ -1,4 +1,4 @@
-import type { EventSubscriber } from '../../../../shared/bus/event-subscriber.js';
+import type { EventSubscriber } from '../../../../shared/event-bus.js';
 import type { StatusWrite } from '../../logic/domain/types/status-write.js';
 
 export function subscribeToTicketStatusWritten(

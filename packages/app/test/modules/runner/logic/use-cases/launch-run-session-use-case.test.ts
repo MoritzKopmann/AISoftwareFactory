@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { LaunchRunSessionUseCase } from '../../../../../src/modules/runner/logic/use-cases/launch-run-session-use-case.js';
 import type { FinishRun } from '../../../../../src/modules/runner/logic/domain/types/finish-run.js';
 import type { RunTool } from '../../../../../src/modules/runner/logic/domain/types/run-tool.js';
-import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
+import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 import {
   buildRun,
   FakeAgentSessions,

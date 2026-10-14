@@ -9,8 +9,8 @@ import {
 } from '../../../src/modules/runner/index.js';
 import { runLogResponseSchema } from '../../../src/modules/runner/api/schemas/run-log-schemas.js';
 import { TranscriptNotFoundError } from '../../../src/modules/runner/logic/errors/transcript-not-found-error.js';
-import { FakeClock } from '../../fakes/fake-clock.js';
-import { FakeEventPublisher } from '../../fakes/fake-event-publisher.js';
+import { FakeClock } from '../../../src/shared/testing/fake-clock.js';
+import { FakeEventPublisher } from '../../../src/shared/testing/fake-event-publisher.js';
 import {
   buildRun,
   FakeAgentSessions,

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { InMemoryWatchStore } from '../../../../../src/modules/tickets/infra/integrations/in-memory-watch-store.js';
 import { FailWatchesUseCase } from '../../../../../src/modules/tickets/logic/use-cases/fail-watches-use-case.js';
-import { FakeClock } from '../../../../fakes/fake-clock.js';
-import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
+import { FakeClock } from '../../../../../src/shared/testing/fake-clock.js';
+import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 
 const now = '2026-09-28T12:00:00.000Z';
 

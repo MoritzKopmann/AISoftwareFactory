@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import type { EventSubscriber } from '../../shared/bus/event-subscriber.js';
+import type { EventSubscriber } from '../../shared/event-bus.js';
 import type { Logger } from '../../shared/logger/create-logger.js';
 import { createNeedsYouRoutes } from './api/routes/create-needs-you-routes.js';
 import { createTicketResetRoutes } from './api/routes/create-ticket-reset-routes.js';

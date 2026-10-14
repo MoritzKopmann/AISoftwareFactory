@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SettleRunUseCase } from '../../../../../src/modules/runner/logic/use-cases/settle-run-use-case.js';
-import { FakeClock } from '../../../../fakes/fake-clock.js';
+import { FakeClock } from '../../../../../src/shared/testing/fake-clock.js';
 import { buildRun, FakeRunRepository } from '../../fakes/fake-runner-ports.js';
 
 describe('SettleRunUseCase', () => {

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { TicketNotAnswerableError } from '../../../../../src/modules/tickets/logic/errors/ticket-not-answerable-error.js';
 import type { RegisteredRepositories } from '../../../../../src/modules/tickets/logic/ports/registered-repositories.js';
 import { BeginTicketAnswerUseCase } from '../../../../../src/modules/tickets/logic/use-cases/begin-ticket-answer-use-case.js';
-import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
+import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 import { FakeRegisteredRepositories } from '../../fakes/fake-tickets-ports.js';
 import { FakeTicketStatusWrites } from '../../fakes/fake-ticket-status-writes.js';
 

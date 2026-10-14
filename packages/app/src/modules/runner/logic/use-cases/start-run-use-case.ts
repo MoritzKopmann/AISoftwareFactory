@@ -1,4 +1,4 @@
-import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
+import type { EventPublisher } from '../../../../shared/event-bus.js';
 import type { Clock } from '../../../../shared/clock/clock.js';
 import { branchNameFor } from '../domain/functions/branch-name-for.js';
 import { describeError } from '../domain/functions/describe-error.js';
