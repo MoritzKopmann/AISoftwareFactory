@@ -1,0 +1,48 @@
+import { describe, expect, it } from 'vitest';
+import type { AisfLabel } from '../constants/aisf-labels.js';
+import { aisfLabels } from '../constants/aisf-labels.js';
+import { findMissingLabels } from './find-missing-labels.js';
+
+const readyLabel: AisfLabel = {
+  name: 'status: ready',
+  color: '0E8A16',
+  description: 'Leaf that may be implemented now',
+};
+const hitlLabel: AisfLabel = {
+  name: 'hitl',
+  color: 'F9A825',
+  description: 'Runs as an interactive session, never AFK',
+};
+
+describe('findMissingLabels', () => {
+  it('should return every aisf label when none exist', () => {
+    expect(findMissingLabels([readyLabel, hitlLabel], [])).toEqual([readyLabel, hitlLabel]);
+  });
+
+  it('should return nothing when every aisf label already exists', () => {
+    expect(findMissingLabels([readyLabel, hitlLabel], ['status: ready', 'hitl'])).toEqual([]);
+  });
+
+  it('should treat a name that differs only in case as present', () => {
+    expect(findMissingLabels([readyLabel, hitlLabel], ['Status: Ready', 'HITL'])).toEqual([]);
+  });
+
+  it('should return only the aisf labels that are missing', () => {
+    expect(findMissingLabels([readyLabel, hitlLabel], ['status: ready'])).toEqual([hitlLabel]);
+  });
+
+  it('should ignore an existing label that is not an aisf label', () => {
+    expect(findMissingLabels([readyLabel], ['bug'])).toEqual([readyLabel]);
+  });
+
+  it('should return the waiting and stuck labels when a project onboarded before them is checked', () => {
+    const existing = aisfLabels
+      .map((label) => label.name)
+      .filter((name) => name !== 'waiting' && name !== 'stuck');
+
+    expect(findMissingLabels(aisfLabels, existing).map((label) => label.name)).toEqual([
+      'waiting',
+      'stuck',
+    ]);
+  });
+});

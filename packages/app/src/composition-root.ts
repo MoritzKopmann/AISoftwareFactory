@@ -11,11 +11,12 @@ import {
 } from './modules/artifacts/index.js';
 import { SqliteFindingRepository } from './modules/findings/infra/repositories/sqlite-finding-repository.js';
 import { createFindingsModule, type FindingsModule } from './modules/findings/index.js';
-import { GhCliLabelSync } from './modules/projects/infra/integrations/gh-cli-label-sync.js';
-import { GhCliRepositoryResolver } from './modules/projects/infra/integrations/gh-cli-repository-resolver.js';
 import { SystemClock } from './shared/clock/system-clock.js';
-import { SqliteProjectRepository } from './modules/projects/infra/repositories/sqlite-project-repository.js';
-import { createProjectsModule, type ProjectsModule } from './modules/projects/index.js';
+import {
+  createProjectsModule,
+  type ProjectsApi,
+  type ProjectsModule,
+} from './modules/projects/index.js';
 import { createSkillsModule, type SkillsApi, type SkillsModule } from './modules/skills/index.js';
 import { ClaudeAgentSdkRunTranscripts } from './modules/runner/infra/integrations/claude-agent-sdk-run-transcripts.js';
 import { ClaudeAgentSdkSessions } from './modules/runner/infra/integrations/claude-agent-sdk-sessions.js';
@@ -92,16 +93,7 @@ function buildProjectsModule(
   skills: SkillsApi,
   logger: Logger,
 ): ProjectsModule {
-  return createProjectsModule({
-    projectRepository: new SqliteProjectRepository(database),
-    repositoryResolver: new GhCliRepositoryResolver(),
-    labelSync: new GhCliLabelSync(),
-    pluginInstaller: { install: (checkoutPath) => skills.installPluginLocally(checkoutPath) },
-    clock: new SystemClock(),
-    contractPreflight: { check: (checkoutPath) => skills.runContractPreflight(checkoutPath) },
-    events,
-    logger,
-  });
+  return createProjectsModule({ database, clock: new SystemClock(), events, logger, skills });
 }
 
 function buildSkillsModule(
@@ -124,7 +116,7 @@ function buildSkillsModule(
 function buildTicketsModule(
   config: Config,
   events: EventPublisher & EventSubscriber,
-  projects: ProjectsModule,
+  projects: ProjectsApi,
   activeRunLookup: ActiveRunLookup,
   runWaitLookup: RunWaitLookup,
   runSettlement: RunSettlement,
@@ -160,7 +152,7 @@ function buildTicketsModule(
 function buildFindingsModule(
   database: DatabaseSync,
   agentTools: AgentToolRegistry,
-  projects: ProjectsModule,
+  projects: ProjectsApi,
   tickets: TicketsModule,
   events: EventPublisher,
 ): FindingsModule {
@@ -187,7 +179,7 @@ function buildRunnerModule(
   config: Config,
   database: DatabaseSync,
   events: EventPublisher,
-  projects: ProjectsModule,
+  projects: ProjectsApi,
   claudeExecutablePath: string,
   agentTools: AgentToolRegistry,
   logger: Logger,
@@ -226,7 +218,7 @@ function buildRunnerModule(
 
 function buildSchedulerModule(
   events: EventPublisher & EventSubscriber,
-  projects: ProjectsModule,
+  projects: ProjectsApi,
   skills: SkillsApi,
   tickets: TicketsModule,
   runner: RunnerModule,
@@ -343,7 +335,7 @@ export function composeApplication(options: ApplicationOptions): Application {
     config,
     database,
     eventBus,
-    projects,
+    projects.internal,
     findOnPath('claude') ?? 'claude',
     agentTools,
     logger,
@@ -351,7 +343,7 @@ export function composeApplication(options: ApplicationOptions): Application {
   const tickets = buildTicketsModule(
     config,
     eventBus,
-    projects,
+    projects.internal,
     {
       activeRunTicketNumbers: async (projectId) =>
         (await runner.activeRuns(projectId)).map(({ run }) => run.ticketNumber),
@@ -360,10 +352,10 @@ export function composeApplication(options: ApplicationOptions): Application {
     { settle: (runId) => runner.settle(runId) },
     logger,
   );
-  const findings = buildFindingsModule(database, agentTools, projects, tickets, eventBus);
+  const findings = buildFindingsModule(database, agentTools, projects.internal, tickets, eventBus);
   const scheduler = buildSchedulerModule(
     eventBus,
-    projects,
+    projects.internal,
     skills.internal,
     tickets,
     runner,
@@ -392,10 +384,10 @@ export function composeApplication(options: ApplicationOptions): Application {
   // Until a module migrates, its routes are mounted under today's prefixes.
   const routes = [
     skills.routes,
+    projects.routes,
     new Hono().route('/aisf', artifacts.kitRoutes),
     new Hono().route('/a', artifacts.pageRoutes),
     ...[
-      projects.routes,
       findings.routes,
       tickets.routes,
       scheduler.routes,
@@ -414,7 +406,7 @@ export function composeApplication(options: ApplicationOptions): Application {
     // Subscribes the run settlement, so it runs before runner.recover replays unsettled runs.
     'tickets.start': () => tickets.start(),
     'runner.recover': () => runner.recover(),
-    'projects.start': () => projects.start(),
+    ...projects.jobs,
   };
 
   return { routes, jobs, abortSessions: () => runner.abortSessions() };
