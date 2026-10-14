@@ -37,7 +37,7 @@ function runJob(jobs: Jobs, name: string): Promise<void> {
 }
 
 await runJob(application.jobs, 'scheduler.start');
-runJob(application.jobs, 'tickets.start').catch((error: unknown) => {
+runJob(application.jobs, 'tickets.watch-repositories').catch((error: unknown) => {
   logger.error(`The tickets module failed to start: ${String(error)}`);
 });
 

@@ -1,0 +1,658 @@
+import { describe, expect, it, vi } from 'vitest';
+import { TicketNotAnswerableError } from '../errors/ticket-not-answerable-error.js';
+import type { RegisteredRepositories } from '../port/project/registered-repositories.js';
+import { FakeEventPublisher } from '../../../../shared/testing/fake-event-publisher.js';
+import { FakeRegisteredRepositories } from '../../testing/fake-tickets-ports.js';
+import {
+  FakeTicketStatusWrites,
+  FakeActiveRunLookup,
+  FakeRunSettlement,
+} from '../../testing/fake-ticket-status-writes.js';
+import { TicketNotResettableError } from '../errors/ticket-not-resettable-error.js';
+import type { TicketStatus } from '../../../../shared/ticket-status/ticket-status.js';
+import type { FinishedRun } from '../domain/types/finished-run.js';
+import type { WaitingRun } from '../domain/types/waiting-run.js';
+import { TicketStatusService } from './ticket-status-service.js';
+import { unusedTicketStatusDependencies } from '../../testing/unused-dependencies.js';
+
+describe('TicketStatusService', () => {
+  describe('beginAnswer', () => {
+    function buildSubject(
+      waiting: boolean,
+      registeredRepositories: RegisteredRepositories = new FakeRegisteredRepositories([
+        { projectId: 'moritz/aisf', repository: { owner: 'moritz', name: 'aisf' } },
+      ]),
+    ) {
+      const ticketStatusWrites = new FakeTicketStatusWrites();
+      ticketStatusWrites.liveWaiting = waiting;
+      const events = new FakeEventPublisher();
+      const useCase = new TicketStatusService({
+        ...unusedTicketStatusDependencies,
+        ticketStatusWrites,
+        registeredRepositories,
+        events,
+      });
+      return { useCase, ticketStatusWrites, events };
+    }
+
+    it('should remove the waiting label and announce it when the ticket is waiting', async () => {
+      const { useCase, ticketStatusWrites, events } = buildSubject(true);
+
+      await useCase.beginAnswer('moritz/aisf', 147);
+
+      expect(ticketStatusWrites.calls).toEqual(['readState', 'setSecondaryState #147 waiting off']);
+      expect(events.emittedEvents).toEqual([
+        {
+          name: 'ticket.status-written',
+          payload: {
+            projectId: 'moritz/aisf',
+            ticketNumber: 147,
+            from: 'in-progress',
+            to: 'in-progress',
+            waiting: false,
+            stuck: false,
+          },
+        },
+      ]);
+    });
+
+    it('should throw and write nothing when the ticket has no waiting label', async () => {
+      const { useCase, ticketStatusWrites, events } = buildSubject(false);
+
+      await expect(useCase.beginAnswer('moritz/aisf', 147)).rejects.toThrow('#147 is not waiting');
+
+      expect(ticketStatusWrites.calls).toEqual(['readState']);
+      expect(events.emittedEvents).toEqual([]);
+    });
+
+    it('should throw and write nothing when the project is unknown', async () => {
+      const { useCase, ticketStatusWrites } = buildSubject(
+        true,
+        new FakeRegisteredRepositories([]),
+      );
+
+      await expect(useCase.beginAnswer('moritz/aisf', 147)).rejects.toBeInstanceOf(
+        TicketNotAnswerableError,
+      );
+
+      expect(ticketStatusWrites.calls).toEqual([]);
+    });
+
+    it('should announce nothing when the label write fails', async () => {
+      const { useCase, ticketStatusWrites, events } = buildSubject(true);
+      ticketStatusWrites.setStatusFailure = new Error('gh failed');
+
+      await expect(useCase.beginAnswer('moritz/aisf', 147)).rejects.toThrow('gh failed');
+
+      expect(events.emittedEvents).toEqual([]);
+    });
+  });
+
+  describe('revertAnswer', () => {
+    it('should restore the waiting label and announce it when an answer is reverted', async () => {
+      const ticketStatusWrites = new FakeTicketStatusWrites();
+      const events = new FakeEventPublisher();
+      const useCase = new TicketStatusService({
+        ...unusedTicketStatusDependencies,
+        ticketStatusWrites,
+        registeredRepositories: new FakeRegisteredRepositories([
+          { projectId: 'moritz/aisf', repository: { owner: 'moritz', name: 'aisf' } },
+        ]),
+        events,
+      });
+
+      await useCase.revertAnswer('moritz/aisf', 147);
+
+      expect(ticketStatusWrites.calls).toEqual(['readState', 'setSecondaryState #147 waiting on']);
+      expect(events.emittedEvents).toEqual([
+        {
+          name: 'ticket.status-written',
+          payload: {
+            projectId: 'moritz/aisf',
+            ticketNumber: 147,
+            from: 'in-progress',
+            to: 'in-progress',
+            waiting: true,
+            stuck: false,
+          },
+        },
+      ]);
+    });
+  });
+
+  describe('reset', () => {
+    function buildSubject(
+      liveStatus: TicketStatus,
+      flags: { waiting?: boolean; stuck?: boolean } = {},
+      registeredRepositories: RegisteredRepositories = new FakeRegisteredRepositories([
+        { projectId: 'moritz/aisf', repository: { owner: 'moritz', name: 'aisf' } },
+      ]),
+    ) {
+      const ticketStatusWrites = new FakeTicketStatusWrites();
+      ticketStatusWrites.liveStatus = liveStatus;
+      ticketStatusWrites.liveWaiting = flags.waiting ?? false;
+      ticketStatusWrites.liveStuck = flags.stuck ?? false;
+      const activeRunLookup = new FakeActiveRunLookup();
+      const events = new FakeEventPublisher();
+      const useCase = new TicketStatusService({
+        ...unusedTicketStatusDependencies,
+        ticketStatusWrites,
+        activeRunLookup,
+        registeredRepositories,
+        events,
+      });
+      return { useCase, ticketStatusWrites, activeRunLookup, events };
+    }
+
+    it('should set the ticket ready and clear the stuck label when it is in-progress and stuck', async () => {
+      const { useCase, ticketStatusWrites } = buildSubject('in-progress', { stuck: true });
+
+      await useCase.reset('moritz/aisf', 138);
+
+      expect(ticketStatusWrites.calls).toEqual([
+        'readState',
+        'setStatus #138 -> ready',
+        'setSecondaryState #138 stuck off',
+      ]);
+    });
+
+    it('should clear both labels when the ticket is waiting and stuck', async () => {
+      const { useCase, ticketStatusWrites } = buildSubject('in-progress', {
+        waiting: true,
+        stuck: true,
+      });
+
+      await useCase.reset('moritz/aisf', 138);
+
+      expect(ticketStatusWrites.calls).toEqual([
+        'readState',
+        'setStatus #138 -> ready',
+        'setSecondaryState #138 waiting off',
+        'setSecondaryState #138 stuck off',
+      ]);
+    });
+
+    it('should only set the status when the ticket is in-progress without flags', async () => {
+      const { useCase, ticketStatusWrites } = buildSubject('in-progress');
+
+      await useCase.reset('moritz/aisf', 138);
+
+      expect(ticketStatusWrites.calls).toEqual(['readState', 'setStatus #138 -> ready']);
+    });
+
+    it('should reset a ready ticket when it carries the stuck label', async () => {
+      const { useCase, ticketStatusWrites } = buildSubject('ready', { stuck: true });
+
+      await useCase.reset('moritz/aisf', 138);
+
+      expect(ticketStatusWrites.calls).toContain('setSecondaryState #138 stuck off');
+    });
+
+    it('should set the ticket ready when the active run is on another ticket', async () => {
+      const { useCase, ticketStatusWrites, activeRunLookup } = buildSubject('in-progress', {
+        stuck: true,
+      });
+      activeRunLookup.activeTicketNumbers = [140];
+
+      await useCase.reset('moritz/aisf', 138);
+
+      expect(ticketStatusWrites.calls).toContain('setStatus #138 -> ready');
+    });
+
+    it('should throw and write nothing when the ticket has an active run', async () => {
+      const { useCase, ticketStatusWrites, activeRunLookup } = buildSubject('in-progress', {
+        stuck: true,
+      });
+      activeRunLookup.activeTicketNumbers = [138];
+
+      await expect(useCase.reset('moritz/aisf', 138)).rejects.toBeInstanceOf(
+        TicketNotResettableError,
+      );
+      expect(ticketStatusWrites.calls).toEqual([]);
+    });
+
+    it.each(['ready', 'in-review'] as const)(
+      'should throw and write nothing when the ticket status is %s without a stuck label',
+      async (status) => {
+        const { useCase, ticketStatusWrites } = buildSubject(status);
+
+        await expect(useCase.reset('moritz/aisf', 138)).rejects.toBeInstanceOf(
+          TicketNotResettableError,
+        );
+        expect(ticketStatusWrites.calls).toEqual(['readState']);
+      },
+    );
+
+    it('should throw and not touch the ticket when the project is unknown', async () => {
+      const { useCase, ticketStatusWrites } = buildSubject(
+        'in-progress',
+        { stuck: true },
+        new FakeRegisteredRepositories([]),
+      );
+
+      await expect(useCase.reset('moritz/unknown', 138)).rejects.toBeInstanceOf(
+        TicketNotResettableError,
+      );
+      expect(ticketStatusWrites.calls).toEqual([]);
+    });
+
+    it('should emit ticket.status-written to ready with both flags off when the reset succeeds', async () => {
+      const { useCase, events } = buildSubject('in-progress', { stuck: true });
+
+      await useCase.reset('moritz/aisf', 138);
+
+      expect(events.emittedEvents).toEqual([
+        {
+          name: 'ticket.status-written',
+          payload: {
+            projectId: 'moritz/aisf',
+            ticketNumber: 138,
+            from: 'in-progress',
+            to: 'ready',
+            waiting: false,
+            stuck: false,
+          },
+        },
+      ]);
+    });
+
+    it('should emit nothing when the ticket has an active run', async () => {
+      const { useCase, activeRunLookup, events } = buildSubject('in-progress', { stuck: true });
+      activeRunLookup.activeTicketNumbers = [138];
+
+      await expect(useCase.reset('moritz/aisf', 138)).rejects.toBeInstanceOf(
+        TicketNotResettableError,
+      );
+      expect(events.emittedEvents).toEqual([]);
+    });
+
+    it('should emit nothing when the status write fails', async () => {
+      const { useCase, ticketStatusWrites, events } = buildSubject('in-progress', { stuck: true });
+      ticketStatusWrites.setStatusFailure = new Error('gh failed');
+
+      await expect(useCase.reset('moritz/aisf', 138)).rejects.toThrow('gh failed');
+      expect(events.emittedEvents).toEqual([]);
+    });
+
+    it.each(['idea', 'plan'] as const)(
+      'should clear the stuck label and keep the status when an authoring ticket at %s is reset',
+      async (status) => {
+        const { useCase, ticketStatusWrites, events } = buildSubject(status, { stuck: true });
+
+        await useCase.reset('moritz/aisf', 7);
+
+        expect(ticketStatusWrites.calls).toEqual(['readState', 'setSecondaryState #7 stuck off']);
+        expect(events.emittedEvents).toMatchObject([
+          { payload: { from: status, to: status, waiting: false, stuck: false } },
+        ]);
+      },
+    );
+  });
+
+  describe('settleFinishedRun', () => {
+    const escalatedRun: FinishedRun = {
+      runId: 'run-1',
+      projectId: 'moritz/aisf',
+      ticketNumber: 138,
+      stage: 'implement',
+      ending: { kind: 'escalated', escalation: 'spec', reason: 'AC is vague' },
+    };
+
+    function buildSubject(
+      registeredRepositories: RegisteredRepositories = new FakeRegisteredRepositories([
+        { projectId: 'moritz/aisf', repository: { owner: 'moritz', name: 'aisf' } },
+      ]),
+    ) {
+      const ticketStatusWrites = new FakeTicketStatusWrites();
+      const runSettlement = new FakeRunSettlement();
+      const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+      const events = new FakeEventPublisher();
+      const useCase = new TicketStatusService({
+        ...unusedTicketStatusDependencies,
+        ticketStatusWrites,
+        runSettlement,
+        registeredRepositories,
+        events,
+        logger,
+      });
+      return { useCase, ticketStatusWrites, runSettlement, logger, events };
+    }
+
+    it('should add the stuck label, then comment, then settle the run when the ticket is in-progress after an escalation', async () => {
+      const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+
+      await useCase.settleFinishedRun(escalatedRun);
+
+      expect(ticketStatusWrites.calls).toEqual([
+        'readState',
+        'setSecondaryState #138 stuck on',
+        'comment #138: The run escalated (spec): AC is vague',
+      ]);
+      expect(runSettlement.calls).toEqual(['settle run-1']);
+    });
+
+    it('should add the waiting label, post the request and settle the run when the run reached its checkpoint', async () => {
+      const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+
+      await useCase.settleFinishedRun({
+        ...escalatedRun,
+        ending: { kind: 'checkpoint', request: 'Check the waiting chip' },
+      });
+
+      expect(ticketStatusWrites.calls).toEqual([
+        'readState',
+        'setSecondaryState #138 waiting on',
+        'comment #138: The run reached its human checkpoint and waits for an answer on the ticket page:\n\nCheck the waiting chip',
+      ]);
+      expect(runSettlement.calls).toEqual(['settle run-1']);
+    });
+
+    it('should return the ticket to ready without a comment and settle when the run parked', async () => {
+      const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+
+      await useCase.settleFinishedRun({
+        ...escalatedRun,
+        ending: { kind: 'parked', blockerNumber: 12 },
+      });
+
+      expect(ticketStatusWrites.calls).toEqual(['readState', 'setStatus #138 -> ready']);
+      expect(runSettlement.calls).toEqual(['settle run-1']);
+    });
+
+    it('should write nothing and settle when the ticket is already in-review', async () => {
+      const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+      ticketStatusWrites.liveStatus = 'in-review';
+
+      await useCase.settleFinishedRun({ ...escalatedRun, ending: { kind: 'finished' } });
+
+      expect(ticketStatusWrites.calls).toEqual(['readState']);
+      expect(runSettlement.calls).toEqual(['settle run-1']);
+    });
+
+    it('should write nothing and settle when the ticket was marked stuck during the run', async () => {
+      const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+      ticketStatusWrites.liveStuck = true;
+
+      await useCase.settleFinishedRun(escalatedRun);
+
+      expect(ticketStatusWrites.calls).toEqual(['readState']);
+      expect(runSettlement.calls).toEqual(['settle run-1']);
+    });
+
+    it('should write nothing and settle when a parked run finds the ticket ready', async () => {
+      const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+      ticketStatusWrites.liveStatus = 'ready';
+
+      await useCase.settleFinishedRun({
+        ...escalatedRun,
+        ending: { kind: 'parked', blockerNumber: 12 },
+      });
+
+      expect(ticketStatusWrites.calls).toEqual(['readState']);
+      expect(runSettlement.calls).toEqual(['settle run-1']);
+    });
+
+    it('should add stuck, remove waiting and keep the status when a waiting run crashed', async () => {
+      const { useCase, ticketStatusWrites, events, runSettlement } = buildSubject();
+      ticketStatusWrites.liveWaiting = true;
+
+      await useCase.settleFinishedRun({
+        ...escalatedRun,
+        ending: { kind: 'crashed', reason: 'boom' },
+      });
+
+      expect(ticketStatusWrites.calls).toEqual([
+        'readState',
+        'setSecondaryState #138 waiting off',
+        'setSecondaryState #138 stuck on',
+        'comment #138: The run crashed: boom',
+      ]);
+      expect(ticketStatusWrites.liveStatus).toBe('in-progress');
+      expect(events.emittedEvents).toEqual([
+        {
+          name: 'ticket.status-written',
+          payload: {
+            projectId: 'moritz/aisf',
+            ticketNumber: 138,
+            from: 'in-progress',
+            to: 'in-progress',
+            waiting: false,
+            stuck: true,
+          },
+        },
+      ]);
+      expect(runSettlement.calls).toEqual(['settle run-1']);
+    });
+
+    it('should write nothing the second time when the same run.finished is replayed', async () => {
+      const { useCase, ticketStatusWrites } = buildSubject();
+
+      await useCase.settleFinishedRun(escalatedRun);
+      const callsAfterFirstSettlement = ticketStatusWrites.calls.length;
+      await useCase.settleFinishedRun(escalatedRun);
+
+      expect(ticketStatusWrites.calls.slice(callsAfterFirstSettlement)).toEqual(['readState']);
+    });
+
+    it('should write nothing, log it and settle when the project is unknown', async () => {
+      const { useCase, ticketStatusWrites, runSettlement, logger } = buildSubject(
+        new FakeRegisteredRepositories([]),
+      );
+
+      await useCase.settleFinishedRun(escalatedRun);
+
+      expect(ticketStatusWrites.calls).toEqual([]);
+      expect(logger.warn).toHaveBeenCalled();
+      expect(runSettlement.calls).toEqual(['settle run-1']);
+    });
+
+    it('should not settle the run when a ticket write throws', async () => {
+      const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+      ticketStatusWrites.comment = async () => {
+        throw new Error('gh failed');
+      };
+
+      await expect(useCase.settleFinishedRun(escalatedRun)).rejects.toThrow('gh failed');
+      expect(runSettlement.calls).toEqual([]);
+    });
+
+    it('should announce the waiting write after the label write and before comment when the run needs permission', async () => {
+      const { useCase, ticketStatusWrites, events } = buildSubject();
+      let eventsSeenAtComment = -1;
+      ticketStatusWrites.comment = async () => {
+        eventsSeenAtComment = events.emittedEvents.length;
+      };
+
+      await useCase.settleFinishedRun({
+        ...escalatedRun,
+        ending: { kind: 'permission-needed', toolName: 'Bash', toolInput: {} },
+      });
+
+      expect(events.emittedEvents).toEqual([
+        {
+          name: 'ticket.status-written',
+          payload: {
+            projectId: 'moritz/aisf',
+            ticketNumber: 138,
+            from: 'in-progress',
+            to: 'in-progress',
+            waiting: true,
+            stuck: false,
+          },
+        },
+      ]);
+      expect(eventsSeenAtComment).toBe(1);
+    });
+
+    it('should announce the ready write when the run parked', async () => {
+      const { useCase, events } = buildSubject();
+
+      await useCase.settleFinishedRun({
+        ...escalatedRun,
+        ending: { kind: 'parked', blockerNumber: 12 },
+      });
+
+      expect(events.emittedEvents).toEqual([
+        {
+          name: 'ticket.status-written',
+          payload: {
+            projectId: 'moritz/aisf',
+            ticketNumber: 138,
+            from: 'in-progress',
+            to: 'ready',
+            waiting: false,
+            stuck: false,
+          },
+        },
+      ]);
+    });
+
+    it('should announce nothing and still settle when no transition is needed', async () => {
+      const { useCase, ticketStatusWrites, runSettlement, events } = buildSubject();
+      ticketStatusWrites.liveStatus = 'in-review';
+
+      await useCase.settleFinishedRun({ ...escalatedRun, ending: { kind: 'finished' } });
+
+      expect(events.emittedEvents).toEqual([]);
+      expect(runSettlement.calls).toEqual(['settle run-1']);
+    });
+
+    it('should announce nothing when the project is unknown', async () => {
+      const { useCase, events } = buildSubject(new FakeRegisteredRepositories([]));
+
+      await useCase.settleFinishedRun(escalatedRun);
+
+      expect(events.emittedEvents).toEqual([]);
+    });
+
+    it('should announce nothing and rethrow when the label write throws', async () => {
+      const { useCase, ticketStatusWrites, events } = buildSubject();
+      const failure = new Error('gh failed');
+      ticketStatusWrites.setStatusFailure = failure;
+
+      await expect(useCase.settleFinishedRun(escalatedRun)).rejects.toBe(failure);
+
+      expect(events.emittedEvents).toEqual([]);
+    });
+
+    describe('authoring runs', () => {
+      it('should add the stuck label and comment and keep the status when a create run crashed at idea', async () => {
+        const { useCase, ticketStatusWrites } = buildSubject();
+        ticketStatusWrites.liveStatus = 'idea';
+
+        await useCase.settleFinishedRun({
+          ...escalatedRun,
+          stage: 'create',
+          ending: { kind: 'crashed', reason: 'boom' },
+        });
+
+        expect(ticketStatusWrites.calls).toEqual([
+          'readState',
+          'setSecondaryState #138 stuck on',
+          'comment #138: The run crashed: boom',
+        ]);
+      });
+
+      it('should add no label when a plan run finished at plan', async () => {
+        const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+        ticketStatusWrites.liveStatus = 'plan';
+
+        await useCase.settleFinishedRun({
+          ...escalatedRun,
+          stage: 'plan',
+          ending: { kind: 'finished' },
+        });
+
+        expect(ticketStatusWrites.calls).toEqual(['readState']);
+        expect(runSettlement.calls).toEqual(['settle run-1']);
+      });
+    });
+  });
+
+  describe('settleWaitingRun', () => {
+    const waitingRun: WaitingRun = {
+      runId: 'r1',
+      projectId: 'moritz/aisf',
+      ticketNumber: 7,
+      stage: 'implement',
+      wait: { kind: 'checkpoint', request: 'Pick A or B' },
+    };
+
+    function buildSubject(
+      registeredRepositories: RegisteredRepositories = new FakeRegisteredRepositories([
+        { projectId: 'moritz/aisf', repository: { owner: 'moritz', name: 'aisf' } },
+      ]),
+    ) {
+      const ticketStatusWrites = new FakeTicketStatusWrites();
+      const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+      const events = new FakeEventPublisher();
+      const useCase = new TicketStatusService({
+        ...unusedTicketStatusDependencies,
+        ticketStatusWrites,
+        registeredRepositories,
+        events,
+        logger,
+      });
+      return { useCase, ticketStatusWrites, logger, events };
+    }
+
+    it('should add the waiting label, keep the status, announce it and post the request once when the run waits live', async () => {
+      const { useCase, ticketStatusWrites, events } = buildSubject();
+
+      await useCase.settleWaitingRun(waitingRun);
+
+      expect(ticketStatusWrites.calls).toEqual([
+        'readState',
+        'setSecondaryState #7 waiting on',
+        'comment #7: The run reached its human checkpoint and waits for an answer on the ticket page:\n\nPick A or B',
+      ]);
+      expect(events.emittedEvents).toEqual([
+        {
+          name: 'ticket.status-written',
+          payload: {
+            projectId: 'moritz/aisf',
+            ticketNumber: 7,
+            from: 'in-progress',
+            to: 'in-progress',
+            waiting: true,
+            stuck: false,
+          },
+        },
+      ]);
+    });
+
+    it('should change nothing and warn when the project is unknown', async () => {
+      const { useCase, ticketStatusWrites, logger, events } = buildSubject(
+        new FakeRegisteredRepositories([]),
+      );
+
+      await useCase.settleWaitingRun(waitingRun);
+
+      expect(ticketStatusWrites.calls).toEqual([]);
+      expect(events.emittedEvents).toEqual([]);
+      expect(logger.warn).toHaveBeenCalledTimes(1);
+    });
+
+    it('should write nothing when the ticket is already waiting', async () => {
+      const { useCase, ticketStatusWrites } = buildSubject();
+      ticketStatusWrites.liveWaiting = true;
+
+      await useCase.settleWaitingRun(waitingRun);
+
+      expect(ticketStatusWrites.calls).toEqual(['readState']);
+    });
+
+    it('should add the waiting label and keep the idea status when a create run waits at its page', async () => {
+      const { useCase, ticketStatusWrites } = buildSubject();
+      ticketStatusWrites.liveStatus = 'idea';
+
+      await useCase.settleWaitingRun({ ...waitingRun, stage: 'create' });
+
+      expect(ticketStatusWrites.calls).toEqual([
+        'readState',
+        'setSecondaryState #7 waiting on',
+        expect.stringContaining('comment #7:') as string,
+      ]);
+    });
+  });
+});

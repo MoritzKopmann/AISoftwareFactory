@@ -27,23 +27,20 @@ import {
   RunAlreadyActiveError,
   type SchedulerModule,
 } from './modules/scheduler/index.js';
-import { FetchGraphQLTicketSource } from './modules/tickets/infra/integrations/fetch-graphql-ticket-source.js';
-import { FetchIssueFeeds } from './modules/tickets/infra/integrations/fetch-issue-feeds.js';
-import { GhCliTicketStatusWrites } from './modules/tickets/infra/integrations/gh-cli-ticket-status-writes.js';
-import { GhCliIdeaCreation } from './modules/tickets/infra/integrations/gh-cli-idea-creation.js';
-import { InMemoryWatchStore } from './modules/tickets/infra/integrations/in-memory-watch-store.js';
-import { GhCliGitHubToken } from './modules/tickets/infra/integrations/gh-cli-github-token.js';
 import {
   createTicketsModule,
-  TicketNotAnswerableError,
-  type ActiveRunLookup,
-  type RunWaitLookup,
-  type RunSettlement,
+  type TicketsApi,
   type TicketsModule,
 } from './modules/tickets/index.js';
 import type { AgentToolRegistry } from './shared/agent-tools.js';
 import { InMemoryAgentToolRegistry } from './shared/in-memory-agent-tool-registry.js';
-import type { DomainEvents, EventPublisher, EventSubscriber } from './shared/event-bus.js';
+import type {
+  DomainEvents,
+  EventBus,
+  EventPublisher,
+  EventSubscriber,
+} from './shared/event-bus.js';
+import { ConflictError } from './shared/errors.js';
 import { createLiveModule } from './modules/live/index.js';
 import { InMemoryEventBus } from './shared/in-memory-event-bus.js';
 import type { Config } from './shared/config/load-config.js';
@@ -104,34 +101,16 @@ function buildSkillsModule(
 
 function buildTicketsModule(
   config: Config,
-  events: EventPublisher & EventSubscriber,
+  events: EventBus,
   projects: ProjectsApi,
-  activeRunLookup: ActiveRunLookup,
-  runWaitLookup: RunWaitLookup,
-  runSettlement: RunSettlement,
+  runner: RunnerApi,
   logger: Logger,
 ): TicketsModule {
-  const token = new GhCliGitHubToken();
   return createTicketsModule({
-    issueFeeds: new FetchIssueFeeds({ fetch: globalThis.fetch, token }),
-    ticketSource: new FetchGraphQLTicketSource({
-      fetch: globalThis.fetch,
-      token,
-      now: () => new Date(),
-    }),
-    ideaCreation: new GhCliIdeaCreation(),
+    projects,
+    runner,
     clock: new SystemClock(),
     events,
-    watchStore: new InMemoryWatchStore(),
-    subscriber: events,
-    registeredRepositories: {
-      list: async () =>
-        (await projects.list()).map(({ id, repository }) => ({ projectId: id, repository })),
-    },
-    activeRunLookup,
-    runWaitLookup,
-    ticketStatusWrites: new GhCliTicketStatusWrites(),
-    runSettlement,
     logger,
     pollIntervalMilliseconds: config.watcherPollIntervalMilliseconds,
     snapshotIntervalMilliseconds: config.watcherSnapshotIntervalMilliseconds,
@@ -142,7 +121,7 @@ function buildFindingsModule(
   database: DatabaseSync,
   agentTools: AgentToolRegistry,
   projects: ProjectsApi,
-  tickets: TicketsModule,
+  tickets: TicketsApi,
   events: EventPublisher,
 ): FindingsModule {
   return createFindingsModule({
@@ -190,7 +169,7 @@ function buildSchedulerModule(
   events: EventPublisher & EventSubscriber,
   projects: ProjectsApi,
   skills: SkillsApi,
-  tickets: TicketsModule,
+  tickets: TicketsApi,
   runner: RunnerApi,
   logger: Logger,
 ): SchedulerModule {
@@ -200,7 +179,7 @@ function buildSchedulerModule(
         try {
           await tickets.beginAnswer(projectId, ticketNumber);
         } catch (error) {
-          if (error instanceof TicketNotAnswerableError) {
+          if (error instanceof ConflictError) {
             throw new RunNotAnswerableError(error.message);
           }
           throw error;
@@ -232,7 +211,7 @@ function buildSchedulerModule(
       activeRuns: (projectId) => runner.activeRuns(projectId),
       latestRun: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber),
     },
-    ideaCreation: { create: tickets.createIdea },
+    ideaCreation: { create: (repository, idea) => tickets.createIdea(repository, idea) },
     ticketLookup: {
       find: async (projectId, ticketNumber) => {
         const projectTicket = await tickets.ticket(projectId, ticketNumber);
@@ -305,24 +284,19 @@ export function composeApplication(options: ApplicationOptions): Application {
     agentTools,
     logger,
   );
-  const tickets = buildTicketsModule(
-    config,
-    eventBus,
+  const tickets = buildTicketsModule(config, eventBus, projects.internal, runner.internal, logger);
+  const findings = buildFindingsModule(
+    database,
+    agentTools,
     projects.internal,
-    {
-      activeRunTicketNumbers: async (projectId) =>
-        (await runner.internal.activeRuns(projectId)).map(({ run }) => run.ticketNumber),
-    },
-    { waitsOf: (projectId) => runner.internal.activeWaits(projectId) },
-    { settle: (runId) => runner.internal.settle(runId) },
-    logger,
+    tickets.internal,
+    eventBus,
   );
-  const findings = buildFindingsModule(database, agentTools, projects.internal, tickets, eventBus);
   const scheduler = buildSchedulerModule(
     eventBus,
     projects.internal,
     skills.internal,
-    tickets,
+    tickets.internal,
     runner.internal,
     logger,
   );
@@ -353,8 +327,9 @@ export function composeApplication(options: ApplicationOptions): Application {
     runner.routes,
     new Hono().route('/aisf', artifacts.kitRoutes),
     new Hono().route('/a', artifacts.pageRoutes),
-    ...[findings.routes, tickets.routes, scheduler.routes, artifacts.routes, live.routes].map(
-      (moduleRoutes) => new Hono().route('/api', moduleRoutes),
+    tickets.routes,
+    ...[findings.routes, scheduler.routes, artifacts.routes, live.routes].map((moduleRoutes) =>
+      new Hono().route('/api', moduleRoutes),
     ),
   ];
 
@@ -364,8 +339,7 @@ export function composeApplication(options: ApplicationOptions): Application {
       scheduler.start();
       return Promise.resolve();
     },
-    // Subscribes the run settlement, so it runs before the runner replays unsettled runs.
-    'tickets.start': () => tickets.start(),
+    ...tickets.jobs,
     ...runner.jobs,
     ...projects.jobs,
   };

@@ -8,8 +8,8 @@
   },
   "exports": {
     "./api-schemas/projects-schemas.js": "./src/modules/projects/presentation/dto/api/projects-schemas.ts",
-    "./api-schemas/tickets-schemas.js": "./src/modules/tickets/api/schemas/tickets-schemas.ts",
-    "./api-schemas/needs-you-schemas.js": "./src/modules/tickets/api/schemas/needs-you-schemas.ts",
+    "./api-schemas/tickets-schemas.js": "./src/modules/tickets/presentation/dto/api/tickets-schemas.ts",
+    "./api-schemas/needs-you-schemas.js": "./src/modules/tickets/presentation/dto/api/needs-you-schemas.ts",
     "./api-schemas/runs-schemas.js": "./src/modules/scheduler/api/schemas/runs-schemas.ts",
     "./api-schemas/ideas-schemas.js": "./src/modules/scheduler/api/schemas/ideas-schemas.ts",
     "./api-schemas/run-log-schemas.js": "./src/modules/runner/presentation/dto/api/run-log-schemas.ts",
