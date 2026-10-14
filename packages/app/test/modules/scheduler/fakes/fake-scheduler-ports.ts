@@ -15,8 +15,6 @@ import type { RunWait } from '../../../../src/modules/scheduler/logic/domain/typ
 import type { RunAnswer } from '../../../../src/modules/scheduler/logic/domain/types/run-answer.js';
 import type { RunRecord } from '../../../../src/modules/scheduler/logic/domain/types/run-record.js';
 import type { RunStep } from '../../../../src/modules/scheduler/logic/domain/types/run-step.js';
-import type { RunPage } from '../../../../src/modules/scheduler/logic/domain/types/run-page.js';
-import type { RunPageLookup } from '../../../../src/modules/scheduler/logic/ports/run-page-lookup.js';
 import type { RunnerPort } from '../../../../src/modules/scheduler/logic/ports/runner-port.js';
 import type { IdeaCreation } from '../../../../src/modules/scheduler/logic/ports/idea-creation.js';
 import type { RunsGate } from '../../../../src/modules/scheduler/logic/ports/runs-gate.js';
@@ -26,6 +24,7 @@ export const repository: RepositoryReference = { owner: 'moritz', name: 'aisf' }
 
 export const readyLeaf: SchedulableTicket = {
   number: 138,
+  title: 'Add login',
   status: 'ready',
   types: [],
   isLeaf: true,
@@ -79,10 +78,12 @@ export class FakeRunnerPort implements RunnerPort {
   startFailure: Error | undefined;
   answerFailure: Error | undefined;
 
-  async start(request: {
-    projectId: string;
-    ticketNumber: number;
-  }): Promise<{ readonly id: string; readonly startedAt: string }> {
+  readonly startRequests: Array<Parameters<RunnerPort['start']>[0]> = [];
+
+  async start(
+    request: Parameters<RunnerPort['start']>[0],
+  ): Promise<{ readonly id: string; readonly startedAt: string }> {
+    this.startRequests.push(request);
     this.calls.push(`start ${request.projectId} #${request.ticketNumber}`);
     if (this.startFailure !== undefined) {
       throw this.startFailure;
@@ -158,20 +159,6 @@ export class FakeProjectLookup implements ProjectLookup {
 
   async find(): Promise<SchedulerProject | undefined> {
     return this.project;
-  }
-}
-
-export class FakeRunPageLookup implements RunPageLookup {
-  readonly calls: string[] = [];
-  readonly pages = new Map<string, RunPage>();
-
-  async find(
-    projectId: string,
-    ticketNumber: number,
-    artifactId: string,
-  ): Promise<RunPage | undefined> {
-    this.calls.push(`find ${projectId} #${ticketNumber} ${artifactId}`);
-    return this.pages.get(artifactId);
   }
 }
 

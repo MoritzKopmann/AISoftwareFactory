@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { EventPublisher } from '../../shared/event-bus.js';
 import type { Clock } from '../../shared/clock/clock.js';
+import type { AgentToolRegistry } from '../../shared/agent-tools.js';
 import type { Logger } from '../../shared/logger/create-logger.js';
 import { createRunLogRoutes } from './api/routes/create-run-log-routes.js';
 import { createStopRunRoutes } from './api/routes/create-stop-run-routes.js';
@@ -11,7 +12,6 @@ import type { FinishRun } from './logic/domain/types/finish-run.js';
 import type { LaunchRunSession } from './logic/domain/types/launch-run-session.js';
 import type { RunAnswer } from './logic/domain/types/run-answer.js';
 import type { Run } from './logic/domain/types/run.js';
-import type { RunTool } from './logic/domain/types/run-tool.js';
 import { RunAlreadyActiveError } from './logic/errors/run-already-active-error.js';
 import { RunNotActiveError } from './logic/errors/run-not-active-error.js';
 import { RunNotResumableError } from './logic/errors/run-not-resumable-error.js';
@@ -47,14 +47,12 @@ import { WaitForRunAnswerUseCase } from './logic/use-cases/wait-for-run-answer-u
 export type { PermissionDecision } from './logic/domain/types/permission-decision.js';
 export type { RunAnswer } from './logic/domain/types/run-answer.js';
 export type { Run } from './logic/domain/types/run.js';
-export type { RunContext } from './logic/domain/types/run-context.js';
 export type { RunWait } from './logic/domain/types/run-wait.js';
 export type { RunWaitOutcome } from './logic/domain/types/run-wait-outcome.js';
 export type { RunEnding } from './logic/domain/types/run-ending.js';
 export type { RunMode } from './logic/domain/types/run-mode.js';
 export type { RunStage } from './logic/domain/types/run-stage.js';
 export type { RunStep } from './logic/domain/types/run-step.js';
-export type { RunTool, RunToolResult } from './logic/domain/types/run-tool.js';
 export type { ActiveWait } from './logic/domain/types/active-wait.js';
 export type { ActiveRun } from './logic/use-cases/read-active-runs-use-case.js';
 export type { StartRunRequest } from './logic/use-cases/start-run-use-case.js';
@@ -79,7 +77,7 @@ export type RunnerModuleDependencies = {
   readonly clock: Clock;
   readonly events: EventPublisher;
   readonly worktreesDirectory: string;
-  readonly appTools: ReadonlyArray<RunTool>;
+  readonly agentTools: AgentToolRegistry;
   readonly logger: Logger;
 };
 
@@ -116,6 +114,7 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
     finishRun,
     windowMilliseconds: dependencies.liveAnswerWindowMilliseconds,
   });
+  const ownTools = [createEscalateTool(), createParkTool(), createCheckpointTool()];
   const launchRunSessionUseCase = new LaunchRunSessionUseCase({
     agentSessions,
     recentRunSteps,
@@ -123,12 +122,7 @@ export function createRunnerModule(dependencies: RunnerModuleDependencies): Runn
     finishRun,
     events,
     waitForRunAnswer: (run, wait) => waitForRunAnswer.execute(run, wait),
-    tools: [
-      createEscalateTool(),
-      createParkTool(),
-      createCheckpointTool(),
-      ...dependencies.appTools,
-    ],
+    tools: () => [...ownTools, ...dependencies.agentTools.list()],
     logger: dependencies.logger,
   });
   const launchRunSession: LaunchRunSession = (run, launch) =>

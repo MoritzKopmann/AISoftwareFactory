@@ -1,5 +1,6 @@
 import { RunNotAvailableError } from '../errors/run-not-available-error.js';
 import type { RunnerPort } from '../ports/runner-port.js';
+import type { TicketLookup } from '../ports/ticket-lookup.js';
 import type { RunAvailability } from '../domain/types/run-availability.js';
 import type { StartedRun } from '../domain/types/started-run.js';
 
@@ -8,6 +9,7 @@ export type StartTicketRunDependencies = {
     projectId: string,
     ticketNumber: number,
   ) => Promise<RunAvailability>;
+  readonly ticketLookup: TicketLookup;
   readonly runner: RunnerPort;
 };
 
@@ -22,6 +24,16 @@ export class StartTicketRunUseCase {
     if (availability.kind === 'disabled') {
       throw new RunNotAvailableError(availability.reason);
     }
-    return this.dependencies.runner.start({ projectId, ticketNumber });
+    const ticket = await this.dependencies.ticketLookup.find(projectId, ticketNumber);
+    if (ticket === undefined) {
+      throw new RunNotAvailableError(`Ticket #${ticketNumber} cannot be run`);
+    }
+    return this.dependencies.runner.start({
+      projectId,
+      ticketNumber,
+      ticketTitle: ticket.title,
+      status: ticket.status,
+      types: ticket.types,
+    });
   }
 }

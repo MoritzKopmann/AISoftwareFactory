@@ -27,6 +27,8 @@ type RunRow = {
   readonly waiting_request: string | null;
   readonly waiting_since: string | null;
   readonly checkpoint_artifact_id: string | null;
+  readonly checkpoint_page_title: string | null;
+  readonly checkpoint_page_url: string | null;
   readonly started_at: string;
   readonly ended_at: string | null;
 };
@@ -52,10 +54,18 @@ const selectRunColumns = `
     waiting_request,
     waiting_since,
     checkpoint_artifact_id,
+    checkpoint_page_title,
+    checkpoint_page_url,
     started_at,
     ended_at
   FROM runs
 `;
+
+function toPage(row: RunRow): { readonly page?: { readonly title: string; readonly url: string } } {
+  return row.checkpoint_page_title === null || row.checkpoint_page_url === null
+    ? {}
+    : { page: { title: row.checkpoint_page_title, url: row.checkpoint_page_url } };
+}
 
 function toEnding(row: RunRow): RunEnding | undefined {
   switch (row.ending_kind) {
@@ -79,6 +89,7 @@ function toEnding(row: RunRow): RunEnding | undefined {
         kind: 'checkpoint',
         request: String(row.ending_reason),
         ...(row.checkpoint_artifact_id === null ? {} : { artifactId: row.checkpoint_artifact_id }),
+        ...toPage(row),
       };
     case 'crashed':
       return { kind: 'crashed', reason: String(row.ending_reason) };
@@ -114,6 +125,7 @@ function toWait(row: RunRow): RunWait | undefined {
     kind: 'checkpoint',
     request: String(row.waiting_request),
     ...(row.checkpoint_artifact_id === null ? {} : { artifactId: row.checkpoint_artifact_id }),
+    ...toPage(row),
   };
 }
 
@@ -265,6 +277,8 @@ export class SqliteRunRepository implements RunRepository {
           waiting_request = NULL,
           waiting_since = NULL,
           checkpoint_artifact_id = ?,
+          checkpoint_page_title = ?,
+          checkpoint_page_url = ?,
           ended_at = ?
         WHERE id = ?
           AND state = 'running'
@@ -278,6 +292,8 @@ export class SqliteRunRepository implements RunRepository {
         ending.kind === 'permission-needed' ? ending.toolName : null,
         ending.kind === 'permission-needed' ? JSON.stringify(ending.toolInput) : null,
         ending.kind === 'checkpoint' ? (ending.artifactId ?? null) : null,
+        ending.kind === 'checkpoint' ? (ending.page?.title ?? null) : null,
+        ending.kind === 'checkpoint' ? (ending.page?.url ?? null) : null,
         endedAt,
         runId,
       );
@@ -298,6 +314,8 @@ export class SqliteRunRepository implements RunRepository {
           waiting_request = ?,
           waiting_since = ?,
           checkpoint_artifact_id = ?,
+          checkpoint_page_title = ?,
+          checkpoint_page_url = ?,
           tool_name = ?,
           tool_input = ?
         WHERE id = ?
@@ -310,6 +328,8 @@ export class SqliteRunRepository implements RunRepository {
         wait.kind === 'checkpoint' ? wait.request : (wait.reason ?? null),
         waitingSince,
         wait.kind === 'checkpoint' ? (wait.artifactId ?? null) : null,
+        wait.kind === 'checkpoint' ? (wait.page?.title ?? null) : null,
+        wait.kind === 'checkpoint' ? (wait.page?.url ?? null) : null,
         wait.kind === 'permission-needed' ? wait.toolName : null,
         wait.kind === 'permission-needed' ? JSON.stringify(wait.toolInput) : null,
         runId,
@@ -327,6 +347,8 @@ export class SqliteRunRepository implements RunRepository {
           waiting_request = NULL,
           waiting_since = NULL,
           checkpoint_artifact_id = NULL,
+          checkpoint_page_title = NULL,
+          checkpoint_page_url = NULL,
           tool_name = NULL,
           tool_input = NULL
         WHERE id = ?

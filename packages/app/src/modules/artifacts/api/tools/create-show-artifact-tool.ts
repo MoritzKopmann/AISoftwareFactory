@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RunTool } from '../../../runner/index.js';
+import type { AgentTool } from '../../../../shared/agent-tools.js';
 import { ArtifactNotFoundError } from '../../logic/errors/artifact-not-found-error.js';
 import type { PublishArtifactUseCase } from '../../logic/use-cases/publish-artifact-use-case.js';
 
@@ -22,7 +22,7 @@ const inputSchema = z.object({
   title: z.string().min(1, 'title must not be empty'),
 });
 
-export function createShowArtifactTool(publishArtifact: PublishArtifactUseCase): RunTool {
+export function createShowArtifactTool(publishArtifact: PublishArtifactUseCase): AgentTool {
   return {
     name: 'aisf_show_artifact',
     description:
@@ -37,7 +37,7 @@ export function createShowArtifactTool(publishArtifact: PublishArtifactUseCase):
       }
       const { artifactId, title } = parsed.data;
       try {
-        await publishArtifact.execute({
+        const artifact = await publishArtifact.execute({
           projectId: runContext.projectId,
           ticketNumber: runContext.ticketNumber,
           runId: runContext.runId,
@@ -45,19 +45,20 @@ export function createShowArtifactTool(publishArtifact: PublishArtifactUseCase):
           artifactId,
           title,
         });
+        return {
+          wait: {
+            kind: 'checkpoint',
+            request: `The page "${title}" is ready on the ticket page. Open it and answer there.`,
+            artifactId,
+            page: { title, url: `/a/${artifact.token}/` },
+          },
+        };
       } catch (error) {
         if (error instanceof ArtifactNotFoundError) {
           return { text: `Nothing published. ${error.message}` };
         }
         throw error;
       }
-      return {
-        wait: {
-          kind: 'checkpoint',
-          request: `The page "${title}" is ready on the ticket page. Open it and answer there.`,
-          artifactId,
-        },
-      };
     },
   };
 }

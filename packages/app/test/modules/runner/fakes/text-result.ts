@@ -1,7 +1,6 @@
-import type { RunEnding } from '../../../../src/modules/runner/logic/domain/types/run-ending.js';
-import type { RunToolResult } from '../../../../src/modules/runner/logic/domain/types/run-tool.js';
+import type { AgentToolEnding, AgentToolResult } from '../../../../src/shared/agent-tools.js';
 
-export function textResult(result: RunToolResult): { text: string; ending?: RunEnding } {
+export function textResult(result: AgentToolResult): { text: string; ending?: AgentToolEnding } {
   if ('wait' in result) {
     throw new Error('Expected a text result but the tool returned a wait');
   }

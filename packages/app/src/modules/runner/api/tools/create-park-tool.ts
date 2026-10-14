@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RunTool } from '../../logic/domain/types/run-tool.js';
+import type { AgentTool } from '../../../../shared/agent-tools.js';
 
 const inputShape = {
   blocker: z
@@ -10,7 +10,7 @@ const inputShape = {
 };
 const inputSchema = z.object(inputShape);
 
-export function createParkTool(): RunTool {
+export function createParkTool(): AgentTool {
   return {
     name: 'aisf_park',
     description:

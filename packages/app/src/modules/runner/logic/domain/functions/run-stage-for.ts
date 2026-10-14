@@ -1,12 +1,16 @@
+import type { TicketStatus } from '../../../../../shared/ticket-status/ticket-status.js';
+import type { TicketType } from '../../../../../shared/ticket-type/ticket-type.js';
 import type { RunStage } from '../types/run-stage.js';
-import type { RunTarget } from '../types/run-target.js';
 
-export function runStageFor(target: RunTarget): RunStage {
-  if (target.status === 'idea') {
+export function runStageFor(ticket: {
+  readonly status: TicketStatus;
+  readonly types: ReadonlyArray<TicketType>;
+}): RunStage {
+  if (ticket.status === 'idea') {
     return 'create';
   }
-  if (target.status === 'plan') {
+  if (ticket.status === 'plan') {
     return 'plan';
   }
-  return target.types.includes('spike') ? 'spike' : 'implement';
+  return ticket.types.includes('spike') ? 'spike' : 'implement';
 }

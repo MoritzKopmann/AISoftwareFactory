@@ -3,6 +3,7 @@ import {
   createArtifactsModule,
   type ArtifactsModule,
 } from '../../../src/modules/artifacts/index.js';
+import { InMemoryAgentToolRegistry } from '../../../src/shared/in-memory-agent-tool-registry.js';
 import { FakeEventPublisher } from '../../../src/shared/testing/fake-event-publisher.js';
 import { FakeClock } from '../../../src/shared/testing/fake-clock.js';
 import { buildArtifact } from './fakes/build-artifact.js';
@@ -14,13 +15,16 @@ import { InMemoryArtifactRepository } from './fakes/in-memory-artifact-repositor
 describe('createArtifactsModule', () => {
   let artifactRepository: InMemoryArtifactRepository;
   let artifactFiles: FakeArtifactFiles;
+  let agentTools: InMemoryAgentToolRegistry;
   let bridge: ArtifactsModule;
 
   beforeEach(() => {
     artifactRepository = new InMemoryArtifactRepository();
     artifactFiles = new FakeArtifactFiles();
+    agentTools = new InMemoryAgentToolRegistry();
     bridge = createArtifactsModule({
       kitDirectory: '/kit',
+      agentTools,
       artifactRepository,
       artifactFiles,
       ticketRunLookup: new FakeTicketRunLookup(),
@@ -31,16 +35,18 @@ describe('createArtifactsModule', () => {
     });
   });
 
-  it('should offer the aisf_show_artifact tool when the module is created', () => {
-    expect(bridge.tools.map(({ name }) => name)).toEqual(['aisf_show_artifact']);
+  it('should register the aisf_show_artifact tool when the module is created', () => {
+    expect(agentTools.list().map(({ name }) => name)).toEqual(['aisf_show_artifact']);
   });
 
   it('should serve a published page under the page routes when the tool published it', async () => {
     artifactFiles.files.set('/w/.aisf/artifacts/plan/index.html', '<p>hi</p>');
-    await bridge.tools[0]?.execute(
-      { artifactId: 'plan', title: 'Plan' },
-      { runId: 'r1', projectId: 'o/n', ticketNumber: 7, worktreePath: '/w' },
-    );
+    await agentTools
+      .list()[0]
+      ?.execute(
+        { artifactId: 'plan', title: 'Plan' },
+        { runId: 'r1', projectId: 'o/n', ticketNumber: 7, worktreePath: '/w' },
+      );
 
     const response = await bridge.pageRoutes.request('/T/', { headers: { Host: 'localhost:1' } });
 
@@ -55,25 +61,6 @@ describe('createArtifactsModule', () => {
 
     expect(await response.json()).toEqual({
       artifacts: [{ artifactId: 'plan', title: 'Plan review', url: '/a/T/', status: 'closed' }],
-    });
-  });
-
-  describe('pageOf', () => {
-    it('should return the title and url when the ticket has the artifact', async () => {
-      artifactRepository.add(buildArtifact({ artifactId: 'plan-12', title: 'Plan 12' }));
-
-      expect(await bridge.pageOf('o/n', 7, 'plan-12')).toEqual({ title: 'Plan 12', url: '/a/T/' });
-    });
-
-    it('should pick the project when another project has the same artifact id', async () => {
-      artifactRepository.add(buildArtifact({ projectId: 'o/other', token: 'X', title: 'Other' }));
-      artifactRepository.add(buildArtifact({ title: 'Mine' }));
-
-      expect(await bridge.pageOf('o/n', 7, 'plan')).toEqual({ title: 'Mine', url: '/a/T/' });
-    });
-
-    it('should return undefined when the artifact is unknown', async () => {
-      expect(await bridge.pageOf('o/n', 7, 'plan')).toBeUndefined();
     });
   });
 });

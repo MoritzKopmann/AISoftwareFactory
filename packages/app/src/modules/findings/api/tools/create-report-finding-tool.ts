@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RunTool } from '../../../runner/index.js';
+import type { AgentTool } from '../../../../shared/agent-tools.js';
 import type { ReportFindingUseCase } from '../../logic/use-cases/report-finding-use-case.js';
 
 const inputShape = {
@@ -11,7 +11,7 @@ const inputShape = {
 };
 const inputSchema = z.object(inputShape);
 
-export function createReportFindingTool(reportFinding: ReportFindingUseCase): RunTool {
+export function createReportFindingTool(reportFinding: ReportFindingUseCase): AgentTool {
   return {
     name: 'aisf_report_finding',
     description:

@@ -49,11 +49,12 @@ describe('createShowArtifactTool', () => {
         kind: 'checkpoint',
         request: expect.stringContaining('Plan review'),
         artifactId: 'plan',
+        page: { title: 'Plan review', url: '/a/a1b2c3-token/' },
       },
     });
   });
 
-  it('should keep a URL and the token out of the request when it publishes', async () => {
+  it('should keep a URL and the token out of the request text when it publishes', async () => {
     const result = await tool.execute({ artifactId: 'plan', title: 'Plan review' }, runContext);
 
     if (!('wait' in result) || result.wait.kind !== 'checkpoint') {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { z } from 'zod';
 import type { RunEnding } from '../../../../../src/modules/runner/logic/domain/types/run-ending.js';
-import type { RunTool } from '../../../../../src/modules/runner/logic/domain/types/run-tool.js';
+import type { AgentTool } from '../../../../../src/shared/agent-tools.js';
 import { RunAlreadyActiveError } from '../../../../../src/modules/runner/logic/errors/run-already-active-error.js';
 import { RunTargetNotFoundError } from '../../../../../src/modules/runner/logic/errors/run-target-not-found-error.js';
 import { WorktreeSetupFailedError } from '../../../../../src/modules/runner/logic/errors/worktree-setup-failed-error.js';
@@ -31,13 +31,16 @@ describe('StartRunUseCase', () => {
   let events: FakeEventPublisher;
   let logger: { info: Mock; warn: Mock; error: Mock };
   let executedContexts: unknown[];
-  let tools: RunTool[];
+  let tools: AgentTool[];
   let startRun: StartRunUseCase;
 
   const startRequest = {
     projectId: 'moritz/aisf',
     ticketNumber: 137,
     mode: 'afk',
+    ticketTitle: 'The runner takes a ticket',
+    status: 'ready' as TicketStatus,
+    types: [] as ReadonlyArray<TicketType>,
   } as const;
 
   function buildStartRun(runTargets = new FakeRunTargets(target)): StartRunUseCase {
@@ -56,7 +59,7 @@ describe('StartRunUseCase', () => {
       runRepository,
       finishRun,
       waitForRunAnswer: async () => ({ kind: 'unanswered', message: '' }),
-      tools,
+      tools: () => tools,
       events,
       logger,
     });
@@ -76,9 +79,6 @@ describe('StartRunUseCase', () => {
   const target = {
     checkoutPath: '/checkouts/aisf',
     repositoryName: 'aisf',
-    ticketTitle: 'The runner takes a ticket',
-    status: 'ready' as TicketStatus,
-    types: [] as ReadonlyArray<TicketType>,
   };
 
   function finishedEvents() {
@@ -167,9 +167,7 @@ describe('StartRunUseCase', () => {
   ])(
     'should save the stage, prompt and model of the matching skill when the ticket is %s',
     async (_name, types, stage, prompt, model) => {
-      startRun = buildStartRun(new FakeRunTargets({ ...target, types }));
-
-      const run = await startRun.execute(startRequest);
+      const run = await startRun.execute({ ...startRequest, types });
 
       expect(run.stage).toBe(stage);
       expect(agentSessions.startedSpecs[0]).toMatchObject({ prompt, model });
@@ -182,9 +180,7 @@ describe('StartRunUseCase', () => {
   ])(
     'should save the stage, prompt and model of the authoring skill when the ticket is %s',
     async (_name, status, stage, prompt, model) => {
-      startRun = buildStartRun(new FakeRunTargets({ ...target, status }));
-
-      const run = await startRun.execute(startRequest);
+      const run = await startRun.execute({ ...startRequest, status });
 
       expect(run.stage).toBe(stage);
       expect(agentSessions.startedSpecs[0]).toMatchObject({ prompt, model });
@@ -192,9 +188,7 @@ describe('StartRunUseCase', () => {
   );
 
   it('should ensure a detached worktree without a branch in its own directory when an authoring run starts', async () => {
-    startRun = buildStartRun(new FakeRunTargets({ ...target, status: 'plan' }));
-
-    const run = await startRun.execute(startRequest);
+    const run = await startRun.execute({ ...startRequest, status: 'plan' });
 
     expect(run.branchName).toBe('');
     expect(run.worktreePath).toBe('/worktrees/aisf/137-authoring');
@@ -205,11 +199,9 @@ describe('StartRunUseCase', () => {
   });
 
   it('should refresh the detached worktree on every start when an authoring run starts twice', async () => {
-    startRun = buildStartRun(new FakeRunTargets({ ...target, status: 'idea' }));
-
-    await startRun.execute(startRequest);
+    await startRun.execute({ ...startRequest, status: 'idea' });
     await runRepository.markSettled('id-1');
-    await startRun.execute({ ...startRequest });
+    await startRun.execute({ ...startRequest, status: 'idea' });
 
     expect(worktrees.detachedSpecs).toHaveLength(2);
   });

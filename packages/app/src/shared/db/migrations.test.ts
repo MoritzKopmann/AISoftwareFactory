@@ -60,4 +60,42 @@ describe('migrations', () => {
 
     expect(() => insert.run('U')).toThrow(/UNIQUE constraint failed/);
   });
+
+  it('should backfill the page of a waiting checkpoint when migration 8 runs on an older database', () => {
+    const older = openDatabase(':memory:');
+    runMigrations(
+      older,
+      migrations.filter(({ version }) => version < 8),
+    );
+    older
+      .prepare(
+        `INSERT INTO runs (id, project_id, ticket_number, stage, mode, session_id, worktree_path, branch_name, state, started_at, waiting_kind, waiting_request, waiting_since, checkpoint_artifact_id)
+         VALUES ('r1', 'o/n', 7, 'plan', 'afk', 's', '/w', '', 'running', '2026-10-06T10:00:00.000Z', 'checkpoint', 'Open it', '2026-10-06T10:01:00.000Z', 'plan-7')`,
+      )
+      .run();
+    older
+      .prepare(
+        `INSERT INTO artifacts (token, project_id, ticket_number, artifact_id, title, directory, run_id, version, published_at)
+         VALUES ('abc', 'o/n', 7, 'plan-7', 'Round 1', '/d', 'r1', 1, '2026-10-06T10:00:30.000Z')`,
+      )
+      .run();
+
+    runMigrations(older, migrations);
+
+    expect(
+      older.prepare('SELECT checkpoint_page_title, checkpoint_page_url FROM runs').get(),
+    ).toEqual({ checkpoint_page_title: 'Round 1', checkpoint_page_url: '/a/abc/' });
+    older.close();
+  });
+
+  it('should add the nullable checkpoint page columns to runs when migration 8 runs', () => {
+    const columns = database.prepare('PRAGMA table_info(runs)').all() as unknown as ReadonlyArray<{
+      name: string;
+      notnull: number;
+    }>;
+
+    for (const name of ['checkpoint_page_title', 'checkpoint_page_url']) {
+      expect(columns.find((column) => column.name === name)).toMatchObject({ notnull: 0 });
+    }
+  });
 });

@@ -35,7 +35,6 @@ import {
   createRunnerModule,
   RunAlreadyActiveError as RunnerRunAlreadyActiveError,
   RunNotResumableError,
-  type RunTool,
   type RunnerModule,
 } from './modules/runner/index.js';
 import { GhCliPullRequestMerges } from './modules/scheduler/infra/integrations/gh-cli-pull-request-merges.js';
@@ -59,6 +58,8 @@ import {
   type RunSettlement,
   type TicketsModule,
 } from './modules/tickets/index.js';
+import type { AgentToolRegistry } from './shared/agent-tools.js';
+import { InMemoryAgentToolRegistry } from './shared/in-memory-agent-tool-registry.js';
 import type { DomainEvents, EventPublisher, EventSubscriber } from './shared/event-bus.js';
 import { createLiveNoticeRoutes } from './shared/http/create-live-notice-routes.js';
 import { InMemoryEventBus } from './shared/in-memory-event-bus.js';
@@ -72,11 +73,13 @@ import type { Jobs } from './shared/jobs.js';
 function buildArtifactsModule(
   kitDirectory: string,
   database: DatabaseSync,
+  agentTools: AgentToolRegistry,
   runner: Pick<RunnerModule, 'latestRun'>,
   checkpointAnswers: CheckpointAnswers,
   events: EventPublisher,
 ): ArtifactsModule {
   return createArtifactsModule({
+    agentTools,
     kitDirectory,
     artifactRepository: new SqliteArtifactRepository(database),
     artifactFiles: new FileSystemArtifactFiles(),
@@ -173,11 +176,13 @@ function buildTicketsModule(
 
 function buildFindingsModule(
   database: DatabaseSync,
+  agentTools: AgentToolRegistry,
   projects: ProjectsModule,
   tickets: TicketsModule,
   events: EventPublisher,
 ): FindingsModule {
   return createFindingsModule({
+    agentTools,
     findingRepository: new SqliteFindingRepository(database),
     ticketCreator: {
       create: (repository, ticket) => tickets.createIdea(repository, ticket),
@@ -200,9 +205,8 @@ function buildRunnerModule(
   database: DatabaseSync,
   events: EventPublisher,
   projects: ProjectsModule,
-  tickets: TicketsModule,
   claudeExecutablePath: string,
-  appTools: ReadonlyArray<RunTool>,
+  agentTools: AgentToolRegistry,
   logger: Logger,
 ): RunnerModule {
   const clock = new SystemClock();
@@ -217,19 +221,11 @@ function buildRunnerModule(
     }),
     worktrees: new GitCliWorktrees(),
     runTargets: {
-      find: async (projectId, ticketNumber) => {
+      find: async (projectId) => {
         const project = (await projects.list()).find(({ id }) => id === projectId);
-        const projectTicket = await tickets.ticket(projectId, ticketNumber);
-        if (project === undefined || projectTicket?.ticket === undefined) {
-          return undefined;
-        }
-        return {
-          checkoutPath: project.checkoutPath,
-          repositoryName: project.repository.name,
-          ticketTitle: projectTicket.ticket.title,
-          status: projectTicket.ticket.status,
-          types: projectTicket.ticket.types,
-        };
+        return project === undefined
+          ? undefined
+          : { checkoutPath: project.checkoutPath, repositoryName: project.repository.name };
       },
     },
     recentRunSteps: new InMemoryRecentRunSteps(),
@@ -240,7 +236,7 @@ function buildRunnerModule(
     clock,
     events,
     worktreesDirectory: config.worktreesDirectory,
-    appTools,
+    agentTools,
     logger,
   });
 }
@@ -251,7 +247,6 @@ function buildSchedulerModule(
   skills: SkillsModule,
   tickets: TicketsModule,
   runner: RunnerModule,
-  artifacts: ArtifactsModule,
   logger: Logger,
 ): SchedulerModule {
   return createSchedulerModule({
@@ -270,9 +265,9 @@ function buildSchedulerModule(
     },
     pullRequestMerges: new GhCliPullRequestMerges(),
     runner: {
-      start: async ({ projectId, ticketNumber }) => {
+      start: async (request) => {
         try {
-          return await runner.start({ projectId, ticketNumber, mode: 'afk' });
+          return await runner.start({ ...request, mode: 'afk' });
         } catch (error) {
           if (error instanceof RunnerRunAlreadyActiveError) {
             throw new RunAlreadyActiveError(error.message);
@@ -298,7 +293,6 @@ function buildSchedulerModule(
       latestRun: runner.latestRun,
     },
     ideaCreation: { create: tickets.createIdea },
-    runPageLookup: { find: artifacts.pageOf },
     ticketLookup: {
       find: async (projectId, ticketNumber) => {
         const projectTicket = await tickets.ticket(projectId, ticketNumber);
@@ -310,6 +304,7 @@ function buildSchedulerModule(
           projectTicket.sync.state === 'pending' ? undefined : projectTicket.sync.snapshotTakenAt;
         return {
           number: ticket.number,
+          title: ticket.title,
           status: ticket.status,
           types: ticket.types,
           isLeaf: ticket.subIssueNumbers.length === 0,
@@ -357,9 +352,19 @@ export function composeApplication(options: ApplicationOptions): Application {
   runMigrations(database, migrations);
   const eventBus = new InMemoryEventBus<DomainEvents>();
 
+  const agentTools = new InMemoryAgentToolRegistry();
+
   const skills = buildSkillsModule(config, pluginDirectory, eventBus);
   const projects = buildProjectsModule(database, eventBus, skills, logger);
-  // The tickets module is built before the runner, which needs tickets.ticket, so the lookup binds late.
+  const runner = buildRunnerModule(
+    config,
+    database,
+    eventBus,
+    projects,
+    findOnPath('claude') ?? 'claude',
+    agentTools,
+    logger,
+  );
   const tickets = buildTicketsModule(
     config,
     eventBus,
@@ -372,13 +377,13 @@ export function composeApplication(options: ApplicationOptions): Application {
     { settle: (runId) => runner.settle(runId) },
     logger,
   );
-  const findings = buildFindingsModule(database, projects, tickets, eventBus);
-  // The artifacts module needs runner.latestRun and the runner needs its tools, so the lookup binds late.
-  // The same goes for scheduler.answer, which delivers a page's event.
-  const artifacts: ArtifactsModule = buildArtifactsModule(
+  const findings = buildFindingsModule(database, agentTools, projects, tickets, eventBus);
+  const scheduler = buildSchedulerModule(eventBus, projects, skills, tickets, runner, logger);
+  const artifacts = buildArtifactsModule(
     kitDirectory,
     database,
-    { latestRun: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber) },
+    agentTools,
+    runner,
     {
       answer: async (runId, text) => {
         try {
@@ -392,25 +397,6 @@ export function composeApplication(options: ApplicationOptions): Application {
       },
     },
     eventBus,
-  );
-  const runner = buildRunnerModule(
-    config,
-    database,
-    eventBus,
-    projects,
-    tickets,
-    findOnPath('claude') ?? 'claude',
-    [...findings.tools, ...artifacts.tools],
-    logger,
-  );
-  const scheduler = buildSchedulerModule(
-    eventBus,
-    projects,
-    skills,
-    tickets,
-    runner,
-    artifacts,
-    logger,
   );
 
   // Until a module migrates, its routes are mounted under today's prefixes.

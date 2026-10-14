@@ -103,4 +103,26 @@ export const migrations: ReadonlyArray<Migration> = [
       );
     `,
   },
+  {
+    version: 8,
+    name: 'runs-checkpoint-page',
+    sql: `
+      ALTER TABLE runs ADD COLUMN checkpoint_page_title TEXT;
+      ALTER TABLE runs ADD COLUMN checkpoint_page_url TEXT;
+      UPDATE runs
+      SET checkpoint_page_title = (
+          SELECT artifacts.title FROM artifacts
+          WHERE artifacts.project_id = runs.project_id
+            AND artifacts.ticket_number = runs.ticket_number
+            AND artifacts.artifact_id = runs.checkpoint_artifact_id
+        ),
+        checkpoint_page_url = (
+          SELECT '/a/' || artifacts.token || '/' FROM artifacts
+          WHERE artifacts.project_id = runs.project_id
+            AND artifacts.ticket_number = runs.ticket_number
+            AND artifacts.artifact_id = runs.checkpoint_artifact_id
+        )
+      WHERE checkpoint_artifact_id IS NOT NULL;
+    `,
+  },
 ];
