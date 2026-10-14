@@ -33,8 +33,9 @@ function build(
   const project = 'project' in options ? options.project : { repository, onboarded: true };
   const projectLookup: ProjectLookup = { find: async () => project };
   const runsGate = new FakeRunsGate(options.runsBlocked);
+  const ticketLookup = new FakeTicketLookup('ticket' in options ? options.ticket : ideaTicket);
   const readRunAvailability = new ReadRunAvailabilityUseCase({
-    ticketLookup: new FakeTicketLookup('ticket' in options ? options.ticket : ideaTicket),
+    ticketLookup,
     runner,
     runsGate,
     projectLookup,
@@ -42,6 +43,7 @@ function build(
   const startTicketRun = new StartTicketRunUseCase({
     readRunAvailability: (projectId, ticketNumber) =>
       readRunAvailability.execute(projectId, ticketNumber),
+    ticketLookup,
     runner,
   });
   const useCase = new StartIdeaSessionUseCase({

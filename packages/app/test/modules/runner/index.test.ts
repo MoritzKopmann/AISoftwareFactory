@@ -5,10 +5,11 @@ import {
   RunAlreadyActiveError,
   RunNotResumableError,
   type RunnerModule,
-  type RunTool,
 } from '../../../src/modules/runner/index.js';
 import { runLogResponseSchema } from '../../../src/modules/runner/api/schemas/run-log-schemas.js';
 import { TranscriptNotFoundError } from '../../../src/modules/runner/logic/errors/transcript-not-found-error.js';
+import type { AgentTool } from '../../../src/shared/agent-tools.js';
+import { InMemoryAgentToolRegistry } from '../../../src/shared/in-memory-agent-tool-registry.js';
 import { FakeClock } from '../../../src/shared/testing/fake-clock.js';
 import { FakeEventPublisher } from '../../../src/shared/testing/fake-event-publisher.js';
 import {
@@ -29,9 +30,10 @@ describe('createRunnerModule', () => {
   let runAnswerWaits: FakeRunAnswerWaits;
   let runTranscripts: FakeRunTranscripts;
   let events: FakeEventPublisher;
+  let agentTools: InMemoryAgentToolRegistry;
   let runner: RunnerModule;
 
-  const appTool: RunTool = {
+  const appTool: AgentTool = {
     name: 'aisf_report_finding',
     description: 'An app tool',
     inputShape: { summary: z.string() },
@@ -42,9 +44,14 @@ describe('createRunnerModule', () => {
     projectId: 'moritz/aisf',
     ticketNumber: 137,
     mode: 'afk',
+    ticketTitle: 'The runner',
+    status: 'ready',
+    types: [],
   } as const;
 
   beforeEach(() => {
+    agentTools = new InMemoryAgentToolRegistry();
+    agentTools.register(appTool);
     runRepository = new FakeRunRepository();
     runTranscripts = new FakeRunTranscripts();
     agentSessions = new FakeAgentSessions();
@@ -54,13 +61,7 @@ describe('createRunnerModule', () => {
       runRepository,
       agentSessions,
       worktrees: new FakeWorktrees(),
-      runTargets: new FakeRunTargets({
-        checkoutPath: '/checkouts/aisf',
-        repositoryName: 'aisf',
-        ticketTitle: 'The runner',
-        status: 'ready',
-        types: [],
-      }),
+      runTargets: new FakeRunTargets({ checkoutPath: '/checkouts/aisf', repositoryName: 'aisf' }),
       recentRunSteps: new FakeRecentRunSteps(),
       runTranscripts,
       identifiers: new SequentialIdentifiers(),
@@ -69,7 +70,7 @@ describe('createRunnerModule', () => {
       clock: new FakeClock('2026-09-29T10:00:00.000Z'),
       events,
       worktreesDirectory: '/worktrees',
-      appTools: [appTool],
+      agentTools,
       logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
     });
   });
@@ -83,6 +84,16 @@ describe('createRunnerModule', () => {
       'aisf_checkpoint',
       'aisf_report_finding',
     ]);
+  });
+
+  it('should host a tool registered after the module was built when a run starts', async () => {
+    agentTools.register({ ...appTool, name: 'aisf_late_tool' });
+
+    await runner.start(startRequest);
+
+    expect(agentSessions.startedSpecs[0]?.tools.map((tool) => tool.name)).toContain(
+      'aisf_late_tool',
+    );
   });
 
   it('should end the run as escalated and emit run.finished when the session calls aisf_escalate', async () => {

@@ -11,7 +11,12 @@ export type RunEnding =
       readonly reason?: string;
     }
   | { readonly kind: 'parked'; readonly blockerNumber: number }
-  | { readonly kind: 'checkpoint'; readonly request: string; readonly artifactId?: string }
+  | {
+      readonly kind: 'checkpoint';
+      readonly request: string;
+      readonly artifactId?: string;
+      readonly page?: { readonly title: string; readonly url: string };
+    }
   | { readonly kind: 'finished' }
   | { readonly kind: 'stopped' }
   | { readonly kind: 'crashed'; readonly reason: string }

@@ -23,6 +23,7 @@ function buildUseCase(
   return new StartTicketRunUseCase({
     readRunAvailability: (projectId, ticketNumber) =>
       readRunAvailability.execute(projectId, ticketNumber),
+    ticketLookup,
     runner,
   });
 }
@@ -34,6 +35,28 @@ describe('StartTicketRunUseCase', () => {
     await buildUseCase(runner).execute('moritz/aisf', 138);
 
     expect(runner.calls).toEqual(['start moritz/aisf #138']);
+  });
+
+  it('should pass the ticket title, status and types to the runner when the run starts', async () => {
+    const runner = new FakeRunnerPort();
+    const ticketLookup = new FakeTicketLookup({
+      ...readyLeaf,
+      number: 7,
+      title: 'Add login',
+      types: ['task'],
+    });
+
+    await buildUseCase(runner, ticketLookup).execute('moritz/aisf', 7);
+
+    expect(runner.startRequests).toEqual([
+      {
+        projectId: 'moritz/aisf',
+        ticketNumber: 7,
+        ticketTitle: 'Add login',
+        status: 'ready',
+        types: ['task'],
+      },
+    ]);
   });
 
   it('should throw RunNotAvailableError with the reason and start nothing when the ticket already has a run active', async () => {

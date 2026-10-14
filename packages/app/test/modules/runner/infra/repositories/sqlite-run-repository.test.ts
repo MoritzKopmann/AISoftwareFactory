@@ -351,5 +351,59 @@ describe('SqliteRunRepository', () => {
         request: 'Check',
       });
     });
+
+    it('should return the page of a checkpoint wait when the wait was recorded with one', async () => {
+      await repository.insert(buildRun());
+      const page = { title: 'Round 1', url: '/a/abc/' };
+
+      await repository.recordWait('run-1', { ...wait, artifactId: 'plan-7', page }, since);
+
+      expect((await repository.findById('run-1'))?.waitingFor).toEqual({
+        ...wait,
+        artifactId: 'plan-7',
+        page,
+      });
+    });
+
+    it('should return a checkpoint wait without a page when none was recorded', async () => {
+      await repository.insert(buildRun());
+
+      await repository.recordWait('run-1', wait, since);
+
+      expect((await repository.findById('run-1'))?.waitingFor).not.toHaveProperty('page');
+    });
+
+    it('should keep the page on a checkpoint ending when the ending carries it', async () => {
+      await repository.insert(buildRun());
+      const page = { title: 'Round 1', url: '/a/abc/' };
+
+      await repository.recordEnding(
+        'run-1',
+        { kind: 'checkpoint', request: 'Check', artifactId: 'plan-7', page },
+        since,
+      );
+
+      expect((await repository.findById('run-1'))?.ending).toEqual({
+        kind: 'checkpoint',
+        request: 'Check',
+        artifactId: 'plan-7',
+        page,
+      });
+    });
+
+    it('should clear the page when the wait is cleared', async () => {
+      await repository.insert(buildRun());
+      await repository.recordWait(
+        'run-1',
+        { ...wait, artifactId: 'plan-7', page: { title: 'Round 1', url: '/a/abc/' } },
+        since,
+      );
+
+      await repository.clearWait('run-1');
+
+      expect(
+        database.prepare('SELECT checkpoint_page_title, checkpoint_page_url FROM runs').get(),
+      ).toEqual({ checkpoint_page_title: null, checkpoint_page_url: null });
+    });
   });
 });

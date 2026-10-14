@@ -5,6 +5,7 @@ import type { SchedulableTicket } from '../../../../../../src/modules/scheduler/
 
 const readyLeaf: SchedulableTicket = {
   number: 42,
+  title: 'Add login',
   status: 'ready',
   types: [],
   isLeaf: true,

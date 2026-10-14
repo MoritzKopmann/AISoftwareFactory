@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RunTool } from '../../logic/domain/types/run-tool.js';
+import type { AgentTool } from '../../../../shared/agent-tools.js';
 
 const inputShape = {
   kind: z.enum(['red', 'spec', 'denied']).describe('Why the run gives up'),
@@ -10,7 +10,7 @@ const inputShape = {
 };
 const inputSchema = z.object(inputShape);
 
-export function createEscalateTool(): RunTool {
+export function createEscalateTool(): AgentTool {
   return {
     name: 'aisf_escalate',
     description:

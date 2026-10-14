@@ -4,7 +4,7 @@ import { stageModels } from '../domain/constants/stage-models.js';
 import { describeError } from '../domain/functions/describe-error.js';
 import type { FinishRun } from '../domain/types/finish-run.js';
 import type { Run } from '../domain/types/run.js';
-import type { RunTool } from '../domain/types/run-tool.js';
+import type { AgentTool } from '../../../../shared/agent-tools.js';
 import type { SessionEvent } from '../domain/types/session-event.js';
 import type { PermissionRequest } from '../domain/types/permission-request.js';
 import type { PermissionVerdict } from '../domain/types/permission-verdict.js';
@@ -24,7 +24,7 @@ export type LaunchRunSessionDependencies = {
   readonly runRepository: RunRepository;
   readonly finishRun: FinishRun;
   readonly waitForRunAnswer: (run: Run, wait: RunWait) => Promise<RunWaitOutcome>;
-  readonly tools: ReadonlyArray<RunTool>;
+  readonly tools: () => ReadonlyArray<AgentTool>;
   readonly events: EventPublisher;
   readonly logger: Logger;
 };
@@ -61,7 +61,7 @@ export class LaunchRunSessionUseCase {
       ticketNumber: run.ticketNumber,
       worktreePath: run.worktreePath,
     };
-    return this.dependencies.tools.map((tool) => ({
+    return this.dependencies.tools().map((tool) => ({
       name: tool.name,
       description: tool.description,
       inputShape: tool.inputShape,

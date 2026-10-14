@@ -14,7 +14,6 @@ import type { IdeaCreation } from './logic/ports/idea-creation.js';
 import type { ProjectLookup } from './logic/ports/project-lookup.js';
 import type { PullRequestMerges } from './logic/ports/pull-request-merges.js';
 import type { ReviewedTicketLookup } from './logic/ports/reviewed-ticket-lookup.js';
-import type { RunPageLookup } from './logic/ports/run-page-lookup.js';
 import type { RunnerPort } from './logic/ports/runner-port.js';
 import type { RunsGate } from './logic/ports/runs-gate.js';
 import type { TicketAnswerGate } from './logic/ports/ticket-answer-gate.js';
@@ -39,7 +38,6 @@ export type SchedulerModuleDependencies = {
   readonly ticketAnswerGate: TicketAnswerGate;
   readonly pullRequestMerges: PullRequestMerges;
   readonly runner: RunnerPort;
-  readonly runPageLookup: RunPageLookup;
   readonly ticketLookup: TicketLookup;
   readonly reviewedTicketLookup: ReviewedTicketLookup;
   readonly runsGate: RunsGate;
@@ -60,7 +58,6 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
     ticketAnswerGate,
     pullRequestMerges,
     runner,
-    runPageLookup,
     ticketLookup,
     reviewedTicketLookup,
     runsGate,
@@ -79,6 +76,7 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
   const startTicketRun = new StartTicketRunUseCase({
     readRunAvailability: (projectId, ticketNumber) =>
       readRunAvailability.execute(projectId, ticketNumber),
+    ticketLookup,
     runner,
   });
   const startIdeaSession = new StartIdeaSessionUseCase({
@@ -91,7 +89,6 @@ export function createSchedulerModule(dependencies: SchedulerModuleDependencies)
     readRunAvailability: (projectId, ticketNumber) =>
       readRunAvailability.execute(projectId, ticketNumber),
     runner,
-    runPageLookup,
   });
   const answerRun = new AnswerRunUseCase({ ticketAnswerGate, runner });
   const mergeApprovedPullRequests = new MergeApprovedPullRequestsUseCase({

@@ -4,7 +4,7 @@ import type { RunWait } from '../../../../../src/modules/runner/logic/domain/typ
 import { describe, expect, it, vi } from 'vitest';
 import { LaunchRunSessionUseCase } from '../../../../../src/modules/runner/logic/use-cases/launch-run-session-use-case.js';
 import type { FinishRun } from '../../../../../src/modules/runner/logic/domain/types/finish-run.js';
-import type { RunTool } from '../../../../../src/modules/runner/logic/domain/types/run-tool.js';
+import type { AgentTool } from '../../../../../src/shared/agent-tools.js';
 import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 import {
   buildRun,
@@ -14,7 +14,7 @@ import {
 } from '../../fakes/fake-runner-ports.js';
 
 function buildSubject(
-  tools: ReadonlyArray<RunTool> = [],
+  tools: ReadonlyArray<AgentTool> = [],
   outcome: RunWaitOutcome = {
     kind: 'answered',
     answer: { kind: 'checkpoint', text: 'the answer' },
@@ -41,7 +41,7 @@ function buildSubject(
       waitedFor.push(wait.kind === 'checkpoint' ? wait.request : wait.toolName);
       return outcome;
     },
-    tools,
+    tools: () => tools,
     events: new FakeEventPublisher(),
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
   });
@@ -90,9 +90,9 @@ describe('LaunchRunSessionUseCase', () => {
   });
 
   describe('bound tools', () => {
-    function buildTool(result: Awaited<ReturnType<RunTool['execute']>>) {
+    function buildTool(result: Awaited<ReturnType<AgentTool['execute']>>) {
       const executions: unknown[] = [];
-      const tool: RunTool = {
+      const tool: AgentTool = {
         name: 'aisf_example',
         description: 'Example',
         inputShape: {},

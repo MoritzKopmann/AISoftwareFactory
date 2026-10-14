@@ -10,6 +10,8 @@ import type { FinishRun } from '../domain/types/finish-run.js';
 import type { LaunchRunSession } from '../domain/types/launch-run-session.js';
 import type { Run } from '../domain/types/run.js';
 import type { RunMode } from '../domain/types/run-mode.js';
+import type { TicketStatus } from '../../../../shared/ticket-status/ticket-status.js';
+import type { TicketType } from '../../../../shared/ticket-type/ticket-type.js';
 import { RunTargetNotFoundError } from '../errors/run-target-not-found-error.js';
 import type { Identifiers } from '../../../../shared/identifiers/identifiers.js';
 import type { RunRepository } from '../ports/run-repository.js';
@@ -20,6 +22,9 @@ export type StartRunRequest = {
   readonly projectId: string;
   readonly ticketNumber: number;
   readonly mode: RunMode;
+  readonly ticketTitle: string;
+  readonly status: TicketStatus;
+  readonly types: ReadonlyArray<TicketType>;
 };
 
 export type StartRunDependencies = {
@@ -48,7 +53,7 @@ export class StartRunUseCase {
       );
     }
 
-    const stage = runStageFor(target);
+    const stage = runStageFor(request);
     const authoring = stage === 'create' || stage === 'plan';
     const worktreePath = (authoring ? authoringWorktreePathFor : worktreePathFor)(
       this.dependencies.worktreesDirectory,
@@ -63,7 +68,7 @@ export class StartRunUseCase {
       mode: request.mode,
       sessionId: identifiers.next(),
       worktreePath,
-      branchName: authoring ? '' : branchNameFor(request.ticketNumber, target.ticketTitle),
+      branchName: authoring ? '' : branchNameFor(request.ticketNumber, request.ticketTitle),
       state: 'running',
       startedAt: clock.now(),
     };

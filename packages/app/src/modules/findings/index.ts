@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import type { EventPublisher } from '../../shared/event-bus.js';
 import type { Clock } from '../../shared/clock/clock.js';
-import type { RunTool } from '../runner/index.js';
+import type { AgentToolRegistry } from '../../shared/agent-tools.js';
 import { createFindingsRoutes } from './api/routes/create-findings-routes.js';
 import { createReportFindingTool } from './api/tools/create-report-finding-tool.js';
 import type { FindingRepository } from './logic/ports/finding-repository.js';
@@ -13,6 +13,7 @@ import { ListFindingsUseCase } from './logic/use-cases/list-findings-use-case.js
 import { ReportFindingUseCase } from './logic/use-cases/report-finding-use-case.js';
 
 export type FindingsModuleDependencies = {
+  readonly agentTools: AgentToolRegistry;
   readonly findingRepository: FindingRepository;
   readonly ticketCreator: TicketCreator;
   readonly projectLookup: ProjectLookup;
@@ -21,12 +22,12 @@ export type FindingsModuleDependencies = {
 };
 
 export type FindingsModule = {
-  readonly tools: ReadonlyArray<RunTool>;
   readonly routes: Hono;
 };
 
 export function createFindingsModule(dependencies: FindingsModuleDependencies): FindingsModule {
-  const { findingRepository, ticketCreator, projectLookup, events, clock } = dependencies;
+  const { agentTools, findingRepository, ticketCreator, projectLookup, events, clock } =
+    dependencies;
 
   const reportFinding = new ReportFindingUseCase({ findingRepository, events, clock });
   const listFindings = new ListFindingsUseCase({ findingRepository });
@@ -39,8 +40,9 @@ export function createFindingsModule(dependencies: FindingsModuleDependencies): 
   });
   const dismissFinding = new DismissFindingUseCase({ findingRepository, events, clock });
 
+  agentTools.register(createReportFindingTool(reportFinding));
+
   return {
-    tools: [createReportFindingTool(reportFinding)],
     routes: new Hono().route(
       '/projects',
       createFindingsRoutes(listFindings, createTicketFromFinding, dismissFinding),

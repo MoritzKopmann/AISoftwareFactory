@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createFindingsModule, type FindingsModule } from '../../../src/modules/findings/index.js';
+import { InMemoryAgentToolRegistry } from '../../../src/shared/in-memory-agent-tool-registry.js';
 import { FakeEventPublisher } from '../../../src/shared/testing/fake-event-publisher.js';
 import { InMemoryFindingRepository } from './fakes/in-memory-finding-repository.js';
 import { FakeProjectLookup, FakeTicketCreator } from './fakes/fake-findings-ports.js';
@@ -13,25 +14,27 @@ const runContext = {
 
 describe('createFindingsModule', () => {
   let ticketCreator: FakeTicketCreator;
+  let agentTools: InMemoryAgentToolRegistry;
   let findings: FindingsModule;
 
   beforeEach(async () => {
     ticketCreator = new FakeTicketCreator();
+    agentTools = new InMemoryAgentToolRegistry();
     findings = createFindingsModule({
+      agentTools,
       findingRepository: new InMemoryFindingRepository(),
       ticketCreator,
       projectLookup: new FakeProjectLookup(),
       events: new FakeEventPublisher(),
       clock: { now: () => '2026-09-29T10:00:00.000Z' },
     });
-    await findings.tools[0]?.execute(
-      { kind: 'bug', location: 'src/a.ts:12', summary: 'Loop never ends' },
-      runContext,
-    );
+    await agentTools
+      .list()[0]
+      ?.execute({ kind: 'bug', location: 'src/a.ts:12', summary: 'Loop never ends' }, runContext);
   });
 
-  it('should offer the aisf_report_finding tool when the module is created', () => {
-    expect(findings.tools.map(({ name }) => name)).toEqual(['aisf_report_finding']);
+  it('should register the aisf_report_finding tool when the module is created', () => {
+    expect(agentTools.list().map(({ name }) => name)).toEqual(['aisf_report_finding']);
   });
 
   it('should serve a reported finding under /projects/:owner/:name/findings when the ticket is given', async () => {
