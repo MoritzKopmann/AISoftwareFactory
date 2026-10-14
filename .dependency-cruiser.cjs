@@ -9,7 +9,8 @@ const inLayers = `${layerModule}(presentation|business|infrastructure)/`;
 const notTest = ['\\.test\\.ts$', `${modulesRoot}/[^/]+/testing/`];
 const sharedTypeConcepts =
   '^packages/app/src/shared/ticket-(status/ticket-status|type/ticket-type)\\.ts$';
-const sharedTypeOnlyPorts = '^packages/app/src/shared/(clock|identifiers|logger|agent-tools)/';
+const sharedTypeOnlyPorts =
+  '^packages/app/src/shared/((clock|identifiers|logger)/|agent-tools\\.ts$)';
 const sharedRoot = '^packages/app/src/shared/';
 const sharedDomainConcepts = '^packages/app/src/shared/(ticket-status|ticket-type)/';
 const mainFile = '^packages/app/src/(main|composition-root)\\.ts$';

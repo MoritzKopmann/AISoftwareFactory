@@ -11,7 +11,7 @@ const runContext = {
   worktreePath: '/worktrees/aisf/141',
 };
 
-import { textResult } from '../../../runner/fakes/text-result.js';
+import { textResult } from '../../../../../src/shared/testing/text-result.js';
 describe('createReportFindingTool', () => {
   let findingRepository: InMemoryFindingRepository;
   let tool: ReturnType<typeof createReportFindingTool>;
