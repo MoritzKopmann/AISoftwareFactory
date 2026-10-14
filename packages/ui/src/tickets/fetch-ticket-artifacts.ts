@@ -1,4 +1,5 @@
 import type { TicketArtifactsResponse } from '@aisf/app/api-schemas/artifacts-schemas.js';
+import { isRequestFailure } from '../shared/is-request-failure.js';
 
 export type TicketArtifactsFailure =
   | { readonly kind: 'not-ok'; readonly status: number }
@@ -20,9 +21,10 @@ export async function fetchTicketArtifacts(
     }
     return { kind: 'answer', response: (await response.json()) as TicketArtifactsResponse };
   } catch (error) {
+    if (!isRequestFailure(error)) throw error;
     return {
       kind: 'request-failed',
-      cause: { kind: 'network', message: error instanceof Error ? error.message : String(error) },
+      cause: { kind: 'network', message: error.message },
     };
   }
 }

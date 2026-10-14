@@ -1,5 +1,6 @@
 import type { ProjectBoardResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
 import type { BoardOutcome } from './fold-board-outcome.js';
+import { isRequestFailure } from '../shared/is-request-failure.js';
 
 export async function fetchBoardOutcome(
   projectId: string,
@@ -14,7 +15,8 @@ export async function fetchBoardOutcome(
       return { kind: 'request-failed' };
     }
     return { kind: 'answer', response: (await response.json()) as ProjectBoardResponse };
-  } catch {
+  } catch (error) {
+    if (!isRequestFailure(error)) throw error;
     return { kind: 'request-failed' };
   }
 }

@@ -1,5 +1,6 @@
 import type { CheckpointAnswerRequest } from '@aisf/app/api-schemas/runs-schemas.js';
 import { readErrorMessage } from '../shared/read-error-message.js';
+import { isRequestFailure } from '../shared/is-request-failure.js';
 
 export type AnswerCheckpointOutcome =
   | { readonly kind: 'answered' }
@@ -17,7 +18,8 @@ export async function answerCheckpoint(
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ answer } satisfies CheckpointAnswerRequest),
     });
-  } catch {
+  } catch (error) {
+    if (!isRequestFailure(error)) throw error;
     return { kind: 'failed', message: "Can't reach aisf." };
   }
   if (response.ok) {

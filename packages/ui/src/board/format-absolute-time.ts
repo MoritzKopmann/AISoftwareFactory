@@ -1,6 +1,6 @@
 import { formatClockTime } from './format-clock-time.js';
 
-const shortMonthNames = [
+const shortMonthNames: ReadonlyArray<string> = [
   'Jan',
   'Feb',
   'Mar',

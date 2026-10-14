@@ -8,6 +8,7 @@ import { ProjectSidebar } from './projects/project-sidebar.js';
 import { AddProjectForm } from './projects/add-project-form.js';
 import { ProjectPage } from './projects/project-page.js';
 import { TicketPage } from './tickets/ticket-page.js';
+import { isRequestFailure } from './shared/is-request-failure.js';
 
 function readRoute(): AppRoute {
   return parseAppRoute(window.location.hash);
@@ -38,14 +39,16 @@ export function AppShell() {
       try {
         const response = await fetch('/api/projects');
         if (!response.ok) {
-          throw new Error(`Projects route answered ${response.status}`);
+          if (!cancelled) setLoadFailed(true);
+          return;
         }
         const loaded = (await response.json()) as ReadonlyArray<ProjectResponse>;
         if (!cancelled) {
           setProjects(loaded);
           setLoadFailed(false);
         }
-      } catch {
+      } catch (error) {
+        if (!isRequestFailure(error)) throw error;
         if (!cancelled) setLoadFailed(true);
       }
     };

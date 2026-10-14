@@ -1,4 +1,5 @@
 import { readErrorMessage } from '../shared/read-error-message.js';
+import { isRequestFailure } from '../shared/is-request-failure.js';
 
 export type StartRunOutcome =
   | { readonly kind: 'started' }
@@ -14,7 +15,8 @@ export async function startTicketRun(
     response = await request(`/api/projects/${projectId}/tickets/${number}/runs`, {
       method: 'POST',
     });
-  } catch {
+  } catch (error) {
+    if (!isRequestFailure(error)) throw error;
     return { kind: 'failed', message: "Can't reach aisf." };
   }
   if (response.ok) {

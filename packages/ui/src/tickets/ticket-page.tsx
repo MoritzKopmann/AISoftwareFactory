@@ -15,6 +15,7 @@ import { RunSection } from './run-section.js';
 import { RunLog } from './run-log.js';
 import { TicketBodySection } from './ticket-body-section.js';
 import { ticketLiveView } from './ticket-live-view.js';
+import { isRequestFailure } from '../shared/is-request-failure.js';
 
 type TicketPageProps = {
   readonly liveUpdates: LiveUpdates;
@@ -33,9 +34,10 @@ export function TicketPage({ liveUpdates, id, number }: TicketPageProps) {
         const response = await fetch(`/api/projects/${id}/tickets/${number}`);
         return await outcomeFromAnswer(response.status, () => response.json());
       } catch (error) {
+        if (!isRequestFailure(error)) throw error;
         return {
           kind: 'request-failed',
-          message: error instanceof Error ? error.message : String(error),
+          message: error.message,
         };
       }
     },

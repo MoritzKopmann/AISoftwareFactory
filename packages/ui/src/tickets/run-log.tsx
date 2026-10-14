@@ -30,7 +30,7 @@ type RunLogViewProps = {
   readonly onRetry: () => void;
 };
 
-const skeletonLineWidths = ['62%', '48%', '70%', '36%'];
+const skeletonLineWidths: ReadonlyArray<string> = ['62%', '48%', '70%', '36%'];
 
 export function RunLogView({ description, onToggle, onRetry }: RunLogViewProps) {
   return (

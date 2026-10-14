@@ -1,4 +1,5 @@
 import type { FindingResponse, FindingsResponse } from '@aisf/app/api-schemas/findings-schemas.js';
+import { isRequestFailure } from '../shared/is-request-failure.js';
 
 export type FindingsOutcome =
   | { readonly kind: 'answer'; readonly findings: ReadonlyArray<FindingResponse> }
@@ -19,6 +20,7 @@ export async function fetchFindings(
     const body = (await response.json()) as FindingsResponse;
     return { kind: 'answer', findings: body.findings };
   } catch (error) {
-    return { kind: 'unreachable', message: error instanceof Error ? error.message : String(error) };
+    if (!isRequestFailure(error)) throw error;
+    return { kind: 'unreachable', message: error.message };
   }
 }

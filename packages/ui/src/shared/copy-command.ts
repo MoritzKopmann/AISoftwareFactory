@@ -10,7 +10,8 @@ export async function copyCommand(command: string, targets: CopyTargets): Promis
   }
   try {
     await targets.writeText(command);
-  } catch {
+  } catch (error) {
+    if (!(error instanceof DOMException)) throw error;
     targets.selectText();
   }
 }

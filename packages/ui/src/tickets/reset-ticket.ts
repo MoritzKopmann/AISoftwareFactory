@@ -1,4 +1,5 @@
 import { readErrorMessage } from '../shared/read-error-message.js';
+import { isRequestFailure } from '../shared/is-request-failure.js';
 
 export type ResetTicketOutcome =
   | { readonly kind: 'reset' }
@@ -14,7 +15,8 @@ export async function resetTicket(
     response = await request(`/api/projects/${projectId}/tickets/${number}/reset`, {
       method: 'POST',
     });
-  } catch {
+  } catch (error) {
+    if (!isRequestFailure(error)) throw error;
     return { kind: 'failed', message: "Can't reach aisf." };
   }
   if (response.ok) {

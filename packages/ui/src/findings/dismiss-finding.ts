@@ -1,4 +1,5 @@
 import type { FindingsFailure } from './fold-findings-poll.js';
+import { isRequestFailure } from '../shared/is-request-failure.js';
 
 export type DismissOutcome = { readonly kind: 'dismissed' } | FindingsFailure;
 
@@ -16,6 +17,7 @@ export async function dismissFinding(
     }
     return { kind: 'dismissed' };
   } catch (error) {
-    return { kind: 'unreachable', message: error instanceof Error ? error.message : String(error) };
+    if (!isRequestFailure(error)) throw error;
+    return { kind: 'unreachable', message: error.message };
   }
 }
