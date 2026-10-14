@@ -71,7 +71,7 @@ runJob(application.jobs, 'projects.start').catch((error: unknown) => {
 
 // The browser panel polls the status route while the start-up checks run.
 try {
-  await runJob(application.jobs, 'skills.start');
+  await runJob(application.jobs, 'skills.start-up-checks');
 } catch (error) {
   logger.error(`Skills start-up failed unexpectedly: ${String(error)}`);
 }

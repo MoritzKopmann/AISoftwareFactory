@@ -16,14 +16,7 @@ import { GhCliRepositoryResolver } from './modules/projects/infra/integrations/g
 import { SystemClock } from './shared/clock/system-clock.js';
 import { SqliteProjectRepository } from './modules/projects/infra/repositories/sqlite-project-repository.js';
 import { createProjectsModule, type ProjectsModule } from './modules/projects/index.js';
-import { ClaudeCliLocalPluginInstaller } from './modules/skills/infra/integrations/claude-cli-local-plugin-installer.js';
-import { ClaudeCliMarketplaceRegistry } from './modules/skills/infra/integrations/claude-cli-marketplace-registry.js';
-import { ClaudeCliSmokeProbe } from './modules/skills/infra/integrations/claude-cli-smoke-probe.js';
-import { EnvironmentCredentialSource } from './modules/skills/infra/integrations/environment-credential-source.js';
-import { FileSystemPluginMirror } from './modules/skills/infra/integrations/file-system-plugin-mirror.js';
-import { FileSystemSlotReader } from './modules/skills/infra/integrations/file-system-slot-reader.js';
-import { InMemorySkillsStatusStore } from './modules/skills/infra/integrations/in-memory-skills-status-store.js';
-import { createSkillsModule, type SkillsModule } from './modules/skills/index.js';
+import { createSkillsModule, type SkillsApi, type SkillsModule } from './modules/skills/index.js';
 import { ClaudeAgentSdkRunTranscripts } from './modules/runner/infra/integrations/claude-agent-sdk-run-transcripts.js';
 import { ClaudeAgentSdkSessions } from './modules/runner/infra/integrations/claude-agent-sdk-sessions.js';
 import { GitCliWorktrees } from './modules/runner/infra/integrations/git-cli-worktrees.js';
@@ -96,7 +89,7 @@ function buildArtifactsModule(
 function buildProjectsModule(
   database: DatabaseSync,
   events: EventPublisher,
-  skills: SkillsModule,
+  skills: SkillsApi,
   logger: Logger,
 ): ProjectsModule {
   return createProjectsModule({
@@ -115,26 +108,16 @@ function buildSkillsModule(
   config: Config,
   pluginDirectory: string,
   events: EventPublisher,
+  logger: Logger,
 ): SkillsModule {
   return createSkillsModule({
-    pluginMirror: new FileSystemPluginMirror({
-      sourceDirectory: pluginDirectory,
-      mirrorDirectory: config.pluginMirrorDirectory,
-    }),
-    marketplaceRegistry: new ClaudeCliMarketplaceRegistry(),
-    smokeProbe: new ClaudeCliSmokeProbe({
-      probeDirectory: config.skillsProbeDirectory,
-      pluginDirectory: config.pluginMirrorDirectory,
-    }),
-    mirrorDirectory: config.pluginMirrorDirectory,
-    slotReader: new FileSystemSlotReader(),
-    localPluginInstaller: new ClaudeCliLocalPluginInstaller(),
-    credentialSource: new EnvironmentCredentialSource({
-      environment: process.env,
-      projectDirectory: process.cwd(),
-    }),
-    statusStore: new InMemorySkillsStatusStore(),
     events,
+    logger,
+    pluginDirectory,
+    mirrorDirectory: config.pluginMirrorDirectory,
+    probeDirectory: config.skillsProbeDirectory,
+    environment: process.env,
+    projectDirectory: process.cwd(),
   });
 }
 
@@ -244,7 +227,7 @@ function buildRunnerModule(
 function buildSchedulerModule(
   events: EventPublisher & EventSubscriber,
   projects: ProjectsModule,
-  skills: SkillsModule,
+  skills: SkillsApi,
   tickets: TicketsModule,
   runner: RunnerModule,
   logger: Logger,
@@ -354,8 +337,8 @@ export function composeApplication(options: ApplicationOptions): Application {
 
   const agentTools = new InMemoryAgentToolRegistry();
 
-  const skills = buildSkillsModule(config, pluginDirectory, eventBus);
-  const projects = buildProjectsModule(database, eventBus, skills, logger);
+  const skills = buildSkillsModule(config, pluginDirectory, eventBus, logger);
+  const projects = buildProjectsModule(database, eventBus, skills.internal, logger);
   const runner = buildRunnerModule(
     config,
     database,
@@ -378,7 +361,14 @@ export function composeApplication(options: ApplicationOptions): Application {
     logger,
   );
   const findings = buildFindingsModule(database, agentTools, projects, tickets, eventBus);
-  const scheduler = buildSchedulerModule(eventBus, projects, skills, tickets, runner, logger);
+  const scheduler = buildSchedulerModule(
+    eventBus,
+    projects,
+    skills.internal,
+    tickets,
+    runner,
+    logger,
+  );
   const artifacts = buildArtifactsModule(
     kitDirectory,
     database,
@@ -401,11 +391,11 @@ export function composeApplication(options: ApplicationOptions): Application {
 
   // Until a module migrates, its routes are mounted under today's prefixes.
   const routes = [
+    skills.routes,
     new Hono().route('/aisf', artifacts.kitRoutes),
     new Hono().route('/a', artifacts.pageRoutes),
     ...[
       projects.routes,
-      skills.routes,
       findings.routes,
       tickets.routes,
       scheduler.routes,
@@ -416,6 +406,7 @@ export function composeApplication(options: ApplicationOptions): Application {
   ];
 
   const jobs: Jobs = {
+    ...skills.jobs,
     'scheduler.start': () => {
       scheduler.start();
       return Promise.resolve();
@@ -424,13 +415,6 @@ export function composeApplication(options: ApplicationOptions): Application {
     'tickets.start': () => tickets.start(),
     'runner.recover': () => runner.recover(),
     'projects.start': () => projects.start(),
-    'skills.start': async () => {
-      await skills.start();
-      const runsBlocked = skills.runsBlocked();
-      if (runsBlocked.blocked) {
-        logger.error(`Runs are blocked: ${runsBlocked.reason}`);
-      }
-    },
   };
 
   return { routes, jobs, abortSessions: () => runner.abortSessions() };
