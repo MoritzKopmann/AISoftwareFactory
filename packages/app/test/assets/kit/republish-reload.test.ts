@@ -12,8 +12,8 @@ import { ReadPageStatusUseCase } from '../../../src/modules/artifacts/logic/use-
 import { ReadPageUseCase } from '../../../src/modules/artifacts/logic/use-cases/read-page-use-case.js';
 import { SubmitPageEventUseCase } from '../../../src/modules/artifacts/logic/use-cases/submit-page-event-use-case.js';
 import { WritePageUserInputStateUseCase } from '../../../src/modules/artifacts/logic/use-cases/write-page-user-input-state-use-case.js';
-import { FakeEventPublisher } from '../../fakes/fake-event-publisher.js';
-import { FakeClock } from '../../fakes/fake-clock.js';
+import { FakeEventPublisher } from '../../../src/shared/testing/fake-event-publisher.js';
+import { FakeClock } from '../../../src/shared/testing/fake-clock.js';
 import { FakeArtifactFiles } from '../../modules/artifacts/fakes/fake-artifact-files.js';
 import { FakeCheckpointAnswers } from '../../modules/artifacts/fakes/fake-checkpoint-answers.js';
 import { FakeTicketRunLookup } from '../../modules/artifacts/fakes/fake-ticket-run-lookup.js';

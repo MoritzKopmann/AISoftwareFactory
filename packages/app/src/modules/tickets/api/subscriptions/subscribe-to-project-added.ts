@@ -1,4 +1,4 @@
-import type { EventSubscriber } from '../../../../shared/bus/event-subscriber.js';
+import type { EventSubscriber } from '../../../../shared/event-bus.js';
 import type { RepositoryReference } from '../../logic/domain/types/repository-reference.js';
 
 export function subscribeToProjectAdded(

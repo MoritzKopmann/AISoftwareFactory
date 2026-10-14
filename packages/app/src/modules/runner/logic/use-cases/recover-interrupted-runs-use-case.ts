@@ -1,4 +1,4 @@
-import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
+import type { EventPublisher } from '../../../../shared/event-bus.js';
 import type { RunRepository } from '../ports/run-repository.js';
 import type { FinishRun } from '../domain/types/finish-run.js';
 

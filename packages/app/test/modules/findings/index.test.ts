@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createFindingsModule, type FindingsModule } from '../../../src/modules/findings/index.js';
-import { FakeEventPublisher } from '../../fakes/fake-event-publisher.js';
+import { FakeEventPublisher } from '../../../src/shared/testing/fake-event-publisher.js';
 import { InMemoryFindingRepository } from './fakes/in-memory-finding-repository.js';
 import { FakeProjectLookup, FakeTicketCreator } from './fakes/fake-findings-ports.js';
 

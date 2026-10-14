@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { RunEnding } from '../../../../../src/modules/runner/logic/domain/types/run-ending.js';
 import { WaitForRunAnswerUseCase } from '../../../../../src/modules/runner/logic/use-cases/wait-for-run-answer-use-case.js';
-import { FakeClock } from '../../../../fakes/fake-clock.js';
-import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
+import { FakeClock } from '../../../../../src/shared/testing/fake-clock.js';
+import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 import { buildRun, FakeRunAnswerWaits, FakeRunRepository } from '../../fakes/fake-runner-ports.js';
 
 describe('WaitForRunAnswerUseCase', () => {

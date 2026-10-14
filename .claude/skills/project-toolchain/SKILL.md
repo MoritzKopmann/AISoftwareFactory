@@ -20,7 +20,7 @@ platforms: [linux]
 ## Running the commands
 
 - **Node ≥22 is required** (`.nvmrc` says 22). On an older Node, `npm ci` warns `EBADENGINE` and the tools fail. Switch Node rather than work around it.
-- Run every command from the repo root after `npm ci`. `{file}` is a path relative to the root, e.g. `packages/app/test/placeholder.test.ts`.
+- Run every command from the repo root after `npm ci`. `{file}` is a path relative to the root, e.g. `packages/app/src/shared/http.test.ts`.
 - `format` rewrites files. CI runs the check-only variant, `npm run format:check`. Prettier ignores `.claude/`, `.aisf/` and `package-lock.json`.
 
 ## Reading `analyze` output

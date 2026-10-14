@@ -1,350 +1,16 @@
 #!/usr/bin/env node
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import type { DatabaseSync } from 'node:sqlite';
-import { FileSystemArtifactFiles } from './modules/artifacts/infra/integrations/file-system-artifact-files.js';
-import { SqliteArtifactRepository } from './modules/artifacts/infra/repositories/sqlite-artifact-repository.js';
-import {
-  createArtifactsModule,
-  PageBusyError,
-  type ArtifactsModule,
-  type CheckpointAnswers,
-} from './modules/artifacts/index.js';
-import { SqliteFindingRepository } from './modules/findings/infra/repositories/sqlite-finding-repository.js';
-import { createFindingsModule, type FindingsModule } from './modules/findings/index.js';
-import { GhCliLabelSync } from './modules/projects/infra/integrations/gh-cli-label-sync.js';
-import { GhCliRepositoryResolver } from './modules/projects/infra/integrations/gh-cli-repository-resolver.js';
-import { SystemClock } from './shared/clock/system-clock.js';
-import { SqliteProjectRepository } from './modules/projects/infra/repositories/sqlite-project-repository.js';
-import { createProjectsModule, type ProjectsModule } from './modules/projects/index.js';
-import { ClaudeCliLocalPluginInstaller } from './modules/skills/infra/integrations/claude-cli-local-plugin-installer.js';
-import { ClaudeCliMarketplaceRegistry } from './modules/skills/infra/integrations/claude-cli-marketplace-registry.js';
-import { ClaudeCliSmokeProbe } from './modules/skills/infra/integrations/claude-cli-smoke-probe.js';
-import { EnvironmentCredentialSource } from './modules/skills/infra/integrations/environment-credential-source.js';
-import { FileSystemPluginMirror } from './modules/skills/infra/integrations/file-system-plugin-mirror.js';
-import { FileSystemSlotReader } from './modules/skills/infra/integrations/file-system-slot-reader.js';
-import { InMemorySkillsStatusStore } from './modules/skills/infra/integrations/in-memory-skills-status-store.js';
-import { createSkillsModule, type SkillsModule } from './modules/skills/index.js';
-import { ClaudeAgentSdkRunTranscripts } from './modules/runner/infra/integrations/claude-agent-sdk-run-transcripts.js';
-import { ClaudeAgentSdkSessions } from './modules/runner/infra/integrations/claude-agent-sdk-sessions.js';
-import { GitCliWorktrees } from './modules/runner/infra/integrations/git-cli-worktrees.js';
-import { InMemoryRunAnswerWaits } from './modules/runner/infra/integrations/in-memory-run-answer-waits.js';
-import { InMemoryRecentRunSteps } from './modules/runner/infra/integrations/in-memory-recent-run-steps.js';
-import { RandomUuidIdentifiers } from './shared/identifiers/random-uuid-identifiers.js';
-import { SqliteRunRepository } from './modules/runner/infra/repositories/sqlite-run-repository.js';
-import {
-  createRunnerModule,
-  RunAlreadyActiveError as RunnerRunAlreadyActiveError,
-  RunNotResumableError,
-  type RunTool,
-  type RunnerModule,
-} from './modules/runner/index.js';
-import { GhCliPullRequestMerges } from './modules/scheduler/infra/integrations/gh-cli-pull-request-merges.js';
-import {
-  createSchedulerModule,
-  RunNotAnswerableError,
-  RunAlreadyActiveError,
-  type SchedulerModule,
-} from './modules/scheduler/index.js';
-import { FetchGraphQLTicketSource } from './modules/tickets/infra/integrations/fetch-graphql-ticket-source.js';
-import { FetchIssueFeeds } from './modules/tickets/infra/integrations/fetch-issue-feeds.js';
-import { GhCliTicketStatusWrites } from './modules/tickets/infra/integrations/gh-cli-ticket-status-writes.js';
-import { GhCliIdeaCreation } from './modules/tickets/infra/integrations/gh-cli-idea-creation.js';
-import { InMemoryWatchStore } from './modules/tickets/infra/integrations/in-memory-watch-store.js';
-import { GhCliGitHubToken } from './modules/tickets/infra/integrations/gh-cli-github-token.js';
-import {
-  createTicketsModule,
-  TicketNotAnswerableError,
-  type ActiveRunLookup,
-  type RunWaitLookup,
-  type RunSettlement,
-  type TicketsModule,
-} from './modules/tickets/index.js';
-import { findOnPath } from './cli/find-on-path.js';
 import { isOnPath } from './cli/is-on-path.js';
 import { openBrowser } from './cli/open-browser.js';
 import { parseCliArguments } from './cli/parse-cli-arguments.js';
 import { findPreflightProblems } from './cli/preflight.js';
+import { composeApplication } from './composition-root.js';
 import { createApp } from './server/create-app.js';
 import { startServer } from './server/start-server.js';
-import type { EventPublisher } from './shared/bus/event-publisher.js';
-import type { EventSubscriber } from './shared/bus/event-subscriber.js';
-import { createLiveNoticeRoutes } from './shared/http/create-live-notice-routes.js';
-import { TypedEventBus } from './shared/bus/typed-event-bus.js';
-import type { AisfEventMap } from './shared/bus/aisf-event-map.js';
-import type { Config } from './shared/config/load-config.js';
 import { loadConfig } from './shared/config/load-config.js';
-import { migrations } from './shared/db/migrations.js';
-import { openDatabase } from './shared/db/open-database.js';
-import { runMigrations } from './shared/db/run-migrations.js';
-import { consoleLogSink, createLogger, type Logger } from './shared/logger/create-logger.js';
-
-function buildArtifactsModule(
-  kitDirectory: string,
-  database: DatabaseSync,
-  runner: Pick<RunnerModule, 'latestRun'>,
-  checkpointAnswers: CheckpointAnswers,
-  events: EventPublisher,
-): ArtifactsModule {
-  return createArtifactsModule({
-    kitDirectory,
-    artifactRepository: new SqliteArtifactRepository(database),
-    artifactFiles: new FileSystemArtifactFiles(),
-    ticketRunLookup: {
-      latest: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber),
-    },
-    checkpointAnswers,
-    events,
-    identifiers: new RandomUuidIdentifiers(),
-    clock: new SystemClock(),
-  });
-}
-
-function buildProjectsModule(
-  database: DatabaseSync,
-  events: EventPublisher,
-  skills: SkillsModule,
-  logger: Logger,
-): ProjectsModule {
-  return createProjectsModule({
-    projectRepository: new SqliteProjectRepository(database),
-    repositoryResolver: new GhCliRepositoryResolver(),
-    labelSync: new GhCliLabelSync(),
-    pluginInstaller: { install: (checkoutPath) => skills.installPluginLocally(checkoutPath) },
-    clock: new SystemClock(),
-    contractPreflight: { check: (checkoutPath) => skills.runContractPreflight(checkoutPath) },
-    events,
-    logger,
-  });
-}
-
-function buildSkillsModule(
-  config: Config,
-  pluginDirectory: string,
-  events: EventPublisher,
-): SkillsModule {
-  return createSkillsModule({
-    pluginMirror: new FileSystemPluginMirror({
-      sourceDirectory: pluginDirectory,
-      mirrorDirectory: config.pluginMirrorDirectory,
-    }),
-    marketplaceRegistry: new ClaudeCliMarketplaceRegistry(),
-    smokeProbe: new ClaudeCliSmokeProbe({
-      probeDirectory: config.skillsProbeDirectory,
-      pluginDirectory: config.pluginMirrorDirectory,
-    }),
-    mirrorDirectory: config.pluginMirrorDirectory,
-    slotReader: new FileSystemSlotReader(),
-    localPluginInstaller: new ClaudeCliLocalPluginInstaller(),
-    credentialSource: new EnvironmentCredentialSource({
-      environment: process.env,
-      projectDirectory: process.cwd(),
-    }),
-    statusStore: new InMemorySkillsStatusStore(),
-    events,
-  });
-}
-
-function buildTicketsModule(
-  config: Config,
-  events: EventPublisher & EventSubscriber,
-  projects: ProjectsModule,
-  activeRunLookup: ActiveRunLookup,
-  runWaitLookup: RunWaitLookup,
-  runSettlement: RunSettlement,
-  logger: Logger,
-): TicketsModule {
-  const token = new GhCliGitHubToken();
-  return createTicketsModule({
-    issueFeeds: new FetchIssueFeeds({ fetch: globalThis.fetch, token }),
-    ticketSource: new FetchGraphQLTicketSource({
-      fetch: globalThis.fetch,
-      token,
-      now: () => new Date(),
-    }),
-    ideaCreation: new GhCliIdeaCreation(),
-    clock: new SystemClock(),
-    events,
-    watchStore: new InMemoryWatchStore(),
-    subscriber: events,
-    registeredRepositories: {
-      list: async () =>
-        (await projects.list()).map(({ id, repository }) => ({ projectId: id, repository })),
-    },
-    activeRunLookup,
-    runWaitLookup,
-    ticketStatusWrites: new GhCliTicketStatusWrites(),
-    runSettlement,
-    logger,
-    pollIntervalMilliseconds: config.watcherPollIntervalMilliseconds,
-    snapshotIntervalMilliseconds: config.watcherSnapshotIntervalMilliseconds,
-  });
-}
-
-function buildFindingsModule(
-  database: DatabaseSync,
-  projects: ProjectsModule,
-  tickets: TicketsModule,
-  events: EventPublisher,
-): FindingsModule {
-  return createFindingsModule({
-    findingRepository: new SqliteFindingRepository(database),
-    ticketCreator: {
-      create: (repository, ticket) => tickets.createIdea(repository, ticket),
-    },
-    projectLookup: {
-      find: async (projectId) => {
-        const project = (await projects.list()).find(({ id }) => id === projectId);
-        return project === undefined ? undefined : { repository: project.repository };
-      },
-    },
-    events,
-    clock: new SystemClock(),
-  });
-}
-
-const answerTimeoutMarginMilliseconds = 600_000;
-
-function buildRunnerModule(
-  config: Config,
-  database: DatabaseSync,
-  events: EventPublisher,
-  projects: ProjectsModule,
-  tickets: TicketsModule,
-  claudeExecutablePath: string,
-  appTools: ReadonlyArray<RunTool>,
-  logger: Logger,
-): RunnerModule {
-  const clock = new SystemClock();
-  return createRunnerModule({
-    runRepository: new SqliteRunRepository(database),
-    agentSessions: new ClaudeAgentSdkSessions({
-      claudeExecutablePath,
-      pluginDirectory: config.pluginMirrorDirectory,
-      now: () => clock.now(),
-      answerTimeoutMilliseconds:
-        config.liveAnswerWindowMilliseconds + answerTimeoutMarginMilliseconds,
-    }),
-    worktrees: new GitCliWorktrees(),
-    runTargets: {
-      find: async (projectId, ticketNumber) => {
-        const project = (await projects.list()).find(({ id }) => id === projectId);
-        const projectTicket = await tickets.ticket(projectId, ticketNumber);
-        if (project === undefined || projectTicket?.ticket === undefined) {
-          return undefined;
-        }
-        return {
-          checkoutPath: project.checkoutPath,
-          repositoryName: project.repository.name,
-          ticketTitle: projectTicket.ticket.title,
-          status: projectTicket.ticket.status,
-          types: projectTicket.ticket.types,
-        };
-      },
-    },
-    recentRunSteps: new InMemoryRecentRunSteps(),
-    runTranscripts: new ClaudeAgentSdkRunTranscripts(),
-    identifiers: new RandomUuidIdentifiers(),
-    runAnswerWaits: new InMemoryRunAnswerWaits(),
-    liveAnswerWindowMilliseconds: config.liveAnswerWindowMilliseconds,
-    clock,
-    events,
-    worktreesDirectory: config.worktreesDirectory,
-    appTools,
-    logger,
-  });
-}
-
-function buildSchedulerModule(
-  events: EventPublisher & EventSubscriber,
-  projects: ProjectsModule,
-  skills: SkillsModule,
-  tickets: TicketsModule,
-  runner: RunnerModule,
-  artifacts: ArtifactsModule,
-  logger: Logger,
-): SchedulerModule {
-  return createSchedulerModule({
-    ticketAnswerGate: {
-      begin: async (projectId, ticketNumber) => {
-        try {
-          await tickets.beginAnswer(projectId, ticketNumber);
-        } catch (error) {
-          if (error instanceof TicketNotAnswerableError) {
-            throw new RunNotAnswerableError(error.message);
-          }
-          throw error;
-        }
-      },
-      revert: (projectId, ticketNumber) => tickets.revertAnswer(projectId, ticketNumber),
-    },
-    pullRequestMerges: new GhCliPullRequestMerges(),
-    runner: {
-      start: async ({ projectId, ticketNumber }) => {
-        try {
-          return await runner.start({ projectId, ticketNumber, mode: 'afk' });
-        } catch (error) {
-          if (error instanceof RunnerRunAlreadyActiveError) {
-            throw new RunAlreadyActiveError(error.message);
-          }
-          throw error;
-        }
-      },
-      answer: async (runId, answer) => {
-        try {
-          return await runner.answer(runId, answer);
-        } catch (error) {
-          if (error instanceof RunnerRunAlreadyActiveError) {
-            throw new RunAlreadyActiveError(error.message);
-          }
-          if (error instanceof RunNotResumableError) {
-            throw new RunNotAnswerableError(error.message);
-          }
-          throw error;
-        }
-      },
-      findRun: runner.findRun,
-      activeRuns: runner.activeRuns,
-      latestRun: runner.latestRun,
-    },
-    ideaCreation: { create: tickets.createIdea },
-    runPageLookup: { find: artifacts.pageOf },
-    ticketLookup: {
-      find: async (projectId, ticketNumber) => {
-        const projectTicket = await tickets.ticket(projectId, ticketNumber);
-        const ticket = projectTicket?.ticket;
-        if (projectTicket === undefined || ticket === undefined) {
-          return undefined;
-        }
-        const snapshotTakenAt =
-          projectTicket.sync.state === 'pending' ? undefined : projectTicket.sync.snapshotTakenAt;
-        return {
-          number: ticket.number,
-          status: ticket.status,
-          types: ticket.types,
-          isLeaf: ticket.subIssueNumbers.length === 0,
-          hasOpenBlocker: ticket.blockedBy.some((blocker) => blocker.open),
-          subIssueNumbers: ticket.subIssueNumbers,
-          ...(snapshotTakenAt === undefined ? {} : { snapshotTakenAt }),
-        };
-      },
-    },
-    reviewedTicketLookup: {
-      list: async (projectId) => tickets.openTickets(projectId),
-    },
-    runsGate: { check: () => skills.runsBlocked() },
-    projectLookup: {
-      find: async (projectId) => {
-        const project = (await projects.list()).find(({ id }) => id === projectId);
-        return project === undefined
-          ? undefined
-          : { repository: project.repository, onboarded: project.contract.passed };
-      },
-    },
-    subscriber: events,
-    logger,
-  });
-}
+import type { Jobs } from './shared/jobs.js';
+import { consoleLogSink, createLogger } from './shared/logger/create-logger.js';
 
 const logger = createLogger(consoleLogSink);
 
@@ -360,100 +26,36 @@ const staticDirectory = fileURLToPath(new URL('../../ui/dist', import.meta.url))
 const kitDirectory = fileURLToPath(new URL('../assets/kit', import.meta.url));
 const pluginDirectory = fileURLToPath(new URL('../../plugin', import.meta.url));
 
-const database = openDatabase(config.databasePath);
-runMigrations(database, migrations);
-const eventBus = new TypedEventBus<AisfEventMap>();
+const application = composeApplication({ config, logger, kitDirectory, pluginDirectory });
 
-const skills = buildSkillsModule(config, pluginDirectory, eventBus);
-const projects = buildProjectsModule(database, eventBus, skills, logger);
-// The tickets module is built before the runner, which needs tickets.ticket, so the lookup binds late.
-const tickets = buildTicketsModule(
-  config,
-  eventBus,
-  projects,
-  {
-    activeRunTicketNumbers: async (projectId) =>
-      (await runner.activeRuns(projectId)).map(({ run }) => run.ticketNumber),
-  },
-  { waitsOf: (projectId) => runner.activeWaits(projectId) },
-  { settle: (runId) => runner.settle(runId) },
-  logger,
-);
-const findings = buildFindingsModule(database, projects, tickets, eventBus);
-// The artifacts module needs runner.latestRun and the runner needs its tools, so the lookup binds late.
-// The same goes for scheduler.answer, which delivers a page's event.
-const artifacts: ArtifactsModule = buildArtifactsModule(
-  kitDirectory,
-  database,
-  { latestRun: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber) },
-  {
-    answer: async (runId, text) => {
-      try {
-        await scheduler.answer(runId, { kind: 'checkpoint', text });
-      } catch (error) {
-        if (error instanceof RunNotAnswerableError || error instanceof RunAlreadyActiveError) {
-          throw new PageBusyError(error.message);
-        }
-        throw error;
-      }
-    },
-  },
-  eventBus,
-);
-const runner = buildRunnerModule(
-  config,
-  database,
-  eventBus,
-  projects,
-  tickets,
-  findOnPath('claude') ?? 'claude',
-  [...findings.tools, ...artifacts.tools],
-  logger,
-);
-const scheduler = buildSchedulerModule(
-  eventBus,
-  projects,
-  skills,
-  tickets,
-  runner,
-  artifacts,
-  logger,
-);
-scheduler.start();
-// Subscribes the run settlement, so it starts before recover() replays unsettled runs.
-tickets.start().catch((error: unknown) => {
+function runJob(jobs: Jobs, name: string): Promise<void> {
+  const job = jobs[name];
+  if (job === undefined) {
+    throw new Error(`Unknown job: ${name}`);
+  }
+  return job();
+}
+
+await runJob(application.jobs, 'scheduler.start');
+runJob(application.jobs, 'tickets.start').catch((error: unknown) => {
   logger.error(`The tickets module failed to start: ${String(error)}`);
 });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
-    runner.abortSessions();
+    application.abortSessions();
     process.exit(0);
   });
 }
 
 try {
-  await runner.recover();
+  await runJob(application.jobs, 'runner.recover');
 } catch (error) {
   logger.error(`Recovering interrupted runs failed: ${String(error)}`);
 }
 
 const runningServer = await startServer({
-  app: createApp({
-    staticDirectory,
-    kitRoutes: artifacts.kitRoutes,
-    pageRoutes: artifacts.pageRoutes,
-    apiRoutes: [
-      projects.routes,
-      skills.routes,
-      findings.routes,
-      tickets.routes,
-      scheduler.routes,
-      runner.routes,
-      artifacts.routes,
-      createLiveNoticeRoutes(eventBus),
-    ],
-  }),
+  app: createApp({ staticDirectory, routes: application.routes }),
   port: config.port,
 });
 
@@ -463,17 +65,13 @@ if (options.openBrowser) {
 }
 
 // Never-crash boundary: a failed label sync must not end the process or delay the boot.
-projects.start().catch((error: unknown) => {
+runJob(application.jobs, 'projects.start').catch((error: unknown) => {
   logger.error(`Syncing the project labels failed: ${String(error)}`);
 });
 
 // The browser panel polls the status route while the start-up checks run.
 try {
-  await skills.start();
+  await runJob(application.jobs, 'skills.start');
 } catch (error) {
   logger.error(`Skills start-up failed unexpectedly: ${String(error)}`);
-}
-const runsBlocked = skills.runsBlocked();
-if (runsBlocked.blocked) {
-  logger.error(`Runs are blocked: ${runsBlocked.reason}`);
 }

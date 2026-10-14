@@ -3,8 +3,8 @@ import {
   createArtifactsModule,
   type ArtifactsModule,
 } from '../../../src/modules/artifacts/index.js';
-import { FakeEventPublisher } from '../../fakes/fake-event-publisher.js';
-import { FakeClock } from '../../fakes/fake-clock.js';
+import { FakeEventPublisher } from '../../../src/shared/testing/fake-event-publisher.js';
+import { FakeClock } from '../../../src/shared/testing/fake-clock.js';
 import { buildArtifact } from './fakes/build-artifact.js';
 import { FakeArtifactFiles } from './fakes/fake-artifact-files.js';
 import { FakeCheckpointAnswers } from './fakes/fake-checkpoint-answers.js';

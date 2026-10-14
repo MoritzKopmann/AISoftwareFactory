@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { InMemorySkillsStatusStore } from '../../../src/modules/skills/infra/integrations/in-memory-skills-status-store.js';
-import { FakeEventPublisher } from '../../fakes/fake-event-publisher.js';
+import { FakeEventPublisher } from '../../../src/shared/testing/fake-event-publisher.js';
 import { createSkillsModule } from '../../../src/modules/skills/index.js';
 import { SkillsSetupError } from '../../../src/modules/skills/logic/errors/skills-setup-error.js';
 import {

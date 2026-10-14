@@ -1,4 +1,4 @@
-import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
+import type { EventPublisher } from '../../../../shared/event-bus.js';
 import { TicketNotAnswerableError } from '../errors/ticket-not-answerable-error.js';
 import type { RegisteredRepositories } from '../ports/registered-repositories.js';
 import type { TicketStatusWrites } from '../ports/ticket-status-writes.js';

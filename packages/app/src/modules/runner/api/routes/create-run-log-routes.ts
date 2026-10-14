@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { ticketNumberParameterSchema } from '../../../../shared/http/ticket-number-parameter-schema.js';
+import { ticketNumberParameterSchema } from '../../../../shared/http.js';
 import type { RunLog } from '../../logic/domain/types/run-log.js';
 import type { ReadTicketRunLogUseCase } from '../../logic/use-cases/read-ticket-run-log-use-case.js';
 import type { RunLogResponse } from '../schemas/run-log-schemas.js';

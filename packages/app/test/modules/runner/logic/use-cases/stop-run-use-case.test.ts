@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { RunNotActiveError } from '../../../../../src/modules/runner/logic/errors/run-not-active-error.js';
 import { FinishRunUseCase } from '../../../../../src/modules/runner/logic/use-cases/finish-run-use-case.js';
 import { StopRunUseCase } from '../../../../../src/modules/runner/logic/use-cases/stop-run-use-case.js';
-import { FakeClock } from '../../../../fakes/fake-clock.js';
-import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
+import { FakeClock } from '../../../../../src/shared/testing/fake-clock.js';
+import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 import {
   buildRun,
   FakeAgentSessions,

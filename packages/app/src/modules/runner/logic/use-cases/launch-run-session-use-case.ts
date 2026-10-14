@@ -1,4 +1,4 @@
-import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
+import type { EventPublisher } from '../../../../shared/event-bus.js';
 import type { Logger } from '../../../../shared/logger/create-logger.js';
 import { stageModels } from '../domain/constants/stage-models.js';
 import { describeError } from '../domain/functions/describe-error.js';

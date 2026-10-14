@@ -1,4 +1,4 @@
-import type { EventPublisher } from '../../../../shared/bus/event-publisher.js';
+import type { EventPublisher } from '../../../../shared/event-bus.js';
 import type { Clock } from '../../../../shared/clock/clock.js';
 import { diffSnapshots } from '../domain/functions/diff-snapshots.js';
 import { failWatch } from '../domain/functions/fail-watch.js';

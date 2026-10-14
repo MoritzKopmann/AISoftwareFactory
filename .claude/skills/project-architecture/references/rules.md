@@ -43,6 +43,7 @@ src/
     │       └── mapper/             entity ↔ DTO mappers (the only place seeing both)
     ├── business/
     │   ├── domain/                 entities, value objects
+    │   ├── errors/                 module errors, each a subclass of a shared/errors.ts kind
     │   ├── service/                use cases (rules live here)
     │   ├── repository/             repository interfaces
     │   └── <capability>/           interfaces for other needs: mail/, payments/, customer/, …
@@ -70,6 +71,7 @@ Create only the folders a module needs. Names that exist must mean exactly this.
 | DTO: internal-API input or return type | `presentation/dto/internal/` |
 | Entity ↔ DTO mapper | `presentation/dto/mapper/` |
 | Entity, value object | `business/domain/` |
+| Module error (subclass of a `shared/errors.ts` kind; never exported from `index.ts`) | `business/errors/` |
 | Use case / service with rules | `business/service/` |
 | Repository interface | `business/repository/` |
 | Interface for anything else the module needs (mail, payments, another module's data) | `business/<capability>/` |
@@ -155,7 +157,8 @@ is a coherent set that belongs to nobody else, it is a module.
 
 14. **[L1] `business/` imports only its own `business/`, `shared/errors.ts`, `shared/event-bus.ts` and
    Node built-ins.** No HTTP, SQL, ORM, SDK or DTO imports.
-15. **[L2] `business/domain/` imports only `business/domain/`.**
+15. **[L2] `business/domain/` imports only `business/domain/`.** `business/errors/` imports only
+    `shared/errors.ts`.
 16. **Interfaces live where they are used.** Every interface business needs is declared in
     `business/repository/` or `business/<capability>/` and named in this module's vocabulary
     (`CustomerLookup`, not `UsersApi`).

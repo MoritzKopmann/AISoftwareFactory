@@ -8,7 +8,7 @@ import {
   ContractPreflightUseCase,
   type ContractPreflightDependencies,
 } from './logic/use-cases/contract-preflight-use-case.js';
-import type { EventPublisher } from '../../shared/bus/event-publisher.js';
+import type { EventPublisher } from '../../shared/event-bus.js';
 import type { SkillsStatusStore } from './logic/ports/skills-status-store.js';
 import { ReadRunsBlockedUseCase } from './logic/use-cases/read-runs-blocked-use-case.js';
 import { ReadSkillsStatusUseCase } from './logic/use-cases/read-skills-status-use-case.js';

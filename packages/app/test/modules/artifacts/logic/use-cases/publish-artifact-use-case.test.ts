@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ArtifactNotFoundError } from '../../../../../src/modules/artifacts/logic/errors/artifact-not-found-error.js';
 import { PublishArtifactUseCase } from '../../../../../src/modules/artifacts/logic/use-cases/publish-artifact-use-case.js';
-import { FakeClock } from '../../../../fakes/fake-clock.js';
-import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
+import { FakeClock } from '../../../../../src/shared/testing/fake-clock.js';
+import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 import { FakeArtifactFiles } from '../../fakes/fake-artifact-files.js';
 import { InMemoryArtifactRepository } from '../../fakes/in-memory-artifact-repository.js';
 

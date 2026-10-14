@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { PluginInstallFailedError } from '../../../../../src/modules/projects/logic/errors/plugin-install-failed-error.js';
 import { ProjectAlreadyAddedError } from '../../../../../src/modules/projects/logic/errors/project-already-added-error.js';
 import { AddProjectUseCase } from '../../../../../src/modules/projects/logic/use-cases/add-project-use-case.js';
-import { FakeClock } from '../../../../fakes/fake-clock.js';
-import { FakeEventPublisher } from '../../../../fakes/fake-event-publisher.js';
+import { FakeClock } from '../../../../../src/shared/testing/fake-clock.js';
+import { FakeEventPublisher } from '../../../../../src/shared/testing/fake-event-publisher.js';
 import {
   FakeLabelSync,
   FakePluginInstaller,

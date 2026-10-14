@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { InMemoryWatchStore } from '../../../../../src/modules/tickets/infra/integrations/in-memory-watch-store.js';
 import { RecordStatusWriteUseCase } from '../../../../../src/modules/tickets/logic/use-cases/record-status-write-use-case.js';
-import { FakeClock } from '../../../../fakes/fake-clock.js';
+import { FakeClock } from '../../../../../src/shared/testing/fake-clock.js';
 
 describe('RecordStatusWriteUseCase', () => {
   it('should store the write with the clock time when a write is recorded', () => {

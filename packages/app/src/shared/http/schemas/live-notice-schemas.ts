@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { aisfEventNames } from '../../bus/aisf-event-names.js';
+import { domainEventNames } from '../../event-bus.js';
 
 export const liveNoticeSchema = z.object({
-  event: z.enum(aisfEventNames),
+  event: z.enum(domainEventNames),
   projectId: z.string().optional(),
   ticketNumber: z.number().optional(),
   changed: z.boolean().optional(),

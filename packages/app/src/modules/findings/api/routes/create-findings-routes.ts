@@ -1,5 +1,5 @@
 import { Hono, type Context } from 'hono';
-import { ticketNumberParameterSchema } from '../../../../shared/http/ticket-number-parameter-schema.js';
+import { ticketNumberParameterSchema } from '../../../../shared/http.js';
 import type { Finding } from '../../logic/domain/types/finding.js';
 import { FindingNotFoundError } from '../../logic/errors/finding-not-found-error.js';
 import { FindingNotOpenError } from '../../logic/errors/finding-not-open-error.js';

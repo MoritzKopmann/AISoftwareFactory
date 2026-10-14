@@ -1,4 +1,4 @@
-import type { EventSubscriber } from '../../../../shared/bus/event-subscriber.js';
+import type { EventSubscriber } from '../../../../shared/event-bus.js';
 import type { Logger } from '../../../../shared/logger/create-logger.js';
 import type { SettleFinishedRunUseCase } from '../../logic/use-cases/settle-finished-run-use-case.js';
 
