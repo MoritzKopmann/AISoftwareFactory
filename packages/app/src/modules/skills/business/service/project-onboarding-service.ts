@@ -1,10 +1,10 @@
-import type { SlotReader } from '../contract/slot-reader.js';
+import type { SlotReader } from '../port/contract/slot-reader.js';
 import { projectContract } from '../domain/constants/project-contract.js';
 import { checkContract } from '../domain/functions/check-contract.js';
 import type { ContractPreflightReport } from '../domain/types/contract-preflight-report.js';
 import type { PluginInstallOutcome } from '../domain/types/plugin-install-outcome.js';
 import { SkillsSetupError } from '../errors/skills-setup-error.js';
-import type { LocalPluginInstaller } from '../plugin/local-plugin-installer.js';
+import type { LocalPluginInstaller } from '../port/plugin/local-plugin-installer.js';
 import type { SkillsStartupService } from './skills-startup-service.js';
 
 export type ProjectOnboardingServiceDependencies = {

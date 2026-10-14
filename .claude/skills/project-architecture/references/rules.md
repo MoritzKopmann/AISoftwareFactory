@@ -45,11 +45,12 @@ src/
     │   ├── domain/                 entities, value objects
     │   ├── errors/                 module errors, each a subclass of a shared/errors.ts kind
     │   ├── service/                use cases (rules live here)
-    │   ├── repository/             repository interfaces
-    │   └── <capability>/           interfaces for other needs: mail/, payments/, customer/, …
+    │   └── port/                   interfaces business needs, one folder per capability
+    │       ├── repository/         repository interfaces
+    │       └── <capability>/       other needs: mail/, payments/, customer/, …
     └── infrastructure/
         ├── repository/             repository implementations
-        ├── <capability>/           implementations, mirroring business/<capability>
+        ├── <capability>/           implementations, mirroring business/port/<capability>
         └── internal/               adapters calling other modules
 ```
 
@@ -73,8 +74,8 @@ Create only the folders a module needs. Names that exist must mean exactly this.
 | Entity, value object | `business/domain/` |
 | Module error (subclass of a `shared/errors.ts` kind; never exported from `index.ts`) | `business/errors/` |
 | Use case / service with rules | `business/service/` |
-| Repository interface | `business/repository/` |
-| Interface for anything else the module needs (mail, payments, another module's data) | `business/<capability>/` |
+| Repository interface | `business/port/repository/` |
+| Interface for anything else the module needs (mail, payments, another module's data) | `business/port/<capability>/` |
 | Repository implementation | `infrastructure/repository/` |
 | External API client, mailer, storage, … | `infrastructure/<capability>/` (same name as in business) |
 | Adapter that calls another module | `infrastructure/internal/` |
@@ -160,7 +161,7 @@ is a coherent set that belongs to nobody else, it is a module.
 15. **[L2] `business/domain/` imports only `business/domain/`.** `business/errors/` imports only
     `shared/errors.ts`.
 16. **Interfaces live where they are used.** Every interface business needs is declared in
-    `business/repository/` or `business/<capability>/` and named in this module's vocabulary
+    `business/port/<capability>/` (repositories in `business/port/repository/`) and named in this module's vocabulary
     (`CustomerLookup`, not `UsersApi`).
 17. **Services throw `shared/errors.ts` errors** and return entities; they never know about status codes or
     DTOs.
@@ -172,7 +173,7 @@ is a coherent set that belongs to nobody else, it is a module.
 ### Infrastructure
 
 18. **[L4] Infrastructure implements business interfaces and never imports presentation.**
-19. **`infrastructure/<capability>/` mirrors `business/<capability>/`.** `business/mail/mailer.ts` →
+19. **`infrastructure/<capability>/` mirrors `business/port/<capability>/`.** `business/port/mail/mailer.ts` →
     `infrastructure/mail/smtp-mailer.ts`.
 20. **Adapters to other modules live in `infrastructure/internal/`** and implement a business
     interface on top of the other module's internal API.
@@ -227,13 +228,13 @@ is a coherent set that belongs to nobody else, it is a module.
 ## Adding a module — checklist
 
 0. Check "When to create a module" — is this really a new module, or part of an existing one?
-1. `business/domain/` entities → `business/service/` use cases → `business/repository/` and
-   `business/<capability>/` interfaces.
+1. `business/domain/` entities → `business/service/` use cases → `business/port/` interfaces
+   (`repository/` and `<capability>/`).
 2. `infrastructure/repository/` and `infrastructure/<capability>/` implementations.
 3. `presentation/dto/api/` (+ `dto/internal/` if other modules need you) + `dto/mapper/`, then the entry points you need (`api/`, `bus/`, …).
 4. If other modules need it: `presentation/internal/<module>.api.ts` + `.facade.ts` using only
    `dto/internal/` types; re-export the API and those DTOs from `index.ts`.
-5. If it needs another module: an interface in `business/<capability>/`, an adapter in
+5. If it needs another module: an interface in `business/port/<capability>/`, an adapter in
    `infrastructure/internal/`, and the other module's API type as a factory dependency.
 6. `index.ts` factory returning `{ routes, jobs, internal }`; call it from `composition-root.ts`.
 7. `npm run check`.

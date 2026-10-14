@@ -2,9 +2,9 @@
 import { randomUUID } from "node:crypto";
 import type { EventBus } from "../../../../shared/event-bus.js";
 import { NotFoundError, ValidationError } from "../../../../shared/errors.js";
-import type { CustomerLookup } from "../customer/customer-lookup.js";
+import type { CustomerLookup } from "../port/customer/customer-lookup.js";
 import type { Order, OrderLine } from "../domain/order.js";
-import type { OrderRepository } from "../repository/order.repository.js";
+import type { OrderRepository } from "../port/repository/order.repository.js";
 
 export class OrderService {
   constructor(

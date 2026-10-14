@@ -1,5 +1,5 @@
 import type { Order } from "../../business/domain/order.js";
-import type { OrderRepository } from "../../business/repository/order.repository.js";
+import type { OrderRepository } from "../../business/port/repository/order.repository.js";
 
 export class InMemoryOrderRepository implements OrderRepository {
   private rows: Order[] = [];

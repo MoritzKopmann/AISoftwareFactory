@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { EventBus } from "../../../../shared/event-bus.js";
 import { NotFoundError, ValidationError } from "../../../../shared/errors.js";
 import type { User } from "../domain/user.js";
-import type { UserRepository } from "../repository/user.repository.js";
+import type { UserRepository } from "../port/repository/user.repository.js";
 
 export class UserService {
   constructor(

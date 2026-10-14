@@ -59,11 +59,12 @@ src/
     ├── business/
     │   ├── domain/             entities, value objects (pure)
     │   ├── service/            use cases — all rules live here
-    │   ├── repository/         repository interfaces
-    │   └── <capability>/       other needs: mail/, payments/, customer/ …
+    │   └── port/               interfaces business needs, one folder per capability
+    │       ├── repository/     repository interfaces
+    │       └── <capability>/   other needs: mail/, payments/, customer/ …
     └── infrastructure/
         ├── repository/         repository implementations
-        ├── <capability>/       mirrors business/<capability>/
+        ├── <capability>/       mirrors business/port/<capability>/
         └── internal/           adapters calling other modules
 ```
 
@@ -80,13 +81,13 @@ run the architecture linter and the tests. `npm run demo` exercises the whole fl
 | Wire modules together | `src/composition-root.ts` |
 | Write a use case with injected interfaces | `src/modules/orders/business/service/order.service.ts` |
 | Test a use case with plain fakes | `src/modules/orders/business/service/order.service.test.ts` |
-| Declare a repository interface / implement it | `users/business/repository/user.repository.ts` → `users/infrastructure/repository/in-memory-user.repository.ts` |
-| Declare a capability interface / implement it | `notifications/business/mail/mailer.ts` → `notifications/infrastructure/mail/console-mailer.ts` |
+| Declare a repository interface / implement it | `users/business/port/repository/user.repository.ts` → `users/infrastructure/repository/in-memory-user.repository.ts` |
+| Declare a capability interface / implement it | `notifications/business/port/mail/mailer.ts` → `notifications/infrastructure/mail/console-mailer.ts` |
 | Write an HTTP controller + route table | `users/presentation/api/user.controller.ts`, `user.routes.ts` |
 | Separate HTTP DTOs from internal DTOs | `users/presentation/dto/api/user.dto.ts` vs `users/presentation/dto/internal/user-summary.dto.ts` |
 | Map entities to DTOs | `users/presentation/dto/mapper/user.mapper.ts` |
 | Offer an internal API to other modules | `users/presentation/internal/users.api.ts` + `users.facade.ts` |
-| Consume another module's API (anti-corruption adapter) | `orders/business/customer/customer-lookup.ts` → `orders/infrastructure/internal/users-customer-lookup.ts` |
+| Consume another module's API (anti-corruption adapter) | `orders/business/port/customer/customer-lookup.ts` → `orders/infrastructure/internal/users-customer-lookup.ts` |
 | React to events from other modules | `notifications/presentation/bus/event-handlers.ts` |
 | Publish an event | `orders/business/service/order.service.ts` (`bus.publish`) + `src/shared/event-bus.ts` (`DomainEvents`) |
 | Enforce the rules automatically | `.dependency-cruiser.cjs` (rule IDs match `[L1]`, `[B2]` … in rules.md) |
@@ -102,7 +103,7 @@ belongs to by direction: is it a way *in* (presentation), a rule (business), or 
 
 ### Adding a use case or endpoint to an existing module
 1. Entity changes → `business/domain/`. Rules → a method on a service in `business/service/`.
-2. New persistence needs → extend the interface in `business/repository/`, then the implementation(s)
+2. New persistence needs → extend the interface in `business/port/repository/`, then the implementation(s)
    in `infrastructure/repository/`.
 3. HTTP: request/response DTOs in `dto/api/`, mapper in `dto/mapper/`, controller method in
    `presentation/api/`, route in `<module>.routes.ts`.
@@ -144,7 +145,7 @@ Decide first: **does A need an answer to continue?**
   1. In B: add the method to `presentation/internal/<b>.api.ts`; inputs and outputs are `dto/internal/`
      types or primitives. Implement it in the facade by calling B's *services* (never repositories),
      mapping with B's mapper. Only `shared/errors.ts` errors (or `null` for expected absence) may escape.
-  2. In A: declare what A needs as an interface in `business/<capability>/`, named in A's vocabulary
+  2. In A: declare what A needs as an interface in `business/port/<capability>/`, named in A's vocabulary
      (orders has `CustomerLookup.exists()`, not `UsersApi`).
   3. In A: implement it in `infrastructure/internal/<b>-<capability>.ts`, importing only B's `index.ts`.
   4. Add B's API type to A's factory deps; pass `b.internal.x` in `composition-root.ts`.
