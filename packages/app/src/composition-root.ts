@@ -9,7 +9,6 @@ import {
   type ArtifactsModule,
   type CheckpointAnswers,
 } from './modules/artifacts/index.js';
-import { SqliteFindingRepository } from './modules/findings/infra/repositories/sqlite-finding-repository.js';
 import { createFindingsModule, type FindingsModule } from './modules/findings/index.js';
 import { SystemClock } from './shared/clock/system-clock.js';
 import {
@@ -125,17 +124,10 @@ function buildFindingsModule(
   events: EventPublisher,
 ): FindingsModule {
   return createFindingsModule({
+    database,
     agentTools,
-    findingRepository: new SqliteFindingRepository(database),
-    ticketCreator: {
-      create: (repository, ticket) => tickets.createIdea(repository, ticket),
-    },
-    projectLookup: {
-      find: async (projectId) => {
-        const project = (await projects.list()).find(({ id }) => id === projectId);
-        return project === undefined ? undefined : { repository: project.repository };
-      },
-    },
+    projects,
+    tickets,
     events,
     clock: new SystemClock(),
   });
@@ -328,7 +320,8 @@ export function composeApplication(options: ApplicationOptions): Application {
     new Hono().route('/aisf', artifacts.kitRoutes),
     new Hono().route('/a', artifacts.pageRoutes),
     tickets.routes,
-    ...[findings.routes, scheduler.routes, artifacts.routes, live.routes].map((moduleRoutes) =>
+    findings.routes,
+    ...[scheduler.routes, artifacts.routes, live.routes].map((moduleRoutes) =>
       new Hono().route('/api', moduleRoutes),
     ),
   ];
@@ -342,6 +335,7 @@ export function composeApplication(options: ApplicationOptions): Application {
     ...tickets.jobs,
     ...runner.jobs,
     ...projects.jobs,
+    ...findings.jobs,
   };
 
   return { routes, jobs };

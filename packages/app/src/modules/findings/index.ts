@@ -1,51 +1,52 @@
-import { Hono } from 'hono';
-import type { EventPublisher } from '../../shared/event-bus.js';
-import type { Clock } from '../../shared/clock/clock.js';
-import type { AgentToolRegistry } from '../../shared/agent-tools.js';
-import { createFindingsRoutes } from './api/routes/create-findings-routes.js';
-import { createReportFindingTool } from './api/tools/create-report-finding-tool.js';
-import type { FindingRepository } from './logic/ports/finding-repository.js';
-import type { ProjectLookup } from './logic/ports/project-lookup.js';
-import type { TicketCreator } from './logic/ports/ticket-creator.js';
-import { CreateTicketFromFindingUseCase } from './logic/use-cases/create-ticket-from-finding-use-case.js';
-import { DismissFindingUseCase } from './logic/use-cases/dismiss-finding-use-case.js';
-import { ListFindingsUseCase } from './logic/use-cases/list-findings-use-case.js';
-import { ReportFindingUseCase } from './logic/use-cases/report-finding-use-case.js';
+import type { FindingRepository } from './business/port/repository/finding-repository.js';
+import { FindingService } from './business/service/finding-service.js';
+import { ProjectsProjectLookup } from './infrastructure/internal/projects-project-lookup.js';
+import { TicketsTicketCreator } from './infrastructure/internal/tickets-ticket-creator.js';
+import { SqliteFindingRepository } from './infrastructure/repository/sqlite-finding-repository.js';
+import { createFindingsRoutes } from './presentation/api/findings-routes.js';
+import { FindingsFacade } from './presentation/internal/findings-facade.js';
+import type {
+  FindingsModule,
+  FindingsModuleDependencies,
+} from './presentation/internal/findings-module.js';
+import { createReportFindingTool } from './presentation/tool/create-report-finding-tool.js';
+import type { ProjectsApi } from '../projects/index.js';
+import type { TicketsApi } from '../tickets/index.js';
 
-export type FindingsModuleDependencies = {
-  readonly agentTools: AgentToolRegistry;
+export type { FindingsApi } from './presentation/internal/findings-api.js';
+export type {
+  FindingsModule,
+  FindingsModuleDependencies,
+} from './presentation/internal/findings-module.js';
+
+type FindingsInfrastructure = {
   readonly findingRepository: FindingRepository;
-  readonly ticketCreator: TicketCreator;
-  readonly projectLookup: ProjectLookup;
-  readonly events: EventPublisher;
-  readonly clock: Clock;
 };
 
-export type FindingsModule = {
-  readonly routes: Hono;
-};
-
-export function createFindingsModule(dependencies: FindingsModuleDependencies): FindingsModule {
-  const { agentTools, findingRepository, ticketCreator, projectLookup, events, clock } =
-    dependencies;
-
-  const reportFinding = new ReportFindingUseCase({ findingRepository, events, clock });
-  const listFindings = new ListFindingsUseCase({ findingRepository });
-  const createTicketFromFinding = new CreateTicketFromFindingUseCase({
+export function createFindingsModule(
+  dependencies: FindingsModuleDependencies & {
+    readonly projects: Pick<ProjectsApi, 'list'>;
+    readonly tickets: Pick<TicketsApi, 'createIdea'>;
+  },
+  overrides: Partial<FindingsInfrastructure> = {},
+): FindingsModule {
+  const { findingRepository }: FindingsInfrastructure = {
+    findingRepository: new SqliteFindingRepository(dependencies.database),
+    ...overrides,
+  };
+  const findingService = new FindingService({
     findingRepository,
-    ticketCreator,
-    projectLookup,
-    events,
-    clock,
+    ticketCreator: new TicketsTicketCreator(dependencies.tickets),
+    projectLookup: new ProjectsProjectLookup(dependencies.projects),
+    events: dependencies.events,
+    clock: dependencies.clock,
   });
-  const dismissFinding = new DismissFindingUseCase({ findingRepository, events, clock });
 
-  agentTools.register(createReportFindingTool(reportFinding));
+  dependencies.agentTools.register(createReportFindingTool(findingService));
 
   return {
-    routes: new Hono().route(
-      '/projects',
-      createFindingsRoutes(listFindings, createTicketFromFinding, dismissFinding),
-    ),
+    routes: createFindingsRoutes(findingService),
+    jobs: {},
+    internal: new FindingsFacade(),
   };
 }
