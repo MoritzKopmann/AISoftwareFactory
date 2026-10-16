@@ -1,6 +1,7 @@
 import type { TicketRunResponse } from '@aisf/app/api-schemas/runs-schemas.js';
 import type { AnswerCheckpointOutcome } from './answer-checkpoint.js';
 import { checkpointAnswerCharacterLimit } from './checkpoint-answer-character-limit.js';
+import { waitingPage } from './waiting-page.js';
 
 type FailedSend = Extract<AnswerCheckpointOutcome, { kind: 'failed' }>;
 
@@ -55,10 +56,13 @@ function describeHeldSend(ticketWaiting: boolean, draft: string): string | undef
 type ShownWait = { readonly runId: string; readonly request: string };
 
 function findShownWait(response: TicketRunResponse | undefined): ShownWait | undefined {
+  // A wait with a page is answered in the round panel, not here.
+  if (waitingPage(response) !== undefined) {
+    return undefined;
+  }
   const activeRun = response?.activeRun;
   if (activeRun !== undefined) {
-    // A wait with a page is answered in the round panel, not here.
-    return activeRun.waitingFor?.kind !== 'checkpoint' || activeRun.waitingFor.page !== undefined
+    return activeRun.waitingFor?.kind !== 'checkpoint'
       ? undefined
       : { runId: activeRun.id, request: activeRun.waitingFor.request };
   }

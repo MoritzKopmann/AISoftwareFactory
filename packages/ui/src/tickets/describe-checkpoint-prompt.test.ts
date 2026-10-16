@@ -41,6 +41,16 @@ describe('describeCheckpointPrompt', () => {
     expect(describeCheckpointPrompt(response, true, undefined)).toEqual({ kind: 'hidden' });
   });
 
+  it('should hide the prompt when the last run ended at a checkpoint with a page', () => {
+    const response = endedWith({
+      kind: 'checkpoint',
+      request: 'Pick one',
+      page: { title: 'Plan 1', url: '/pages/t1/' },
+    });
+
+    expect(describeCheckpointPrompt(response, true, undefined)).toEqual({ kind: 'hidden' });
+  });
+
   it('should hide the prompt when the poll has not answered yet', () => {
     expect(describeCheckpointPrompt(undefined, true, undefined)).toEqual({ kind: 'hidden' });
   });
