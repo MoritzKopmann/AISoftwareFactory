@@ -3,21 +3,16 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Hono } from 'hono';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createPageRoutes } from '../../../src/modules/artifacts/api/routes/create-page-routes.js';
-import type { TicketLatestRun } from '../../../src/modules/artifacts/logic/domain/types/ticket-latest-run.js';
-import { PublishArtifactUseCase } from '../../../src/modules/artifacts/logic/use-cases/publish-artifact-use-case.js';
-import { ReadPageAssetUseCase } from '../../../src/modules/artifacts/logic/use-cases/read-page-asset-use-case.js';
-import { ReadPageUserInputStateUseCase } from '../../../src/modules/artifacts/logic/use-cases/read-page-user-input-state-use-case.js';
-import { ReadPageStatusUseCase } from '../../../src/modules/artifacts/logic/use-cases/read-page-status-use-case.js';
-import { ReadPageUseCase } from '../../../src/modules/artifacts/logic/use-cases/read-page-use-case.js';
-import { SubmitPageEventUseCase } from '../../../src/modules/artifacts/logic/use-cases/submit-page-event-use-case.js';
-import { WritePageUserInputStateUseCase } from '../../../src/modules/artifacts/logic/use-cases/write-page-user-input-state-use-case.js';
+import { ArtifactService } from '../../../src/modules/artifacts/business/service/artifact-service.js';
+import { PageService } from '../../../src/modules/artifacts/business/service/page-service.js';
+import { createPageRoutes } from '../../../src/modules/artifacts/presentation/api/create-page-routes.js';
+import type { TicketLatestRun } from '../../../src/modules/artifacts/business/domain/types/ticket-latest-run.js';
 import { FakeEventPublisher } from '../../../src/shared/testing/fake-event-publisher.js';
 import { FakeClock } from '../../../src/shared/testing/fake-clock.js';
-import { FakeArtifactFiles } from '../../modules/artifacts/fakes/fake-artifact-files.js';
-import { FakeCheckpointAnswers } from '../../modules/artifacts/fakes/fake-checkpoint-answers.js';
-import { FakeTicketRunLookup } from '../../modules/artifacts/fakes/fake-ticket-run-lookup.js';
-import { InMemoryArtifactRepository } from '../../modules/artifacts/fakes/in-memory-artifact-repository.js';
+import { FakeArtifactFiles } from '../../../src/modules/artifacts/testing/fake-artifact-files.js';
+import { FakeCheckpointAnswers } from '../../../src/modules/artifacts/testing/fake-checkpoint-answers.js';
+import { FakeTicketRunLookup } from '../../../src/modules/artifacts/testing/fake-ticket-run-lookup.js';
+import { InMemoryArtifactRepository } from '../../../src/modules/artifacts/testing/in-memory-artifact-repository.js';
 
 const bridgeSource = readFileSync(
   resolve(import.meta.dirname, '../../../assets/kit/bridge.js'),
@@ -35,9 +30,10 @@ describe('a republished page', () => {
     const artifactRepository = new InMemoryArtifactRepository();
     const artifactFiles = new FakeArtifactFiles();
     ticketRunLookup = new FakeTicketRunLookup();
-    const publishArtifact = new PublishArtifactUseCase({
+    const artifactService = new ArtifactService({
       artifactRepository,
       artifactFiles,
+      ticketRunLookup,
       events: new FakeEventPublisher(),
       identifiers: { next: () => 'T' },
       clock: new FakeClock('2026-10-06T10:00:00.000Z'),
@@ -47,7 +43,7 @@ describe('a republished page', () => {
       '<html><body></body></html>',
     );
     publish = () =>
-      publishArtifact.execute({
+      artifactService.publish({
         projectId: 'o/n',
         ticketNumber: 7,
         runId: 'r1',
@@ -57,24 +53,14 @@ describe('a republished page', () => {
       });
     app = new Hono().route(
       '/a',
-      createPageRoutes({
-        readPage: new ReadPageUseCase({ artifactRepository, artifactFiles }),
-        readAsset: new ReadPageAssetUseCase({ artifactRepository, artifactFiles }),
-        readStatus: new ReadPageStatusUseCase({ artifactRepository, ticketRunLookup }),
-        readUserInputState: new ReadPageUserInputStateUseCase({
+      createPageRoutes(
+        new PageService({
           artifactRepository,
           artifactFiles,
-        }),
-        writeUserInputState: new WritePageUserInputStateUseCase({
-          artifactRepository,
-          artifactFiles,
-        }),
-        submitEvent: new SubmitPageEventUseCase({
-          artifactRepository,
           ticketRunLookup,
           checkpointAnswers: new FakeCheckpointAnswers(),
         }),
-      }),
+      ),
     );
     reload = vi.fn();
     vi.stubGlobal('location', { reload });

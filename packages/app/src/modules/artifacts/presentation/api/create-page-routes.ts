@@ -1,0 +1,171 @@
+import { Hono, type Context, type MiddlewareHandler } from 'hono';
+import { NONCE, secureHeaders } from 'hono/secure-headers';
+import { getMimeType } from 'hono/utils/mime';
+import { statusForDomainError } from '../../../../shared/http.js';
+import { PageBusyError } from '../../business/errors/page-busy-error.js';
+import { PageClosedError } from '../../business/errors/page-closed-error.js';
+import type { PageService } from '../../business/service/page-service.js';
+import { pageEventBodySchema } from '../dto/api/page-events-schemas.js';
+import { toPageStatusResponse } from '../dto/mapper/artifact-mapper.js';
+import { toPageEvent } from '../dto/mapper/page-event-mapper.js';
+
+const maxEventBytes = 32 * 1024;
+
+const loopbackHostPattern = /^(127\.0\.0\.1|localhost)(:\d+)?$/i;
+
+const requireLoopbackHost: MiddlewareHandler = async (context, next) => {
+  const host = context.req.header('host');
+  if (host === undefined || !loopbackHostPattern.test(host)) {
+    return context.json({ message: 'Forbidden host' }, 403);
+  }
+  return next();
+};
+
+// Our own check instead of hono/csrf: that one skips JSON bodies.
+const requireOwnOrigin: MiddlewareHandler = async (context, next) => {
+  if (context.req.method === 'GET' || context.req.method === 'HEAD') {
+    return next();
+  }
+  if (context.req.header('origin') !== `http://${context.req.header('host')}`) {
+    return context.json({ message: 'Forbidden origin' }, 403);
+  }
+  return next();
+};
+
+const addPageHeaders: MiddlewareHandler = (context, next) =>
+  secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'none'"],
+      scriptSrc: ["'self'", NONCE],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      fontSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:'],
+      connectSrc: [`http://${context.req.header('host')}/a/${context.req.param('token')}/`],
+      frameAncestors: ["'self'"],
+      baseUri: ["'none'"],
+      formAction: ["'none'"],
+    },
+    referrerPolicy: 'no-referrer',
+  })(context, async () => {
+    context.header('Cache-Control', 'no-store');
+    await next();
+  });
+
+async function answerOrDomainError(
+  context: Context,
+  answer: () => Promise<Response>,
+): Promise<Response> {
+  try {
+    return await answer();
+  } catch (error) {
+    const status = statusForDomainError(error);
+    if (status === undefined || !(error instanceof Error)) {
+      throw error;
+    }
+    return context.json({ message: error.message }, status);
+  }
+}
+
+function assetPathOf(context: Context, token: string): string | undefined {
+  const { pathname } = new URL(context.req.url);
+  const marker = `/${token}/`;
+  const rawPath = pathname.slice(pathname.indexOf(marker) + marker.length);
+  try {
+    return decodeURIComponent(rawPath);
+  } catch (error) {
+    if (error instanceof URIError) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+export function createPageRoutes(pageService: PageService): Hono {
+  return new Hono()
+    .use('*', requireLoopbackHost)
+    .use('*', requireOwnOrigin)
+    .use('/:token/*', addPageHeaders)
+    .get('/:token/', (context) =>
+      answerOrDomainError(context, async () => {
+        const html = await pageService.read(
+          context.req.param('token'),
+          context.get('secureHeadersNonce') ?? '',
+        );
+        return context.html(html);
+      }),
+    )
+    .get('/:token/_status', (context) =>
+      answerOrDomainError(context, async () =>
+        context.json(
+          toPageStatusResponse(await pageService.readStatus(context.req.param('token'))),
+        ),
+      ),
+    )
+    .get('/:token/_user-input-state', (context) =>
+      answerOrDomainError(context, async () => {
+        const userInputState = await pageService.readUserInputState(context.req.param('token'));
+        return context.body(userInputState, 200, { 'Content-Type': 'application/json' });
+      }),
+    )
+    .put('/:token/_user-input-state', (context) =>
+      answerOrDomainError(context, async () => {
+        const userInputState = await context.req.text();
+        try {
+          JSON.parse(userInputState);
+        } catch (error) {
+          if (error instanceof SyntaxError) {
+            return context.json({ message: 'The user input state must be JSON' }, 400);
+          }
+          throw error;
+        }
+        await pageService.writeUserInputState(context.req.param('token'), userInputState);
+        return context.body(null, 204);
+      }),
+    )
+    .post('/:token/_events', (context) =>
+      answerOrDomainError(context, async () => {
+        const raw = await context.req.text();
+        if (Buffer.byteLength(raw) > maxEventBytes) {
+          return context.json({ message: 'The event is too large' }, 413);
+        }
+        let json: unknown;
+        try {
+          json = JSON.parse(raw);
+        } catch (error) {
+          if (error instanceof SyntaxError) {
+            return context.json({ message: 'The event must be JSON' }, 400);
+          }
+          throw error;
+        }
+        const parsed = pageEventBodySchema.safeParse(json);
+        if (!parsed.success) {
+          return context.json({ message: 'The event is malformed' }, 400);
+        }
+        try {
+          await pageService.submitEvent(context.req.param('token'), toPageEvent(parsed.data));
+        } catch (error) {
+          if (error instanceof PageBusyError) {
+            return context.json({ status: 'busy' }, 409);
+          }
+          if (error instanceof PageClosedError) {
+            return context.json({ status: 'closed' }, 409);
+          }
+          throw error;
+        }
+        return context.body(null, 201);
+      }),
+    )
+    .get('/:token/*', (context) =>
+      answerOrDomainError(context, async () => {
+        const token = context.req.param('token');
+        const assetPath = assetPathOf(context, token);
+        if (assetPath === undefined) {
+          return context.json({ message: 'Unknown file' }, 404);
+        }
+        const content = await pageService.readAsset(token, assetPath);
+        return context.body(content as Uint8Array<ArrayBuffer>, 200, {
+          'Content-Type': getMimeType(assetPath) ?? 'application/octet-stream',
+        });
+      }),
+    );
+}

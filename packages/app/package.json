@@ -14,8 +14,8 @@
     "./api-schemas/ideas-schemas.js": "./src/modules/scheduler/presentation/dto/api/ideas-schemas.ts",
     "./api-schemas/run-log-schemas.js": "./src/modules/runner/presentation/dto/api/run-log-schemas.ts",
     "./api-schemas/findings-schemas.js": "./src/modules/findings/presentation/dto/api/findings-schemas.ts",
-    "./api-schemas/artifacts-schemas.js": "./src/modules/artifacts/api/schemas/artifacts-schemas.ts",
-    "./api-schemas/page-events-schemas.js": "./src/modules/artifacts/api/schemas/page-events-schemas.ts",
+    "./api-schemas/artifacts-schemas.js": "./src/modules/artifacts/presentation/dto/api/artifacts-schemas.ts",
+    "./api-schemas/page-events-schemas.js": "./src/modules/artifacts/presentation/dto/api/page-events-schemas.ts",
     "./api-schemas/live-notice-schemas.js": "./src/modules/live/presentation/dto/api/live-notice-schemas.ts"
   },
   "scripts": {
