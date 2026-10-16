@@ -9,12 +9,12 @@ import type { PublishRequest } from '../domain/types/publish-request.js';
 import { ArtifactNotFoundError } from '../errors/artifact-not-found-error.js';
 import type { ArtifactFiles } from '../port/file/artifact-files.js';
 import type { ArtifactRepository } from '../port/repository/artifact-repository.js';
-import type { TicketRunLookup } from '../port/run/ticket-run-lookup.js';
+import type { RunPort } from '../port/run/run-port.js';
 
 export type ArtifactServiceDependencies = {
   readonly artifactRepository: ArtifactRepository;
   readonly artifactFiles: ArtifactFiles;
-  readonly ticketRunLookup: TicketRunLookup;
+  readonly runPort: RunPort;
   readonly events: EventPublisher;
   readonly identifiers: Identifiers;
   readonly clock: Clock;
@@ -53,9 +53,9 @@ export class ArtifactService {
     projectId: string,
     ticketNumber: number,
   ): Promise<ReadonlyArray<ListedArtifact>> {
-    const { artifactRepository, ticketRunLookup } = this.dependencies;
+    const { artifactRepository, runPort } = this.dependencies;
     const artifacts = await artifactRepository.listForTicket(projectId, ticketNumber);
-    const latestRun = await ticketRunLookup.latest(projectId, ticketNumber);
+    const latestRun = await runPort.latest(projectId, ticketNumber);
     return artifacts.map((artifact) => ({
       artifactId: artifact.artifactId,
       title: artifact.title,

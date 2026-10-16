@@ -5,9 +5,8 @@ import { ProjectService } from './project-service.js';
 import { FakeClock } from '../../../../shared/testing/fake-clock.js';
 import { FakeEventPublisher } from '../../../../shared/testing/fake-event-publisher.js';
 import {
-  FakeContractPreflight,
   FakeLabelSync,
-  FakePluginInstaller,
+  FakeSkillPort,
   FakeProjectRepository,
   FakeRepositoryResolver,
 } from '../../testing/fake-projects-ports.js';
@@ -20,26 +19,23 @@ function createSubject() {
   const repositoryResolver = new FakeRepositoryResolver(reference);
   const projectRepository = new FakeProjectRepository();
   const labelSync = new FakeLabelSync();
-  const pluginInstaller = new FakePluginInstaller();
-  const contractPreflight = new FakeContractPreflight();
+  const skillPort = new FakeSkillPort();
   const clock = new FakeClock(addedAt);
   const events = new FakeEventPublisher();
   const service = new ProjectService({
     repositoryResolver,
     projectRepository,
     labelSync,
-    pluginInstaller,
-    contractPreflight,
+    skillPort,
     clock,
     events,
   });
   return {
-    contractPreflight,
     service,
     repositoryResolver,
     projectRepository,
     labelSync,
-    pluginInstaller,
+    skillPort,
     clock,
     events,
   };
@@ -137,16 +133,16 @@ describe('ProjectService', () => {
     });
 
     it('should install the plugin at the checkout path after syncing labels', async () => {
-      const { service, pluginInstaller } = createSubject();
+      const { service, skillPort } = createSubject();
 
       await service.add(checkoutPath);
 
-      expect(pluginInstaller.installCalls).toEqual([checkoutPath]);
+      expect(skillPort.installCalls).toEqual([checkoutPath]);
     });
 
     it('should throw PluginInstallFailedError with the reason and not save when install fails', async () => {
-      const { service, pluginInstaller, projectRepository, events } = createSubject();
-      pluginInstaller.result = { state: 'failed', reason: 'claude plugin install failed' };
+      const { service, skillPort, projectRepository, events } = createSubject();
+      skillPort.result = { state: 'failed', reason: 'claude plugin install failed' };
 
       await expect(service.add(checkoutPath)).rejects.toThrow(PluginInstallFailedError);
       await expect(service.add(checkoutPath)).rejects.toThrow('claude plugin install failed');
@@ -156,7 +152,7 @@ describe('ProjectService', () => {
     });
 
     it('should not install the plugin when the repository is already added', async () => {
-      const { service, pluginInstaller, projectRepository } = createSubject();
+      const { service, skillPort, projectRepository } = createSubject();
       await projectRepository.save({
         id: 'moritz/aisf',
         repository: reference,
@@ -166,7 +162,7 @@ describe('ProjectService', () => {
 
       await expect(service.add(checkoutPath)).rejects.toThrow(ProjectAlreadyAddedError);
 
-      expect(pluginInstaller.installCalls).toEqual([]);
+      expect(skillPort.installCalls).toEqual([]);
     });
 
     it('should propagate a resolver failure without saving or emitting', async () => {
@@ -194,12 +190,12 @@ describe('ProjectService', () => {
     };
 
     it('should return every saved project with its freshly computed contract report when listing', async () => {
-      const { service, projectRepository, contractPreflight } = createSubject();
+      const { service, projectRepository, skillPort } = createSubject();
       await projectRepository.save(savedProject);
-      contractPreflight.setReport(checkoutPath, failingReport);
+      skillPort.setReport(checkoutPath, failingReport);
 
       expect(await service.list()).toEqual([{ ...savedProject, contract: failingReport }]);
-      expect(contractPreflight.checkCalls).toEqual([checkoutPath]);
+      expect(skillPort.checkCalls).toEqual([checkoutPath]);
     });
 
     it('should return an empty list when nothing has been saved', async () => {
@@ -209,12 +205,12 @@ describe('ProjectService', () => {
     });
 
     it('should recompute the contract report on every call when listing again', async () => {
-      const { service, projectRepository, contractPreflight } = createSubject();
+      const { service, projectRepository, skillPort } = createSubject();
       await projectRepository.save(savedProject);
-      contractPreflight.setReport(checkoutPath, failingReport);
+      skillPort.setReport(checkoutPath, failingReport);
 
       const [firstListing] = await service.list();
-      contractPreflight.setReport(checkoutPath, {
+      skillPort.setReport(checkoutPath, {
         passed: true,
         missingSlots: [],
         missingKeys: [],

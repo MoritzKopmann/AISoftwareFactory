@@ -14,14 +14,12 @@ import { GitHubAuthError } from '../errors/github-auth-error.js';
 import { GitHubRateLimitedError } from '../errors/github-rate-limited-error.js';
 import { GitHubRequestError } from '../errors/github-request-error.js';
 import type { TicketSource } from '../port/github/ticket-source.js';
-import type { ActiveRunLookup } from '../port/run/active-run-lookup.js';
-import type { RunWaitLookup } from '../port/run/run-wait-lookup.js';
+import type { RunPort } from '../port/run/run-port.js';
 import type { WatchStore } from '../port/repository/watch-store.js';
 
 export type TicketReadServiceDependencies = {
   readonly ticketSource: TicketSource;
-  readonly activeRunLookup: ActiveRunLookup;
-  readonly runWaitLookup: RunWaitLookup;
+  readonly runPort: Pick<RunPort, 'activeRunTicketNumbers' | 'waitsOf'>;
   readonly clock: Clock;
   readonly watchStore: WatchStore;
 };
@@ -65,12 +63,12 @@ export class TicketReadService {
   }
 
   async readProjectBoard(projectId: string): Promise<ProjectBoard | undefined> {
-    const { activeRunLookup, watchStore } = this.dependencies;
+    const { runPort, watchStore } = this.dependencies;
     const watch = watchStore.watch(projectId);
     if (watch === undefined) {
       return undefined;
     }
-    const runningTicketNumbers = await activeRunLookup.activeRunTicketNumbers(projectId);
+    const runningTicketNumbers = await runPort.activeRunTicketNumbers(projectId);
     return {
       ...buildProjectBoard(presentWatch(watch, watchStore.statusWrites(projectId))),
       runningTicketNumbers,
@@ -86,14 +84,14 @@ export class TicketReadService {
   }
 
   async readNeedsYou(projectId: string): Promise<ReadonlyArray<NeedsYouRow> | undefined> {
-    const { runWaitLookup, watchStore } = this.dependencies;
+    const { runPort, watchStore } = this.dependencies;
     const watch = watchStore.watch(projectId);
     if (watch === undefined) {
       return undefined;
     }
     const openTickets =
       presentWatch(watch, watchStore.statusWrites(projectId)).snapshot?.openTickets ?? [];
-    return buildNeedsYouRows(openTickets, await runWaitLookup.waitsOf(projectId));
+    return buildNeedsYouRows(openTickets, await runPort.waitsOf(projectId));
   }
 
   private serve(watch: RepositoryWatch, ticket?: Ticket): ProjectTicket {

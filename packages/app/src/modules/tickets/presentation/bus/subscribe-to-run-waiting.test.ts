@@ -4,7 +4,7 @@ import { TicketStatusService } from '../../business/service/ticket-status-servic
 import { unusedTicketStatusDependencies } from '../../testing/unused-dependencies.js';
 import type { DomainEvents } from '../../../../shared/event-bus.js';
 import { InMemoryEventBus } from '../../../../shared/in-memory-event-bus.js';
-import { FakeRegisteredRepositories } from '../../testing/fake-tickets-ports.js';
+import { FakeProjectPort } from '../../testing/fake-tickets-ports.js';
 import { FakeTicketStatusWrites } from '../../testing/fake-ticket-status-writes.js';
 
 const runWaiting: DomainEvents['run.waiting'] = {
@@ -22,7 +22,7 @@ function buildSubject() {
   const settleWaitingRun = new TicketStatusService({
     ...unusedTicketStatusDependencies,
     ticketStatusWrites,
-    registeredRepositories: new FakeRegisteredRepositories([
+    projectPort: new FakeProjectPort([
       { projectId: 'moritz/aisf', repository: { owner: 'moritz', name: 'aisf' } },
     ]),
     events: bus,

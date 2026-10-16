@@ -6,8 +6,8 @@ import { PageClosedError } from '../errors/page-closed-error.js';
 import { PageService } from './page-service.js';
 import { buildArtifact } from '../../testing/build-artifact.js';
 import { FakeArtifactFiles } from '../../testing/fake-artifact-files.js';
-import { FakeCheckpointAnswers } from '../../testing/fake-checkpoint-answers.js';
-import { FakeTicketRunLookup } from '../../testing/fake-ticket-run-lookup.js';
+import { FakeSchedulerPort } from '../../testing/fake-scheduler-port.js';
+import { FakeRunPort } from '../../testing/fake-run-port.js';
 import { InMemoryArtifactRepository } from '../../testing/in-memory-artifact-repository.js';
 
 const directory = '/worktrees/n/7/.aisf/artifacts/plan';
@@ -16,21 +16,21 @@ const tagged = '<aisf-event artifact=plan kind=submit round=2>{"a":1}</aisf-even
 
 describe('PageService', () => {
   let artifactFiles: FakeArtifactFiles;
-  let ticketRunLookup: FakeTicketRunLookup;
-  let checkpointAnswers: FakeCheckpointAnswers;
+  let runPort: FakeRunPort;
+  let schedulerPort: FakeSchedulerPort;
   let service: PageService;
 
   beforeEach(() => {
     const artifactRepository = new InMemoryArtifactRepository();
     artifactRepository.add(buildArtifact({ directory, version: 2 }));
     artifactFiles = new FakeArtifactFiles();
-    ticketRunLookup = new FakeTicketRunLookup();
-    checkpointAnswers = new FakeCheckpointAnswers();
+    runPort = new FakeRunPort();
+    schedulerPort = new FakeSchedulerPort();
     service = new PageService({
       artifactRepository,
       artifactFiles,
-      ticketRunLookup,
-      checkpointAnswers,
+      runPort,
+      schedulerPort,
     });
   });
 
@@ -89,7 +89,7 @@ describe('PageService', () => {
 
   describe('readStatus', () => {
     it('should report the decided status and the version when the token is known', async () => {
-      ticketRunLookup.latestRun = {
+      runPort.latestRun = {
         id: 'r1',
         state: 'running',
         waitingFor: { artifactId: 'plan' },
@@ -109,7 +109,7 @@ describe('PageService', () => {
 
   describe('submitEvent', () => {
     it('should deliver the tagged text to the run when the run waits on the page', async () => {
-      ticketRunLookup.latestRun = {
+      runPort.latestRun = {
         id: 'r1',
         state: 'running',
         waitingFor: { artifactId: 'plan' },
@@ -117,11 +117,11 @@ describe('PageService', () => {
 
       await service.submitEvent('T', event);
 
-      expect(checkpointAnswers.calls).toEqual([{ runId: 'r1', text: tagged }]);
+      expect(schedulerPort.calls).toEqual([{ runId: 'r1', text: tagged }]);
     });
 
     it('should deliver when the run ended at a checkpoint on the page', async () => {
-      ticketRunLookup.latestRun = {
+      runPort.latestRun = {
         id: 'r1',
         state: 'ended',
         ending: { kind: 'checkpoint', artifactId: 'plan' },
@@ -129,30 +129,30 @@ describe('PageService', () => {
 
       await service.submitEvent('T', event);
 
-      expect(checkpointAnswers.calls).toEqual([{ runId: 'r1', text: tagged }]);
+      expect(schedulerPort.calls).toEqual([{ runId: 'r1', text: tagged }]);
     });
 
     it('should throw closed and deliver nothing when the run does not wait', async () => {
-      ticketRunLookup.latestRun = { id: 'r1', state: 'running' };
+      runPort.latestRun = { id: 'r1', state: 'running' };
 
       await expect(service.submitEvent('T', event)).rejects.toThrow(PageClosedError);
-      expect(checkpointAnswers.calls).toEqual([]);
+      expect(schedulerPort.calls).toEqual([]);
     });
 
     it('should throw busy and deliver nothing when another run is running', async () => {
-      ticketRunLookup.latestRun = { id: 'r2', state: 'running' };
+      runPort.latestRun = { id: 'r2', state: 'running' };
 
       await expect(service.submitEvent('T', event)).rejects.toThrow(PageBusyError);
-      expect(checkpointAnswers.calls).toEqual([]);
+      expect(schedulerPort.calls).toEqual([]);
     });
 
     it('should pass on busy when the scheduler refuses the answer', async () => {
-      ticketRunLookup.latestRun = {
+      runPort.latestRun = {
         id: 'r1',
         state: 'running',
         waitingFor: { artifactId: 'plan' },
       };
-      checkpointAnswers.failure = new PageBusyError('refused');
+      schedulerPort.failure = new PageBusyError('refused');
 
       await expect(service.submitEvent('T', event)).rejects.toThrow(PageBusyError);
     });

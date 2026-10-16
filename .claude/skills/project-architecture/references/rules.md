@@ -47,11 +47,12 @@ src/
     │   ├── service/                use cases (rules live here)
     │   └── port/                   interfaces business needs, one folder per capability
     │       ├── repository/         repository interfaces
-    │       └── <capability>/       other needs: mail/, payments/, customer/, …
+    │       ├── <capability>/       other needs: mail/, payments/, …
+    │       └── <thing>/            one <Thing>Port per provider module: user/user.port.ts
     └── infrastructure/
         ├── repository/             repository implementations
         ├── <capability>/           implementations, mirroring business/port/<capability>
-        └── internal/               adapters calling other modules
+        └── internal/               one <Provider>Adapter per provider module: users.adapter.ts
 ```
 
 Create only the folders a module needs. Names that exist must mean exactly this.
@@ -75,10 +76,11 @@ Create only the folders a module needs. Names that exist must mean exactly this.
 | Module error (subclass of a `shared/errors.ts` kind; never exported from `index.ts`) | `business/errors/` |
 | Use case / service with rules | `business/service/` |
 | Repository interface | `business/port/repository/` |
-| Interface for anything else the module needs (mail, payments, another module's data) | `business/port/<capability>/` |
+| Interface for anything else the module needs (mail, payments) | `business/port/<capability>/` |
+| Port to another module: one `<Thing>Port` per provider (`UserPort`) | `business/port/<thing>/` |
 | Repository implementation | `infrastructure/repository/` |
 | External API client, mailer, storage, … | `infrastructure/<capability>/` (same name as in business) |
-| Adapter that calls another module | `infrastructure/internal/` |
+| Adapter that calls another module: one `<Provider>Adapter` per provider (`UsersAdapter`) | `infrastructure/internal/<provider>-adapter.ts` |
 | Wiring the module's own classes | `index.ts` |
 | Wiring modules to each other | `composition-root.ts` |
 | Starting the server | `main.ts` |
@@ -151,8 +153,9 @@ is a coherent set that belongs to nobody else, it is a module.
     result type); anything else is mapped to a shared error. Module-specific exception types would
     otherwise become part of the public contract.
 13. **Two mappings per call, deliberately.** The provider maps entity → internal DTO in its facade; the
-    consumer maps internal DTO → its own concept in `infrastructure/internal/`. The second mapping is
-    what keeps the provider's vocabulary out of the consumer's business layer.
+    consumer maps internal DTO → its own concept in its one `<Provider>Adapter` in
+    `infrastructure/internal/`. The second mapping is what keeps the provider's vocabulary out of the
+    consumer's business layer.
 
 ### Business
 
@@ -161,8 +164,9 @@ is a coherent set that belongs to nobody else, it is a module.
 15. **[L2] `business/domain/` imports only `business/domain/`.** `business/errors/` imports only
     `shared/errors.ts`.
 16. **Interfaces live where they are used.** Every interface business needs is declared in
-    `business/port/<capability>/` (repositories in `business/port/repository/`) and named in this module's vocabulary
-    (`CustomerLookup`, not `UsersApi`).
+    `business/port/<capability>/` (repositories in `business/port/repository/`) and named in this module's vocabulary.
+    A port to another module is `<Thing>Port` (`<Thing>` = the provider module, singular), one per provider
+    (`UserPort`, not `UsersApi`).
 17. **Services throw `shared/errors.ts` errors** and return entities; they never know about status codes or
     DTOs.
 37. **Business exposes domain-level operations only.** Interfaces, services and internal APIs never
@@ -175,8 +179,9 @@ is a coherent set that belongs to nobody else, it is a module.
 18. **[L4] Infrastructure implements business interfaces and never imports presentation.**
 19. **`infrastructure/<capability>/` mirrors `business/port/<capability>/`.** `business/port/mail/mailer.ts` →
     `infrastructure/mail/smtp-mailer.ts`.
-20. **Adapters to other modules live in `infrastructure/internal/`** and implement a business
-    interface on top of the other module's internal API.
+20. **One adapter per provider module, in `infrastructure/internal/<provider>-adapter.ts`.** `<Provider>Adapter`
+    implements the one `<Thing>Port` for that provider on top of the provider's internal API. Its constructor
+    takes `Pick<ProviderApi, …>` of the methods it calls. Never one adapter per capability.
 39. **Infrastructure throws domain errors.** It catches library and process errors and throws domain
     errors.
 
@@ -234,7 +239,7 @@ is a coherent set that belongs to nobody else, it is a module.
 3. `presentation/dto/api/` (+ `dto/internal/` if other modules need you) + `dto/mapper/`, then the entry points you need (`api/`, `bus/`, …).
 4. If other modules need it: `presentation/internal/<module>.api.ts` + `.facade.ts` using only
    `dto/internal/` types; re-export the API and those DTOs from `index.ts`.
-5. If it needs another module: an interface in `business/port/<capability>/`, an adapter in
-   `infrastructure/internal/`, and the other module's API type as a factory dependency.
+5. If it needs another module: one `<Thing>Port` in `business/port/<thing>/` per provider, one
+   `<Provider>Adapter` in `infrastructure/internal/<provider>-adapter.ts`, and the other module's API type as a factory dependency.
 6. `index.ts` factory returning `{ routes, jobs, internal }`; call it from `composition-root.ts`.
 7. `npm run check`.

@@ -1,21 +1,18 @@
 import type { RepositoryReference } from '../business/domain/types/repository-reference.js';
 import type { RunsBlocked } from '../business/domain/types/runs-blocked.js';
 import type { SchedulableTicket } from '../business/domain/types/schedulable-ticket.js';
-import type { TicketAnswerGate } from '../business/port/ticket/ticket-answer-gate.js';
 import type { PullRequestMerges } from '../business/port/github/pull-request-merges.js';
-import type { ProjectLookup, SchedulerProject } from '../business/port/project/project-lookup.js';
+import type { ProjectPort, SchedulerProject } from '../business/port/project/project-port.js';
 import type { ReviewedTicket } from '../business/domain/types/reviewed-ticket.js';
-import type { ReviewedTicketLookup } from '../business/port/ticket/reviewed-ticket-lookup.js';
 import type { ActiveTicketRun } from '../business/domain/types/active-ticket-run.js';
 import type { LatestRun } from '../business/domain/types/latest-run.js';
 import type { RunWait } from '../business/domain/types/run-wait.js';
 import type { RunAnswer } from '../business/domain/types/run-answer.js';
 import type { RunRecord } from '../business/domain/types/run-record.js';
 import type { RunStep } from '../business/domain/types/run-step.js';
-import type { AgentRunControl } from '../business/port/runs/agent-run-control.js';
-import type { IdeaCreation } from '../business/port/ticket/idea-creation.js';
-import type { RunsGate } from '../business/port/runs/runs-gate.js';
-import type { TicketLookup } from '../business/port/ticket/ticket-lookup.js';
+import type { RunPort } from '../business/port/run/run-port.js';
+import type { SkillPort } from '../business/port/skill/skill-port.js';
+import type { TicketPort } from '../business/port/ticket/ticket-port.js';
 
 export const repository: RepositoryReference = { owner: 'moritz', name: 'aisf' };
 
@@ -29,22 +26,6 @@ export const readyLeaf: SchedulableTicket = {
   subIssueNumbers: [],
   snapshotTakenAt: '2026-09-29T10:00:00.000Z',
 };
-
-export class FakeTicketAnswerGate implements TicketAnswerGate {
-  readonly calls: string[] = [];
-  beginFailure: Error | undefined;
-
-  async begin(projectId: string, ticketNumber: number): Promise<void> {
-    this.calls.push(`begin ${projectId} #${ticketNumber}`);
-    if (this.beginFailure !== undefined) {
-      throw this.beginFailure;
-    }
-  }
-
-  async revert(projectId: string, ticketNumber: number): Promise<void> {
-    this.calls.push(`revert ${projectId} #${ticketNumber}`);
-  }
-}
 
 export class FakePullRequestMerges implements PullRequestMerges {
   readonly calls: string[] = [];
@@ -64,7 +45,7 @@ export class FakePullRequestMerges implements PullRequestMerges {
   }
 }
 
-export class FakeAgentRunControl implements AgentRunControl {
+export class FakeRunPort implements RunPort {
   readonly calls: string[] = [];
   activeTicketNumbers: ReadonlyArray<number> = [];
   activeSteps: ReadonlyArray<RunStep> = [];
@@ -75,10 +56,10 @@ export class FakeAgentRunControl implements AgentRunControl {
   startFailure: Error | undefined;
   answerFailure: Error | undefined;
 
-  readonly startRequests: Array<Parameters<AgentRunControl['start']>[0]> = [];
+  readonly startRequests: Array<Parameters<RunPort['start']>[0]> = [];
 
   async start(
-    request: Parameters<AgentRunControl['start']>[0],
+    request: Parameters<RunPort['start']>[0],
   ): Promise<{ readonly id: string; readonly startedAt: string }> {
     this.startRequests.push(request);
     this.calls.push(`start ${request.projectId} #${request.ticketNumber}`);
@@ -122,26 +103,7 @@ export class FakeAgentRunControl implements AgentRunControl {
   }
 }
 
-export class FakeTicketLookup implements TicketLookup {
-  constructor(
-    private readonly ticket: SchedulableTicket | undefined,
-    private readonly subIssues: ReadonlyArray<SchedulableTicket> = [],
-  ) {}
-
-  async find(_projectId: string, ticketNumber: number): Promise<SchedulableTicket | undefined> {
-    return this.subIssues.find(({ number }) => number === ticketNumber) ?? this.ticket;
-  }
-}
-
-export class FakeReviewedTicketLookup implements ReviewedTicketLookup {
-  constructor(private readonly tickets: ReadonlyArray<ReviewedTicket>) {}
-
-  async list(): Promise<ReadonlyArray<ReviewedTicket>> {
-    return this.tickets;
-  }
-}
-
-export class FakeRunsGate implements RunsGate {
+export class FakeSkillPort implements SkillPort {
   constructor(private readonly runsBlocked: RunsBlocked = { blocked: false }) {}
 
   check(): RunsBlocked {
@@ -149,7 +111,7 @@ export class FakeRunsGate implements RunsGate {
   }
 }
 
-export class FakeProjectLookup implements ProjectLookup {
+export class FakeProjectPort implements ProjectPort {
   constructor(
     private readonly project: SchedulerProject | undefined = { repository, onboarded: true },
   ) {}
@@ -159,9 +121,24 @@ export class FakeProjectLookup implements ProjectLookup {
   }
 }
 
-export class FakeIdeaCreation implements IdeaCreation {
+export class FakeTicketPort implements TicketPort {
   readonly calls: string[] = [];
+  beginFailure: Error | undefined;
   createdNumber = 501;
+
+  constructor(
+    private readonly ticket: SchedulableTicket | undefined,
+    private readonly subIssues: ReadonlyArray<SchedulableTicket> = [],
+    private readonly reviewed: ReadonlyArray<ReviewedTicket> = [],
+  ) {}
+
+  async find(_projectId: string, ticketNumber: number): Promise<SchedulableTicket | undefined> {
+    return this.subIssues.find(({ number }) => number === ticketNumber) ?? this.ticket;
+  }
+
+  async list(): Promise<ReadonlyArray<ReviewedTicket>> {
+    return this.reviewed;
+  }
 
   async create(
     _repository: RepositoryReference,
@@ -169,5 +146,16 @@ export class FakeIdeaCreation implements IdeaCreation {
   ): Promise<number> {
     this.calls.push(`create ${JSON.stringify(idea)}`);
     return this.createdNumber;
+  }
+
+  async begin(projectId: string, ticketNumber: number): Promise<void> {
+    this.calls.push(`begin ${projectId} #${ticketNumber}`);
+    if (this.beginFailure !== undefined) {
+      throw this.beginFailure;
+    }
+  }
+
+  async revert(projectId: string, ticketNumber: number): Promise<void> {
+    this.calls.push(`revert ${projectId} #${ticketNumber}`);
   }
 }

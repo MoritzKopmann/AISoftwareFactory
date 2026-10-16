@@ -6,7 +6,7 @@ import { FakeClock } from '../../shared/testing/fake-clock.js';
 import { InMemoryWatchStore } from './infrastructure/repository/in-memory-watch-store.js';
 import { createTicketsModule } from './index.js';
 import { buildTicket } from './testing/build-ticket.js';
-import { FakeRunSettlement, FakeTicketStatusWrites } from './testing/fake-ticket-status-writes.js';
+import { FakeRunPort, FakeTicketStatusWrites } from './testing/fake-ticket-status-writes.js';
 import {
   FakeIdeaCreation,
   FakeIssueFeeds,
@@ -38,7 +38,7 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
   const ideaCreation = new FakeIdeaCreation();
   const clock = new FakeClock(startedAt);
   const ticketStatusWrites = new FakeTicketStatusWrites();
-  const runSettlement = new FakeRunSettlement();
+  const runPort = new FakeRunPort();
   const snapshotChanges: Array<DomainEvents['snapshot.changed']> = [];
   events.on('snapshot.changed', (payload) => snapshotChanges.push(payload));
   const module = createTicketsModule(
@@ -65,7 +65,7 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
             (ticketNumber) => ({ run: { ticketNumber }, steps: [] }) as never,
           ),
         activeWaits: async () => [],
-        settle: (runId) => runSettlement.settle(runId),
+        settle: (runId) => runPort.settle(runId),
       },
     },
     {
@@ -102,7 +102,7 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
     clock,
     snapshotChanges,
     ticketStatusWrites,
-    runSettlement,
+    runPort,
   };
 }
 
@@ -159,7 +159,7 @@ describe('createTicketsModule', () => {
     });
 
     it('should add the waiting label with the comment when run.waiting is emitted after start', async () => {
-      const { tickets, events, ticketStatusWrites, runSettlement } = createSubject();
+      const { tickets, events, ticketStatusWrites, runPort } = createSubject();
       await tickets.start();
 
       events.emit('run.waiting', {
@@ -174,12 +174,12 @@ describe('createTicketsModule', () => {
         expect(ticketStatusWrites.calls).toContain('setSecondaryState #5 waiting on'),
       );
       expect(ticketStatusWrites.calls.some((call) => call.startsWith('comment #5'))).toBe(true);
-      expect(runSettlement.calls).toEqual([]);
+      expect(runPort.calls).toEqual([]);
       tickets.stop();
     });
 
     it('should add the stuck label, announce it, then settle the run when run.finished ends crashed', async () => {
-      const { tickets, events, ticketStatusWrites, runSettlement } = createSubject();
+      const { tickets, events, ticketStatusWrites, runPort } = createSubject();
       const written: Array<DomainEvents['ticket.status-written']> = [];
       events.on('ticket.status-written', (payload) => written.push(payload));
       await tickets.start();
@@ -192,7 +192,7 @@ describe('createTicketsModule', () => {
         ending: { kind: 'crashed', reason: 'boom' },
       });
 
-      await vi.waitFor(() => expect(runSettlement.calls).toEqual(['settle r1']));
+      await vi.waitFor(() => expect(runPort.calls).toEqual(['settle r1']));
       expect(ticketStatusWrites.calls).toContain('setSecondaryState #5 stuck on');
       expect(written).toContainEqual({
         projectId: 'owner/name',
@@ -206,7 +206,7 @@ describe('createTicketsModule', () => {
     });
 
     it('should settle a finished run when run.finished is emitted before the watch job runs', async () => {
-      const { events, runSettlement } = createSubject();
+      const { events, runPort } = createSubject();
 
       events.emit('run.finished', {
         runId: 'r1',
@@ -216,11 +216,11 @@ describe('createTicketsModule', () => {
         ending: { kind: 'stopped' },
       });
 
-      await vi.waitFor(() => expect(runSettlement.calls).toEqual(['settle r1']));
+      await vi.waitFor(() => expect(runPort.calls).toEqual(['settle r1']));
     });
 
     it('should stop settling finished runs when the stop-watching job has run', async () => {
-      const { tickets, events, runSettlement } = createSubject();
+      const { tickets, events, runPort } = createSubject();
       await tickets.start();
       tickets.stop();
 
@@ -233,7 +233,7 @@ describe('createTicketsModule', () => {
       });
       await Promise.resolve();
 
-      expect(runSettlement.calls).toEqual([]);
+      expect(runPort.calls).toEqual([]);
     });
 
     it('should refuse beginAnswer and write nothing when the ticket has no waiting label', async () => {

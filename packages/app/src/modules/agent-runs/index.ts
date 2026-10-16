@@ -6,13 +6,13 @@ import { RunAnswerService } from './business/service/run-answer-service.js';
 import { RunEndService } from './business/service/run-end-service.js';
 import { RunQueryService } from './business/service/run-query-service.js';
 import { RunStartService } from './business/service/run-start-service.js';
-import type { RunTargets } from './business/port/target/run-targets.js';
+import type { ProjectPort } from './business/port/project/project-port.js';
 import type { RunTranscripts } from './business/port/transcript/run-transcripts.js';
 import type { Worktrees } from './business/port/worktree/worktrees.js';
 import { InMemoryRecentRunSteps } from './infrastructure/repository/in-memory-recent-run-steps.js';
 import { InMemoryRunAnswerWaits } from './infrastructure/repository/in-memory-run-answer-waits.js';
 import { SqliteRunRepository } from './infrastructure/repository/sqlite-run-repository.js';
-import { ProjectsRunTargets } from './infrastructure/internal/projects-run-targets.js';
+import { ProjectsAdapter } from './infrastructure/internal/projects-adapter.js';
 import { ClaudeAgentSdkSessions } from './infrastructure/session/claude-agent-sdk-sessions.js';
 import { ClaudeAgentSdkRunTranscripts } from './infrastructure/transcript/claude-agent-sdk-run-transcripts.js';
 import { GitCliWorktrees } from './infrastructure/worktree/git-cli-worktrees.js';
@@ -48,7 +48,7 @@ type AgentRunsInfrastructure = {
   readonly runRepository: RunRepository;
   readonly agentSessions: AgentSessions;
   readonly worktrees: Worktrees;
-  readonly runTargets: RunTargets;
+  readonly projectPort: ProjectPort;
   readonly recentRunSteps: RecentRunSteps;
   readonly runTranscripts: RunTranscripts;
   readonly runAnswerWaits: RunAnswerWaits;
@@ -71,7 +71,7 @@ export function createAgentRunsModule(
         dependencies.liveAnswerWindowMilliseconds + answerTimeoutMarginMilliseconds,
     }),
     worktrees: new GitCliWorktrees(),
-    runTargets: new ProjectsRunTargets(dependencies.projects),
+    projectPort: new ProjectsAdapter(dependencies.projects),
     recentRunSteps: new InMemoryRecentRunSteps(),
     runTranscripts: new ClaudeAgentSdkRunTranscripts(),
     runAnswerWaits: new InMemoryRunAnswerWaits(),
@@ -90,7 +90,7 @@ export function createAgentRunsModule(
   const runStartService = new RunStartService({
     runRepository,
     worktrees: infrastructure.worktrees,
-    runTargets: infrastructure.runTargets,
+    projectPort: infrastructure.projectPort,
     agentSessions,
     recentRunSteps,
     runAnswerWaits,

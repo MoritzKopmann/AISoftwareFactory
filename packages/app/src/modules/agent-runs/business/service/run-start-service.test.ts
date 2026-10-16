@@ -11,7 +11,7 @@ import {
   FakeRecentRunSteps,
   FakeRunAnswerWaits,
   FakeRunRepository,
-  FakeRunTargets,
+  FakeProjectPort,
   FakeWorktrees,
   SequentialIdentifiers,
 } from '../../testing/fake-agent-runs-ports.js';
@@ -30,7 +30,7 @@ import { RunStartService } from './run-start-service.js';
 type BuildOptions = {
   readonly now?: string;
   readonly tools?: ReadonlyArray<AgentTool>;
-  readonly runTargets?: FakeRunTargets;
+  readonly projectPort?: FakeProjectPort;
   readonly finish?: (runId: string, ending: RunEnding) => Promise<void>;
 };
 
@@ -58,7 +58,7 @@ function buildService(options: BuildOptions = {}) {
   const service = new RunStartService({
     runRepository,
     worktrees,
-    runTargets: options.runTargets ?? new FakeRunTargets(defaultTarget),
+    projectPort: options.projectPort ?? new FakeProjectPort(defaultTarget),
     agentSessions,
     recentRunSteps,
     runAnswerWaits,
@@ -245,7 +245,7 @@ describe('RunStartService', () => {
 
     it('should throw RunTargetNotFoundError and insert nothing when the project or ticket is unknown', async () => {
       const { service, runRepository } = buildService({
-        runTargets: new FakeRunTargets(undefined),
+        projectPort: new FakeProjectPort(undefined),
       });
 
       await expect(service.start(startRequest)).rejects.toThrow(RunTargetNotFoundError);

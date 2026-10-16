@@ -10,8 +10,8 @@ import type { TicketLatestRun } from '../../../src/modules/artifacts/business/do
 import { FakeEventPublisher } from '../../../src/shared/testing/fake-event-publisher.js';
 import { FakeClock } from '../../../src/shared/testing/fake-clock.js';
 import { FakeArtifactFiles } from '../../../src/modules/artifacts/testing/fake-artifact-files.js';
-import { FakeCheckpointAnswers } from '../../../src/modules/artifacts/testing/fake-checkpoint-answers.js';
-import { FakeTicketRunLookup } from '../../../src/modules/artifacts/testing/fake-ticket-run-lookup.js';
+import { FakeSchedulerPort } from '../../../src/modules/artifacts/testing/fake-scheduler-port.js';
+import { FakeRunPort } from '../../../src/modules/artifacts/testing/fake-run-port.js';
 import { InMemoryArtifactRepository } from '../../../src/modules/artifacts/testing/in-memory-artifact-repository.js';
 
 const bridgeSource = readFileSync(
@@ -21,7 +21,7 @@ const bridgeSource = readFileSync(
 
 describe('a republished page', () => {
   let publish: () => Promise<{ token: string; version: number }>;
-  let ticketRunLookup: FakeTicketRunLookup;
+  let runPort: FakeRunPort;
   let reload: ReturnType<typeof vi.fn>;
   let app: Hono;
 
@@ -29,11 +29,11 @@ describe('a republished page', () => {
     vi.useFakeTimers();
     const artifactRepository = new InMemoryArtifactRepository();
     const artifactFiles = new FakeArtifactFiles();
-    ticketRunLookup = new FakeTicketRunLookup();
+    runPort = new FakeRunPort();
     const artifactService = new ArtifactService({
       artifactRepository,
       artifactFiles,
-      ticketRunLookup,
+      runPort,
       events: new FakeEventPublisher(),
       identifiers: { next: () => 'T' },
       clock: new FakeClock('2026-10-06T10:00:00.000Z'),
@@ -57,8 +57,8 @@ describe('a republished page', () => {
         new PageService({
           artifactRepository,
           artifactFiles,
-          ticketRunLookup,
-          checkpointAnswers: new FakeCheckpointAnswers(),
+          runPort,
+          schedulerPort: new FakeSchedulerPort(),
         }),
       ),
     );
@@ -86,7 +86,7 @@ describe('a republished page', () => {
 
   it('should keep the token, report version 2 and reload an open tab on its next poll when the artifact is republished', async () => {
     const first = await publish();
-    ticketRunLookup.latestRun = buildWaiting();
+    runPort.latestRun = buildWaiting();
     await loadPage();
 
     const second = await publish();
@@ -99,7 +99,7 @@ describe('a republished page', () => {
 
   it('should still reload a closed tab on its next poll when the artifact is republished', async () => {
     await publish();
-    ticketRunLookup.latestRun = undefined;
+    runPort.latestRun = undefined;
     await loadPage();
     expect(document.documentElement.getAttribute('data-aisf-status')).toBe('closed');
 

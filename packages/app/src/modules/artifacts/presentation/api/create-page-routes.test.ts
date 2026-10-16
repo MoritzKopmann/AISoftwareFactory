@@ -6,8 +6,8 @@ import { PageBusyError } from '../../business/errors/page-busy-error.js';
 import { PageService } from '../../business/service/page-service.js';
 import { buildArtifact } from '../../testing/build-artifact.js';
 import { FakeArtifactFiles } from '../../testing/fake-artifact-files.js';
-import { FakeCheckpointAnswers } from '../../testing/fake-checkpoint-answers.js';
-import { FakeTicketRunLookup } from '../../testing/fake-ticket-run-lookup.js';
+import { FakeSchedulerPort } from '../../testing/fake-scheduler-port.js';
+import { FakeRunPort } from '../../testing/fake-run-port.js';
 import { InMemoryArtifactRepository } from '../../testing/in-memory-artifact-repository.js';
 
 const directory = '/worktrees/n/7/.aisf/artifacts/plan';
@@ -18,13 +18,13 @@ const hostHeaders = { Host: host };
 function buildApp(
   artifactRepository: InMemoryArtifactRepository,
   artifactFiles: FakeArtifactFiles,
-  ticketRunLookup: FakeTicketRunLookup,
-  checkpointAnswers: FakeCheckpointAnswers,
+  runPort: FakeRunPort,
+  schedulerPort: FakeSchedulerPort,
 ): Hono {
   return new Hono().route(
     '/a',
     createPageRoutes(
-      new PageService({ artifactRepository, artifactFiles, ticketRunLookup, checkpointAnswers }),
+      new PageService({ artifactRepository, artifactFiles, runPort, schedulerPort }),
     ),
   );
 }
@@ -32,8 +32,8 @@ function buildApp(
 describe('createPageRoutes', () => {
   let artifactRepository: InMemoryArtifactRepository;
   let artifactFiles: FakeArtifactFiles;
-  let ticketRunLookup: FakeTicketRunLookup;
-  let checkpointAnswers: FakeCheckpointAnswers;
+  let runPort: FakeRunPort;
+  let schedulerPort: FakeSchedulerPort;
   let app: Hono;
 
   beforeEach(() => {
@@ -45,9 +45,9 @@ describe('createPageRoutes', () => {
     artifactFiles.files.set(`${directory}/app.js`, 'console.log(1);');
     artifactRepository = new InMemoryArtifactRepository();
     artifactRepository.add(buildArtifact({ directory }));
-    ticketRunLookup = new FakeTicketRunLookup();
-    checkpointAnswers = new FakeCheckpointAnswers();
-    app = buildApp(artifactRepository, artifactFiles, ticketRunLookup, checkpointAnswers);
+    runPort = new FakeRunPort();
+    schedulerPort = new FakeSchedulerPort();
+    app = buildApp(artifactRepository, artifactFiles, runPort, schedulerPort);
   });
 
   describe('GET /:token/', () => {
@@ -165,7 +165,7 @@ describe('createPageRoutes', () => {
     });
 
     it('should store the state when the page is busy', async () => {
-      ticketRunLookup.latestRun = { id: 'r2', state: 'running' };
+      runPort.latestRun = { id: 'r2', state: 'running' };
 
       expect((await put(hostHeaders)).status).toBeLessThan(300);
     });
@@ -186,12 +186,7 @@ describe('createPageRoutes', () => {
         body: '{"answers":{"q1":"yes"}}',
       });
 
-      const restarted = buildApp(
-        artifactRepository,
-        artifactFiles,
-        ticketRunLookup,
-        checkpointAnswers,
-      );
+      const restarted = buildApp(artifactRepository, artifactFiles, runPort, schedulerPort);
       const response = await restarted.request('/a/T/_user-input-state', {
         headers: { Host: host },
       });
@@ -214,25 +209,25 @@ describe('createPageRoutes', () => {
     const submit = JSON.stringify({ kind: 'submit', round: 2, payload: { a: 1 } });
 
     it('should answer 201 and deliver one tagged event when the run waits on the page', async () => {
-      ticketRunLookup.latestRun = waiting;
+      runPort.latestRun = waiting;
 
       const response = await post(submit);
 
       expect(response.status).toBe(201);
-      expect(checkpointAnswers.calls).toEqual([
+      expect(schedulerPort.calls).toEqual([
         { runId: 'r1', text: '<aisf-event artifact=plan kind=submit round=2>{"a":1}</aisf-event>' },
       ]);
     });
 
     it('should deliver a confirm with its own kind when the run waits on the page', async () => {
-      ticketRunLookup.latestRun = waiting;
+      runPort.latestRun = waiting;
 
       const response = await post(
         JSON.stringify({ kind: 'confirm', round: 3, payload: { confirmed: true } }),
       );
 
       expect(response.status).toBe(201);
-      expect(checkpointAnswers.calls).toEqual([
+      expect(schedulerPort.calls).toEqual([
         {
           runId: 'r1',
           text: '<aisf-event artifact=plan kind=confirm round=3>{"confirmed":true}</aisf-event>',
@@ -241,51 +236,51 @@ describe('createPageRoutes', () => {
     });
 
     it('should answer 201 when the run ended at a checkpoint on the page', async () => {
-      ticketRunLookup.latestRun = {
+      runPort.latestRun = {
         id: 'r1',
         state: 'ended',
         ending: { kind: 'checkpoint', artifactId: 'plan' },
       };
 
       expect((await post(submit)).status).toBe(201);
-      expect(checkpointAnswers.calls).toHaveLength(1);
+      expect(schedulerPort.calls).toHaveLength(1);
     });
 
     it('should answer 409 closed and deliver nothing when the run ended other than at a checkpoint', async () => {
-      ticketRunLookup.latestRun = { id: 'r1', state: 'ended', ending: { kind: 'done' } };
+      runPort.latestRun = { id: 'r1', state: 'ended', ending: { kind: 'done' } };
 
       const response = await post(submit);
 
       expect(response.status).toBe(409);
       expect(await response.json()).toEqual({ status: 'closed' });
-      expect(checkpointAnswers.calls).toEqual([]);
+      expect(schedulerPort.calls).toEqual([]);
     });
 
     it('should answer 409 closed when the same submit is posted again after delivery', async () => {
-      ticketRunLookup.latestRun = waiting;
+      runPort.latestRun = waiting;
       await post(submit);
-      ticketRunLookup.latestRun = { id: 'r1', state: 'running' };
+      runPort.latestRun = { id: 'r1', state: 'running' };
 
       const response = await post(submit);
 
       expect(response.status).toBe(409);
       expect(await response.json()).toEqual({ status: 'closed' });
-      expect(checkpointAnswers.calls).toHaveLength(1);
+      expect(schedulerPort.calls).toHaveLength(1);
     });
 
     it('should answer 409 busy and deliver nothing when another run is running', async () => {
-      ticketRunLookup.latestRun = { id: 'r2', state: 'running' };
+      runPort.latestRun = { id: 'r2', state: 'running' };
 
       const response = await post(submit);
 
       expect(response.status).toBe(409);
       expect(await response.json()).toEqual({ status: 'busy' });
-      expect(checkpointAnswers.calls).toEqual([]);
+      expect(schedulerPort.calls).toEqual([]);
     });
 
     it('should answer 409 busy when the scheduler refuses the answer', async () => {
-      ticketRunLookup.latestRun = waiting;
-      checkpointAnswers.failure = new PageBusyError('refused');
+      runPort.latestRun = waiting;
+      schedulerPort.failure = new PageBusyError('refused');
 
       const response = await post(submit);
 
@@ -294,14 +289,14 @@ describe('createPageRoutes', () => {
     });
 
     it('should answer 413 and deliver nothing when the body is over 32 KB', async () => {
-      ticketRunLookup.latestRun = waiting;
+      runPort.latestRun = waiting;
 
       const response = await post(
         JSON.stringify({ kind: 'submit', round: 1, payload: 'x'.repeat(32 * 1024) }),
       );
 
       expect(response.status).toBe(413);
-      expect(checkpointAnswers.calls).toEqual([]);
+      expect(schedulerPort.calls).toEqual([]);
     });
 
     it.each([
@@ -312,12 +307,12 @@ describe('createPageRoutes', () => {
       ['no payload', '{"kind":"submit","round":1}'],
       ['no JSON', 'not json'],
     ])('should answer 400 and deliver nothing when the body has %s', async (_name, body) => {
-      ticketRunLookup.latestRun = waiting;
+      runPort.latestRun = waiting;
 
       const response = await post(body);
 
       expect(response.status).toBe(400);
-      expect(checkpointAnswers.calls).toEqual([]);
+      expect(schedulerPort.calls).toEqual([]);
     });
 
     it('should answer 404 when the token is unknown', async () => {
@@ -332,7 +327,7 @@ describe('createPageRoutes', () => {
         state: 'running',
         waitingFor: { artifactId: 'plan' },
       };
-      ticketRunLookup.latestRun = waiting;
+      runPort.latestRun = waiting;
 
       const response = await app.request('/a/T/_status', { headers: { Host: host } });
 

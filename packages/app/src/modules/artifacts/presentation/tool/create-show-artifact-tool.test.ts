@@ -4,7 +4,7 @@ import { ArtifactService } from '../../business/service/artifact-service.js';
 import { FakeEventPublisher } from '../../../../shared/testing/fake-event-publisher.js';
 import { FakeClock } from '../../../../shared/testing/fake-clock.js';
 import { textResult } from '../../../../shared/testing/text-result.js';
-import { FakeTicketRunLookup } from '../../testing/fake-ticket-run-lookup.js';
+import { FakeRunPort } from '../../testing/fake-run-port.js';
 import { FakeArtifactFiles } from '../../testing/fake-artifact-files.js';
 import { InMemoryArtifactRepository } from '../../testing/in-memory-artifact-repository.js';
 
@@ -28,7 +28,7 @@ describe('createShowArtifactTool', () => {
       new ArtifactService({
         artifactRepository,
         artifactFiles,
-        ticketRunLookup: new FakeTicketRunLookup(),
+        runPort: new FakeRunPort(),
         events: new FakeEventPublisher(),
         identifiers: { next: () => 'a1b2c3-token' },
         clock: new FakeClock('2026-10-06T10:00:00.000Z'),

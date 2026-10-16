@@ -10,39 +10,35 @@ import { ProjectNotFoundError } from '../errors/project-not-found-error.js';
 import { RunAlreadyActiveError } from '../errors/run-already-active-error.js';
 import { RunNotAnswerableError } from '../errors/run-not-answerable-error.js';
 import { RunNotAvailableError } from '../errors/run-not-available-error.js';
-import type { ProjectLookup } from '../port/project/project-lookup.js';
-import type { AgentRunControl } from '../port/runs/agent-run-control.js';
-import type { RunsGate } from '../port/runs/runs-gate.js';
-import type { IdeaCreation } from '../port/ticket/idea-creation.js';
-import type { TicketAnswerGate } from '../port/ticket/ticket-answer-gate.js';
-import type { TicketLookup } from '../port/ticket/ticket-lookup.js';
+import type { ProjectPort } from '../port/project/project-port.js';
+import type { RunPort } from '../port/run/run-port.js';
+import type { SkillPort } from '../port/skill/skill-port.js';
+import type { TicketPort } from '../port/ticket/ticket-port.js';
 
 export type TicketRunServiceDependencies = {
-  readonly ticketLookup: TicketLookup;
-  readonly agentRunControl: AgentRunControl;
-  readonly runsGate: RunsGate;
-  readonly projectLookup: ProjectLookup;
-  readonly ideaCreation: IdeaCreation;
-  readonly ticketAnswerGate: TicketAnswerGate;
+  readonly ticketPort: Pick<TicketPort, 'find' | 'create' | 'begin' | 'revert'>;
+  readonly runPort: RunPort;
+  readonly skillPort: SkillPort;
+  readonly projectPort: ProjectPort;
 };
 
 export class TicketRunService {
   constructor(private readonly dependencies: TicketRunServiceDependencies) {}
 
   async readAvailability(projectId: string, ticketNumber: number): Promise<RunAvailability> {
-    const { ticketLookup, agentRunControl, runsGate, projectLookup } = this.dependencies;
+    const { ticketPort, runPort, skillPort, projectPort } = this.dependencies;
 
     const [ticket, activeRuns, latestRun, project] = await Promise.all([
-      ticketLookup.find(projectId, ticketNumber),
-      agentRunControl.activeRuns(projectId),
-      agentRunControl.latestRun(projectId, ticketNumber),
-      projectLookup.find(projectId),
+      ticketPort.find(projectId, ticketNumber),
+      runPort.activeRuns(projectId),
+      runPort.latestRun(projectId, ticketNumber),
+      projectPort.find(projectId),
     ]);
 
     const subIssues =
       ticket?.status === 'plan'
         ? await Promise.all(
-            ticket.subIssueNumbers.map((number) => ticketLookup.find(projectId, number)),
+            ticket.subIssueNumbers.map((number) => ticketPort.find(projectId, number)),
           )
         : [];
     const lastRunEndedAt = latestRun?.endedAt;
@@ -51,18 +47,18 @@ export class TicketRunService {
       subIssues: subIssues.filter((subIssue) => subIssue !== undefined),
       ticketIsRunning: activeRuns.some(({ run }) => run.ticketNumber === ticketNumber),
       ...(lastRunEndedAt === undefined ? {} : { lastRunEndedAt }),
-      runsBlocked: runsGate.check(),
+      runsBlocked: skillPort.check(),
       projectOnboarded: project?.onboarded === true,
     });
   }
 
   async readTicketRun(projectId: string, ticketNumber: number): Promise<TicketRun> {
-    const { agentRunControl } = this.dependencies;
+    const { runPort } = this.dependencies;
 
     const [availability, activeRuns, latestRun] = await Promise.all([
       this.readAvailability(projectId, ticketNumber),
-      agentRunControl.activeRuns(projectId),
-      agentRunControl.latestRun(projectId, ticketNumber),
+      runPort.activeRuns(projectId),
+      runPort.latestRun(projectId, ticketNumber),
     ]);
 
     const activeRun = activeRuns.find(({ run }) => run.ticketNumber === ticketNumber);
@@ -103,11 +99,11 @@ export class TicketRunService {
     if (availability.kind === 'disabled') {
       throw new RunNotAvailableError(availability.reason);
     }
-    const ticket = await this.dependencies.ticketLookup.find(projectId, ticketNumber);
+    const ticket = await this.dependencies.ticketPort.find(projectId, ticketNumber);
     if (ticket === undefined) {
       throw new RunNotAvailableError(`Ticket #${ticketNumber} cannot be run`);
     }
-    return this.dependencies.agentRunControl.start({
+    return this.dependencies.runPort.start({
       projectId,
       ticketNumber,
       ticketTitle: ticket.title,
@@ -117,21 +113,21 @@ export class TicketRunService {
   }
 
   async startIdeaSession(projectId: string, text: string): Promise<number> {
-    const { projectLookup, runsGate, ideaCreation } = this.dependencies;
+    const { projectPort, skillPort, ticketPort } = this.dependencies;
 
-    const project = await projectLookup.find(projectId);
+    const project = await projectPort.find(projectId);
     if (project === undefined) {
       throw new ProjectNotFoundError(`Project ${projectId} is not registered`);
     }
     if (!project.onboarded) {
       throw new RunNotAvailableError('The project is not onboarded');
     }
-    const runsBlocked = runsGate.check();
+    const runsBlocked = skillPort.check();
     if (runsBlocked.blocked) {
       throw new RunNotAvailableError(runsBlocked.reason);
     }
 
-    const ticketNumber = await ideaCreation.create(project.repository, ideaFromText(text));
+    const ticketNumber = await ticketPort.create(project.repository, ideaFromText(text));
     try {
       await this.start(projectId, ticketNumber);
     } catch (error) {
@@ -144,9 +140,9 @@ export class TicketRunService {
   }
 
   async answer(runId: string, answer: RunAnswer): Promise<StartedRun> {
-    const { ticketAnswerGate, agentRunControl } = this.dependencies;
+    const { ticketPort, runPort } = this.dependencies;
 
-    const run = await agentRunControl.findRun(runId);
+    const run = await runPort.findRun(runId);
     if (run === undefined) {
       throw new RunNotAnswerableError(`Run ${runId} is unknown`);
     }
@@ -157,15 +153,15 @@ export class TicketRunService {
     }
     const { projectId, ticketNumber } = run;
 
-    const latestRun = await agentRunControl.latestRun(projectId, ticketNumber);
+    const latestRun = await runPort.latestRun(projectId, ticketNumber);
     if (latestRun?.id !== runId) {
       throw new RunNotAnswerableError(`Run ${runId} is not the latest run of #${ticketNumber}`);
     }
-    await ticketAnswerGate.begin(projectId, ticketNumber);
+    await ticketPort.begin(projectId, ticketNumber);
     try {
-      return await agentRunControl.answer(runId, answer);
+      return await runPort.answer(runId, answer);
     } catch (error) {
-      await ticketAnswerGate.revert(projectId, ticketNumber);
+      await ticketPort.revert(projectId, ticketNumber);
       throw error;
     }
   }

@@ -1,7 +1,7 @@
 import type { FindingRepository } from './business/port/repository/finding-repository.js';
 import { FindingService } from './business/service/finding-service.js';
-import { ProjectsProjectLookup } from './infrastructure/internal/projects-project-lookup.js';
-import { TicketsTicketCreator } from './infrastructure/internal/tickets-ticket-creator.js';
+import { ProjectsAdapter } from './infrastructure/internal/projects-adapter.js';
+import { TicketsAdapter } from './infrastructure/internal/tickets-adapter.js';
 import { SqliteFindingRepository } from './infrastructure/repository/sqlite-finding-repository.js';
 import { createFindingsRoutes } from './presentation/api/findings-routes.js';
 import { FindingsFacade } from './presentation/internal/findings-facade.js';
@@ -36,8 +36,8 @@ export function createFindingsModule(
   };
   const findingService = new FindingService({
     findingRepository,
-    ticketCreator: new TicketsTicketCreator(dependencies.tickets),
-    projectLookup: new ProjectsProjectLookup(dependencies.projects),
+    ticketPort: new TicketsAdapter(dependencies.tickets),
+    projectPort: new ProjectsAdapter(dependencies.projects),
     events: dependencies.events,
     clock: dependencies.clock,
   });

@@ -19,7 +19,7 @@ import type {
   RunAnswerWaits,
 } from '../business/port/repository/run-answer-waits.js';
 import type { RunRepository } from '../business/port/repository/run-repository.js';
-import type { RunTargets } from '../business/port/target/run-targets.js';
+import type { ProjectPort } from '../business/port/project/project-port.js';
 import type { RunTranscripts } from '../business/port/transcript/run-transcripts.js';
 import type { Worktrees } from '../business/port/worktree/worktrees.js';
 
@@ -266,7 +266,7 @@ export class FakeWorktrees implements Worktrees {
   }
 }
 
-export class FakeRunTargets implements RunTargets {
+export class FakeProjectPort implements ProjectPort {
   constructor(private readonly target: RunTarget | undefined) {}
 
   async find(): Promise<RunTarget | undefined> {

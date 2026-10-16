@@ -2,13 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ClosingPullRequest } from '../../business/domain/types/closing-pull-request.js';
 import type { ReviewedTicket } from '../../business/domain/types/reviewed-ticket.js';
 import { PullRequestMergeFailedError } from '../../business/errors/pull-request-merge-failed-error.js';
-import type { ProjectLookup } from '../port/project/project-lookup.js';
+import type { ProjectPort } from '../port/project/project-port.js';
 import { MergeService } from './merge-service.js';
 import {
   FakePullRequestMerges,
-  FakeProjectLookup,
-  FakeReviewedTicketLookup,
-  FakeAgentRunControl,
+  FakeProjectPort,
+  FakeRunPort,
+  FakeTicketPort,
 } from '../../testing/fake-scheduler-ports.js';
 
 const approvedPullRequest: ClosingPullRequest = {
@@ -29,19 +29,19 @@ const approvedTicket: ReviewedTicket = {
 
 function buildSubject(
   tickets: ReadonlyArray<ReviewedTicket> = [approvedTicket],
-  projectLookup: ProjectLookup = new FakeProjectLookup(),
+  projectPort: ProjectPort = new FakeProjectPort(),
 ) {
   const pullRequestMerges = new FakePullRequestMerges();
-  const agentRunControl = new FakeAgentRunControl();
+  const runPort = new FakeRunPort();
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
   const service = new MergeService({
     pullRequestMerges,
-    agentRunControl,
-    reviewedTicketLookup: new FakeReviewedTicketLookup(tickets),
-    projectLookup,
+    runPort,
+    ticketPort: new FakeTicketPort(undefined, [], tickets),
+    projectPort,
     logger,
   });
-  return { service, pullRequestMerges, agentRunControl, logger };
+  return { service, pullRequestMerges, runPort, logger };
 }
 
 describe('MergeService', () => {
@@ -66,8 +66,8 @@ describe('MergeService', () => {
   });
 
   it('should merge nothing when the ticket has an active run', async () => {
-    const { service, pullRequestMerges, agentRunControl } = buildSubject();
-    agentRunControl.activeTicketNumbers = [140];
+    const { service, pullRequestMerges, runPort } = buildSubject();
+    runPort.activeTicketNumbers = [140];
 
     await service.mergeApproved('moritz/aisf');
 
@@ -75,7 +75,7 @@ describe('MergeService', () => {
   });
 
   it('should merge nothing when the project is unknown', async () => {
-    const unknownProject: ProjectLookup = { find: async () => undefined };
+    const unknownProject: ProjectPort = { find: async () => undefined };
     const { service, pullRequestMerges } = buildSubject([approvedTicket], unknownProject);
 
     await service.mergeApproved('moritz/aisf');

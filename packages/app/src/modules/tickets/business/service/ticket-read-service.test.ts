@@ -9,8 +9,8 @@ import { InMemoryWatchStore } from '../../infrastructure/repository/in-memory-wa
 import { FakeClock } from '../../../../shared/testing/fake-clock.js';
 import { buildTicket } from '../../testing/build-ticket.js';
 import { FakeTicketSource } from '../../testing/fake-tickets-ports.js';
-import type { ActiveRunLookup } from '../port/run/active-run-lookup.js';
-import type { RunWait } from '../port/run/run-wait-lookup.js';
+import type { RunPort } from '../port/run/run-port.js';
+import type { RunWait } from '../port/run/run-port.js';
 import type { Ticket } from '../domain/types/ticket.js';
 import { TicketReadService } from './ticket-read-service.js';
 import { unusedTicketReadDependencies } from '../../testing/unused-dependencies.js';
@@ -233,17 +233,18 @@ describe('TicketReadService', () => {
 
     function createSubject(runningTicketNumbers: ReadonlyArray<number>) {
       const requestedProjectIds: string[] = [];
-      const activeRunLookup: ActiveRunLookup = {
+      const runPort: Pick<RunPort, 'activeRunTicketNumbers' | 'waitsOf'> = {
         activeRunTicketNumbers: async (projectId) => {
           requestedProjectIds.push(projectId);
           return runningTicketNumbers;
         },
+        waitsOf: async () => [],
       };
       const watchStore = new InMemoryWatchStore();
       watchStore.saveWatch(watch);
       const readProjectBoard = new TicketReadService({
         ...unusedTicketReadDependencies,
-        activeRunLookup,
+        runPort,
         watchStore,
       });
       return {
@@ -334,7 +335,8 @@ describe('TicketReadService', () => {
       const subject = new TicketReadService({
         ...unusedTicketReadDependencies,
         watchStore,
-        runWaitLookup: {
+        runPort: {
+          activeRunTicketNumbers: async () => [],
           waitsOf: async (projectId) => {
             requestedProjectIds.push(projectId);
             return waits;
@@ -391,7 +393,7 @@ describe('TicketReadService', () => {
       const subject = new TicketReadService({
         ...unusedTicketReadDependencies,
         watchStore,
-        runWaitLookup: { waitsOf: async () => [] },
+        runPort: { activeRunTicketNumbers: async () => [], waitsOf: async () => [] },
       });
 
       expect(await subject.readNeedsYou('octo/repo')).toEqual([]);

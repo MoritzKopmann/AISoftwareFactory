@@ -1,5 +1,5 @@
-import type { ProjectLookup } from '../business/port/project/project-lookup.js';
-import type { TicketCreator } from '../business/port/ticket/ticket-creator.js';
+import type { ProjectPort } from '../business/port/project/project-port.js';
+import type { TicketPort } from '../business/port/ticket/ticket-port.js';
 import type { ProjectDto, ProjectsApi } from '../../projects/index.js';
 import type { RepositoryReferenceDto, TicketsApi } from '../../tickets/index.js';
 
@@ -13,7 +13,7 @@ export const knownProject: ProjectDto = {
   contract: { passed: true, missingSlots: [], missingKeys: [] },
 };
 
-export class FakeTicketCreator implements TicketCreator {
+export class FakeTicketPort implements TicketPort {
   createdNumber = 200;
   error: Error | undefined;
   readonly createdTickets: Array<{ readonly title: string; readonly body: string }> = [];
@@ -30,7 +30,7 @@ export class FakeTicketCreator implements TicketCreator {
   }
 }
 
-export class FakeProjectLookup implements ProjectLookup {
+export class FakeProjectPort implements ProjectPort {
   constructor(private readonly known: boolean = true) {}
 
   async find(): Promise<{ readonly repository: typeof repository } | undefined> {

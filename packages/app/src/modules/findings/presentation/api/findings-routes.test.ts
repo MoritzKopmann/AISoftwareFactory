@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FindingService } from '../../business/service/finding-service.js';
 import { FakeEventPublisher } from '../../../../shared/testing/fake-event-publisher.js';
-import { FakeProjectLookup, FakeTicketCreator } from '../../testing/fake-findings-ports.js';
+import { FakeProjectPort, FakeTicketPort } from '../../testing/fake-findings-ports.js';
 import { InMemoryFindingRepository } from '../../testing/in-memory-finding-repository.js';
 import { findingsResponseSchema } from '../dto/api/findings-schemas.js';
 import { createFindingsRoutes } from './findings-routes.js';
@@ -23,20 +23,20 @@ function newFinding(ticketNumber: number) {
 
 describe('createFindingsRoutes', () => {
   let findingRepository: InMemoryFindingRepository;
-  let ticketCreator: FakeTicketCreator;
+  let ticketPort: FakeTicketPort;
   let app: Hono;
 
   beforeEach(() => {
     findingRepository = new InMemoryFindingRepository();
-    ticketCreator = new FakeTicketCreator();
+    ticketPort = new FakeTicketPort();
     const clock = { now: () => '2026-09-29T11:00:00.000Z' };
     app = new Hono().route(
       '/',
       createFindingsRoutes(
         new FindingService({
           findingRepository,
-          ticketCreator,
-          projectLookup: new FakeProjectLookup(),
+          ticketPort,
+          projectPort: new FakeProjectPort(),
           events: new FakeEventPublisher(),
           clock,
         }),
@@ -74,7 +74,7 @@ describe('createFindingsRoutes', () => {
 
     it('should carry the created ticket number when a finding is ticketed', async () => {
       await findingRepository.insert(newFinding(141));
-      ticketCreator.createdNumber = 207;
+      ticketPort.createdNumber = 207;
       await app.request('/api/projects/moritz/aisf/findings/1/ticket', { method: 'POST' });
 
       const response = await app.request('/api/projects/moritz/aisf/findings');
@@ -88,7 +88,7 @@ describe('createFindingsRoutes', () => {
   describe('POST /:owner/:name/findings/:id/ticket', () => {
     it('should answer 200 with the ticketed finding when Create ticket is used', async () => {
       await findingRepository.insert(newFinding(141));
-      ticketCreator.createdNumber = 207;
+      ticketPort.createdNumber = 207;
 
       const response = await app.request('/api/projects/moritz/aisf/findings/1/ticket', {
         method: 'POST',

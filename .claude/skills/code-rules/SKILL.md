@@ -13,6 +13,7 @@ user-invocable: false
 - **Must:** a class name ends in its type (`…Service`, `…Repository`, `…Error`). An implementation is prefixed with what it's built on: `SqlOrderRepository`.
 - **Must:** an interface is named after its role, never `I…` or `…Interface`.
 - **Must:** full English words for every name: locals, fields, parameters, constants, callback and destructured names, generic type parameters beyond a single obvious `T`. No abbreviations, no single letters, no truncation. The name states what the value holds.
+- **Exception:** a port to another module is `<Thing>Port` and its adapter is `<Provider>Adapter` (`UserPort`, `UsersAdapter`), one each per provider. See project-architecture rule 16.
 - **Exception:** a classic numeric `for` loop counter may be `index`. Prefer `for … of` with a real name.
 
 ```ts

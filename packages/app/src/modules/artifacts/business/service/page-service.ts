@@ -7,16 +7,16 @@ import type { PageState } from '../domain/types/page-state.js';
 import { ArtifactNotFoundError } from '../errors/artifact-not-found-error.js';
 import { PageBusyError } from '../errors/page-busy-error.js';
 import { PageClosedError } from '../errors/page-closed-error.js';
-import type { CheckpointAnswers } from '../port/checkpoint/checkpoint-answers.js';
+import type { SchedulerPort } from '../port/scheduler/scheduler-port.js';
 import type { ArtifactFiles } from '../port/file/artifact-files.js';
 import type { ArtifactRepository } from '../port/repository/artifact-repository.js';
-import type { TicketRunLookup } from '../port/run/ticket-run-lookup.js';
+import type { RunPort } from '../port/run/run-port.js';
 
 export type PageServiceDependencies = {
   readonly artifactRepository: ArtifactRepository;
   readonly artifactFiles: ArtifactFiles;
-  readonly ticketRunLookup: TicketRunLookup;
-  readonly checkpointAnswers: CheckpointAnswers;
+  readonly runPort: RunPort;
+  readonly schedulerPort: SchedulerPort;
 };
 
 export class PageService {
@@ -47,9 +47,9 @@ export class PageService {
   }
 
   async readStatus(token: string): Promise<PageState> {
-    const { ticketRunLookup } = this.dependencies;
+    const { runPort } = this.dependencies;
     const artifact = await this.requireArtifact(token);
-    const latestRun = await ticketRunLookup.latest(artifact.projectId, artifact.ticketNumber);
+    const latestRun = await runPort.latest(artifact.projectId, artifact.ticketNumber);
     return { status: decidePageStatus(artifact, latestRun), version: artifact.version };
   }
 
@@ -67,9 +67,9 @@ export class PageService {
   }
 
   async submitEvent(token: string, event: PageEvent): Promise<void> {
-    const { ticketRunLookup, checkpointAnswers } = this.dependencies;
+    const { runPort, schedulerPort } = this.dependencies;
     const artifact = await this.requireArtifact(token);
-    const latestRun = await ticketRunLookup.latest(artifact.projectId, artifact.ticketNumber);
+    const latestRun = await runPort.latest(artifact.projectId, artifact.ticketNumber);
     const status = decidePageStatus(artifact, latestRun);
     if (status === 'busy') {
       throw new PageBusyError('The session is busy');
@@ -77,7 +77,7 @@ export class PageService {
     if (status === 'closed') {
       throw new PageClosedError('The page is closed');
     }
-    await checkpointAnswers.answer(artifact.runId, formatPageEvent(artifact.artifactId, event));
+    await schedulerPort.answer(artifact.runId, formatPageEvent(artifact.artifactId, event));
   }
 
   private async requireArtifact(token: string): Promise<Artifact> {

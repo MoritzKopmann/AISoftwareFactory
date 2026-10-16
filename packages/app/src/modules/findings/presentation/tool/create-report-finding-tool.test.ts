@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createReportFindingTool } from './create-report-finding-tool.js';
 import { FindingService } from '../../business/service/finding-service.js';
 import { FakeEventPublisher } from '../../../../shared/testing/fake-event-publisher.js';
-import { FakeProjectLookup, FakeTicketCreator } from '../../testing/fake-findings-ports.js';
+import { FakeProjectPort, FakeTicketPort } from '../../testing/fake-findings-ports.js';
 import { InMemoryFindingRepository } from '../../testing/in-memory-finding-repository.js';
 
 const runContext = {
@@ -22,8 +22,8 @@ describe('createReportFindingTool', () => {
     tool = createReportFindingTool(
       new FindingService({
         findingRepository,
-        ticketCreator: new FakeTicketCreator(),
-        projectLookup: new FakeProjectLookup(),
+        ticketPort: new FakeTicketPort(),
+        projectPort: new FakeProjectPort(),
         events: new FakeEventPublisher(),
         clock: { now: () => '2026-09-29T10:00:00.000Z' },
       }),
