@@ -346,9 +346,18 @@ export function buildRun(overrides: Partial<Run> = {}): Run {
 export class FakeSessionFeed implements SessionFeed {
   readonly published: Array<{ runId: string; event: SessionFeedEvent }> = [];
   readonly endedRunIds: string[] = [];
+  private readonly listeners = new Set<{
+    runId: string;
+    listener: (event: SessionFeedEvent) => void;
+  }>();
+
+  get listenerCount(): number {
+    return this.listeners.size;
+  }
 
   publish(runId: string, event: SessionFeedEvent): void {
     this.published.push({ runId, event });
+    this.notify(runId, event);
   }
 
   entries(runId: string): ReadonlyArray<SessionEntry> {
@@ -357,8 +366,12 @@ export class FakeSessionFeed implements SessionFeed {
     );
   }
 
-  subscribe(): () => void {
-    return () => undefined;
+  subscribe(runId: string, listener: (event: SessionFeedEvent) => void): () => void {
+    const registration = { runId, listener };
+    this.listeners.add(registration);
+    return () => {
+      this.listeners.delete(registration);
+    };
   }
 
   isActive(runId: string): boolean {
@@ -367,5 +380,14 @@ export class FakeSessionFeed implements SessionFeed {
 
   end(runId: string): void {
     this.endedRunIds.push(runId);
+    this.notify(runId, { kind: 'ended' });
+  }
+
+  private notify(runId: string, event: SessionFeedEvent): void {
+    for (const registration of [...this.listeners]) {
+      if (registration.runId === runId) {
+        registration.listener(event);
+      }
+    }
   }
 }
