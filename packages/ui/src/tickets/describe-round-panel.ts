@@ -20,7 +20,8 @@ export type RoundPanelDescription =
       readonly title: string;
       readonly url: string;
       readonly subtitle: string;
-      readonly stop: StopActionDescription;
+      // Absent when the run has ended: Stop needs an active run.
+      readonly stop?: StopActionDescription;
     }
   | { readonly kind: 'ended'; readonly endedLabel: string; readonly note: string };
 
@@ -58,6 +59,6 @@ export function describeRoundPanel(
     title,
     url,
     subtitle: `${ticketStatusLabel(context.ticketStatus)} #${context.ticketNumber} · ${title}`,
-    stop: describeStopAction(context.stopping),
+    ...(response?.activeRun === undefined ? {} : { stop: describeStopAction(context.stopping) }),
   };
 }

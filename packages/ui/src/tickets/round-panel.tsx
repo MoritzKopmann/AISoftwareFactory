@@ -47,7 +47,7 @@ export function RoundPanel({ description, onStop }: RoundPanelProps) {
         </h2>
         <span className="sm">{subtitle}</span>
         <span className="grow" />
-        <StopButton stop={stop} onStop={onStop} />
+        {stop !== undefined && <StopButton stop={stop} onStop={onStop} />}
       </div>
       <div className="body">
         {loading && (

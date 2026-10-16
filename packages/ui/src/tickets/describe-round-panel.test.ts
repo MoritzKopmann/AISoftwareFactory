@@ -77,6 +77,17 @@ describe('describeRoundPanel', () => {
     });
   });
 
+  it('should show the page without Stop when the last run ended at a checkpoint with a page', () => {
+    const ended = endedWith({
+      kind: 'checkpoint',
+      request: 'Pick one',
+      page: { title: 'Plan 1', url: '/pages/t1/' },
+    });
+    const description = describeRoundPanel(ended, context());
+    expect(description).toMatchObject({ kind: 'shown', title: 'Plan 1', url: '/pages/t1/' });
+    expect(description).not.toHaveProperty('stop');
+  });
+
   it('should be hidden when the remembered run ended at its checkpoint', () => {
     const atCheckpoint = endedWith({ kind: 'checkpoint', request: 'Pick' });
     expect(describeRoundPanel(atCheckpoint, context({ roundRunId: 'run-1' }))).toEqual({

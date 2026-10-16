@@ -235,6 +235,26 @@ describe('RunEndService', () => {
     });
   });
 
+  describe('recoverInterrupted page', () => {
+    it('should keep the artifact and page on the ending when the app restarts during a page wait', async () => {
+      const page = { title: 'Plan 1', url: '/pages/t1/' };
+      await runRepository.insert(
+        buildRun({
+          waitingFor: { kind: 'checkpoint', request: 'Pick one', artifactId: 'plan-1', page },
+        }),
+      );
+
+      await runEndService.recoverInterrupted();
+
+      expect(runRepository.runs.get('run-1')?.ending).toEqual({
+        kind: 'checkpoint',
+        request: 'Pick one',
+        artifactId: 'plan-1',
+        page,
+      });
+    });
+  });
+
   describe('abortSessions', () => {
     it('should stop every live session when sessions are aborted', () => {
       runEndService.abortSessions();

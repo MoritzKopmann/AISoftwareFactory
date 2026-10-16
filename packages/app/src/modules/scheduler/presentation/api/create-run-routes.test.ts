@@ -306,6 +306,36 @@ describe('createRunRoutes', () => {
       });
     });
 
+    it('should expose the page and not the artifact id when the last run ended at a checkpoint', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.ticketRun = {
+        availability: { kind: 'available' },
+        lastRun: {
+          id: 'run-1',
+          startedAt,
+          endedAt,
+          ending: {
+            kind: 'checkpoint',
+            request: 'Pick one',
+            artifactId: 'plan-1',
+            page: { title: 'Plan 1', url: '/pages/t1/' },
+          },
+        },
+      };
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/139/run',
+      );
+
+      const body = (await response.json()) as { lastRun?: { ending: unknown } };
+
+      expect(body.lastRun?.ending).toEqual({
+        kind: 'checkpoint',
+        request: 'Pick one',
+        page: { title: 'Plan 1', url: '/pages/t1/' },
+      });
+    });
+
     it('should answer the pending tool call when the last run ended needing permission', async () => {
       const ticketRuns = new FakeTicketRuns();
       const toolInput = { command: 'git push' };
