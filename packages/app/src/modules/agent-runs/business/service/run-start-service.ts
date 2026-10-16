@@ -29,6 +29,8 @@ import type { RecentRunSteps } from '../port/repository/recent-run-steps.js';
 import type { RunAnswerWaits } from '../port/repository/run-answer-waits.js';
 import type { RunRepository } from '../port/repository/run-repository.js';
 import type { AgentSessions } from '../port/session/agent-sessions.js';
+import type { SessionFeed } from '../port/session/session-feed.js';
+import type { RunTranscripts } from '../port/transcript/run-transcripts.js';
 import type { ProjectPort } from '../port/project/project-port.js';
 import type { Worktrees } from '../port/worktree/worktrees.js';
 import type { RunEndService } from './run-end-service.js';
@@ -39,6 +41,8 @@ export type RunStartServiceDependencies = {
   readonly projectPort: ProjectPort;
   readonly agentSessions: AgentSessions;
   readonly recentRunSteps: RecentRunSteps;
+  readonly runTranscripts: RunTranscripts;
+  readonly sessionFeed: SessionFeed;
   readonly runAnswerWaits: RunAnswerWaits;
   readonly identifiers: Identifiers;
   readonly clock: Clock;
@@ -307,10 +311,19 @@ export class RunStartService {
   }
 
   private async consume(run: Run, sessionEvents: AsyncIterable<SessionEvent>): Promise<void> {
-    const { runEndService, recentRunSteps, events } = this.dependencies;
+    const { runEndService, recentRunSteps, events, sessionFeed } = this.dependencies;
+    let promptPulled = false;
     try {
       for await (const event of sessionEvents) {
+        if ((event.kind === 'entry' || event.kind === 'text-delta') && !promptPulled) {
+          promptPulled = true;
+          await this.publishPrompt(run);
+        }
         switch (event.kind) {
+          case 'entry':
+          case 'text-delta':
+            sessionFeed.publish(run.id, event);
+            break;
           case 'step':
             recentRunSteps.append(run.id, event.step);
             events.emit('run.step-added', {
@@ -334,6 +347,22 @@ export class RunStartService {
       // A session that throws must still end its run.
       this.reportFailure(run, error);
       await runEndService.finish(run.id, { kind: 'crashed', reason: describeError(error) });
+    } finally {
+      sessionFeed.end(run.id);
+    }
+  }
+
+  /** The prompt is on disk by the first stream event. A failed read is logged and skipped. */
+  private async publishPrompt(run: Run): Promise<void> {
+    const { runTranscripts, sessionFeed } = this.dependencies;
+    try {
+      const entries = await runTranscripts.readEntries(run.sessionId, run.worktreePath);
+      const prompt = entries.findLast((entry) => entry.kind === 'prompt');
+      if (prompt !== undefined) {
+        sessionFeed.publish(run.id, { kind: 'entry', entry: prompt });
+      }
+    } catch (error) {
+      this.reportFailure(run, error);
     }
   }
 

@@ -4,7 +4,7 @@ import type { ResumeSessionSpec } from '../../business/domain/types/resume-sessi
 import type { SessionSpec } from '../../business/domain/types/session-spec.js';
 import type { AgentSessions } from '../../business/port/session/agent-sessions.js';
 import { createPermissionHooks } from './create-permission-hooks.js';
-import { mapSdkMessage } from './map-sdk-message.js';
+import { createStreamState, mapSdkMessage } from './map-sdk-message.js';
 
 const appToolServerName = 'aisf';
 
@@ -50,6 +50,7 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
     sessionMode: 'start' | 'resume',
   ): AsyncGenerator<SessionEvent> {
     let sawSuccessfulResult = false;
+    const streamState = createStreamState();
 
     try {
       const sdkQuery = query({
@@ -101,12 +102,13 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
               ? { behavior: 'allow', updatedInput: toolInput }
               : { behavior: 'deny', message: verdict.message };
           },
+          includePartialMessages: true,
           abortController,
         },
       });
 
       for await (const message of sdkQuery) {
-        for (const event of mapSdkMessage(message, this.options.now())) {
+        for (const event of mapSdkMessage(message, this.options.now(), streamState)) {
           yield event;
           if (event.kind === 'crashed' || event.kind === 'usage-limit') {
             return;
