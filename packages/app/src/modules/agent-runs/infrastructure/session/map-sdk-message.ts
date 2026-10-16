@@ -52,6 +52,45 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+type ContentBlock = Record<string, unknown>;
+type TextBlock = ContentBlock & { readonly text: string };
+type Base64ImageBlock = ContentBlock & { readonly source: Record<string, unknown> };
+type StreamEvent = Extract<SDKMessage, { type: 'stream_event' }>['event'];
+type TextDeltaEvent = Extract<StreamEvent, { type: 'content_block_delta' }> & {
+  readonly delta: { readonly type: 'text_delta'; readonly text: string };
+};
+
+/** A message with a parent tool use comes from a subagent the main agent started. */
+export function isFromMainAgent(message: { readonly parent_tool_use_id: string | null }): boolean {
+  return message.parent_tool_use_id === null;
+}
+
+function isInjectedBySdk(message: { readonly isSynthetic?: boolean }): boolean {
+  return message.isSynthetic === true;
+}
+
+function isTextBlock(block: ContentBlock): block is TextBlock {
+  return block['type'] === 'text' && typeof block['text'] === 'string';
+}
+
+function isBase64ImageBlock(block: ContentBlock): block is Base64ImageBlock {
+  return (
+    block['type'] === 'image' && isRecord(block['source']) && block['source']['type'] === 'base64'
+  );
+}
+
+function yieldsPrompts(role: 'user' | 'assistant', includePrompts: boolean): boolean {
+  return role === 'user' && includePrompts;
+}
+
+function startsTextBlock(event: StreamEvent): boolean {
+  return event.type === 'content_block_start' && event.content_block.type === 'text';
+}
+
+function isTextDelta(event: StreamEvent): event is TextDeltaEvent {
+  return event.type === 'content_block_delta' && event.delta.type === 'text_delta';
+}
+
 function toolResultParts(content: unknown): ReadonlyArray<SessionToolResultPart> {
   if (typeof content === 'string') {
     return [{ kind: 'text', text: content }];
@@ -64,17 +103,13 @@ function toolResultParts(content: unknown): ReadonlyArray<SessionToolResultPart>
     if (!isRecord(block)) {
       continue;
     }
-    if (block['type'] === 'text' && typeof block['text'] === 'string') {
-      parts.push({ kind: 'text', text: block['text'] });
-    } else if (
-      block['type'] === 'image' &&
-      isRecord(block['source']) &&
-      block['source']['type'] === 'base64'
-    ) {
+    if (isTextBlock(block)) {
+      parts.push({ kind: 'text', text: block.text });
+    } else if (isBase64ImageBlock(block)) {
       parts.push({
         kind: 'image',
-        mediaType: String(block['source']['media_type']),
-        data: String(block['source']['data']),
+        mediaType: String(block.source['media_type']),
+        data: String(block.source['data']),
       });
     }
   }
@@ -92,7 +127,7 @@ export function entriesFromContent(
   includePrompts: boolean,
 ): ReadonlyArray<SessionEntry> {
   if (typeof content === 'string') {
-    return role === 'user' && includePrompts
+    return yieldsPrompts(role, includePrompts)
       ? [{ kind: 'prompt', id: `${uuid}#0`, text: content }]
       : [];
   }
@@ -105,8 +140,8 @@ export function entriesFromContent(
       return;
     }
     const id = `${uuid}#${index}`;
-    if (role === 'assistant' && block['type'] === 'text' && typeof block['text'] === 'string') {
-      entries.push({ kind: 'text', id, text: block['text'] });
+    if (role === 'assistant' && isTextBlock(block)) {
+      entries.push({ kind: 'text', id, text: block.text });
     } else if (role === 'assistant' && block['type'] === 'tool_use') {
       entries.push({
         kind: 'tool-call',
@@ -123,13 +158,8 @@ export function entriesFromContent(
         isError: block['is_error'] === true,
         parts: toolResultParts(block['content']),
       });
-    } else if (
-      role === 'user' &&
-      includePrompts &&
-      block['type'] === 'text' &&
-      typeof block['text'] === 'string'
-    ) {
-      entries.push({ kind: 'prompt', id, text: block['text'] });
+    } else if (yieldsPrompts(role, includePrompts) && isTextBlock(block)) {
+      entries.push({ kind: 'prompt', id, text: block.text });
     }
   });
   return entries;
@@ -146,13 +176,13 @@ function mapStreamEvent(
   message: Extract<SDKMessage, { type: 'stream_event' }>,
   streamState: StreamState,
 ): ReadonlyArray<SessionEvent> {
-  if (message.parent_tool_use_id !== null) {
+  if (!isFromMainAgent(message)) {
     return [];
   }
   const { event } = message;
-  if (event.type === 'content_block_start' && event.content_block.type === 'text') {
+  if (startsTextBlock(event)) {
     streamState.opensNextTextBlock = true;
-  } else if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+  } else if (isTextDelta(event)) {
     const opensBlock = streamState.opensNextTextBlock;
     streamState.opensNextTextBlock = false;
     return [{ kind: 'text-delta', opensBlock, text: event.delta.text }];
@@ -174,15 +204,14 @@ export function mapSdkMessage(
       kind: 'step',
       step: { at, summary },
     }));
-    const entries =
-      message.parent_tool_use_id === null
-        ? entriesFromContent(message.uuid, 'assistant', message.message.content, false)
-        : [];
+    const entries = isFromMainAgent(message)
+      ? entriesFromContent(message.uuid, 'assistant', message.message.content, false)
+      : [];
     return [...steps, ...entries.map((entry): SessionEvent => ({ kind: 'entry', entry }))];
   }
 
   if (message.type === 'user') {
-    if (message.parent_tool_use_id !== null || message.isSynthetic === true) {
+    if (!isFromMainAgent(message) || isInjectedBySdk(message)) {
       return [];
     }
     return entriesFromContent(message.uuid ?? '', 'user', message.message.content, false).map(

@@ -4,7 +4,11 @@ import type { RunLogEntry } from '../../business/domain/types/run-log-entry.js';
 import { TranscriptNotFoundError } from '../../business/errors/transcript-not-found-error.js';
 import type { RunTranscripts } from '../../business/port/transcript/run-transcripts.js';
 import type { SessionEntry } from '../../business/domain/types/session-entry.js';
-import { describeAssistantMessage, entriesFromContent } from '../session/map-sdk-message.js';
+import {
+  describeAssistantMessage,
+  entriesFromContent,
+  isFromMainAgent,
+} from '../session/map-sdk-message.js';
 
 async function readMessages(sessionId: string, worktreePath: string) {
   const messages = await getSessionMessages(sessionId, { dir: worktreePath });
@@ -19,7 +23,7 @@ export class ClaudeAgentSdkRunTranscripts implements RunTranscripts {
   async readEntries(sessionId: string, worktreePath: string): Promise<ReadonlyArray<SessionEntry>> {
     const messages = await readMessages(sessionId, worktreePath);
     return messages
-      .filter((message) => message.parent_tool_use_id === null)
+      .filter(isFromMainAgent)
       .flatMap((message) =>
         message.type === 'system'
           ? []
