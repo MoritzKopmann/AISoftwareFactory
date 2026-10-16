@@ -275,12 +275,6 @@
           "port": "Worktrees"
         },
         {
-          "id": "runner.infra.InMemoryRecentRunSteps",
-          "name": "InMemoryRecentRunSteps",
-          "kind": "integration",
-          "port": "RecentRunSteps"
-        },
-        {
           "id": "runner.infra.InMemoryRunAnswerWaits",
           "name": "InMemoryRunAnswerWaits",
           "kind": "integration",
@@ -686,12 +680,6 @@
     },
     {
       "from": "runner.uc.LaunchRunSessionUseCase",
-      "to": "runner.infra.InMemoryRecentRunSteps",
-      "kind": "uses",
-      "via": "RecentRunSteps"
-    },
-    {
-      "from": "runner.uc.LaunchRunSessionUseCase",
       "to": "runner.infra.SqliteRunRepository",
       "kind": "uses",
       "via": "RunRepository"
@@ -701,12 +689,6 @@
       "to": "runner.infra.SqliteRunRepository",
       "kind": "uses",
       "via": "RunRepository"
-    },
-    {
-      "from": "runner.uc.ReadActiveRunsUseCase",
-      "to": "runner.infra.InMemoryRecentRunSteps",
-      "kind": "uses",
-      "via": "RecentRunSteps"
     },
     {
       "from": "runner.uc.ReadLatestRunUseCase",

@@ -70,7 +70,6 @@ export class TicketRunService {
             activeRun: {
               id: activeRun.run.id,
               startedAt: activeRun.run.startedAt,
-              steps: activeRun.steps,
               ...(waitingFor === undefined ? {} : { waitingFor }),
               ...(activeRun.run.waitingSince === undefined
                 ? {}

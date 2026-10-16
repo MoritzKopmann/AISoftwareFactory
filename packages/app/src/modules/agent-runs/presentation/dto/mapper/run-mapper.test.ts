@@ -34,13 +34,10 @@ describe('run mapper', () => {
   });
 
   describe('toActiveRunDto', () => {
-    it('should pair the run with its steps when the run is active', () => {
+    it('should carry only the run when the run is active', () => {
       const run = buildRun();
 
-      expect(toActiveRunDto({ run, steps: [{ at: 'a', summary: 'Read' }] })).toEqual({
-        run,
-        steps: [{ at: 'a', summary: 'Read' }],
-      });
+      expect(toActiveRunDto({ run })).toEqual({ run });
     });
   });
 

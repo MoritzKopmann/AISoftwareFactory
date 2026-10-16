@@ -1,8 +1,4 @@
-import type {
-  RunEndingResponse,
-  RunStepResponse,
-  TicketRunResponse,
-} from '@aisf/app/api-schemas/runs-schemas.js';
+import type { RunEndingResponse, TicketRunResponse } from '@aisf/app/api-schemas/runs-schemas.js';
 import { describe, expect, it } from 'vitest';
 import { describeRunPanel, type RunPanelInput } from './describe-run-panel.js';
 
@@ -14,8 +10,8 @@ const now = new Date(localTime(9, 45));
 
 const idle: TicketRunResponse = { availability: { kind: 'available' } };
 
-function live(startedAt: string, steps: RunStepResponse[]): TicketRunResponse {
-  return { ...idle, activeRun: { id: 'run-1', startedAt, steps } };
+function live(startedAt: string): TicketRunResponse {
+  return { ...idle, activeRun: { id: 'run-1', startedAt } };
 }
 
 function input(overrides: Partial<RunPanelInput>): RunPanelInput {
@@ -45,8 +41,8 @@ describe('describeRunPanel', () => {
     expect(describeRunPanel(input({ ticketStuck: false }), now)).toEqual({ kind: 'hidden' });
   });
 
-  it('should show a live panel with Stop when the active run has no steps', () => {
-    const starting = live(localTime(9, 44, 30), []);
+  it('should show a live panel with Stop when the active run just started', () => {
+    const starting = live(localTime(9, 44, 30));
 
     expect(describeRunPanel(input({ response: starting }), now)).toEqual({
       kind: 'live',
@@ -58,7 +54,7 @@ describe('describeRunPanel', () => {
 
   it('should show an unpressable Stopping… button with an announcement when Stop was pressed', () => {
     const description = describeRunPanel(
-      input({ response: live(localTime(9, 39), []), stopping: true }),
+      input({ response: live(localTime(9, 39)), stopping: true }),
       now,
     );
 
@@ -69,11 +65,9 @@ describe('describeRunPanel', () => {
   });
 
   it('should keep Stop and add the banner with the last answer time when the poll failed', () => {
-    const steps = [{ at: localTime(9, 41, 52), summary: 'Bash: npm test' }];
-
     const description = describeRunPanel(
       input({
-        response: live(localTime(9, 41), steps),
+        response: live(localTime(9, 41)),
         answeredAt: localTime(9, 41, 58),
         lastPollFailed: true,
       }),
@@ -89,9 +83,9 @@ describe('describeRunPanel', () => {
   });
 
   it('should show no banner when the last poll answered', () => {
-    expect(
-      describeRunPanel(input({ response: live(localTime(9, 41), []) }), now),
-    ).not.toHaveProperty('banner');
+    expect(describeRunPanel(input({ response: live(localTime(9, 41)) }), now)).not.toHaveProperty(
+      'banner',
+    );
   });
 
   it('should show the ended block with the end time, run length and reason when the stuck ticket ended on Stop', () => {
@@ -185,7 +179,6 @@ describe('describeRunPanel for a waiting run', () => {
     activeRun: {
       id: 'run-1',
       startedAt: localTime(9, 41),
-      steps: [],
       waitingFor: { kind: 'checkpoint', request: 'Pick A or B' },
     },
   };
@@ -199,21 +192,21 @@ describe('describeRunPanel for a waiting run', () => {
   });
 
   it('should describe the live run as not waiting when it works', () => {
-    const working = live(localTime(9, 41), []);
+    const working = live(localTime(9, 41));
     expect(describeRunPanel(input({ response: working }), now)).toMatchObject({ waiting: false });
   });
 });
 
 describe('describeRunPanel for idea and plan tickets', () => {
   it('should name create-ticket before the start time when a create-ticket run is live', () => {
-    const running = live(localTime(9, 44), []);
+    const running = live(localTime(9, 44));
     expect(
       describeRunPanel(input({ response: running, runSkill: 'create-ticket' }), now),
     ).toMatchObject({ startedLabel: 'create-ticket · started 1 min ago' });
   });
 
   it('should name plan-ticket before the start time when a plan-ticket run is live', () => {
-    const running = live(localTime(9, 44), []);
+    const running = live(localTime(9, 44));
     expect(
       describeRunPanel(input({ response: running, runSkill: 'plan-ticket' }), now),
     ).toMatchObject({ startedLabel: 'plan-ticket · started 1 min ago' });

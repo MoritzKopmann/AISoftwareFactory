@@ -9,7 +9,6 @@ import type { LatestRun } from '../business/domain/types/latest-run.js';
 import type { RunWait } from '../business/domain/types/run-wait.js';
 import type { RunAnswer } from '../business/domain/types/run-answer.js';
 import type { RunRecord } from '../business/domain/types/run-record.js';
-import type { RunStep } from '../business/domain/types/run-step.js';
 import type { RunPort } from '../business/port/run/run-port.js';
 import type { SkillPort } from '../business/port/skill/skill-port.js';
 import type { TicketPort } from '../business/port/ticket/ticket-port.js';
@@ -48,7 +47,6 @@ export class FakePullRequestMerges implements PullRequestMerges {
 export class FakeRunPort implements RunPort {
   readonly calls: string[] = [];
   activeTicketNumbers: ReadonlyArray<number> = [];
-  activeSteps: ReadonlyArray<RunStep> = [];
   activeWaitingFor: RunWait | undefined;
   activeWaitingSince: string | undefined;
   latest: LatestRun | undefined;
@@ -94,7 +92,6 @@ export class FakeRunPort implements RunPort {
         ...(this.activeWaitingFor === undefined ? {} : { waitingFor: this.activeWaitingFor }),
         ...(this.activeWaitingSince === undefined ? {} : { waitingSince: this.activeWaitingSince }),
       },
-      steps: this.activeSteps,
     }));
   }
 

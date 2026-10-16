@@ -67,26 +67,19 @@ describe('createRunRoutes', () => {
       });
     });
 
-    it('should answer the active run with its steps when the ticket run has one', async () => {
+    it('should answer the active run without a steps field when the ticket run has one', async () => {
       const ticketRuns = new FakeTicketRuns();
       ticketRuns.ticketRun = {
         availability: { kind: 'disabled', reason: '#139 is running' },
-        activeRun: {
-          id: 'run-1',
-          startedAt,
-          steps: [{ at: '2026-09-29T09:01:00.000Z', summary: 'Read the ticket' }],
-        },
+        activeRun: { id: 'run-1', startedAt },
       };
 
       const response = await createTestApp(ticketRuns).request(
         '/projects/owner/name/tickets/139/run',
       );
 
-      expect(ticketRunResponseSchema.parse(await response.json()).activeRun).toEqual({
-        id: 'run-1',
-        startedAt,
-        steps: [{ at: '2026-09-29T09:01:00.000Z', summary: 'Read the ticket' }],
-      });
+      const body = (await response.json()) as { activeRun: unknown };
+      expect(body.activeRun).toEqual({ id: 'run-1', startedAt });
     });
 
     it('should expose waitingFor without artifactId when the active run waits', async () => {
@@ -96,7 +89,6 @@ describe('createRunRoutes', () => {
         activeRun: {
           id: 'run-1',
           startedAt,
-          steps: [],
           waitingFor: {
             kind: 'checkpoint',
             request: 'Answer on the page Plan',
@@ -124,7 +116,6 @@ describe('createRunRoutes', () => {
         activeRun: {
           id: 'run-1',
           startedAt,
-          steps: [],
           waitingFor: {
             kind: 'checkpoint',
             request: 'Answer on the page Plan 12',
@@ -154,7 +145,6 @@ describe('createRunRoutes', () => {
         activeRun: {
           id: 'run-1',
           startedAt,
-          steps: [],
           waitingFor: { kind: 'permission-needed', toolName: 'Bash', toolInput: { command: 'ls' } },
           waitingSince,
         },
@@ -178,7 +168,6 @@ describe('createRunRoutes', () => {
       const run = {
         id: 'run-1',
         startedAt,
-        steps: [],
         waitingSince: '2026-10-07T10:00:00.000Z',
       };
       ticketRuns.ticketRun = {
@@ -251,7 +240,6 @@ describe('createRunRoutes', () => {
         activeRun: {
           id: 'run-1',
           startedAt,
-          steps: [],
           waitingFor: { kind: 'checkpoint', request: 'Pick one', artifactId: 'page-1' },
           waitingSince: '2026-10-07T10:00:00.000Z',
         },
@@ -270,7 +258,7 @@ describe('createRunRoutes', () => {
       const ticketRuns = new FakeTicketRuns();
       ticketRuns.ticketRun = {
         availability: { kind: 'disabled', reason: '#7 is running' },
-        activeRun: { id: 'run-1', startedAt, steps: [] },
+        activeRun: { id: 'run-1', startedAt },
       };
 
       const response = await createTestApp(ticketRuns).request(

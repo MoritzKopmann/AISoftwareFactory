@@ -61,9 +61,7 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
       },
       agentRuns: {
         activeRuns: async () =>
-          runningTicketNumbers.map(
-            (ticketNumber) => ({ run: { ticketNumber }, steps: [] }) as never,
-          ),
+          runningTicketNumbers.map((ticketNumber) => ({ run: { ticketNumber } }) as never),
         activeWaits: async () => [],
         settle: (runId) => runPort.settle(runId),
       },

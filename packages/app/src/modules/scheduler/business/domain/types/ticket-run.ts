@@ -1,6 +1,5 @@
 import type { RunAvailability } from './run-availability.js';
 import type { RunEnding } from './run-ending.js';
-import type { RunStep } from './run-step.js';
 import type { RunWait } from './run-wait.js';
 
 export type TicketRun = {
@@ -8,7 +7,6 @@ export type TicketRun = {
   readonly activeRun?: {
     readonly id: string;
     readonly startedAt: string;
-    readonly steps: ReadonlyArray<RunStep>;
     readonly waitingFor?: RunWait;
     readonly waitingSince?: string;
   };

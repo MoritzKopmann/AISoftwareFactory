@@ -41,7 +41,6 @@ export function noticeConcernsView(notice: LiveNotice, view: LiveView): boolean 
       return (
         view.kind === 'findings' && (view.ticketNumber === undefined || sameTicket(notice, view))
       );
-    case 'run.step-added':
     case 'snapshot.changed':
     case 'project.added':
       return false;

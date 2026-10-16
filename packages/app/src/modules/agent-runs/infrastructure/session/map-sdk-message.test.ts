@@ -3,84 +3,31 @@ import type { SessionEvent } from '../../business/domain/types/session-event.js'
 import { describe, expect, it } from 'vitest';
 import { createStreamState, mapSdkMessage } from './map-sdk-message.js';
 
-const at = '2026-09-29T10:00:00.000Z';
-
 function message(partial: Record<string, unknown>): SDKMessage {
   return partial as unknown as SDKMessage;
 }
 
-function stepsOf(events: ReadonlyArray<SessionEvent>): ReadonlyArray<SessionEvent> {
-  return events.filter((event) => event.kind === 'step');
-}
-
 function assistantMessage(...content: Array<Record<string, unknown>>): SDKMessage {
-  return message({ type: 'assistant', message: { role: 'assistant', content } });
+  return message({
+    type: 'assistant',
+    uuid: 'm1',
+    parent_tool_use_id: null,
+    message: { role: 'assistant', content },
+  });
 }
 
 describe('mapSdkMessage', () => {
-  it('should map a Bash tool call to a step naming the tool and the command', () => {
+  it('should map an assistant tool call to its entry only when the main agent calls a tool', () => {
     const events = mapSdkMessage(
       assistantMessage({
         type: 'tool_use',
         id: 't1',
         name: 'Bash',
-        input: { command: 'npm test', description: 'Run the tests' },
+        input: { command: 'npm test' },
       }),
-      at,
     );
 
-    expect(stepsOf(events)).toEqual([{ kind: 'step', step: { at, summary: 'Bash: npm test' } }]);
-  });
-
-  it('should map a file tool call to a step naming the file path', () => {
-    const events = mapSdkMessage(
-      assistantMessage({
-        type: 'tool_use',
-        id: 't2',
-        name: 'Edit',
-        input: { file_path: '/worktrees/aisf/137/src/main.ts', old_string: 'a', new_string: 'b' },
-      }),
-      at,
-    );
-
-    expect(stepsOf(events)).toEqual([
-      { kind: 'step', step: { at, summary: 'Edit: /worktrees/aisf/137/src/main.ts' } },
-    ]);
-  });
-
-  it('should map a tool call without a recognised input to a step naming only the tool', () => {
-    const events = mapSdkMessage(
-      assistantMessage({ type: 'tool_use', id: 't3', name: 'TodoWrite', input: { todos: [] } }),
-      at,
-    );
-
-    expect(stepsOf(events)).toEqual([{ kind: 'step', step: { at, summary: 'TodoWrite' } }]);
-  });
-
-  it('should map assistant text to a step with its first line when the text has several lines', () => {
-    const events = mapSdkMessage(
-      assistantMessage({ type: 'text', text: 'Reading the ticket now.\nThen the code.' }),
-      at,
-    );
-
-    expect(stepsOf(events)).toEqual([
-      { kind: 'step', step: { at, summary: 'Reading the ticket now.' } },
-    ]);
-  });
-
-  it('should shorten a step summary to 120 characters when the command is long', () => {
-    const events = mapSdkMessage(
-      assistantMessage({
-        type: 'tool_use',
-        id: 't4',
-        name: 'Bash',
-        input: { command: 'x'.repeat(300) },
-      }),
-      at,
-    );
-
-    expect(events[0]).toMatchObject({ kind: 'step' });
-    expect((events[0] as { step: { summary: string } }).step.summary).toHaveLength(120);
+    expect(events.map(({ kind }) => kind)).toEqual(['entry']);
   });
 
   it('should map a rejected rate limit to a usage-limit event naming the window', () => {
@@ -89,7 +36,6 @@ describe('mapSdkMessage', () => {
         type: 'rate_limit_event',
         rate_limit_info: { status: 'rejected', rateLimitType: 'five_hour', resetsAt: 1790628600 },
       }),
-      at,
     );
 
     expect(events).toEqual([
@@ -106,7 +52,6 @@ describe('mapSdkMessage', () => {
         type: 'rate_limit_event',
         rate_limit_info: { status: 'allowed_warning', rateLimitType: 'five_hour' },
       }),
-      at,
     );
 
     expect(events).toEqual([]);
@@ -120,7 +65,6 @@ describe('mapSdkMessage', () => {
         is_error: true,
         errors: ['Login expired', 'Run /login'],
       }),
-      at,
     );
 
     expect(events).toEqual([{ kind: 'crashed', reason: 'Login expired; Run /login' }]);
@@ -129,7 +73,6 @@ describe('mapSdkMessage', () => {
   it('should map a failed success result to a crashed event with its text', () => {
     const events = mapSdkMessage(
       message({ type: 'result', subtype: 'success', is_error: true, result: 'API error 500' }),
-      at,
     );
 
     expect(events).toEqual([{ kind: 'crashed', reason: 'API error 500' }]);
@@ -138,15 +81,14 @@ describe('mapSdkMessage', () => {
   it('should map nothing when the result is a success', () => {
     const events = mapSdkMessage(
       message({ type: 'result', subtype: 'success', is_error: false, result: 'Done' }),
-      at,
     );
 
     expect(events).toEqual([]);
   });
 
   it('should map nothing when the message is a user or system message', () => {
-    expect(mapSdkMessage(message({ type: 'user', message: { content: [] } }), at)).toEqual([]);
-    expect(mapSdkMessage(message({ type: 'system', subtype: 'init' }), at)).toEqual([]);
+    expect(mapSdkMessage(message({ type: 'user', message: { content: [] } }))).toEqual([]);
+    expect(mapSdkMessage(message({ type: 'system', subtype: 'init' }))).toEqual([]);
   });
 });
 
@@ -178,7 +120,6 @@ describe('mapSdkMessage entries', () => {
           content: [{ type: 'text', text: 'First line.\nSecond line.' }],
         },
       }),
-      at,
     );
 
     expect(entriesOf(events)).toEqual([
@@ -201,7 +142,6 @@ describe('mapSdkMessage entries', () => {
           ],
         },
       }),
-      at,
     );
 
     expect(entriesOf(events)).toContainEqual({
@@ -222,7 +162,6 @@ describe('mapSdkMessage entries', () => {
           content: [{ type: 'tool_result', tool_use_id: 'toolu_1', content: text }],
         },
       }),
-      at,
     );
 
     expect(events).toEqual([
@@ -263,7 +202,6 @@ describe('mapSdkMessage entries', () => {
           ],
         },
       }),
-      at,
     );
 
     expect(events).toEqual([
@@ -291,7 +229,6 @@ describe('mapSdkMessage entries', () => {
         parent_tool_use_id: 'toolu_9',
         message: { role: 'assistant', content: [{ type: 'text', text: 'inner' }] },
       }),
-      at,
     );
 
     expect(entriesOf(events)).toEqual([]);
@@ -308,7 +245,6 @@ describe('mapSdkMessage entries', () => {
           content: [{ type: 'thinking', thinking: 'hmm', signature: 's' }],
         },
       }),
-      at,
     );
 
     expect(entriesOf(events)).toEqual([]);
@@ -323,7 +259,6 @@ describe('mapSdkMessage entries', () => {
         isSynthetic: true,
         message: { role: 'user', content: [{ type: 'text', text: 'skill body' }] },
       }),
-      at,
     );
 
     expect(events).toEqual([]);
@@ -342,7 +277,7 @@ describe('mapSdkMessage text deltas', () => {
       textDelta('Hel'),
       textDelta('lo '),
       textDelta('world'),
-    ].flatMap((streamed) => mapSdkMessage(streamed, at, streamState));
+    ].flatMap((streamed) => mapSdkMessage(streamed, streamState));
 
     expect(events).toEqual([
       { kind: 'text-delta', opensBlock: true, text: 'Hel' },
@@ -359,7 +294,7 @@ describe('mapSdkMessage text deltas', () => {
       content_block: { type: 'text', text: '' },
     });
     const events = [textDelta('a'), start, textDelta('b')].flatMap((streamed) =>
-      mapSdkMessage(streamed, at, streamState),
+      mapSdkMessage(streamed, streamState),
     );
 
     expect(events.map((event) => event.kind === 'text-delta' && event.opensBlock)).toEqual([
@@ -385,7 +320,7 @@ describe('mapSdkMessage text deltas', () => {
         { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'inner' } },
         'toolu_9',
       ),
-    ].flatMap((streamed) => mapSdkMessage(streamed, at, streamState));
+    ].flatMap((streamed) => mapSdkMessage(streamed, streamState));
 
     expect(events).toEqual([]);
   });

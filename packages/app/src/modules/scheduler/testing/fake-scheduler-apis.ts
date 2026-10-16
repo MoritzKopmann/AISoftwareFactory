@@ -144,7 +144,6 @@ export class FakeAgentRunsApi implements Pick<
   async activeRuns(): Promise<ReadonlyArray<ActiveRunDto>> {
     return this.activeTicketNumbers.map((ticketNumber) => ({
       run: buildRunDto({ ticketNumber }),
-      steps: [],
     }));
   }
 

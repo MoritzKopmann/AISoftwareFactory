@@ -8,7 +8,6 @@ const withPage: TicketRunResponse = {
   activeRun: {
     id: 'run-1',
     startedAt: '2026-10-10T10:00:00Z',
-    steps: [],
     waitingFor: {
       kind: 'checkpoint',
       request: 'Pick',
@@ -21,7 +20,6 @@ const withoutPage: TicketRunResponse = {
   activeRun: {
     id: 'run-1',
     startedAt: '2026-10-10T10:00:00Z',
-    steps: [],
     waitingFor: { kind: 'checkpoint', request: 'Pick' },
   },
 };

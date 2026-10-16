@@ -130,12 +130,12 @@ describe('createLiveUpdates', () => {
     streams[0]?.open();
     signals.length = 0;
 
-    streams[0]?.receive('{"event":"run.step-added","projectId":"octo/repo","ticketNumber":7}');
+    streams[0]?.receive('{"event":"run.started","projectId":"octo/repo","ticketNumber":7}');
 
     expect(signals).toEqual([
       {
         kind: 'notice',
-        notice: { event: 'run.step-added', projectId: 'octo/repo', ticketNumber: 7 },
+        notice: { event: 'run.started', projectId: 'octo/repo', ticketNumber: 7 },
       },
     ]);
   });

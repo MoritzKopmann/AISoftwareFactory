@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
 import type { RunEndService } from '../../business/service/run-end-service.js';
 import type { RunQueryService } from '../../business/service/run-query-service.js';
-import { createRunLogRoutes } from './create-run-log-routes.js';
 import { createSessionStreamRoutes } from './create-session-stream-routes.js';
 import { createStopRunRoutes } from './create-stop-run-routes.js';
 
@@ -12,6 +11,5 @@ export function createAgentRunsRoutes(services: {
 }): Hono {
   return new Hono()
     .route('/', createStopRunRoutes(services.runEndService))
-    .route('/', createRunLogRoutes(services.runQueryService))
     .route('/', createSessionStreamRoutes(services.runQueryService));
 }

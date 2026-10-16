@@ -7,12 +7,6 @@ export const runAvailabilityResponseSchema = z.discriminatedUnion('kind', [
 ]);
 export type RunAvailabilityResponse = z.infer<typeof runAvailabilityResponseSchema>;
 
-export const runStepResponseSchema = z.object({
-  at: z.string(),
-  summary: z.string(),
-});
-export type RunStepResponse = z.infer<typeof runStepResponseSchema>;
-
 export const runEndingResponseSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('escalated'),
@@ -59,7 +53,6 @@ export const ticketRunResponseSchema = z.object({
   availability: runAvailabilityResponseSchema,
   activeRun: startedRunResponseSchema
     .extend({
-      steps: z.array(runStepResponseSchema),
       waitingFor: z
         .discriminatedUnion('kind', [
           z.object({
