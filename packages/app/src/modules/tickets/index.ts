@@ -12,10 +12,8 @@ import { FetchIssueFeeds } from './infrastructure/github/fetch-issue-feeds.js';
 import { GhCliGitHubToken } from './infrastructure/github/gh-cli-github-token.js';
 import { GhCliIdeaCreation } from './infrastructure/github/gh-cli-idea-creation.js';
 import { GhCliTicketStatusWrites } from './infrastructure/github/gh-cli-ticket-status-writes.js';
-import { ProjectsRegisteredRepositories } from './infrastructure/internal/projects-registered-repositories.js';
-import { AgentRunsActiveRunLookup } from './infrastructure/internal/agent-runs-active-run-lookup.js';
-import { AgentRunsRunSettlement } from './infrastructure/internal/agent-runs-run-settlement.js';
-import { AgentRunsRunWaitLookup } from './infrastructure/internal/agent-runs-run-wait-lookup.js';
+import { ProjectsAdapter } from './infrastructure/internal/projects-adapter.js';
+import { AgentRunsAdapter } from './infrastructure/internal/agent-runs-adapter.js';
 import { InMemoryWatchStore } from './infrastructure/repository/in-memory-watch-store.js';
 import { subscribeToProjectAdded } from './presentation/bus/subscribe-to-project-added.js';
 import { subscribeToRunFinished } from './presentation/bus/subscribe-to-run-finished.js';
@@ -78,31 +76,29 @@ export function createTicketsModule(
     watchStore: new InMemoryWatchStore(),
     ...overrides,
   };
-  const registeredRepositories = new ProjectsRegisteredRepositories(dependencies.projects);
+  const projectPort = new ProjectsAdapter(dependencies.projects);
+  const runPort = new AgentRunsAdapter(dependencies.agentRuns);
 
   const repositoryWatchService = new RepositoryWatchService({
     issueFeeds: infrastructure.issueFeeds,
     ticketSource: infrastructure.ticketSource,
-    registeredRepositories,
+    projectPort,
     clock,
     events,
     watchStore: infrastructure.watchStore,
     pollIntervalMilliseconds: dependencies.pollIntervalMilliseconds,
     snapshotIntervalMilliseconds: dependencies.snapshotIntervalMilliseconds,
   });
-  const activeRunLookup = new AgentRunsActiveRunLookup(dependencies.agentRuns);
   const ticketReadService = new TicketReadService({
     ticketSource: infrastructure.ticketSource,
-    activeRunLookup,
-    runWaitLookup: new AgentRunsRunWaitLookup(dependencies.agentRuns),
+    runPort,
     clock,
     watchStore: infrastructure.watchStore,
   });
   const ticketStatusService = new TicketStatusService({
     ticketStatusWrites: infrastructure.ticketStatusWrites,
-    activeRunLookup,
-    runSettlement: new AgentRunsRunSettlement(dependencies.agentRuns),
-    registeredRepositories,
+    runPort,
+    projectPort,
     events,
     logger,
   });

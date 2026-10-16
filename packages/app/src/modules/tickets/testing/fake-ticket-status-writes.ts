@@ -1,7 +1,6 @@
 import type { RepositoryReference } from '../business/domain/types/repository-reference.js';
 import type { TicketLiveState } from '../business/domain/types/ticket-live-state.js';
-import type { ActiveRunLookup } from '../business/port/run/active-run-lookup.js';
-import type { RunSettlement } from '../business/port/run/run-settlement.js';
+import type { RunPort, RunWait } from '../business/port/run/run-port.js';
 import type { TicketStatusWrites } from '../business/port/github/ticket-status-writes.js';
 import type { TicketStatus } from '../../../shared/ticket-status/ticket-status.js';
 
@@ -55,18 +54,20 @@ export class FakeTicketStatusWrites implements TicketStatusWrites {
   }
 }
 
-export class FakeRunSettlement implements RunSettlement {
+export class FakeRunPort implements RunPort {
   readonly calls: string[] = [];
+  activeTicketNumbers: ReadonlyArray<number> = [];
+  waits: ReadonlyArray<RunWait> = [];
+
+  async activeRunTicketNumbers(): Promise<ReadonlyArray<number>> {
+    return this.activeTicketNumbers;
+  }
 
   async settle(runId: string): Promise<void> {
     this.calls.push(`settle ${runId}`);
   }
-}
 
-export class FakeActiveRunLookup implements ActiveRunLookup {
-  activeTicketNumbers: ReadonlyArray<number> = [];
-
-  async activeRunTicketNumbers(): Promise<ReadonlyArray<number>> {
-    return this.activeTicketNumbers;
+  async waitsOf(): Promise<ReadonlyArray<RunWait>> {
+    return this.waits;
   }
 }

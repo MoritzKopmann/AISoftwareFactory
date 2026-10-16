@@ -7,9 +7,8 @@ import { ProjectService } from '../../business/service/project-service.js';
 import { FakeClock } from '../../../../shared/testing/fake-clock.js';
 import { FakeEventPublisher } from '../../../../shared/testing/fake-event-publisher.js';
 import {
-  FakeContractPreflight,
   FakeLabelSync,
-  FakePluginInstaller,
+  FakeSkillPort,
   FakeProjectRepository,
   FakeRepositoryResolver,
 } from '../../testing/fake-projects-ports.js';
@@ -24,19 +23,18 @@ function createSubject() {
   const repositoryResolver = new FakeRepositoryResolver({ owner: 'owner', name: 'name' });
   const projectRepository = new FakeProjectRepository();
   const labelSync = new FakeLabelSync();
-  const pluginInstaller = new FakePluginInstaller();
+  const skillPort = new FakeSkillPort();
   const app = createProjectsRoutes(
     new ProjectService({
       repositoryResolver,
       projectRepository,
       labelSync,
-      pluginInstaller,
-      contractPreflight: new FakeContractPreflight(),
+      skillPort,
       clock: new FakeClock('2026-01-01T00:00:00.000Z'),
       events: new FakeEventPublisher(),
     }),
   );
-  return { app, repositoryResolver, projectRepository, labelSync, pluginInstaller };
+  return { app, repositoryResolver, projectRepository, labelSync, skillPort };
 }
 
 function postProject(app: Hono, contentType = 'application/json', body?: string) {
@@ -110,8 +108,8 @@ describe('createProjectsRoutes', () => {
   });
 
   it('should answer 502 with a message when the plugin install fails', async () => {
-    const { app, pluginInstaller } = createSubject();
-    pluginInstaller.result = { state: 'failed', reason: 'claude plugin install failed: not found' };
+    const { app, skillPort } = createSubject();
+    skillPort.result = { state: 'failed', reason: 'claude plugin install failed: not found' };
 
     const response = await postProject(app);
 

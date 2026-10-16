@@ -1,10 +1,7 @@
 import type { RepositoryReference } from '../business/domain/types/repository-reference.js';
 import type { Ticket } from '../business/domain/types/ticket.js';
 import type { TicketSnapshot } from '../business/domain/types/ticket-snapshot.js';
-import type {
-  RegisteredRepositories,
-  RegisteredRepository,
-} from '../business/port/project/registered-repositories.js';
+import type { ProjectPort, RegisteredRepository } from '../business/port/project/project-port.js';
 import type { IdeaCreation } from '../business/port/github/idea-creation.js';
 import type { IssueFeeds } from '../business/port/github/issue-feeds.js';
 import type { GitHubToken } from '../business/port/github/github-token.js';
@@ -27,7 +24,7 @@ export class FakeGitHubToken implements GitHubToken {
   }
 }
 
-export class FakeRegisteredRepositories implements RegisteredRepositories {
+export class FakeProjectPort implements ProjectPort {
   constructor(private readonly registered: ReadonlyArray<RegisteredRepository>) {}
 
   async list(): Promise<ReadonlyArray<RegisteredRepository>> {

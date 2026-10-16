@@ -29,14 +29,14 @@ import type { RecentRunSteps } from '../port/repository/recent-run-steps.js';
 import type { RunAnswerWaits } from '../port/repository/run-answer-waits.js';
 import type { RunRepository } from '../port/repository/run-repository.js';
 import type { AgentSessions } from '../port/session/agent-sessions.js';
-import type { RunTargets } from '../port/target/run-targets.js';
+import type { ProjectPort } from '../port/project/project-port.js';
 import type { Worktrees } from '../port/worktree/worktrees.js';
 import type { RunEndService } from './run-end-service.js';
 
 export type RunStartServiceDependencies = {
   readonly runRepository: RunRepository;
   readonly worktrees: Worktrees;
-  readonly runTargets: RunTargets;
+  readonly projectPort: ProjectPort;
   readonly agentSessions: AgentSessions;
   readonly recentRunSteps: RecentRunSteps;
   readonly runAnswerWaits: RunAnswerWaits;
@@ -61,10 +61,10 @@ export class RunStartService {
   constructor(private readonly dependencies: RunStartServiceDependencies) {}
 
   async start(request: StartRunRequest): Promise<Run> {
-    const { runRepository, worktrees, runTargets, identifiers, clock, events, runEndService } =
+    const { runRepository, worktrees, projectPort, identifiers, clock, events, runEndService } =
       this.dependencies;
 
-    const target = await runTargets.find(request.projectId, request.ticketNumber);
+    const target = await projectPort.find(request.projectId, request.ticketNumber);
     if (target === undefined) {
       throw new RunTargetNotFoundError(
         `Ticket #${request.ticketNumber} of ${request.projectId} is unknown`,

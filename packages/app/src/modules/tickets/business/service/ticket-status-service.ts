@@ -9,15 +9,13 @@ import type { WaitingRun } from '../domain/types/waiting-run.js';
 import { TicketNotAnswerableError } from '../errors/ticket-not-answerable-error.js';
 import { TicketNotResettableError } from '../errors/ticket-not-resettable-error.js';
 import type { TicketStatusWrites } from '../port/github/ticket-status-writes.js';
-import type { RegisteredRepositories } from '../port/project/registered-repositories.js';
-import type { ActiveRunLookup } from '../port/run/active-run-lookup.js';
-import type { RunSettlement } from '../port/run/run-settlement.js';
+import type { ProjectPort } from '../port/project/project-port.js';
+import type { RunPort } from '../port/run/run-port.js';
 
 export type TicketStatusServiceDependencies = {
   readonly ticketStatusWrites: TicketStatusWrites;
-  readonly activeRunLookup: ActiveRunLookup;
-  readonly runSettlement: RunSettlement;
-  readonly registeredRepositories: RegisteredRepositories;
+  readonly runPort: Pick<RunPort, 'activeRunTicketNumbers' | 'settle'>;
+  readonly projectPort: ProjectPort;
   readonly events: EventPublisher;
   readonly logger: Logger;
 };
@@ -72,13 +70,13 @@ export class TicketStatusService {
   }
 
   async reset(projectId: string, ticketNumber: number): Promise<void> {
-    const { ticketStatusWrites, activeRunLookup, events } = this.dependencies;
+    const { ticketStatusWrites, runPort, events } = this.dependencies;
 
     const project = await this.findProject(projectId);
     if (project === undefined) {
       throw new TicketNotResettableError(`${projectId} is unknown`);
     }
-    if ((await activeRunLookup.activeRunTicketNumbers(projectId)).includes(ticketNumber)) {
+    if ((await runPort.activeRunTicketNumbers(projectId)).includes(ticketNumber)) {
       throw new TicketNotResettableError(`#${ticketNumber} has an active run`);
     }
     const live = await ticketStatusWrites.readState(project.repository, ticketNumber);
@@ -107,7 +105,7 @@ export class TicketStatusService {
   }
 
   async settleFinishedRun(finishedRun: FinishedRun): Promise<void> {
-    const { ticketStatusWrites, runSettlement, logger } = this.dependencies;
+    const { ticketStatusWrites, runPort, logger } = this.dependencies;
     const { runId, projectId, ticketNumber, stage, ending } = finishedRun;
 
     const project = await this.findProject(projectId);
@@ -115,7 +113,7 @@ export class TicketStatusService {
       logger.warn(
         `Run ${runId} ended but ${projectId} is unknown, so #${ticketNumber} is unchanged`,
       );
-      await runSettlement.settle(runId);
+      await runPort.settle(runId);
       return;
     }
 
@@ -126,7 +124,7 @@ export class TicketStatusService {
       live,
       decideRunEndTransition(ending, live, stage),
     );
-    await runSettlement.settle(runId);
+    await runPort.settle(runId);
   }
 
   async settleWaitingRun(waitingRun: WaitingRun): Promise<void> {
@@ -152,7 +150,7 @@ export class TicketStatusService {
   }
 
   private async findProject(projectId: string): Promise<RegisteredProject | undefined> {
-    return (await this.dependencies.registeredRepositories.list()).find(
+    return (await this.dependencies.projectPort.list()).find(
       (registered) => registered.projectId === projectId,
     );
   }

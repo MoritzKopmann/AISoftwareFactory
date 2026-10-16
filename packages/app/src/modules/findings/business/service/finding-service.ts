@@ -4,9 +4,9 @@ import { describeFindingIssue } from '../domain/functions/describe-finding-issue
 import type { Finding, FindingKind } from '../domain/types/finding.js';
 import { FindingNotFoundError } from '../errors/finding-not-found-error.js';
 import { FindingNotOpenError } from '../errors/finding-not-open-error.js';
-import type { ProjectLookup } from '../port/project/project-lookup.js';
+import type { ProjectPort } from '../port/project/project-port.js';
 import type { FindingRepository } from '../port/repository/finding-repository.js';
-import type { TicketCreator } from '../port/ticket/ticket-creator.js';
+import type { TicketPort } from '../port/ticket/ticket-port.js';
 
 export type ReportFindingRequest = {
   readonly projectId: string;
@@ -19,8 +19,8 @@ export type ReportFindingRequest = {
 
 export type FindingServiceDependencies = {
   readonly findingRepository: FindingRepository;
-  readonly ticketCreator: TicketCreator;
-  readonly projectLookup: ProjectLookup;
+  readonly ticketPort: TicketPort;
+  readonly projectPort: ProjectPort;
   readonly events: EventPublisher;
   readonly clock: Clock;
 };
@@ -66,13 +66,13 @@ export class FindingService {
   }
 
   async createTicket(projectId: string, findingId: number): Promise<Finding> {
-    const { findingRepository, ticketCreator, projectLookup, events, clock } = this.dependencies;
+    const { findingRepository, ticketPort, projectPort, events, clock } = this.dependencies;
 
     const finding = await findingRepository.findById(findingId);
     if (finding?.projectId !== projectId) {
       throw new FindingNotFoundError(`${projectId} has no finding ${findingId}`);
     }
-    const project = await projectLookup.find(projectId);
+    const project = await projectPort.find(projectId);
     if (project === undefined) {
       throw new FindingNotFoundError(`${projectId} is not a known project`);
     }
@@ -91,7 +91,7 @@ export class FindingService {
 
     let createdTicketNumber: number;
     try {
-      createdTicketNumber = await ticketCreator.create(
+      createdTicketNumber = await ticketPort.create(
         project.repository,
         describeFindingIssue(finding),
       );

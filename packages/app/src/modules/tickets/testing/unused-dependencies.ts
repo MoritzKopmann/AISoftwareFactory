@@ -15,17 +15,15 @@ function unused<Port extends object>(name: string): Port {
 
 export const unusedTicketStatusDependencies: TicketStatusServiceDependencies = {
   ticketStatusWrites: unused('ticketStatusWrites'),
-  activeRunLookup: unused('activeRunLookup'),
-  runSettlement: unused('runSettlement'),
-  registeredRepositories: unused('registeredRepositories'),
+  runPort: unused('runPort'),
+  projectPort: unused('projectPort'),
   events: unused('events'),
   logger: unused('logger'),
 };
 
 export const unusedTicketReadDependencies: TicketReadServiceDependencies = {
   ticketSource: unused('ticketSource'),
-  activeRunLookup: unused('activeRunLookup'),
-  runWaitLookup: unused('runWaitLookup'),
+  runPort: unused('runPort'),
   clock: unused('clock'),
   watchStore: unused('watchStore'),
 };
@@ -33,7 +31,7 @@ export const unusedTicketReadDependencies: TicketReadServiceDependencies = {
 export const unusedRepositoryWatchDependencies: RepositoryWatchServiceDependencies = {
   issueFeeds: unused('issueFeeds'),
   ticketSource: unused('ticketSource'),
-  registeredRepositories: unused('registeredRepositories'),
+  projectPort: unused('projectPort'),
   clock: unused('clock'),
   events: unused('events'),
   watchStore: unused('watchStore'),

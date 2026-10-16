@@ -1,9 +1,8 @@
 import type { ContractPreflightReport } from '../business/domain/types/contract-preflight-report.js';
 import type { PluginInstallResult } from '../business/domain/types/plugin-install-result.js';
 import type { Project } from '../business/domain/types/project.js';
-import type { ContractPreflight } from '../business/port/contract/contract-preflight.js';
 import type { LabelSync } from '../business/port/github/label-sync.js';
-import type { PluginInstaller } from '../business/port/plugin/plugin-installer.js';
+import type { SkillPort } from '../business/port/skill/skill-port.js';
 import type { ProjectRepository } from '../business/port/repository/project-repository.js';
 import type {
   RepositoryReference,
@@ -66,17 +65,9 @@ export class FakeLabelSync implements LabelSync {
   }
 }
 
-export class FakePluginInstaller implements PluginInstaller {
+export class FakeSkillPort implements SkillPort {
   installCalls: string[] = [];
   result: PluginInstallResult = { state: 'installed' };
-
-  async install(checkoutPath: string): Promise<PluginInstallResult> {
-    this.installCalls.push(checkoutPath);
-    return this.result;
-  }
-}
-
-export class FakeContractPreflight implements ContractPreflight {
   checkCalls: string[] = [];
 
   constructor(private readonly reportsByPath = new Map<string, ContractPreflightReport>()) {}
@@ -88,5 +79,10 @@ export class FakeContractPreflight implements ContractPreflight {
   async check(checkoutPath: string): Promise<ContractPreflightReport> {
     this.checkCalls.push(checkoutPath);
     return this.reportsByPath.get(checkoutPath) ?? passingReport;
+  }
+
+  async install(checkoutPath: string): Promise<PluginInstallResult> {
+    this.installCalls.push(checkoutPath);
+    return this.result;
   }
 }

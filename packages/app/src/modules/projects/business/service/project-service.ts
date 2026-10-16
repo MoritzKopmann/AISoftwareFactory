@@ -1,21 +1,19 @@
 import type { Clock } from '../../../../shared/clock/clock.js';
 import type { EventPublisher } from '../../../../shared/event-bus.js';
-import type { ContractPreflight } from '../port/contract/contract-preflight.js';
 import type { Project } from '../domain/types/project.js';
 import type { ProjectWithContract } from '../domain/types/project-with-contract.js';
 import { PluginInstallFailedError } from '../errors/plugin-install-failed-error.js';
 import { ProjectAlreadyAddedError } from '../errors/project-already-added-error.js';
 import type { LabelSync } from '../port/github/label-sync.js';
 import type { RepositoryResolver } from '../port/github/repository-resolver.js';
-import type { PluginInstaller } from '../port/plugin/plugin-installer.js';
+import type { SkillPort } from '../port/skill/skill-port.js';
 import type { ProjectRepository } from '../port/repository/project-repository.js';
 
 export type ProjectServiceDependencies = {
   readonly repositoryResolver: RepositoryResolver;
   readonly projectRepository: ProjectRepository;
   readonly labelSync: LabelSync;
-  readonly pluginInstaller: PluginInstaller;
-  readonly contractPreflight: ContractPreflight;
+  readonly skillPort: SkillPort;
   readonly clock: Clock;
   readonly events: EventPublisher;
 };
@@ -24,7 +22,7 @@ export class ProjectService {
   constructor(private readonly dependencies: ProjectServiceDependencies) {}
 
   async add(checkoutPath: string): Promise<Project> {
-    const { repositoryResolver, projectRepository, labelSync, pluginInstaller, clock, events } =
+    const { repositoryResolver, projectRepository, labelSync, skillPort, clock, events } =
       this.dependencies;
 
     const repository = await repositoryResolver.resolve(checkoutPath);
@@ -36,7 +34,7 @@ export class ProjectService {
 
     await labelSync.sync(repository);
 
-    const installResult = await pluginInstaller.install(checkoutPath);
+    const installResult = await skillPort.install(checkoutPath);
     if (installResult.state === 'failed') {
       throw new PluginInstallFailedError(installResult.reason);
     }
@@ -59,12 +57,12 @@ export class ProjectService {
   }
 
   async list(): Promise<ReadonlyArray<ProjectWithContract>> {
-    const { projectRepository, contractPreflight } = this.dependencies;
+    const { projectRepository, skillPort } = this.dependencies;
     const projects = await projectRepository.list();
     return Promise.all(
       projects.map(async (project) => ({
         ...project,
-        contract: await contractPreflight.check(project.checkoutPath),
+        contract: await skillPort.check(project.checkoutPath),
       })),
     );
   }

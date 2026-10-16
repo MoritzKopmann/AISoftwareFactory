@@ -2,13 +2,10 @@ import type { PullRequestMerges } from './business/port/github/pull-request-merg
 import { MergeService } from './business/service/merge-service.js';
 import { TicketRunService } from './business/service/ticket-run-service.js';
 import { GhCliPullRequestMerges } from './infrastructure/github/gh-cli-pull-request-merges.js';
-import { ProjectsProjectLookup } from './infrastructure/internal/projects-project-lookup.js';
-import { AgentRunsAgentRunControl } from './infrastructure/internal/agent-runs-agent-run-control.js';
-import { SkillsRunsGate } from './infrastructure/internal/skills-runs-gate.js';
-import { TicketsIdeaCreation } from './infrastructure/internal/tickets-idea-creation.js';
-import { TicketsReviewedTicketLookup } from './infrastructure/internal/tickets-reviewed-ticket-lookup.js';
-import { TicketsTicketAnswerGate } from './infrastructure/internal/tickets-ticket-answer-gate.js';
-import { TicketsTicketLookup } from './infrastructure/internal/tickets-ticket-lookup.js';
+import { AgentRunsAdapter } from './infrastructure/internal/agent-runs-adapter.js';
+import { ProjectsAdapter } from './infrastructure/internal/projects-adapter.js';
+import { SkillsAdapter } from './infrastructure/internal/skills-adapter.js';
+import { TicketsAdapter } from './infrastructure/internal/tickets-adapter.js';
 import { createSchedulerRoutes } from './presentation/api/scheduler-routes.js';
 import { subscribeToSnapshotChanged } from './presentation/bus/subscribe-to-snapshot-changed.js';
 import { SchedulerFacade } from './presentation/internal/scheduler-facade.js';
@@ -53,22 +50,21 @@ export function createSchedulerModule(
     pullRequestMerges: new GhCliPullRequestMerges(),
     ...overrides,
   };
-  const projectLookup = new ProjectsProjectLookup(projects);
-  const agentRunControl = new AgentRunsAgentRunControl(agentRuns);
+  const projectPort = new ProjectsAdapter(projects);
+  const runPort = new AgentRunsAdapter(agentRuns);
+  const ticketPort = new TicketsAdapter(tickets);
 
   const ticketRunService = new TicketRunService({
-    ticketLookup: new TicketsTicketLookup(tickets),
-    agentRunControl,
-    runsGate: new SkillsRunsGate(skills),
-    projectLookup,
-    ideaCreation: new TicketsIdeaCreation(tickets),
-    ticketAnswerGate: new TicketsTicketAnswerGate(tickets),
+    ticketPort,
+    runPort,
+    skillPort: new SkillsAdapter(skills),
+    projectPort,
   });
   const mergeService = new MergeService({
     pullRequestMerges: infrastructure.pullRequestMerges,
-    agentRunControl,
-    reviewedTicketLookup: new TicketsReviewedTicketLookup(tickets),
-    projectLookup,
+    runPort,
+    ticketPort,
+    projectPort,
     logger,
   });
 

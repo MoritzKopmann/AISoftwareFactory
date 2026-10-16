@@ -6,9 +6,9 @@ import type { DomainEvents } from '../../../../shared/event-bus.js';
 import { InMemoryEventBus } from '../../../../shared/in-memory-event-bus.js';
 import {
   FakePullRequestMerges,
-  FakeProjectLookup,
-  FakeReviewedTicketLookup,
-  FakeAgentRunControl,
+  FakeProjectPort,
+  FakeTicketPort,
+  FakeRunPort,
 } from '../../testing/fake-scheduler-ports.js';
 
 const approvedTicket: ReviewedTicket = {
@@ -40,9 +40,9 @@ function buildSubject() {
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
   const mergeService = new MergeService({
     pullRequestMerges,
-    agentRunControl: new FakeAgentRunControl(),
-    reviewedTicketLookup: new FakeReviewedTicketLookup([approvedTicket]),
-    projectLookup: new FakeProjectLookup(),
+    runPort: new FakeRunPort(),
+    ticketPort: new FakeTicketPort(undefined, [], [approvedTicket]),
+    projectPort: new FakeProjectPort(),
     logger,
   });
   const unsubscribe = subscribeToSnapshotChanged(bus, mergeService, logger);

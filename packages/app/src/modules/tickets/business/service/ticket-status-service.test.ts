@@ -1,13 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { TicketNotAnswerableError } from '../errors/ticket-not-answerable-error.js';
-import type { RegisteredRepositories } from '../port/project/registered-repositories.js';
+import type { ProjectPort } from '../port/project/project-port.js';
 import { FakeEventPublisher } from '../../../../shared/testing/fake-event-publisher.js';
-import { FakeRegisteredRepositories } from '../../testing/fake-tickets-ports.js';
-import {
-  FakeTicketStatusWrites,
-  FakeActiveRunLookup,
-  FakeRunSettlement,
-} from '../../testing/fake-ticket-status-writes.js';
+import { FakeProjectPort } from '../../testing/fake-tickets-ports.js';
+import { FakeTicketStatusWrites, FakeRunPort } from '../../testing/fake-ticket-status-writes.js';
 import { TicketNotResettableError } from '../errors/ticket-not-resettable-error.js';
 import type { TicketStatus } from '../../../../shared/ticket-status/ticket-status.js';
 import type { FinishedRun } from '../domain/types/finished-run.js';
@@ -19,7 +15,7 @@ describe('TicketStatusService', () => {
   describe('beginAnswer', () => {
     function buildSubject(
       waiting: boolean,
-      registeredRepositories: RegisteredRepositories = new FakeRegisteredRepositories([
+      projectPort: ProjectPort = new FakeProjectPort([
         { projectId: 'moritz/aisf', repository: { owner: 'moritz', name: 'aisf' } },
       ]),
     ) {
@@ -29,7 +25,7 @@ describe('TicketStatusService', () => {
       const useCase = new TicketStatusService({
         ...unusedTicketStatusDependencies,
         ticketStatusWrites,
-        registeredRepositories,
+        projectPort,
         events,
       });
       return { useCase, ticketStatusWrites, events };
@@ -66,10 +62,7 @@ describe('TicketStatusService', () => {
     });
 
     it('should throw and write nothing when the project is unknown', async () => {
-      const { useCase, ticketStatusWrites } = buildSubject(
-        true,
-        new FakeRegisteredRepositories([]),
-      );
+      const { useCase, ticketStatusWrites } = buildSubject(true, new FakeProjectPort([]));
 
       await expect(useCase.beginAnswer('moritz/aisf', 147)).rejects.toBeInstanceOf(
         TicketNotAnswerableError,
@@ -95,7 +88,7 @@ describe('TicketStatusService', () => {
       const useCase = new TicketStatusService({
         ...unusedTicketStatusDependencies,
         ticketStatusWrites,
-        registeredRepositories: new FakeRegisteredRepositories([
+        projectPort: new FakeProjectPort([
           { projectId: 'moritz/aisf', repository: { owner: 'moritz', name: 'aisf' } },
         ]),
         events,
@@ -124,7 +117,7 @@ describe('TicketStatusService', () => {
     function buildSubject(
       liveStatus: TicketStatus,
       flags: { waiting?: boolean; stuck?: boolean } = {},
-      registeredRepositories: RegisteredRepositories = new FakeRegisteredRepositories([
+      projectPort: ProjectPort = new FakeProjectPort([
         { projectId: 'moritz/aisf', repository: { owner: 'moritz', name: 'aisf' } },
       ]),
     ) {
@@ -132,16 +125,16 @@ describe('TicketStatusService', () => {
       ticketStatusWrites.liveStatus = liveStatus;
       ticketStatusWrites.liveWaiting = flags.waiting ?? false;
       ticketStatusWrites.liveStuck = flags.stuck ?? false;
-      const activeRunLookup = new FakeActiveRunLookup();
+      const runPort = new FakeRunPort();
       const events = new FakeEventPublisher();
       const useCase = new TicketStatusService({
         ...unusedTicketStatusDependencies,
         ticketStatusWrites,
-        activeRunLookup,
-        registeredRepositories,
+        runPort,
+        projectPort,
         events,
       });
-      return { useCase, ticketStatusWrites, activeRunLookup, events };
+      return { useCase, ticketStatusWrites, runPort, events };
     }
 
     it('should set the ticket ready and clear the stuck label when it is in-progress and stuck', async () => {
@@ -189,10 +182,10 @@ describe('TicketStatusService', () => {
     });
 
     it('should set the ticket ready when the active run is on another ticket', async () => {
-      const { useCase, ticketStatusWrites, activeRunLookup } = buildSubject('in-progress', {
+      const { useCase, ticketStatusWrites, runPort } = buildSubject('in-progress', {
         stuck: true,
       });
-      activeRunLookup.activeTicketNumbers = [140];
+      runPort.activeTicketNumbers = [140];
 
       await useCase.reset('moritz/aisf', 138);
 
@@ -200,10 +193,10 @@ describe('TicketStatusService', () => {
     });
 
     it('should throw and write nothing when the ticket has an active run', async () => {
-      const { useCase, ticketStatusWrites, activeRunLookup } = buildSubject('in-progress', {
+      const { useCase, ticketStatusWrites, runPort } = buildSubject('in-progress', {
         stuck: true,
       });
-      activeRunLookup.activeTicketNumbers = [138];
+      runPort.activeTicketNumbers = [138];
 
       await expect(useCase.reset('moritz/aisf', 138)).rejects.toBeInstanceOf(
         TicketNotResettableError,
@@ -227,7 +220,7 @@ describe('TicketStatusService', () => {
       const { useCase, ticketStatusWrites } = buildSubject(
         'in-progress',
         { stuck: true },
-        new FakeRegisteredRepositories([]),
+        new FakeProjectPort([]),
       );
 
       await expect(useCase.reset('moritz/unknown', 138)).rejects.toBeInstanceOf(
@@ -257,8 +250,8 @@ describe('TicketStatusService', () => {
     });
 
     it('should emit nothing when the ticket has an active run', async () => {
-      const { useCase, activeRunLookup, events } = buildSubject('in-progress', { stuck: true });
-      activeRunLookup.activeTicketNumbers = [138];
+      const { useCase, runPort, events } = buildSubject('in-progress', { stuck: true });
+      runPort.activeTicketNumbers = [138];
 
       await expect(useCase.reset('moritz/aisf', 138)).rejects.toBeInstanceOf(
         TicketNotResettableError,
@@ -299,27 +292,27 @@ describe('TicketStatusService', () => {
     };
 
     function buildSubject(
-      registeredRepositories: RegisteredRepositories = new FakeRegisteredRepositories([
+      projectPort: ProjectPort = new FakeProjectPort([
         { projectId: 'moritz/aisf', repository: { owner: 'moritz', name: 'aisf' } },
       ]),
     ) {
       const ticketStatusWrites = new FakeTicketStatusWrites();
-      const runSettlement = new FakeRunSettlement();
+      const runPort = new FakeRunPort();
       const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
       const events = new FakeEventPublisher();
       const useCase = new TicketStatusService({
         ...unusedTicketStatusDependencies,
         ticketStatusWrites,
-        runSettlement,
-        registeredRepositories,
+        runPort,
+        projectPort,
         events,
         logger,
       });
-      return { useCase, ticketStatusWrites, runSettlement, logger, events };
+      return { useCase, ticketStatusWrites, runPort, logger, events };
     }
 
     it('should add the stuck label, then comment, then settle the run when the ticket is in-progress after an escalation', async () => {
-      const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+      const { useCase, ticketStatusWrites, runPort } = buildSubject();
 
       await useCase.settleFinishedRun(escalatedRun);
 
@@ -328,11 +321,11 @@ describe('TicketStatusService', () => {
         'setSecondaryState #138 stuck on',
         'comment #138: The run escalated (spec): AC is vague',
       ]);
-      expect(runSettlement.calls).toEqual(['settle run-1']);
+      expect(runPort.calls).toEqual(['settle run-1']);
     });
 
     it('should add the waiting label, post the request and settle the run when the run reached its checkpoint', async () => {
-      const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+      const { useCase, ticketStatusWrites, runPort } = buildSubject();
 
       await useCase.settleFinishedRun({
         ...escalatedRun,
@@ -344,11 +337,11 @@ describe('TicketStatusService', () => {
         'setSecondaryState #138 waiting on',
         'comment #138: The run reached its human checkpoint and waits for an answer on the ticket page:\n\nCheck the waiting chip',
       ]);
-      expect(runSettlement.calls).toEqual(['settle run-1']);
+      expect(runPort.calls).toEqual(['settle run-1']);
     });
 
     it('should return the ticket to ready without a comment and settle when the run parked', async () => {
-      const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+      const { useCase, ticketStatusWrites, runPort } = buildSubject();
 
       await useCase.settleFinishedRun({
         ...escalatedRun,
@@ -356,31 +349,31 @@ describe('TicketStatusService', () => {
       });
 
       expect(ticketStatusWrites.calls).toEqual(['readState', 'setStatus #138 -> ready']);
-      expect(runSettlement.calls).toEqual(['settle run-1']);
+      expect(runPort.calls).toEqual(['settle run-1']);
     });
 
     it('should write nothing and settle when the ticket is already in-review', async () => {
-      const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+      const { useCase, ticketStatusWrites, runPort } = buildSubject();
       ticketStatusWrites.liveStatus = 'in-review';
 
       await useCase.settleFinishedRun({ ...escalatedRun, ending: { kind: 'finished' } });
 
       expect(ticketStatusWrites.calls).toEqual(['readState']);
-      expect(runSettlement.calls).toEqual(['settle run-1']);
+      expect(runPort.calls).toEqual(['settle run-1']);
     });
 
     it('should write nothing and settle when the ticket was marked stuck during the run', async () => {
-      const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+      const { useCase, ticketStatusWrites, runPort } = buildSubject();
       ticketStatusWrites.liveStuck = true;
 
       await useCase.settleFinishedRun(escalatedRun);
 
       expect(ticketStatusWrites.calls).toEqual(['readState']);
-      expect(runSettlement.calls).toEqual(['settle run-1']);
+      expect(runPort.calls).toEqual(['settle run-1']);
     });
 
     it('should write nothing and settle when a parked run finds the ticket ready', async () => {
-      const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+      const { useCase, ticketStatusWrites, runPort } = buildSubject();
       ticketStatusWrites.liveStatus = 'ready';
 
       await useCase.settleFinishedRun({
@@ -389,11 +382,11 @@ describe('TicketStatusService', () => {
       });
 
       expect(ticketStatusWrites.calls).toEqual(['readState']);
-      expect(runSettlement.calls).toEqual(['settle run-1']);
+      expect(runPort.calls).toEqual(['settle run-1']);
     });
 
     it('should add stuck, remove waiting and keep the status when a waiting run crashed', async () => {
-      const { useCase, ticketStatusWrites, events, runSettlement } = buildSubject();
+      const { useCase, ticketStatusWrites, events, runPort } = buildSubject();
       ticketStatusWrites.liveWaiting = true;
 
       await useCase.settleFinishedRun({
@@ -421,7 +414,7 @@ describe('TicketStatusService', () => {
           },
         },
       ]);
-      expect(runSettlement.calls).toEqual(['settle run-1']);
+      expect(runPort.calls).toEqual(['settle run-1']);
     });
 
     it('should write nothing the second time when the same run.finished is replayed', async () => {
@@ -435,25 +428,25 @@ describe('TicketStatusService', () => {
     });
 
     it('should write nothing, log it and settle when the project is unknown', async () => {
-      const { useCase, ticketStatusWrites, runSettlement, logger } = buildSubject(
-        new FakeRegisteredRepositories([]),
+      const { useCase, ticketStatusWrites, runPort, logger } = buildSubject(
+        new FakeProjectPort([]),
       );
 
       await useCase.settleFinishedRun(escalatedRun);
 
       expect(ticketStatusWrites.calls).toEqual([]);
       expect(logger.warn).toHaveBeenCalled();
-      expect(runSettlement.calls).toEqual(['settle run-1']);
+      expect(runPort.calls).toEqual(['settle run-1']);
     });
 
     it('should not settle the run when a ticket write throws', async () => {
-      const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+      const { useCase, ticketStatusWrites, runPort } = buildSubject();
       ticketStatusWrites.comment = async () => {
         throw new Error('gh failed');
       };
 
       await expect(useCase.settleFinishedRun(escalatedRun)).rejects.toThrow('gh failed');
-      expect(runSettlement.calls).toEqual([]);
+      expect(runPort.calls).toEqual([]);
     });
 
     it('should announce the waiting write after the label write and before comment when the run needs permission', async () => {
@@ -508,17 +501,17 @@ describe('TicketStatusService', () => {
     });
 
     it('should announce nothing and still settle when no transition is needed', async () => {
-      const { useCase, ticketStatusWrites, runSettlement, events } = buildSubject();
+      const { useCase, ticketStatusWrites, runPort, events } = buildSubject();
       ticketStatusWrites.liveStatus = 'in-review';
 
       await useCase.settleFinishedRun({ ...escalatedRun, ending: { kind: 'finished' } });
 
       expect(events.emittedEvents).toEqual([]);
-      expect(runSettlement.calls).toEqual(['settle run-1']);
+      expect(runPort.calls).toEqual(['settle run-1']);
     });
 
     it('should announce nothing when the project is unknown', async () => {
-      const { useCase, events } = buildSubject(new FakeRegisteredRepositories([]));
+      const { useCase, events } = buildSubject(new FakeProjectPort([]));
 
       await useCase.settleFinishedRun(escalatedRun);
 
@@ -554,7 +547,7 @@ describe('TicketStatusService', () => {
       });
 
       it('should add no label when a plan run finished at plan', async () => {
-        const { useCase, ticketStatusWrites, runSettlement } = buildSubject();
+        const { useCase, ticketStatusWrites, runPort } = buildSubject();
         ticketStatusWrites.liveStatus = 'plan';
 
         await useCase.settleFinishedRun({
@@ -564,7 +557,7 @@ describe('TicketStatusService', () => {
         });
 
         expect(ticketStatusWrites.calls).toEqual(['readState']);
-        expect(runSettlement.calls).toEqual(['settle run-1']);
+        expect(runPort.calls).toEqual(['settle run-1']);
       });
     });
   });
@@ -579,7 +572,7 @@ describe('TicketStatusService', () => {
     };
 
     function buildSubject(
-      registeredRepositories: RegisteredRepositories = new FakeRegisteredRepositories([
+      projectPort: ProjectPort = new FakeProjectPort([
         { projectId: 'moritz/aisf', repository: { owner: 'moritz', name: 'aisf' } },
       ]),
     ) {
@@ -589,7 +582,7 @@ describe('TicketStatusService', () => {
       const useCase = new TicketStatusService({
         ...unusedTicketStatusDependencies,
         ticketStatusWrites,
-        registeredRepositories,
+        projectPort,
         events,
         logger,
       });
@@ -622,9 +615,7 @@ describe('TicketStatusService', () => {
     });
 
     it('should change nothing and warn when the project is unknown', async () => {
-      const { useCase, ticketStatusWrites, logger, events } = buildSubject(
-        new FakeRegisteredRepositories([]),
-      );
+      const { useCase, ticketStatusWrites, logger, events } = buildSubject(new FakeProjectPort([]));
 
       await useCase.settleWaitingRun(waitingRun);
 

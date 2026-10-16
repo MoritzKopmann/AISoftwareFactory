@@ -5,8 +5,7 @@ import { ProjectLabelService } from './business/service/project-label-service.js
 import { ProjectService } from './business/service/project-service.js';
 import { GhCliLabelSync } from './infrastructure/github/gh-cli-label-sync.js';
 import { GhCliRepositoryResolver } from './infrastructure/github/gh-cli-repository-resolver.js';
-import { SkillsContractPreflight } from './infrastructure/internal/skills-contract-preflight.js';
-import { SkillsPluginInstaller } from './infrastructure/internal/skills-plugin-installer.js';
+import { SkillsAdapter } from './infrastructure/internal/skills-adapter.js';
 import { SqliteProjectRepository } from './infrastructure/repository/sqlite-project-repository.js';
 import { createProjectsRoutes } from './presentation/api/projects-routes.js';
 import { createProjectsSyncLabelsJob } from './presentation/cron/projects-sync-labels-job.js';
@@ -45,8 +44,7 @@ export function createProjectsModule(
     repositoryResolver,
     projectRepository,
     labelSync,
-    pluginInstaller: new SkillsPluginInstaller(dependencies.skills),
-    contractPreflight: new SkillsContractPreflight(dependencies.skills),
+    skillPort: new SkillsAdapter(dependencies.skills),
     clock: dependencies.clock,
     events: dependencies.events,
   });

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { Clock } from '../../../../shared/clock/clock.js';
 import type { EventPublisher } from '../../../../shared/event-bus.js';
 import { FakeEventPublisher } from '../../../../shared/testing/fake-event-publisher.js';
-import { FakeProjectLookup, FakeTicketCreator } from '../../testing/fake-findings-ports.js';
+import { FakeProjectPort, FakeTicketPort } from '../../testing/fake-findings-ports.js';
 import { InMemoryFindingRepository } from '../../testing/in-memory-finding-repository.js';
 import { FindingNotFoundError } from '../errors/finding-not-found-error.js';
 import { FindingNotOpenError } from '../errors/finding-not-open-error.js';
@@ -23,7 +23,7 @@ const clock: Clock = { now: () => '2026-09-29T11:00:00.000Z' };
 
 describe('FindingService', () => {
   let findingRepository: InMemoryFindingRepository;
-  let ticketCreator: FakeTicketCreator;
+  let ticketPort: FakeTicketPort;
   let events: FakeEventPublisher;
   let findingService: FindingService;
   let statesAtEmit: Array<Promise<string | undefined>>;
@@ -31,8 +31,8 @@ describe('FindingService', () => {
   function buildService(observed: EventPublisher): FindingService {
     return new FindingService({
       findingRepository,
-      ticketCreator,
-      projectLookup: new FakeProjectLookup(),
+      ticketPort,
+      projectPort: new FakeProjectPort(),
       events: observed,
       clock,
     });
@@ -40,7 +40,7 @@ describe('FindingService', () => {
 
   beforeEach(() => {
     findingRepository = new InMemoryFindingRepository();
-    ticketCreator = new FakeTicketCreator();
+    ticketPort = new FakeTicketPort();
     events = new FakeEventPublisher();
     statesAtEmit = [];
     findingService = buildService({
@@ -176,7 +176,7 @@ describe('FindingService', () => {
     it('should create one bare idea from the finding when Create ticket is used', async () => {
       await findingService.createTicket('moritz/aisf', 1);
 
-      expect(ticketCreator.createdTickets).toEqual([
+      expect(ticketPort.createdTickets).toEqual([
         {
           title: 'Missing retry',
           body: 'Kind: gap\nLocation: `src/a.ts:12`\n\nFound while implementing #141',
@@ -185,7 +185,7 @@ describe('FindingService', () => {
     });
 
     it('should record the new issue number and mark the finding ticketed when the issue is created', async () => {
-      ticketCreator.createdNumber = 207;
+      ticketPort.createdNumber = 207;
 
       const ticketed = await findingService.createTicket('moritz/aisf', 1);
 
@@ -203,7 +203,7 @@ describe('FindingService', () => {
         findingService.createTicket('moritz/aisf', 1),
       ]);
 
-      expect(ticketCreator.createdTickets).toHaveLength(1);
+      expect(ticketPort.createdTickets).toHaveLength(1);
       expect(outcomes.map(({ status }) => status).sort()).toEqual(['fulfilled', 'rejected']);
       const rejection = outcomes.find(({ status }) => status === 'rejected');
       expect(rejection).toMatchObject({ reason: expect.any(FindingNotOpenError) });
@@ -217,8 +217,8 @@ describe('FindingService', () => {
       );
     });
 
-    it('should reopen the finding and rethrow when the ticket creator fails', async () => {
-      ticketCreator.error = new TicketCreationFailedError('rate limited');
+    it('should reopen the finding and rethrow when the ticket port fails', async () => {
+      ticketPort.error = new TicketCreationFailedError('rate limited');
 
       await expect(findingService.createTicket('moritz/aisf', 1)).rejects.toThrow(
         TicketCreationFailedError,
@@ -230,7 +230,7 @@ describe('FindingService', () => {
       await expect(findingService.createTicket('moritz/other', 1)).rejects.toThrow(
         FindingNotFoundError,
       );
-      expect(ticketCreator.createdTickets).toEqual([]);
+      expect(ticketPort.createdTickets).toEqual([]);
     });
 
     it('should emit finding.changed while creating and again when ticketed when GitHub succeeds', async () => {
@@ -245,7 +245,7 @@ describe('FindingService', () => {
     });
 
     it('should emit finding.changed after the release when GitHub fails', async () => {
-      ticketCreator.error = new TicketCreationFailedError('rate limited');
+      ticketPort.error = new TicketCreationFailedError('rate limited');
 
       await expect(findingService.createTicket('moritz/aisf', 1)).rejects.toThrow(
         TicketCreationFailedError,

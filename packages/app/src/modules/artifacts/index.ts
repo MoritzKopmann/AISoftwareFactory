@@ -3,8 +3,8 @@ import type { ArtifactRepository } from './business/port/repository/artifact-rep
 import { ArtifactService } from './business/service/artifact-service.js';
 import { PageService } from './business/service/page-service.js';
 import { FileSystemArtifactFiles } from './infrastructure/file/file-system-artifact-files.js';
-import { AgentRunsTicketRunLookup } from './infrastructure/internal/agent-runs-ticket-run-lookup.js';
-import { SchedulerCheckpointAnswers } from './infrastructure/internal/scheduler-checkpoint-answers.js';
+import { AgentRunsAdapter } from './infrastructure/internal/agent-runs-adapter.js';
+import { SchedulerAdapter } from './infrastructure/internal/scheduler-adapter.js';
 import { SqliteArtifactRepository } from './infrastructure/repository/sqlite-artifact-repository.js';
 import { createArtifactsRoutes } from './presentation/api/artifacts-routes.js';
 import { ArtifactsFacade } from './presentation/internal/artifacts-facade.js';
@@ -39,11 +39,11 @@ export function createArtifactsModule(
     artifactFiles: new FileSystemArtifactFiles(),
     ...overrides,
   };
-  const ticketRunLookup = new AgentRunsTicketRunLookup(dependencies.agentRuns);
+  const runPort = new AgentRunsAdapter(dependencies.agentRuns);
   const artifactService = new ArtifactService({
     artifactRepository,
     artifactFiles,
-    ticketRunLookup,
+    runPort,
     events: dependencies.events,
     identifiers: dependencies.identifiers,
     clock: dependencies.clock,
@@ -51,8 +51,8 @@ export function createArtifactsModule(
   const pageService = new PageService({
     artifactRepository,
     artifactFiles,
-    ticketRunLookup,
-    checkpointAnswers: new SchedulerCheckpointAnswers(dependencies.scheduler),
+    runPort,
+    schedulerPort: new SchedulerAdapter(dependencies.scheduler),
   });
 
   dependencies.agentTools.register(createShowArtifactTool(artifactService));

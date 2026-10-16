@@ -2,15 +2,15 @@ import type { Logger } from '../../../../shared/logger/create-logger.js';
 import { findMergeablePullRequests } from '../domain/functions/find-mergeable-pull-requests.js';
 import { PullRequestMergeFailedError } from '../errors/pull-request-merge-failed-error.js';
 import type { PullRequestMerges } from '../port/github/pull-request-merges.js';
-import type { ProjectLookup } from '../port/project/project-lookup.js';
-import type { AgentRunControl } from '../port/runs/agent-run-control.js';
-import type { ReviewedTicketLookup } from '../port/ticket/reviewed-ticket-lookup.js';
+import type { ProjectPort } from '../port/project/project-port.js';
+import type { RunPort } from '../port/run/run-port.js';
+import type { TicketPort } from '../port/ticket/ticket-port.js';
 
 export type MergeServiceDependencies = {
   readonly pullRequestMerges: PullRequestMerges;
-  readonly agentRunControl: AgentRunControl;
-  readonly reviewedTicketLookup: ReviewedTicketLookup;
-  readonly projectLookup: ProjectLookup;
+  readonly runPort: Pick<RunPort, 'activeRuns'>;
+  readonly ticketPort: Pick<TicketPort, 'list'>;
+  readonly projectPort: ProjectPort;
   readonly logger: Logger;
 };
 
@@ -20,15 +20,14 @@ export class MergeService {
   constructor(private readonly dependencies: MergeServiceDependencies) {}
 
   async mergeApproved(projectId: string): Promise<void> {
-    const { pullRequestMerges, agentRunControl, reviewedTicketLookup, projectLookup, logger } =
-      this.dependencies;
+    const { pullRequestMerges, runPort, ticketPort, projectPort, logger } = this.dependencies;
 
-    const project = await projectLookup.find(projectId);
+    const project = await projectPort.find(projectId);
     if (project === undefined) {
       return;
     }
-    const tickets = await reviewedTicketLookup.list(projectId);
-    const activeRuns = await agentRunControl.activeRuns(projectId);
+    const tickets = await ticketPort.list(projectId);
+    const activeRuns = await runPort.activeRuns(projectId);
     const mergeablePullRequests = findMergeablePullRequests(
       tickets,
       activeRuns.map(({ run }) => run),

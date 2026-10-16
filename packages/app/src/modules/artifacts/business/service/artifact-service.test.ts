@@ -5,7 +5,7 @@ import { FakeClock } from '../../../../shared/testing/fake-clock.js';
 import { FakeEventPublisher } from '../../../../shared/testing/fake-event-publisher.js';
 import { buildArtifact } from '../../testing/build-artifact.js';
 import { FakeArtifactFiles } from '../../testing/fake-artifact-files.js';
-import { FakeTicketRunLookup } from '../../testing/fake-ticket-run-lookup.js';
+import { FakeRunPort } from '../../testing/fake-run-port.js';
 import { InMemoryArtifactRepository } from '../../testing/in-memory-artifact-repository.js';
 
 const request = {
@@ -35,7 +35,7 @@ describe('ArtifactService.publish', () => {
     service = new ArtifactService({
       artifactRepository,
       artifactFiles,
-      ticketRunLookup: new FakeTicketRunLookup(),
+      runPort: new FakeRunPort(),
       events: {
         emit: (...emitted: Parameters<FakeEventPublisher['emit']>) => {
           events.emit(...emitted);
@@ -114,13 +114,13 @@ describe('ArtifactService.listForTicket', () => {
     artifactRepository.add(buildArtifact({ token: 'T', artifactId: 'plan', title: 'Plan' }));
     artifactRepository.add(buildArtifact({ token: 'U', artifactId: 'notes', title: 'Notes' }));
     artifactRepository.add(buildArtifact({ token: 'V', ticketNumber: 8 }));
-    const ticketRunLookup = new FakeTicketRunLookup();
-    ticketRunLookup.latestRun = { id: 'r1', state: 'running', waitingFor: { artifactId: 'plan' } };
+    const runPort = new FakeRunPort();
+    runPort.latestRun = { id: 'r1', state: 'running', waitingFor: { artifactId: 'plan' } };
 
     const artifacts = await new ArtifactService({
       artifactRepository,
       artifactFiles: new FakeArtifactFiles(),
-      ticketRunLookup,
+      runPort,
       events: new FakeEventPublisher(),
       identifiers: { next: () => 'unused' },
       clock: new FakeClock('2026-10-06T10:00:00.000Z'),

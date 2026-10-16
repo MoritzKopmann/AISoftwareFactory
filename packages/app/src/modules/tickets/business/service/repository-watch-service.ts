@@ -17,13 +17,13 @@ import { GitHubRateLimitedError } from '../errors/github-rate-limited-error.js';
 import { GitHubRequestError } from '../errors/github-request-error.js';
 import type { IssueFeeds } from '../port/github/issue-feeds.js';
 import type { TicketSource } from '../port/github/ticket-source.js';
-import type { RegisteredRepositories } from '../port/project/registered-repositories.js';
+import type { ProjectPort } from '../port/project/project-port.js';
 import type { WatchStore } from '../port/repository/watch-store.js';
 
 export type RepositoryWatchServiceDependencies = {
   readonly issueFeeds: IssueFeeds;
   readonly ticketSource: TicketSource;
-  readonly registeredRepositories: RegisteredRepositories;
+  readonly projectPort: ProjectPort;
   readonly clock: Clock;
   readonly events: EventPublisher;
   readonly watchStore: WatchStore;
@@ -43,7 +43,7 @@ export class RepositoryWatchService {
   /** Watches every registered repository and polls once. Later polls follow on a timer. */
   async startWatching(): Promise<void> {
     this.stopped = false;
-    for (const { projectId, repository } of await this.dependencies.registeredRepositories.list()) {
+    for (const { projectId, repository } of await this.dependencies.projectPort.list()) {
       this.watch(projectId, repository);
     }
     await this.requestPoll();
