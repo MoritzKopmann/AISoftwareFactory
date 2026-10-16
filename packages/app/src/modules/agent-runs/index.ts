@@ -114,6 +114,7 @@ export function createAgentRunsModule(
     runRepository,
     recentRunSteps,
     runTranscripts: infrastructure.runTranscripts,
+    sessionFeed: infrastructure.sessionFeed,
   });
 
   return {
