@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { findOnPath } from './cli/find-on-path.js';
 import type { DatabaseSync } from 'node:sqlite';
 import { createArtifactsModule, type ArtifactsModule } from './modules/artifacts/index.js';
 import { createFindingsModule, type FindingsModule } from './modules/findings/index.js';
@@ -160,6 +159,7 @@ export type ApplicationOptions = {
   readonly logger: Logger;
   readonly kitDirectory: string;
   readonly pluginDirectory: string;
+  readonly claudeExecutablePath: string;
 };
 
 export type Application = {
@@ -170,7 +170,7 @@ export type Application = {
 
 /** The one place the modules are wired to each other. */
 export function composeApplication(options: ApplicationOptions): Application {
-  const { config, logger, kitDirectory, pluginDirectory } = options;
+  const { config, logger, kitDirectory, pluginDirectory, claudeExecutablePath } = options;
   const database = openDatabase(config.databasePath);
   runMigrations(database, migrations);
   const eventBus = new InMemoryEventBus<DomainEvents>();
@@ -185,7 +185,7 @@ export function composeApplication(options: ApplicationOptions): Application {
     database,
     eventBus,
     projects.internal,
-    findOnPath('claude') ?? 'claude',
+    claudeExecutablePath,
     agentTools,
     logger,
   );

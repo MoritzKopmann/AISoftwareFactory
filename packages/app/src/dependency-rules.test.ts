@@ -240,11 +240,43 @@ describe('dependency-cruiser module rules', () => {
         },
       },
       {
-        rule: 'main-only-through-index-and-infra',
-        title: 'composition-root imports module logic',
+        rule: 'B1-modules-only-through-index',
+        title: 'a module deep-imports another module',
         files: {
-          'composition-root.ts': "import './modules/x/business/service/a-service.js';\n",
-          [`${modulePath}/business/service/a-service.ts`]: exported,
+          'modules/y/index.ts': "import '../x/presentation/api/a.js';\n",
+          [`${modulePath}/presentation/api/a.ts`]: exported,
+        },
+      },
+      {
+        rule: 'W1-composition-root-imports-only-indexes-and-shared',
+        title: 'composition-root imports a module repository',
+        files: {
+          'composition-root.ts': "import './modules/x/infrastructure/repository/y.js';\n",
+          [`${modulePath}/infrastructure/repository/y.ts`]: exported,
+        },
+      },
+      {
+        rule: 'W2-in-memory-implementations-only-in-composition-root',
+        title: 'a module service imports a shared in-memory implementation',
+        files: {
+          [`${modulePath}/business/service/a-service.ts`]:
+            "import '../../../../shared/in-memory-event-bus.js';\n",
+          'shared/in-memory-event-bus.ts': exported,
+        },
+      },
+      {
+        rule: 'G1-no-circular',
+        title: 'two files import each other',
+        files: {
+          'shared/a.ts': "import './b.js';\nexport const first = 1;\n",
+          'shared/b.ts': "import './a.js';\nexport const second = 2;\n",
+        },
+      },
+      {
+        rule: 'not-to-unresolvable',
+        title: 'a file imports a missing file',
+        files: {
+          'shared/a.ts': "import './missing.js';\n",
         },
       },
     ])('should fail with $rule when $title', ({ rule, files }) => {
@@ -307,12 +339,27 @@ describe('dependency-cruiser module rules', () => {
         },
       },
       {
-        title: 'composition-root imports a module index and its infrastructure',
+        title: 'composition-root imports a module index, shared code and an in-memory bus',
         files: {
           'composition-root.ts':
-            "import './modules/x/index.js';\nimport './modules/x/infrastructure/repository/b.js';\n",
+            "import './modules/x/index.js';\nimport './shared/config.js';\nimport './shared/in-memory-event-bus.js';\n",
           [`${modulePath}/index.ts`]: exported,
-          [`${modulePath}/infrastructure/repository/b.ts`]: exported,
+          'shared/config.ts': exported,
+          'shared/in-memory-event-bus.ts': exported,
+        },
+      },
+      {
+        title: 'a module test imports a shared in-memory implementation',
+        files: {
+          [`${modulePath}/x.module.test.ts`]: "import '../../shared/in-memory-event-bus.js';\n",
+          'shared/in-memory-event-bus.ts': exported,
+        },
+      },
+      {
+        title: 'a module imports another module through its index',
+        files: {
+          'modules/y/index.ts': "import '../x/index.js';\n",
+          [`${modulePath}/index.ts`]: exported,
         },
       },
     ])('should pass when $title', ({ files }) => {
@@ -330,406 +377,26 @@ describe('dependency-cruiser module rules', () => {
     });
   });
 
-  describe('modules-only-through-index', () => {
-    it('should fail when a module deep-imports another module', () => {
-      const result = cruise({
-        'modules/scheduler/index.ts': "import '../tickets/logic/domain/types/snapshot.js';\n",
-        'modules/tickets/index.ts': exported,
-        'modules/tickets/logic/domain/types/snapshot.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('modules-only-through-index');
-    });
-
-    it('should pass when a module imports another module through its index', () => {
-      const result = cruise({
-        'modules/scheduler/index.ts': "import '../tickets/index.js';\n",
-        'modules/tickets/index.ts': exported,
-      });
-
-      expect(result.passed).toBe(true);
-    });
-
-    it('should pass when a module imports its own layers', () => {
-      const result = cruise({
-        'modules/tickets/index.ts': "import './api/routes/snapshots.js';\n",
-        'modules/tickets/api/routes/snapshots.ts':
-          "import '../../logic/domain/types/snapshot.js';\n",
-        'modules/tickets/logic/domain/types/snapshot.ts': exported,
-      });
-
-      expect(result.passed).toBe(true);
-    });
-  });
-
-  describe('outside-only-through-index', () => {
-    it('should fail when shared code deep-imports a module', () => {
-      const result = cruise({
-        'shared/helper.ts': "import '../modules/tickets/logic/domain/types/snapshot.js';\n",
-        'modules/tickets/index.ts': exported,
-        'modules/tickets/logic/domain/types/snapshot.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('outside-only-through-index');
-    });
-  });
-
-  describe('logic-no-infra-or-api', () => {
-    it('should fail when logic imports infra', () => {
-      const result = cruise({
-        'modules/tickets/logic/use-cases/poll.ts': "import '../../infra/repositories/store.js';\n",
-        'modules/tickets/infra/repositories/store.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('logic-no-infra-or-api');
-    });
-
-    it('should fail when logic imports api', () => {
-      const result = cruise({
-        'modules/tickets/logic/use-cases/poll.ts': "import '../../api/routes/snapshots.js';\n",
-        'modules/tickets/api/routes/snapshots.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('logic-no-infra-or-api');
-    });
-
-    it('should pass when infra imports logic', () => {
-      const result = cruise({
-        'modules/tickets/infra/repositories/store.ts': "import '../../logic/ports/store.js';\n",
-        'modules/tickets/logic/ports/store.ts': exported,
-      });
-
-      expect(result.passed).toBe(true);
-    });
-  });
-
-  describe('logic-no-other-module', () => {
-    it('should fail when logic deep-imports another module', () => {
-      const result = cruise({
-        'modules/scheduler/logic/use-cases/start.ts':
-          "import '../../../tickets/logic/domain/types/snapshot.js';\n",
-        'modules/tickets/index.ts': exported,
-        'modules/tickets/logic/domain/types/snapshot.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('logic-no-other-module');
-    });
-
-    it('should fail when logic imports another module through its index', () => {
-      const result = cruise({
-        'modules/scheduler/logic/use-cases/start.ts': "import '../../../tickets/index.js';\n",
-        'modules/tickets/index.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('logic-no-other-module');
-    });
-
-    it('should pass when logic imports its own ports', () => {
-      const result = cruise({
-        'modules/scheduler/logic/use-cases/start.ts': "import '../ports/clock.js';\n",
-        'modules/scheduler/logic/ports/clock.ts': exported,
-      });
-
-      expect(result.passed).toBe(true);
-    });
-  });
-
   describe('ui-only-api-schemas-from-app', () => {
-    it('should fail when packages/ui imports something other than an api schema from packages/app', () => {
-      const result = cruiseAcrossPackages({
-        'packages/ui/src/main.ts': "import '../../app/src/modules/tickets/index.js';\n",
-        'packages/app/src/modules/tickets/index.ts': exported,
-      });
+    it.each([
+      {
+        title: 'a module index',
+        files: {
+          'packages/ui/src/main.ts': "import '../../app/src/modules/x/index.js';\n",
+          'packages/app/src/modules/x/index.ts': exported,
+        },
+      },
+    ])('should fail when packages/ui imports $title', ({ files }) => {
+      const result = cruiseAcrossPackages(files);
 
       expect(result.passed).toBe(false);
       expect(result.output).toContain('ui-only-api-schemas-from-app');
     });
 
-    it('should fail when packages/ui imports a route file of a module', () => {
+    it('should pass when packages/ui imports shared/http', () => {
       const result = cruiseAcrossPackages({
-        'packages/ui/src/main.ts':
-          "import '../../app/src/modules/tickets/api/routes/create-snapshot-routes.js';\n",
-        'packages/app/src/modules/tickets/api/routes/create-snapshot-routes.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('ui-only-api-schemas-from-app');
-    });
-
-    it('should fail when packages/ui imports a use case of a module', () => {
-      const result = cruiseAcrossPackages({
-        'packages/ui/src/main.ts':
-          "import '../../app/src/modules/tickets/logic/use-cases/poll-use-case.js';\n",
-        'packages/app/src/modules/tickets/logic/use-cases/poll-use-case.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('ui-only-api-schemas-from-app');
-    });
-
-    it('should pass when packages/ui imports an api schema from packages/app', () => {
-      const result = cruiseAcrossPackages({
-        'packages/ui/src/main.ts':
-          "import '../../app/src/modules/tickets/api/schemas/projects-schemas.js';\n",
-        'packages/app/src/modules/tickets/api/schemas/projects-schemas.ts': exported,
-      });
-
-      expect(result.passed).toBe(true);
-    });
-  });
-
-  describe('infra-only-from-main', () => {
-    it('should fail when an api adapter imports infra', () => {
-      const result = cruise({
-        'modules/tickets/api/routes/snapshots.ts': "import '../../infra/repositories/store.js';\n",
-        'modules/tickets/infra/repositories/store.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('infra-only-from-main');
-    });
-
-    it('should fail when shared code imports infra', () => {
-      const result = cruise({
-        'shared/helper.ts': "import '../modules/tickets/infra/repositories/store.js';\n",
-        'modules/tickets/infra/repositories/store.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-    });
-
-    it('should pass when main imports infra', () => {
-      const result = cruise({
-        'main.ts': "import './modules/tickets/infra/repositories/store.js';\n",
-        'modules/tickets/infra/repositories/store.ts': exported,
-      });
-
-      expect(result.passed).toBe(true);
-    });
-
-    it('should fail when main imports module logic', () => {
-      const result = cruise({
-        'main.ts': "import './modules/tickets/logic/domain/types/snapshot.js';\n",
-        'modules/tickets/logic/domain/types/snapshot.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('main-only-through-index-and-infra');
-    });
-  });
-
-  describe('domain-only-domain', () => {
-    it('should fail when domain imports ports', () => {
-      const result = cruise({
-        'modules/tickets/logic/domain/functions/diff.ts': "import '../../ports/store.js';\n",
-        'modules/tickets/logic/ports/store.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('domain-only-domain');
-    });
-
-    it('should fail when domain imports shared', () => {
-      const result = cruise({
-        'modules/tickets/logic/domain/types/snapshot.ts':
-          "import type { Clock } from '../../../../../shared/clock.js';\nexport type Snapshot = Clock;\n",
-        'shared/clock.ts': 'export type Clock = number;\n',
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('domain-only-domain');
-    });
-
-    it('should pass when domain imports the shared ticket status', () => {
-      const result = cruise({
-        'modules/tickets/logic/domain/functions/arrange.ts':
-          "import { ticketStatusOrder } from '../../../../../shared/ticket-status/ticket-status-order.js';\nexport const arranged = ticketStatusOrder;\n",
-        'shared/ticket-status/ticket-status-order.ts': 'export const ticketStatusOrder = [];\n',
-      });
-
-      expect(result.passed).toBe(true);
-    });
-  });
-
-  describe('domain-types-only-types', () => {
-    it('should fail when a domain type imports a constant', () => {
-      const result = cruise({
-        'modules/tickets/logic/domain/types/snapshot.ts': "import '../constants/labels.js';\n",
-        'modules/tickets/logic/domain/constants/labels.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('domain-types-only-types');
-    });
-
-    it('should pass when a domain type imports another type', () => {
-      const result = cruise({
-        'modules/tickets/logic/domain/types/snapshot.ts': "import './ticket.js';\n",
-        'modules/tickets/logic/domain/types/ticket.ts': exported,
-      });
-
-      expect(result.passed).toBe(true);
-    });
-  });
-
-  describe('domain-constants-only-types', () => {
-    it('should fail when a domain constant imports a function', () => {
-      const result = cruise({
-        'modules/tickets/logic/domain/constants/labels.ts': "import '../functions/diff.js';\n",
-        'modules/tickets/logic/domain/functions/diff.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('domain-constants-only-types');
-    });
-
-    it('should pass when a domain constant imports a type', () => {
-      const result = cruise({
-        'modules/tickets/logic/domain/constants/labels.ts': "import '../types/label.js';\n",
-        'modules/tickets/logic/domain/types/label.ts': exported,
-      });
-
-      expect(result.passed).toBe(true);
-    });
-  });
-
-  describe('domain functions', () => {
-    it('should fail when a domain function imports a use case', () => {
-      const result = cruise({
-        'modules/tickets/logic/domain/functions/diff.ts': "import '../../use-cases/poll.js';\n",
-        'modules/tickets/logic/use-cases/poll.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('domain-only-domain');
-    });
-
-    it('should pass when a domain function imports a constant', () => {
-      const result = cruise({
-        'modules/tickets/logic/domain/functions/diff.ts': "import '../constants/labels.js';\n",
-        'modules/tickets/logic/domain/constants/labels.ts': exported,
-      });
-
-      expect(result.passed).toBe(true);
-    });
-  });
-
-  describe('domain-no-barrel', () => {
-    it('should fail when something imports a domain subfolder index', () => {
-      const result = cruise({
-        'modules/tickets/logic/use-cases/poll.ts': "import '../domain/types/index.js';\n",
-        'modules/tickets/logic/domain/types/index.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('domain-no-barrel');
-    });
-  });
-
-  describe('logic-shared-types-only', () => {
-    it('should fail when logic imports a value from shared', () => {
-      const result = cruise({
-        'modules/tickets/logic/use-cases/poll.ts': "import '../../../../shared/clock.js';\n",
-        'shared/clock.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('logic-shared-types-only');
-    });
-
-    it('should pass when logic imports a value from the shared ticket status', () => {
-      const result = cruise({
-        'modules/tickets/logic/use-cases/poll.ts':
-          "import '../../../../shared/ticket-status/derive-ticket-status.js';\n",
-        'shared/ticket-status/derive-ticket-status.ts': exported,
-      });
-
-      expect(result.passed).toBe(true);
-    });
-
-    it('should pass when logic imports a type from shared', () => {
-      const result = cruise({
-        'modules/tickets/logic/use-cases/poll.ts':
-          "import type { Clock } from '../../../../shared/clock.js';\nexport type Poll = Clock;\n",
-        'shared/clock.ts': 'export type Clock = number;\n',
-      });
-
-      expect(result.passed).toBe(true);
-    });
-  });
-
-  describe('use-cases-only-domain-ports-errors', () => {
-    it('should fail when a use case imports another use case', () => {
-      const result = cruise({
-        'modules/tickets/logic/use-cases/poll.ts': "import './refresh.js';\n",
-        'modules/tickets/logic/use-cases/refresh.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('use-cases-only-domain-ports-errors');
-    });
-
-    it('should pass when a use case imports domain, ports and errors', () => {
-      const result = cruise({
-        'modules/tickets/logic/use-cases/poll.ts':
-          "import '../domain/types/snapshot.js';\nimport '../ports/store.js';\nimport '../errors/missing-error.js';\n",
-        'modules/tickets/logic/domain/types/snapshot.ts': exported,
-        'modules/tickets/logic/ports/store.ts': exported,
-        'modules/tickets/logic/errors/missing-error.ts': exported,
-      });
-
-      expect(result.passed).toBe(true);
-    });
-  });
-
-  describe('infra-logic-only-ports-domain-errors', () => {
-    it('should fail when infra imports a use case', () => {
-      const result = cruise({
-        'modules/tickets/infra/repositories/store.ts': "import '../../logic/use-cases/poll.js';\n",
-        'modules/tickets/logic/use-cases/poll.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('infra-logic-only-ports-domain-errors');
-    });
-
-    it('should pass when infra imports ports, domain and errors', () => {
-      const result = cruise({
-        'modules/tickets/infra/repositories/store.ts':
-          "import '../../logic/ports/store.js';\nimport '../../logic/domain/types/snapshot.js';\nimport '../../logic/errors/missing-error.js';\n",
-        'modules/tickets/logic/ports/store.ts': exported,
-        'modules/tickets/logic/domain/types/snapshot.ts': exported,
-        'modules/tickets/logic/errors/missing-error.ts': exported,
-      });
-
-      expect(result.passed).toBe(true);
-    });
-  });
-
-  describe('api-logic-only-use-cases-domain-errors', () => {
-    it('should fail when an api adapter imports a port', () => {
-      const result = cruise({
-        'modules/tickets/api/routes/snapshots.ts': "import '../../logic/ports/store.js';\n",
-        'modules/tickets/logic/ports/store.ts': exported,
-      });
-
-      expect(result.passed).toBe(false);
-      expect(result.output).toContain('api-logic-only-use-cases-domain-errors');
-    });
-
-    it('should pass when an api adapter imports a use case, a domain type and an error', () => {
-      const result = cruise({
-        'modules/tickets/api/routes/snapshots.ts':
-          "import '../../logic/use-cases/poll.js';\nimport '../../logic/domain/types/snapshot.js';\nimport '../../logic/errors/missing-error.js';\n",
-        'modules/tickets/logic/use-cases/poll.ts': exported,
-        'modules/tickets/logic/domain/types/snapshot.ts': exported,
-        'modules/tickets/logic/errors/missing-error.ts': exported,
+        'packages/ui/src/main.ts': "import '../../app/src/shared/http.js';\n",
+        'packages/app/src/shared/http.ts': exported,
       });
 
       expect(result.passed).toBe(true);
