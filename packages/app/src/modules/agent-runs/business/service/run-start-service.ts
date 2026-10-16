@@ -60,6 +60,11 @@ function answerText(answer: RunAnswer): string {
   return answer.kind === 'checkpoint' ? answer.text : answer.decision;
 }
 
+/** Only entries and text deltas go onto the session feed; steps and run endings do not. */
+function goesOnFeed(event: SessionEvent): boolean {
+  return event.kind === 'entry' || event.kind === 'text-delta';
+}
+
 /** Starts and resumes runs, launches their agent session and holds them for a human's answer. */
 export class RunStartService {
   constructor(private readonly dependencies: RunStartServiceDependencies) {}
@@ -315,7 +320,8 @@ export class RunStartService {
     let promptPulled = false;
     try {
       for await (const event of sessionEvents) {
-        if ((event.kind === 'entry' || event.kind === 'text-delta') && !promptPulled) {
+        // The prompt comes first on the feed. The transcript holds it by the first stream event.
+        if (goesOnFeed(event) && !promptPulled) {
           promptPulled = true;
           await this.publishPrompt(run);
         }
