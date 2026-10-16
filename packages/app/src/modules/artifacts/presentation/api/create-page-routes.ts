@@ -15,27 +15,6 @@ const eventConflictStatuses: Readonly<Record<string, 'busy' | 'closed' | undefin
   PageClosedError: 'closed',
 };
 
-const loopbackHostPattern = /^(127\.0\.0\.1|localhost)(:\d+)?$/i;
-
-const requireLoopbackHost: MiddlewareHandler = async (context, next) => {
-  const host = context.req.header('host');
-  if (host === undefined || !loopbackHostPattern.test(host)) {
-    return context.json({ message: 'Forbidden host' }, 403);
-  }
-  return next();
-};
-
-// Our own check instead of hono/csrf: that one skips JSON bodies.
-const requireOwnOrigin: MiddlewareHandler = async (context, next) => {
-  if (context.req.method === 'GET' || context.req.method === 'HEAD') {
-    return next();
-  }
-  if (context.req.header('origin') !== `http://${context.req.header('host')}`) {
-    return context.json({ message: 'Forbidden origin' }, 403);
-  }
-  return next();
-};
-
 const addPageHeaders: MiddlewareHandler = (context, next) =>
   secureHeaders({
     contentSecurityPolicy: {
@@ -86,8 +65,6 @@ function assetPathOf(context: Context, token: string): string | undefined {
 
 export function createPageRoutes(pageService: PageService): Hono {
   return new Hono()
-    .use('*', requireLoopbackHost)
-    .use('*', requireOwnOrigin)
     .use('/:token/*', addPageHeaders)
     .get('/:token/', (context) =>
       answerOrDomainError(context, async () => {
