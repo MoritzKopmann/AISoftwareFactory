@@ -7,7 +7,7 @@ const ignore = () => undefined;
 const liveUpdates: LiveUpdates = { listen: () => ignore, connection: () => 'open' };
 
 describe('TicketPageView', () => {
-  it('should end with the collapsed description after the run log when the ticket is loaded', () => {
+  it('should end with the session, then the collapsed description, and show no run log or steps list when the ticket is loaded', () => {
     const markup = renderToStaticMarkup(
       <TicketPageView
         liveUpdates={liveUpdates}
@@ -30,8 +30,10 @@ describe('TicketPageView', () => {
         onRetry={ignore}
       />,
     );
+    expect(markup).not.toContain('runlog');
+    expect(markup).not.toContain('class="steps"');
     expect(markup).toMatch(
-      /<details class="row runlog"><summary.*<\/summary><\/details><details class="row ticket-body"><summary.*<\/summary>.*<\/details><\/main>$/,
+      /<section class="session" aria-label="Session">.*<\/section><details class="row ticket-body"><summary.*<\/summary>.*<\/details><\/main>$/,
     );
   });
 

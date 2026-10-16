@@ -6,8 +6,6 @@ import { countRunMinutes } from './count-run-minutes.js';
 import { describeStopAction, type StopActionDescription } from './describe-stop-action.js';
 import type { TicketRunPoll } from './fold-ticket-run-poll.js';
 
-const shownStepCount = 5;
-
 type ActiveRun = NonNullable<TicketRunResponse['activeRun']>;
 type LastRun = NonNullable<TicketRunResponse['lastRun']>;
 
@@ -22,21 +20,12 @@ function describeStartedLabel(startedAt: string, runSkill: RunSkill, now: Date):
   return isIdeaOrPlanSkill(runSkill) ? `${runSkill} · started ${timeAgo}` : `Started ${timeAgo}`;
 }
 
-export type RunPanelStep = {
-  readonly at: string;
-  readonly time: string;
-  readonly summary: string;
-  readonly latest: boolean;
-};
-
 type LiveRunDescription = {
   readonly kind: 'live';
   readonly waiting: boolean;
   readonly startedLabel: string;
   readonly stop: StopActionDescription;
   readonly banner?: string;
-  readonly steps: ReadonlyArray<RunPanelStep>;
-  readonly emptyMessage?: string;
 };
 
 type EndedRunDescription = {
@@ -53,7 +42,6 @@ function describeLiveRun(
   input: RunPanelInput,
   now: Date,
 ): LiveRunDescription {
-  const lastSteps = activeRun.steps.slice(-shownStepCount);
   return {
     kind: 'live',
     waiting: activeRun.waitingFor !== undefined,
@@ -61,17 +49,8 @@ function describeLiveRun(
     stop: describeStopAction(input.stopping),
     ...(input.lastPollFailed && input.answeredAt !== undefined
       ? {
-          banner: `Can't reach aisf. Showing the steps from ${formatClockTime(input.answeredAt, 'minutes')}. Loads again on the next change, or on Retry.`,
+          banner: `Can't reach aisf. Showing the run from ${formatClockTime(input.answeredAt, 'minutes')}. Loads again on the next change, or on Retry.`,
         }
-      : {}),
-    steps: lastSteps.map((step, position) => ({
-      at: step.at,
-      time: formatClockTime(step.at, 'seconds'),
-      summary: step.summary,
-      latest: position === lastSteps.length - 1,
-    })),
-    ...(lastSteps.length === 0
-      ? { emptyMessage: 'Starting the session. Steps show up here as they happen.' }
       : {}),
   };
 }

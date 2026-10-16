@@ -29,7 +29,7 @@ export function RunPanel({ description, onStop, onRetry }: RunPanelProps) {
       </section>
     );
   }
-  const { waiting, startedLabel, stop, banner, steps, emptyMessage } = description;
+  const { waiting, startedLabel, stop, banner } = description;
   return (
     <section className="runpanel" aria-label="Run">
       <div className="head">
@@ -60,22 +60,6 @@ export function RunPanel({ description, onStop, onRetry }: RunPanelProps) {
           </button>
         </div>
       )}
-      <ol className="steps">
-        {emptyMessage !== undefined && (
-          <li className="empty" role="status">
-            {emptyMessage}
-          </li>
-        )}
-        {steps.map((step, position) => (
-          <li key={`${position} ${step.at}`} className={step.latest ? 'latest' : undefined}>
-            <time dateTime={step.at}>{step.time}</time>
-            <span className="what" title={step.summary}>
-              {step.summary}
-              {step.latest && <span className="vh"> (latest step)</span>}
-            </span>
-          </li>
-        ))}
-      </ol>
     </section>
   );
 }

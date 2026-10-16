@@ -12,7 +12,7 @@ import {
 import { outcomeAfterRefresh } from './outcome-after-refresh.js';
 import { ReviewPanel } from './review-panel.js';
 import { RunSection } from './run-section.js';
-import { RunLog } from './run-log.js';
+import { LiveSession } from './session-view.js';
 import { TicketBodySection } from './ticket-body-section.js';
 import { ticketLiveView } from './ticket-live-view.js';
 import { isRequestFailure } from '../shared/is-request-failure.js';
@@ -220,7 +220,7 @@ function LoadedTicket({
         )}
       </dl>
       <KnownBugs liveUpdates={liveUpdates} projectId={projectId} ticketNumber={number} />
-      <RunLog projectId={projectId} number={number} />
+      <LiveSession liveUpdates={liveUpdates} projectId={projectId} number={number} />
       <TicketBodySection body={description.body} />
     </>
   );
