@@ -1,0 +1,173 @@
+import type { RepositoryReference } from '../business/domain/types/repository-reference.js';
+import type { RunsBlocked } from '../business/domain/types/runs-blocked.js';
+import type { SchedulableTicket } from '../business/domain/types/schedulable-ticket.js';
+import type { TicketAnswerGate } from '../business/port/ticket/ticket-answer-gate.js';
+import type { PullRequestMerges } from '../business/port/github/pull-request-merges.js';
+import type { ProjectLookup, SchedulerProject } from '../business/port/project/project-lookup.js';
+import type { ReviewedTicket } from '../business/domain/types/reviewed-ticket.js';
+import type { ReviewedTicketLookup } from '../business/port/ticket/reviewed-ticket-lookup.js';
+import type { ActiveTicketRun } from '../business/domain/types/active-ticket-run.js';
+import type { LatestRun } from '../business/domain/types/latest-run.js';
+import type { RunWait } from '../business/domain/types/run-wait.js';
+import type { RunAnswer } from '../business/domain/types/run-answer.js';
+import type { RunRecord } from '../business/domain/types/run-record.js';
+import type { RunStep } from '../business/domain/types/run-step.js';
+import type { RunnerPort } from '../business/port/runner/runner-port.js';
+import type { IdeaCreation } from '../business/port/ticket/idea-creation.js';
+import type { RunsGate } from '../business/port/runs/runs-gate.js';
+import type { TicketLookup } from '../business/port/ticket/ticket-lookup.js';
+
+export const repository: RepositoryReference = { owner: 'moritz', name: 'aisf' };
+
+export const readyLeaf: SchedulableTicket = {
+  number: 138,
+  title: 'Add login',
+  status: 'ready',
+  types: [],
+  isLeaf: true,
+  hasOpenBlocker: false,
+  subIssueNumbers: [],
+  snapshotTakenAt: '2026-09-29T10:00:00.000Z',
+};
+
+export class FakeTicketAnswerGate implements TicketAnswerGate {
+  readonly calls: string[] = [];
+  beginFailure: Error | undefined;
+
+  async begin(projectId: string, ticketNumber: number): Promise<void> {
+    this.calls.push(`begin ${projectId} #${ticketNumber}`);
+    if (this.beginFailure !== undefined) {
+      throw this.beginFailure;
+    }
+  }
+
+  async revert(projectId: string, ticketNumber: number): Promise<void> {
+    this.calls.push(`revert ${projectId} #${ticketNumber}`);
+  }
+}
+
+export class FakePullRequestMerges implements PullRequestMerges {
+  readonly calls: string[] = [];
+  mergeError: Error | undefined;
+  mergeGate: Promise<void> = Promise.resolve();
+
+  async merge(
+    _repository: RepositoryReference,
+    pullRequestNumber: number,
+    headCommit: string,
+  ): Promise<void> {
+    this.calls.push(`merge #${pullRequestNumber} ${headCommit}`);
+    await this.mergeGate;
+    if (this.mergeError !== undefined) {
+      throw this.mergeError;
+    }
+  }
+}
+
+export class FakeRunnerPort implements RunnerPort {
+  readonly calls: string[] = [];
+  activeTicketNumbers: ReadonlyArray<number> = [];
+  activeSteps: ReadonlyArray<RunStep> = [];
+  activeWaitingFor: RunWait | undefined;
+  activeWaitingSince: string | undefined;
+  latest: LatestRun | undefined;
+  record: RunRecord | undefined;
+  startFailure: Error | undefined;
+  answerFailure: Error | undefined;
+
+  readonly startRequests: Array<Parameters<RunnerPort['start']>[0]> = [];
+
+  async start(
+    request: Parameters<RunnerPort['start']>[0],
+  ): Promise<{ readonly id: string; readonly startedAt: string }> {
+    this.startRequests.push(request);
+    this.calls.push(`start ${request.projectId} #${request.ticketNumber}`);
+    if (this.startFailure !== undefined) {
+      throw this.startFailure;
+    }
+    return { id: 'run-1', startedAt: '2026-09-29T09:00:00.000Z' };
+  }
+
+  async findRun(runId: string): Promise<RunRecord | undefined> {
+    this.calls.push(`findRun ${runId}`);
+    return this.record;
+  }
+
+  async answer(
+    runId: string,
+    answer: RunAnswer,
+  ): Promise<{ readonly id: string; readonly startedAt: string }> {
+    this.calls.push(`answer ${runId} ${JSON.stringify(answer)}`);
+    if (this.answerFailure !== undefined) {
+      throw this.answerFailure;
+    }
+    return { id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' };
+  }
+
+  async activeRuns(): Promise<ReadonlyArray<ActiveTicketRun>> {
+    return this.activeTicketNumbers.map((ticketNumber) => ({
+      run: {
+        id: 'run-1',
+        ticketNumber,
+        startedAt: '2026-09-29T09:00:00.000Z',
+        ...(this.activeWaitingFor === undefined ? {} : { waitingFor: this.activeWaitingFor }),
+        ...(this.activeWaitingSince === undefined ? {} : { waitingSince: this.activeWaitingSince }),
+      },
+      steps: this.activeSteps,
+    }));
+  }
+
+  async latestRun(): Promise<LatestRun | undefined> {
+    return this.latest;
+  }
+}
+
+export class FakeTicketLookup implements TicketLookup {
+  constructor(
+    private readonly ticket: SchedulableTicket | undefined,
+    private readonly subIssues: ReadonlyArray<SchedulableTicket> = [],
+  ) {}
+
+  async find(_projectId: string, ticketNumber: number): Promise<SchedulableTicket | undefined> {
+    return this.subIssues.find(({ number }) => number === ticketNumber) ?? this.ticket;
+  }
+}
+
+export class FakeReviewedTicketLookup implements ReviewedTicketLookup {
+  constructor(private readonly tickets: ReadonlyArray<ReviewedTicket>) {}
+
+  async list(): Promise<ReadonlyArray<ReviewedTicket>> {
+    return this.tickets;
+  }
+}
+
+export class FakeRunsGate implements RunsGate {
+  constructor(private readonly runsBlocked: RunsBlocked = { blocked: false }) {}
+
+  check(): RunsBlocked {
+    return this.runsBlocked;
+  }
+}
+
+export class FakeProjectLookup implements ProjectLookup {
+  constructor(
+    private readonly project: SchedulerProject | undefined = { repository, onboarded: true },
+  ) {}
+
+  async find(): Promise<SchedulerProject | undefined> {
+    return this.project;
+  }
+}
+
+export class FakeIdeaCreation implements IdeaCreation {
+  readonly calls: string[] = [];
+  createdNumber = 501;
+
+  async create(
+    _repository: RepositoryReference,
+    idea: { readonly title: string; readonly body: string },
+  ): Promise<number> {
+    this.calls.push(`create ${JSON.stringify(idea)}`);
+    return this.createdNumber;
+  }
+}
