@@ -1,8 +1,8 @@
 ---
 name: code-rules
 description: >
-  Code rules for review: naming, modules, immutability, errors, SQL and comments. Use when
-  reviewing code for style and correctness-of-form, not for structure.
+  Code rules for review: naming, conditions, modules, immutability, errors, SQL and comments.
+  Use when reviewing code for style and correctness-of-form, not for structure.
 user-invocable: false
 ---
 
@@ -30,6 +30,25 @@ const orderCount = orders.length;
 const config = loadConfig();
 const orderResponse = await client.fetch(orderQuery);
 orders.map((order) => order.id);
+```
+
+## Conditions
+
+**Rule:** an `if` reads as what it checks, not how.
+
+- **Must:** a condition that combines checks, or whose purpose the code doesn't show, is a helper function named after what it checks. The `if` then reads as a sentence.
+- **Must:** the helper's name states the question it answers (`goesOnFeed`, `isOverdue`), not the fields it reads.
+
+```ts
+// Bad
+if ((event.kind === 'entry' || event.kind === 'text-delta') && !promptPulled) {
+
+// Good
+function goesOnFeed(event: SessionEvent): boolean {
+  return event.kind === 'entry' || event.kind === 'text-delta';
+}
+
+if (goesOnFeed(event) && !promptPulled) {
 ```
 
 ## Modules
