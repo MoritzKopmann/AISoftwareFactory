@@ -13,7 +13,7 @@ Build it with `aisf:artifacts` (read it and `references/elements.md` first) and 
   the next round.
 - **A question a step 7 spec subagent returns** goes on the same page as a further round.
 - **Confirm** is the last `<aisf-confirm>` round: one `<aisf-task>` per sub-issue with its
-  `hitl` switch, and the decision tree from the ledger as `<aisf-tree-node>` rows. The answer
+  module and layer in `heading` and its `hitl` switch, and the decision tree from the ledger as `<aisf-tree-node>` rows. The answer
   carries `hitl` per task. Confirm locks them.
 - **Next round:** edit the same `index.html`, then call `aisf_show_artifact` again with the
   same id.
