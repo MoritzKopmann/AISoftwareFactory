@@ -7,7 +7,7 @@ import {
   FakeAgentSessions,
   FakeRunAnswerWaits,
   FakeRunRepository,
-} from '../../testing/fake-runner-ports.js';
+} from '../../testing/fake-agent-runs-ports.js';
 import { RunEndService } from './run-end-service.js';
 
 describe('RunEndService', () => {

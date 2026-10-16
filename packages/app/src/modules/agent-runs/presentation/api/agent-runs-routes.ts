@@ -5,7 +5,7 @@ import { createRunLogRoutes } from './create-run-log-routes.js';
 import { createStopRunRoutes } from './create-stop-run-routes.js';
 
 /** The module's route table, with full paths. */
-export function createRunnerRoutes(services: {
+export function createAgentRunsRoutes(services: {
   readonly runEndService: RunEndService;
   readonly runQueryService: RunQueryService;
 }): Hono {

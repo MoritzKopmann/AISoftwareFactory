@@ -6,7 +6,7 @@ import type { RunAnswer } from '../../domain/types/run-answer.js';
 import type { RunRecord } from '../../domain/types/run-record.js';
 import type { StartedRun } from '../../domain/types/started-run.js';
 
-export interface RunnerPort {
+export interface AgentRunControl {
   start(request: {
     readonly projectId: string;
     readonly ticketNumber: number;

@@ -6,7 +6,7 @@ import {
   buildRun,
   FakeRunAnswerWaits,
   FakeRunRepository,
-} from '../../testing/fake-runner-ports.js';
+} from '../../testing/fake-agent-runs-ports.js';
 
 describe('RunAnswerService', () => {
   let runRepository: FakeRunRepository;

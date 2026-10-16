@@ -9,7 +9,7 @@ import { RunAlreadyActiveError } from '../../business/errors/run-already-active-
 import { migrations } from '../../../../shared/db/migrations.js';
 import { openDatabase } from '../../../../shared/db/open-database.js';
 import { runMigrations } from '../../../../shared/db/run-migrations.js';
-import { buildRun } from '../../testing/fake-runner-ports.js';
+import { buildRun } from '../../testing/fake-agent-runs-ports.js';
 
 describe('SqliteRunRepository', () => {
   let homeDirectory: string;

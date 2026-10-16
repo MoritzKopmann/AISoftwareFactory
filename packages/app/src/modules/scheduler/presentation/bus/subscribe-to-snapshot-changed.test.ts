@@ -8,7 +8,7 @@ import {
   FakePullRequestMerges,
   FakeProjectLookup,
   FakeReviewedTicketLookup,
-  FakeRunnerPort,
+  FakeAgentRunControl,
 } from '../../testing/fake-scheduler-ports.js';
 
 const approvedTicket: ReviewedTicket = {
@@ -40,7 +40,7 @@ function buildSubject() {
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
   const mergeService = new MergeService({
     pullRequestMerges,
-    runner: new FakeRunnerPort(),
+    agentRunControl: new FakeAgentRunControl(),
     reviewedTicketLookup: new FakeReviewedTicketLookup([approvedTicket]),
     projectLookup: new FakeProjectLookup(),
     logger,

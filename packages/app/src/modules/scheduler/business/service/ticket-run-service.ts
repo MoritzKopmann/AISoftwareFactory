@@ -11,7 +11,7 @@ import { RunAlreadyActiveError } from '../errors/run-already-active-error.js';
 import { RunNotAnswerableError } from '../errors/run-not-answerable-error.js';
 import { RunNotAvailableError } from '../errors/run-not-available-error.js';
 import type { ProjectLookup } from '../port/project/project-lookup.js';
-import type { RunnerPort } from '../port/runner/runner-port.js';
+import type { AgentRunControl } from '../port/runs/agent-run-control.js';
 import type { RunsGate } from '../port/runs/runs-gate.js';
 import type { IdeaCreation } from '../port/ticket/idea-creation.js';
 import type { TicketAnswerGate } from '../port/ticket/ticket-answer-gate.js';
@@ -19,7 +19,7 @@ import type { TicketLookup } from '../port/ticket/ticket-lookup.js';
 
 export type TicketRunServiceDependencies = {
   readonly ticketLookup: TicketLookup;
-  readonly runner: RunnerPort;
+  readonly agentRunControl: AgentRunControl;
   readonly runsGate: RunsGate;
   readonly projectLookup: ProjectLookup;
   readonly ideaCreation: IdeaCreation;
@@ -30,12 +30,12 @@ export class TicketRunService {
   constructor(private readonly dependencies: TicketRunServiceDependencies) {}
 
   async readAvailability(projectId: string, ticketNumber: number): Promise<RunAvailability> {
-    const { ticketLookup, runner, runsGate, projectLookup } = this.dependencies;
+    const { ticketLookup, agentRunControl, runsGate, projectLookup } = this.dependencies;
 
     const [ticket, activeRuns, latestRun, project] = await Promise.all([
       ticketLookup.find(projectId, ticketNumber),
-      runner.activeRuns(projectId),
-      runner.latestRun(projectId, ticketNumber),
+      agentRunControl.activeRuns(projectId),
+      agentRunControl.latestRun(projectId, ticketNumber),
       projectLookup.find(projectId),
     ]);
 
@@ -57,12 +57,12 @@ export class TicketRunService {
   }
 
   async readTicketRun(projectId: string, ticketNumber: number): Promise<TicketRun> {
-    const { runner } = this.dependencies;
+    const { agentRunControl } = this.dependencies;
 
     const [availability, activeRuns, latestRun] = await Promise.all([
       this.readAvailability(projectId, ticketNumber),
-      runner.activeRuns(projectId),
-      runner.latestRun(projectId, ticketNumber),
+      agentRunControl.activeRuns(projectId),
+      agentRunControl.latestRun(projectId, ticketNumber),
     ]);
 
     const activeRun = activeRuns.find(({ run }) => run.ticketNumber === ticketNumber);
@@ -107,7 +107,7 @@ export class TicketRunService {
     if (ticket === undefined) {
       throw new RunNotAvailableError(`Ticket #${ticketNumber} cannot be run`);
     }
-    return this.dependencies.runner.start({
+    return this.dependencies.agentRunControl.start({
       projectId,
       ticketNumber,
       ticketTitle: ticket.title,
@@ -144,9 +144,9 @@ export class TicketRunService {
   }
 
   async answer(runId: string, answer: RunAnswer): Promise<StartedRun> {
-    const { ticketAnswerGate, runner } = this.dependencies;
+    const { ticketAnswerGate, agentRunControl } = this.dependencies;
 
-    const run = await runner.findRun(runId);
+    const run = await agentRunControl.findRun(runId);
     if (run === undefined) {
       throw new RunNotAnswerableError(`Run ${runId} is unknown`);
     }
@@ -157,13 +157,13 @@ export class TicketRunService {
     }
     const { projectId, ticketNumber } = run;
 
-    const latestRun = await runner.latestRun(projectId, ticketNumber);
+    const latestRun = await agentRunControl.latestRun(projectId, ticketNumber);
     if (latestRun?.id !== runId) {
       throw new RunNotAnswerableError(`Run ${runId} is not the latest run of #${ticketNumber}`);
     }
     await ticketAnswerGate.begin(projectId, ticketNumber);
     try {
-      return await runner.answer(runId, answer);
+      return await agentRunControl.answer(runId, answer);
     } catch (error) {
       await ticketAnswerGate.revert(projectId, ticketNumber);
       throw error;

@@ -16,24 +16,24 @@ import { ProjectsRunTargets } from './infrastructure/internal/projects-run-targe
 import { ClaudeAgentSdkSessions } from './infrastructure/session/claude-agent-sdk-sessions.js';
 import { ClaudeAgentSdkRunTranscripts } from './infrastructure/transcript/claude-agent-sdk-run-transcripts.js';
 import { GitCliWorktrees } from './infrastructure/worktree/git-cli-worktrees.js';
-import { createRunnerRoutes } from './presentation/api/runner-routes.js';
-import { createRunnerAbortSessionsJob } from './presentation/cron/runner-abort-sessions-job.js';
-import { createRunnerRecoverInterruptedRunsJob } from './presentation/cron/runner-recover-interrupted-runs-job.js';
-import { RunnerFacade } from './presentation/internal/runner-facade.js';
+import { createAgentRunsRoutes } from './presentation/api/agent-runs-routes.js';
+import { createAgentRunsAbortSessionsJob } from './presentation/cron/agent-runs-abort-sessions-job.js';
+import { createAgentRunsRecoverInterruptedRunsJob } from './presentation/cron/agent-runs-recover-interrupted-runs-job.js';
+import { AgentRunsFacade } from './presentation/internal/agent-runs-facade.js';
 import type {
-  RunnerModule,
-  RunnerModuleDependencies,
-} from './presentation/internal/runner-module.js';
+  AgentRunsModule,
+  AgentRunsModuleDependencies,
+} from './presentation/internal/agent-runs-module.js';
 import { createCheckpointTool } from './presentation/tool/create-checkpoint-tool.js';
 import { createEscalateTool } from './presentation/tool/create-escalate-tool.js';
 import { createParkTool } from './presentation/tool/create-park-tool.js';
 import type { ProjectsApi } from '../projects/index.js';
 
-export type { RunnerApi } from './presentation/internal/runner-api.js';
+export type { AgentRunsApi } from './presentation/internal/agent-runs-api.js';
 export type {
-  RunnerModule,
-  RunnerModuleDependencies,
-} from './presentation/internal/runner-module.js';
+  AgentRunsModule,
+  AgentRunsModuleDependencies,
+} from './presentation/internal/agent-runs-module.js';
 export type { ActiveRunDto } from './presentation/dto/internal/active-run-dto.js';
 export type { ActiveWaitDto } from './presentation/dto/internal/active-wait-dto.js';
 export type { AnswerRunResultDto } from './presentation/dto/internal/answer-run-result-dto.js';
@@ -44,7 +44,7 @@ export type { RunStepDto } from './presentation/dto/internal/run-step-dto.js';
 export type { StartRunRequestDto } from './presentation/dto/internal/start-run-request-dto.js';
 export type { StartRunResultDto } from './presentation/dto/internal/start-run-result-dto.js';
 
-type RunnerInfrastructure = {
+type AgentRunsInfrastructure = {
   readonly runRepository: RunRepository;
   readonly agentSessions: AgentSessions;
   readonly worktrees: Worktrees;
@@ -56,12 +56,12 @@ type RunnerInfrastructure = {
 
 const answerTimeoutMarginMilliseconds = 600_000;
 
-export function createRunnerModule(
-  dependencies: RunnerModuleDependencies & { readonly projects: ProjectsApi },
-  overrides: Partial<RunnerInfrastructure> = {},
-): RunnerModule {
+export function createAgentRunsModule(
+  dependencies: AgentRunsModuleDependencies & { readonly projects: ProjectsApi },
+  overrides: Partial<AgentRunsInfrastructure> = {},
+): AgentRunsModule {
   const { clock, events } = dependencies;
-  const infrastructure: RunnerInfrastructure = {
+  const infrastructure: AgentRunsInfrastructure = {
     runRepository: new SqliteRunRepository(dependencies.database),
     agentSessions: new ClaudeAgentSdkSessions({
       claudeExecutablePath: dependencies.claudeExecutablePath,
@@ -111,12 +111,13 @@ export function createRunnerModule(
   });
 
   return {
-    routes: createRunnerRoutes({ runEndService, runQueryService }),
+    routes: createAgentRunsRoutes({ runEndService, runQueryService }),
     jobs: {
-      'runner.recover-interrupted-runs': createRunnerRecoverInterruptedRunsJob(runEndService),
-      'runner.abort-sessions': createRunnerAbortSessionsJob(runEndService),
+      'agent-runs.recover-interrupted-runs':
+        createAgentRunsRecoverInterruptedRunsJob(runEndService),
+      'agent-runs.abort-sessions': createAgentRunsAbortSessionsJob(runEndService),
     },
-    internal: new RunnerFacade({
+    internal: new AgentRunsFacade({
       runStartService,
       runEndService,
       runAnswerService,

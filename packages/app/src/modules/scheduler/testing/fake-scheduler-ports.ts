@@ -12,7 +12,7 @@ import type { RunWait } from '../business/domain/types/run-wait.js';
 import type { RunAnswer } from '../business/domain/types/run-answer.js';
 import type { RunRecord } from '../business/domain/types/run-record.js';
 import type { RunStep } from '../business/domain/types/run-step.js';
-import type { RunnerPort } from '../business/port/runner/runner-port.js';
+import type { AgentRunControl } from '../business/port/runs/agent-run-control.js';
 import type { IdeaCreation } from '../business/port/ticket/idea-creation.js';
 import type { RunsGate } from '../business/port/runs/runs-gate.js';
 import type { TicketLookup } from '../business/port/ticket/ticket-lookup.js';
@@ -64,7 +64,7 @@ export class FakePullRequestMerges implements PullRequestMerges {
   }
 }
 
-export class FakeRunnerPort implements RunnerPort {
+export class FakeAgentRunControl implements AgentRunControl {
   readonly calls: string[] = [];
   activeTicketNumbers: ReadonlyArray<number> = [];
   activeSteps: ReadonlyArray<RunStep> = [];
@@ -75,10 +75,10 @@ export class FakeRunnerPort implements RunnerPort {
   startFailure: Error | undefined;
   answerFailure: Error | undefined;
 
-  readonly startRequests: Array<Parameters<RunnerPort['start']>[0]> = [];
+  readonly startRequests: Array<Parameters<AgentRunControl['start']>[0]> = [];
 
   async start(
-    request: Parameters<RunnerPort['start']>[0],
+    request: Parameters<AgentRunControl['start']>[0],
   ): Promise<{ readonly id: string; readonly startedAt: string }> {
     this.startRequests.push(request);
     this.calls.push(`start ${request.projectId} #${request.ticketNumber}`);

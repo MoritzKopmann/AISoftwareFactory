@@ -3,7 +3,7 @@ import { MergeService } from './business/service/merge-service.js';
 import { TicketRunService } from './business/service/ticket-run-service.js';
 import { GhCliPullRequestMerges } from './infrastructure/github/gh-cli-pull-request-merges.js';
 import { ProjectsProjectLookup } from './infrastructure/internal/projects-project-lookup.js';
-import { RunnerRunnerPort } from './infrastructure/internal/runner-runner-port.js';
+import { AgentRunsAgentRunControl } from './infrastructure/internal/agent-runs-agent-run-control.js';
 import { SkillsRunsGate } from './infrastructure/internal/skills-runs-gate.js';
 import { TicketsIdeaCreation } from './infrastructure/internal/tickets-idea-creation.js';
 import { TicketsReviewedTicketLookup } from './infrastructure/internal/tickets-reviewed-ticket-lookup.js';
@@ -17,7 +17,7 @@ import type {
   SchedulerModuleDependencies,
 } from './presentation/internal/scheduler-module.js';
 import type { ProjectsApi } from '../projects/index.js';
-import type { RunnerApi } from '../runner/index.js';
+import type { AgentRunsApi } from '../agent-runs/index.js';
 import type { SkillsApi } from '../skills/index.js';
 import type { TicketsApi } from '../tickets/index.js';
 
@@ -41,21 +41,24 @@ export function createSchedulerModule(
       TicketsApi,
       'ticket' | 'openTickets' | 'beginAnswer' | 'revertAnswer' | 'createIdea'
     >;
-    readonly runner: Pick<RunnerApi, 'start' | 'answer' | 'findRun' | 'activeRuns' | 'latestRun'>;
+    readonly agentRuns: Pick<
+      AgentRunsApi,
+      'start' | 'answer' | 'findRun' | 'activeRuns' | 'latestRun'
+    >;
   },
   overrides: Partial<SchedulerInfrastructure> = {},
 ): SchedulerModule {
-  const { events, logger, projects, skills, tickets, runner } = dependencies;
+  const { events, logger, projects, skills, tickets, agentRuns } = dependencies;
   const infrastructure: SchedulerInfrastructure = {
     pullRequestMerges: new GhCliPullRequestMerges(),
     ...overrides,
   };
   const projectLookup = new ProjectsProjectLookup(projects);
-  const runnerPort = new RunnerRunnerPort(runner);
+  const agentRunControl = new AgentRunsAgentRunControl(agentRuns);
 
   const ticketRunService = new TicketRunService({
     ticketLookup: new TicketsTicketLookup(tickets),
-    runner: runnerPort,
+    agentRunControl,
     runsGate: new SkillsRunsGate(skills),
     projectLookup,
     ideaCreation: new TicketsIdeaCreation(tickets),
@@ -63,7 +66,7 @@ export function createSchedulerModule(
   });
   const mergeService = new MergeService({
     pullRequestMerges: infrastructure.pullRequestMerges,
-    runner: runnerPort,
+    agentRunControl,
     reviewedTicketLookup: new TicketsReviewedTicketLookup(tickets),
     projectLookup,
     logger,

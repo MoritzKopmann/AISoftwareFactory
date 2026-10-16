@@ -6,9 +6,9 @@ import type { EventPublisher } from '../../../../shared/event-bus.js';
 import type { Identifiers } from '../../../../shared/identifiers/identifiers.js';
 import type { Jobs } from '../../../../shared/jobs.js';
 import type { Logger } from '../../../../shared/logger/create-logger.js';
-import type { RunnerApi } from './runner-api.js';
+import type { AgentRunsApi } from './agent-runs-api.js';
 
-export type RunnerModuleDependencies = {
+export type AgentRunsModuleDependencies = {
   readonly database: DatabaseSync;
   readonly clock: Clock;
   readonly identifiers: Identifiers;
@@ -21,9 +21,9 @@ export type RunnerModuleDependencies = {
   readonly liveAnswerWindowMilliseconds: number;
 };
 
-export type RunnerModule = {
+export type AgentRunsModule = {
   readonly routes: Hono;
-  /** Keyed `runner.<job-name>`: `recover-interrupted-runs` and `abort-sessions`. */
+  /** Keyed `agent-runs.<job-name>`: `recover-interrupted-runs` and `abort-sessions`. */
   readonly jobs: Jobs;
-  readonly internal: RunnerApi;
+  readonly internal: AgentRunsApi;
 };

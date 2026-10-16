@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { createRunnerModule, type RunnerModule } from './index.js';
+import { createAgentRunsModule, type AgentRunsModule } from './index.js';
 import type { ProjectsApi } from '../projects/index.js';
 import { runLogResponseSchema } from './presentation/dto/api/run-log-schemas.js';
 import { TranscriptNotFoundError } from './business/errors/transcript-not-found-error.js';
@@ -18,16 +18,16 @@ import {
   FakeRunTranscripts,
   FakeWorktrees,
   SequentialIdentifiers,
-} from './testing/fake-runner-ports.js';
+} from './testing/fake-agent-runs-ports.js';
 
-describe('createRunnerModule', () => {
+describe('createAgentRunsModule', () => {
   let runRepository: FakeRunRepository;
   let agentSessions: FakeAgentSessions;
   let runAnswerWaits: FakeRunAnswerWaits;
   let runTranscripts: FakeRunTranscripts;
   let events: FakeEventPublisher;
   let agentTools: InMemoryAgentToolRegistry;
-  let runner: RunnerModule;
+  let agentRuns: AgentRunsModule;
 
   const appTool: AgentTool = {
     name: 'aisf_report_finding',
@@ -37,7 +37,7 @@ describe('createRunnerModule', () => {
   };
 
   async function startRun() {
-    const result = await runner.internal.start(startRequest);
+    const result = await agentRuns.internal.start(startRequest);
     if (result.kind !== 'started') {
       throw new Error(`Expected the run to start but got ${result.kind}`);
     }
@@ -46,9 +46,9 @@ describe('createRunnerModule', () => {
 
   async function answerRun(
     runId: string,
-    answer: Parameters<RunnerModule['internal']['answer']>[1],
+    answer: Parameters<AgentRunsModule['internal']['answer']>[1],
   ) {
-    const result = await runner.internal.answer(runId, answer);
+    const result = await agentRuns.internal.answer(runId, answer);
     if (result.kind !== 'answered') {
       throw new Error(`Expected the answer to land but got ${result.kind}`);
     }
@@ -72,7 +72,7 @@ describe('createRunnerModule', () => {
     agentSessions = new FakeAgentSessions();
     runAnswerWaits = new FakeRunAnswerWaits();
     events = new FakeEventPublisher();
-    runner = createRunnerModule(
+    agentRuns = createAgentRunsModule(
       {
         database: undefined as never,
         projects: {} as ProjectsApi,
@@ -184,13 +184,13 @@ describe('createRunnerModule', () => {
       },
     ]);
     expect(agentSessions.stoppedSessionIds).toEqual(['id-2']);
-    expect((await runner.internal.findRun('id-1'))?.state).toBe('ended');
+    expect((await agentRuns.internal.findRun('id-1'))?.state).toBe('ended');
   });
 
   it('should return already-active when a start comes while the ticket has a running run', async () => {
     await runRepository.insert(buildRun({ id: 'other' }));
 
-    expect(await runner.internal.start(startRequest)).toEqual({
+    expect(await agentRuns.internal.start(startRequest)).toEqual({
       kind: 'already-active',
       message: 'moritz/aisf already has a running run for #137',
     });
@@ -201,7 +201,7 @@ describe('createRunnerModule', () => {
     const run = await startRun();
     events.emittedEvents.length = 0;
 
-    const response = await runner.routes.request(`/api/runs/${run.id}/stop`, { method: 'POST' });
+    const response = await agentRuns.routes.request(`/api/runs/${run.id}/stop`, { method: 'POST' });
 
     expect(response.status).toBe(204);
     expect(events.emittedEvents[0]).toMatchObject({ payload: { ending: { kind: 'stopped' } } });
@@ -212,17 +212,17 @@ describe('createRunnerModule', () => {
     agentSessions.push('id-2', { kind: 'step', step: { at: 'a', summary: 'Read package.json' } });
 
     await vi.waitFor(async () =>
-      expect((await runner.internal.activeRuns('moritz/aisf'))[0]?.steps).toEqual([
+      expect((await agentRuns.internal.activeRuns('moritz/aisf'))[0]?.steps).toEqual([
         { at: 'a', summary: 'Read package.json' },
       ]),
     );
-    expect((await runner.internal.activeRuns('moritz/aisf'))[0]?.run).toEqual(run);
+    expect((await agentRuns.internal.activeRuns('moritz/aisf'))[0]?.run).toEqual(run);
   });
 
   it("should return the ticket's latest run when latestRun is asked", async () => {
     const run = await startRun();
 
-    expect(await runner.internal.latestRun('moritz/aisf', 137)).toEqual(run);
+    expect(await agentRuns.internal.latestRun('moritz/aisf', 137)).toEqual(run);
   });
 
   describe('GET /api/projects/:owner/:name/tickets/:number/run-log', () => {
@@ -230,7 +230,9 @@ describe('createRunnerModule', () => {
       await runRepository.insert(buildRun({ state: 'ended', ending: { kind: 'finished' } }));
       runTranscripts.entries = [{ summary: 'Read: ticket' }];
 
-      const response = await runner.routes.request('/api/projects/moritz/aisf/tickets/137/run-log');
+      const response = await agentRuns.routes.request(
+        '/api/projects/moritz/aisf/tickets/137/run-log',
+      );
 
       expect(response.status).toBe(200);
       expect(runLogResponseSchema.parse(await response.json())).toEqual({
@@ -241,7 +243,9 @@ describe('createRunnerModule', () => {
     });
 
     it('should answer no session when the ticket has no run', async () => {
-      const response = await runner.routes.request('/api/projects/moritz/aisf/tickets/137/run-log');
+      const response = await agentRuns.routes.request(
+        '/api/projects/moritz/aisf/tickets/137/run-log',
+      );
 
       expect(response.status).toBe(200);
       expect(runLogResponseSchema.parse(await response.json())).toEqual({ kind: 'no-session' });
@@ -251,7 +255,9 @@ describe('createRunnerModule', () => {
       await runRepository.insert(buildRun({ state: 'ended', ending: { kind: 'finished' } }));
       runTranscripts.failure = new TranscriptNotFoundError('session-1');
 
-      const response = await runner.routes.request('/api/projects/moritz/aisf/tickets/137/run-log');
+      const response = await agentRuns.routes.request(
+        '/api/projects/moritz/aisf/tickets/137/run-log',
+      );
 
       expect(response.status).toBe(200);
       expect(runLogResponseSchema.parse(await response.json())).toEqual({
@@ -260,7 +266,9 @@ describe('createRunnerModule', () => {
     });
 
     it('should answer 400 when the ticket number is not a positive integer', async () => {
-      const response = await runner.routes.request('/api/projects/moritz/aisf/tickets/abc/run-log');
+      const response = await agentRuns.routes.request(
+        '/api/projects/moritz/aisf/tickets/abc/run-log',
+      );
 
       expect(response.status).toBe(400);
     });
@@ -304,7 +312,7 @@ describe('createRunnerModule', () => {
     );
 
     expect(
-      await runner.internal.answer('old-run', { kind: 'checkpoint', text: 'Looks good' }),
+      await agentRuns.internal.answer('old-run', { kind: 'checkpoint', text: 'Looks good' }),
     ).toMatchObject({ kind: 'already-active' });
   });
 
@@ -314,7 +322,7 @@ describe('createRunnerModule', () => {
     );
 
     expect(
-      await runner.internal.answer('done-run', { kind: 'permission', decision: 'allow' }),
+      await agentRuns.internal.answer('done-run', { kind: 'permission', decision: 'allow' }),
     ).toMatchObject({ kind: 'not-resumable' });
   });
 
@@ -353,11 +361,11 @@ describe('createRunnerModule', () => {
     runAnswerWaits.expire('id-1');
     await held;
 
-    expect((await runner.internal.findRun('id-1'))?.ending).toEqual({
+    expect((await agentRuns.internal.findRun('id-1'))?.ending).toEqual({
       kind: 'checkpoint',
       request: 'Check the page again',
     });
-    expect((await runner.internal.findRun('run-1'))?.ending).toEqual({
+    expect((await agentRuns.internal.findRun('run-1'))?.ending).toEqual({
       kind: 'checkpoint',
       request: 'Check the page',
     });
@@ -396,28 +404,28 @@ describe('createRunnerModule', () => {
   it('should return the run when findRun is asked for a known run id', async () => {
     await runRepository.insert(buildRun({ id: 'known-run' }));
 
-    expect((await runner.internal.findRun('known-run'))?.id).toBe('known-run');
-    expect(await runner.internal.findRun('unknown-run')).toBeUndefined();
+    expect((await agentRuns.internal.findRun('known-run'))?.id).toBe('known-run');
+    expect(await agentRuns.internal.findRun('unknown-run')).toBeUndefined();
   });
 
   it('should settle an ended run when settle is called', async () => {
     await runRepository.insert(buildRun({ state: 'ended', ending: { kind: 'finished' } }));
 
-    await runner.internal.settle('run-1');
+    await agentRuns.internal.settle('run-1');
 
     expect(runRepository.runs.get('run-1')?.state).toBe('settled');
   });
 
-  it('should end a running run as app-restarted when the runner.recover-interrupted-runs job runs', async () => {
+  it('should end a running run as app-restarted when the agent-runs.recover-interrupted-runs job runs', async () => {
     await runRepository.insert(buildRun());
 
-    await runner.jobs['runner.recover-interrupted-runs']?.();
+    await agentRuns.jobs['agent-runs.recover-interrupted-runs']?.();
 
     expect(runRepository.runs.get('run-1')?.ending).toEqual({ kind: 'app-restarted' });
   });
 
-  it('should abort every session when the runner.abort-sessions job runs', async () => {
-    await runner.jobs['runner.abort-sessions']?.();
+  it('should abort every session when the agent-runs.abort-sessions job runs', async () => {
+    await agentRuns.jobs['agent-runs.abort-sessions']?.();
 
     expect(agentSessions.stopAllCalls).toBe(1);
   });
