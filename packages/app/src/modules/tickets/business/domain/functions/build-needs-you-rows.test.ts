@@ -93,7 +93,7 @@ describe('buildNeedsYouRows', () => {
     expect(rows.map((row) => row.action)).toEqual(['answer-question']);
   });
 
-  it('should return no row when a ticket waits without a runner wait', () => {
+  it('should return no row when a ticket waits without an agent-runs wait', () => {
     const rows = buildNeedsYouRows(
       [buildTicket({ number: 5, status: 'in-progress', waiting: true })],
       [],

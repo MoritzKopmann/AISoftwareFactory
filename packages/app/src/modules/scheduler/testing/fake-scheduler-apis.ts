@@ -4,10 +4,10 @@ import type {
   AnswerRunResultDto,
   RunAnswerDto,
   RunDto,
-  RunnerApi,
+  AgentRunsApi,
   StartRunRequestDto,
   StartRunResultDto,
-} from '../../runner/index.js';
+} from '../../agent-runs/index.js';
 import type { SkillsApi } from '../../skills/index.js';
 import type { TicketDto, TicketsApi } from '../../tickets/index.js';
 
@@ -113,8 +113,8 @@ export class FakeTicketsApi implements Pick<
   }
 }
 
-export class FakeRunnerApi implements Pick<
-  RunnerApi,
+export class FakeAgentRunsApi implements Pick<
+  AgentRunsApi,
   'start' | 'answer' | 'findRun' | 'activeRuns' | 'latestRun'
 > {
   readonly calls: string[] = [];

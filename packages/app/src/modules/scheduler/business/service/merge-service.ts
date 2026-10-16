@@ -3,12 +3,12 @@ import { findMergeablePullRequests } from '../domain/functions/find-mergeable-pu
 import { PullRequestMergeFailedError } from '../errors/pull-request-merge-failed-error.js';
 import type { PullRequestMerges } from '../port/github/pull-request-merges.js';
 import type { ProjectLookup } from '../port/project/project-lookup.js';
-import type { RunnerPort } from '../port/runner/runner-port.js';
+import type { AgentRunControl } from '../port/runs/agent-run-control.js';
 import type { ReviewedTicketLookup } from '../port/ticket/reviewed-ticket-lookup.js';
 
 export type MergeServiceDependencies = {
   readonly pullRequestMerges: PullRequestMerges;
-  readonly runner: RunnerPort;
+  readonly agentRunControl: AgentRunControl;
   readonly reviewedTicketLookup: ReviewedTicketLookup;
   readonly projectLookup: ProjectLookup;
   readonly logger: Logger;
@@ -20,7 +20,7 @@ export class MergeService {
   constructor(private readonly dependencies: MergeServiceDependencies) {}
 
   async mergeApproved(projectId: string): Promise<void> {
-    const { pullRequestMerges, runner, reviewedTicketLookup, projectLookup, logger } =
+    const { pullRequestMerges, agentRunControl, reviewedTicketLookup, projectLookup, logger } =
       this.dependencies;
 
     const project = await projectLookup.find(projectId);
@@ -28,7 +28,7 @@ export class MergeService {
       return;
     }
     const tickets = await reviewedTicketLookup.list(projectId);
-    const activeRuns = await runner.activeRuns(projectId);
+    const activeRuns = await agentRunControl.activeRuns(projectId);
     const mergeablePullRequests = findMergeablePullRequests(
       tickets,
       activeRuns.map(({ run }) => run),

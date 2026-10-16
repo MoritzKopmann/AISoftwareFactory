@@ -3,12 +3,12 @@ import { createArtifactsModule, type ArtifactsModule } from './index.js';
 import { InMemoryAgentToolRegistry } from '../../shared/in-memory-agent-tool-registry.js';
 import { FakeEventPublisher } from '../../shared/testing/fake-event-publisher.js';
 import { FakeClock } from '../../shared/testing/fake-clock.js';
-import type { RunnerApi } from '../runner/index.js';
+import type { AgentRunsApi } from '../agent-runs/index.js';
 import { buildArtifact } from './testing/build-artifact.js';
 import { FakeArtifactFiles } from './testing/fake-artifact-files.js';
 import { InMemoryArtifactRepository } from './testing/in-memory-artifact-repository.js';
 
-type RunDto = NonNullable<Awaited<ReturnType<RunnerApi['latestRun']>>>;
+type RunDto = NonNullable<Awaited<ReturnType<AgentRunsApi['latestRun']>>>;
 
 const runningRun: RunDto = {
   id: 'r2',
@@ -40,7 +40,7 @@ describe('createArtifactsModule', () => {
         database: undefined as never,
         kitDirectory: '/kit',
         agentTools,
-        runner: { latestRun: async () => latestRun },
+        agentRuns: { latestRun: async () => latestRun },
         scheduler: { answer: async () => ({ id: 'r1', startedAt: '2026-10-06T10:00:00.000Z' }) },
         events: new FakeEventPublisher(),
         identifiers: { next: () => 'T' },

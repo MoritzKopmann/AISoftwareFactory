@@ -4,7 +4,7 @@ import type { DomainEvents } from '../../shared/event-bus.js';
 import { InMemoryEventBus } from '../../shared/in-memory-event-bus.js';
 import { createSchedulerModule, type SchedulerModule } from './index.js';
 import {
-  FakeRunnerApi,
+  FakeAgentRunsApi,
   FakeTicketsApi,
   buildRunDto,
   buildTicketDto,
@@ -33,14 +33,14 @@ const approvedTicket = buildTicketDto({
 describe('createSchedulerModule', () => {
   let bus: InMemoryEventBus<DomainEvents>;
   let pullRequestMerges: FakePullRequestMerges;
-  let runner: FakeRunnerApi;
+  let agentRuns: FakeAgentRunsApi;
   let tickets: FakeTicketsApi;
   let scheduler: SchedulerModule;
 
   beforeEach(() => {
     bus = new InMemoryEventBus<DomainEvents>();
     pullRequestMerges = new FakePullRequestMerges();
-    runner = new FakeRunnerApi();
+    agentRuns = new FakeAgentRunsApi();
     tickets = new FakeTicketsApi();
     tickets.openTicketDtos = [approvedTicket];
     scheduler = createSchedulerModule(
@@ -50,7 +50,7 @@ describe('createSchedulerModule', () => {
         projects: fakeProjectsApi(),
         skills: fakeSkillsApi(),
         tickets,
-        runner,
+        agentRuns,
       },
       { pullRequestMerges },
     );
@@ -64,7 +64,7 @@ describe('createSchedulerModule', () => {
   });
 
   it('should report the active run of the ticket when its run is read', async () => {
-    runner.activeTicketNumbers = [138];
+    agentRuns.activeTicketNumbers = [138];
 
     const response = await scheduler.routes.request('/api/projects/moritz/aisf/tickets/138/run');
 
@@ -74,14 +74,14 @@ describe('createSchedulerModule', () => {
     });
   });
 
-  it('should start the run on the runner and answer 201 when an available ticket is posted', async () => {
+  it('should start the run on the agentRuns and answer 201 when an available ticket is posted', async () => {
     const response = await scheduler.routes.request('/api/projects/moritz/aisf/tickets/138/runs', {
       method: 'POST',
     });
 
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ id: 'run-1', startedAt: '2026-09-29T09:00:00.000Z' });
-    expect(runner.calls).toEqual(['start moritz/aisf #138']);
+    expect(agentRuns.calls).toEqual(['start moritz/aisf #138']);
   });
 
   it('should answer 409 when the ticket is not available to run', async () => {
@@ -92,7 +92,7 @@ describe('createSchedulerModule', () => {
       projects: fakeProjectsApi(),
       skills: fakeSkillsApi(),
       tickets,
-      runner,
+      agentRuns,
     });
 
     const response = await scheduler.routes.request('/api/projects/moritz/aisf/tickets/138/runs', {
@@ -104,7 +104,7 @@ describe('createSchedulerModule', () => {
   });
 
   it('should answer 409 when an available ticket is posted while it already has a run active', async () => {
-    runner.activeTicketNumbers = [138];
+    agentRuns.activeTicketNumbers = [138];
 
     const response = await scheduler.routes.request('/api/projects/moritz/aisf/tickets/138/runs', {
       method: 'POST',
@@ -114,8 +114,8 @@ describe('createSchedulerModule', () => {
     expect(await response.json()).toEqual({ message: '#138 is running' });
   });
 
-  it('should answer 409 when the runner reports a run already active', async () => {
-    runner.startResult = { kind: 'already-active', message: 'A run is already active' };
+  it('should answer 409 when agent runs reports a run already active', async () => {
+    agentRuns.startResult = { kind: 'already-active', message: 'A run is already active' };
 
     const response = await scheduler.routes.request('/api/projects/moritz/aisf/tickets/138/runs', {
       method: 'POST',
@@ -126,13 +126,13 @@ describe('createSchedulerModule', () => {
   });
 
   it('should answer 409 when an answer arrives for a run that already resumed', async () => {
-    runner.record = buildRunDto({
+    agentRuns.record = buildRunDto({
       id: 'r1',
       ticketNumber: 7,
       waitingFor: { kind: 'checkpoint', request: 'Pick A or B' },
     });
-    runner.latest = runner.record;
-    runner.answerResult = { kind: 'already-active', message: 'A run is already active' };
+    agentRuns.latest = agentRuns.record;
+    agentRuns.answerResult = { kind: 'already-active', message: 'A run is already active' };
 
     const response = await scheduler.routes.request('/api/runs/r1/checkpoint', {
       method: 'POST',
@@ -146,18 +146,18 @@ describe('createSchedulerModule', () => {
   });
 
   it('should answer a live-waiting run through internal.answer like the checkpoint route', async () => {
-    runner.record = buildRunDto({
+    agentRuns.record = buildRunDto({
       id: 'r1',
       ticketNumber: 7,
       waitingFor: { kind: 'checkpoint', request: 'Pick A or B' },
     });
-    runner.latest = runner.record;
+    agentRuns.latest = agentRuns.record;
 
     const started = await scheduler.internal.answer('r1', { kind: 'checkpoint', text: 'A' });
 
     expect(started).toEqual({ id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' });
     expect(tickets.calls).toEqual(['begin moritz/aisf #7']);
-    expect(runner.calls).toContain(
+    expect(agentRuns.calls).toContain(
       `answer r1 ${JSON.stringify({ kind: 'checkpoint', text: 'A' })}`,
     );
   });
@@ -190,7 +190,7 @@ describe('createSchedulerModule', () => {
       projects: fakeProjectsApi(),
       skills: fakeSkillsApi(),
       tickets,
-      runner,
+      agentRuns,
     });
 
     const response = await scheduler.routes.request('/api/projects/moritz/aisf/ideas', {
@@ -202,6 +202,6 @@ describe('createSchedulerModule', () => {
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ ticketNumber: 501 });
     expect(tickets.calls).toEqual(['create {"title":"Export trips as postcards","body":""}']);
-    expect(runner.calls).toEqual(['start moritz/aisf #501']);
+    expect(agentRuns.calls).toEqual(['start moritz/aisf #501']);
   });
 });

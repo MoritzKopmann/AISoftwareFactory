@@ -59,7 +59,7 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
           },
         ],
       },
-      runner: {
+      agentRuns: {
         activeRuns: async () =>
           runningTicketNumbers.map(
             (ticketNumber) => ({ run: { ticketNumber }, steps: [] }) as never,

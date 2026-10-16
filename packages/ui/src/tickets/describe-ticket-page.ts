@@ -53,7 +53,7 @@ export type TicketPageDescription =
     };
 
 function runSkillFor(ticket: TicketResponse): RunSkill {
-  // Mirrors the runner's runStageFor.
+  // Mirrors the agent-runs module's runStageFor.
   if (ticket.status === 'idea') return 'create-ticket';
   if (ticket.status === 'plan') return 'plan-ticket';
   return ticket.types.includes('spike') ? 'spike' : 'implement-ticket';

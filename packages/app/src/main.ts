@@ -52,14 +52,14 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
     // The job stops the sessions before its first await, so it is done when the process exits.
     // Never-crash boundary: the process is exiting, so a failed abort has nowhere to go.
-    runJob(application.jobs, 'runner.abort-sessions').catch(() => undefined);
+    runJob(application.jobs, 'agent-runs.abort-sessions').catch(() => undefined);
     process.exit(0);
   });
 }
 
 // Never-crash boundary: a failed recovery must not keep the server from starting.
 try {
-  await runJob(application.jobs, 'runner.recover-interrupted-runs');
+  await runJob(application.jobs, 'agent-runs.recover-interrupted-runs');
 } catch (error) {
   logger.error(`Recovering interrupted runs failed: ${String(error)}`);
 }

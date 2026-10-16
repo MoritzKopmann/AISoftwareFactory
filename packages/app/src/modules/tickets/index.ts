@@ -13,9 +13,9 @@ import { GhCliGitHubToken } from './infrastructure/github/gh-cli-github-token.js
 import { GhCliIdeaCreation } from './infrastructure/github/gh-cli-idea-creation.js';
 import { GhCliTicketStatusWrites } from './infrastructure/github/gh-cli-ticket-status-writes.js';
 import { ProjectsRegisteredRepositories } from './infrastructure/internal/projects-registered-repositories.js';
-import { RunnerActiveRunLookup } from './infrastructure/internal/runner-active-run-lookup.js';
-import { RunnerRunSettlement } from './infrastructure/internal/runner-run-settlement.js';
-import { RunnerRunWaitLookup } from './infrastructure/internal/runner-run-wait-lookup.js';
+import { AgentRunsActiveRunLookup } from './infrastructure/internal/agent-runs-active-run-lookup.js';
+import { AgentRunsRunSettlement } from './infrastructure/internal/agent-runs-run-settlement.js';
+import { AgentRunsRunWaitLookup } from './infrastructure/internal/agent-runs-run-wait-lookup.js';
 import { InMemoryWatchStore } from './infrastructure/repository/in-memory-watch-store.js';
 import { subscribeToProjectAdded } from './presentation/bus/subscribe-to-project-added.js';
 import { subscribeToRunFinished } from './presentation/bus/subscribe-to-run-finished.js';
@@ -31,7 +31,7 @@ import type {
   TicketsModuleDependencies,
 } from './presentation/internal/tickets-module.js';
 import type { ProjectsApi } from '../projects/index.js';
-import type { RunnerApi } from '../runner/index.js';
+import type { AgentRunsApi } from '../agent-runs/index.js';
 
 export type { TicketsApi } from './presentation/internal/tickets-api.js';
 export type {
@@ -60,7 +60,7 @@ type TicketsInfrastructure = {
 export function createTicketsModule(
   dependencies: TicketsModuleDependencies & {
     readonly projects: Pick<ProjectsApi, 'list'>;
-    readonly runner: Pick<RunnerApi, 'activeRuns' | 'activeWaits' | 'settle'>;
+    readonly agentRuns: Pick<AgentRunsApi, 'activeRuns' | 'activeWaits' | 'settle'>;
   },
   overrides: Partial<TicketsInfrastructure> = {},
 ): TicketsModule {
@@ -90,18 +90,18 @@ export function createTicketsModule(
     pollIntervalMilliseconds: dependencies.pollIntervalMilliseconds,
     snapshotIntervalMilliseconds: dependencies.snapshotIntervalMilliseconds,
   });
-  const activeRunLookup = new RunnerActiveRunLookup(dependencies.runner);
+  const activeRunLookup = new AgentRunsActiveRunLookup(dependencies.agentRuns);
   const ticketReadService = new TicketReadService({
     ticketSource: infrastructure.ticketSource,
     activeRunLookup,
-    runWaitLookup: new RunnerRunWaitLookup(dependencies.runner),
+    runWaitLookup: new AgentRunsRunWaitLookup(dependencies.agentRuns),
     clock,
     watchStore: infrastructure.watchStore,
   });
   const ticketStatusService = new TicketStatusService({
     ticketStatusWrites: infrastructure.ticketStatusWrites,
     activeRunLookup,
-    runSettlement: new RunnerRunSettlement(dependencies.runner),
+    runSettlement: new AgentRunsRunSettlement(dependencies.agentRuns),
     registeredRepositories,
     events,
     logger,

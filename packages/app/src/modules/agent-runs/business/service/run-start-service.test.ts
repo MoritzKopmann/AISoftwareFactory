@@ -14,7 +14,7 @@ import {
   FakeRunTargets,
   FakeWorktrees,
   SequentialIdentifiers,
-} from '../../testing/fake-runner-ports.js';
+} from '../../testing/fake-agent-runs-ports.js';
 import { buildCheckpointResumePrompt } from '../domain/functions/build-checkpoint-resume-prompt.js';
 import type { RunAnswer } from '../domain/types/run-answer.js';
 import type { RunEnding } from '../domain/types/run-ending.js';

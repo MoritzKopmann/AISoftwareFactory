@@ -10,7 +10,11 @@ import {
 } from './modules/projects/index.js';
 import { createSkillsModule, type SkillsApi, type SkillsModule } from './modules/skills/index.js';
 import { RandomUuidIdentifiers } from './shared/identifiers/random-uuid-identifiers.js';
-import { createRunnerModule, type RunnerApi, type RunnerModule } from './modules/runner/index.js';
+import {
+  createAgentRunsModule,
+  type AgentRunsApi,
+  type AgentRunsModule,
+} from './modules/agent-runs/index.js';
 import {
   createSchedulerModule,
   type SchedulerApi,
@@ -42,7 +46,7 @@ function buildArtifactsModule(
   kitDirectory: string,
   database: DatabaseSync,
   agentTools: AgentToolRegistry,
-  runner: RunnerApi,
+  agentRuns: AgentRunsApi,
   scheduler: SchedulerApi,
   events: EventPublisher,
 ): ArtifactsModule {
@@ -50,7 +54,7 @@ function buildArtifactsModule(
     database,
     agentTools,
     kitDirectory,
-    runner,
+    agentRuns,
     scheduler,
     events,
     identifiers: new RandomUuidIdentifiers(),
@@ -88,12 +92,12 @@ function buildTicketsModule(
   config: Config,
   events: EventBus,
   projects: ProjectsApi,
-  runner: RunnerApi,
+  agentRuns: AgentRunsApi,
   logger: Logger,
 ): TicketsModule {
   return createTicketsModule({
     projects,
-    runner,
+    agentRuns,
     clock: new SystemClock(),
     events,
     logger,
@@ -119,7 +123,7 @@ function buildFindingsModule(
   });
 }
 
-function buildRunnerModule(
+function buildAgentRunsModule(
   config: Config,
   database: DatabaseSync,
   events: EventPublisher,
@@ -127,8 +131,8 @@ function buildRunnerModule(
   claudeExecutablePath: string,
   agentTools: AgentToolRegistry,
   logger: Logger,
-): RunnerModule {
-  return createRunnerModule({
+): AgentRunsModule {
+  return createAgentRunsModule({
     database,
     projects,
     clock: new SystemClock(),
@@ -148,10 +152,10 @@ function buildSchedulerModule(
   projects: ProjectsApi,
   skills: SkillsApi,
   tickets: TicketsApi,
-  runner: RunnerApi,
+  agentRuns: AgentRunsApi,
   logger: Logger,
 ): SchedulerModule {
-  return createSchedulerModule({ events, projects, skills, tickets, runner, logger });
+  return createSchedulerModule({ events, projects, skills, tickets, agentRuns, logger });
 }
 
 export type ApplicationOptions = {
@@ -180,7 +184,7 @@ export function composeApplication(options: ApplicationOptions): Application {
   const skills = buildSkillsModule(config, pluginDirectory, eventBus, logger);
   const live = createLiveModule({ events: eventBus });
   const projects = buildProjectsModule(database, eventBus, skills.internal, logger);
-  const runner = buildRunnerModule(
+  const agentRuns = buildAgentRunsModule(
     config,
     database,
     eventBus,
@@ -189,7 +193,13 @@ export function composeApplication(options: ApplicationOptions): Application {
     agentTools,
     logger,
   );
-  const tickets = buildTicketsModule(config, eventBus, projects.internal, runner.internal, logger);
+  const tickets = buildTicketsModule(
+    config,
+    eventBus,
+    projects.internal,
+    agentRuns.internal,
+    logger,
+  );
   const findings = buildFindingsModule(
     database,
     agentTools,
@@ -202,14 +212,14 @@ export function composeApplication(options: ApplicationOptions): Application {
     projects.internal,
     skills.internal,
     tickets.internal,
-    runner.internal,
+    agentRuns.internal,
     logger,
   );
   const artifacts = buildArtifactsModule(
     kitDirectory,
     database,
     agentTools,
-    runner.internal,
+    agentRuns.internal,
     scheduler.internal,
     eventBus,
   );
@@ -218,7 +228,7 @@ export function composeApplication(options: ApplicationOptions): Application {
   const routes = [
     skills.routes,
     projects.routes,
-    runner.routes,
+    agentRuns.routes,
     artifacts.routes,
     tickets.routes,
     findings.routes,
@@ -230,7 +240,7 @@ export function composeApplication(options: ApplicationOptions): Application {
     ...skills.jobs,
     ...scheduler.jobs,
     ...tickets.jobs,
-    ...runner.jobs,
+    ...agentRuns.jobs,
     ...projects.jobs,
     ...findings.jobs,
     ...artifacts.jobs,

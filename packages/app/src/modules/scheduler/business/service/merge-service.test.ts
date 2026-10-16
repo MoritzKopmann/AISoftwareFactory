@@ -8,7 +8,7 @@ import {
   FakePullRequestMerges,
   FakeProjectLookup,
   FakeReviewedTicketLookup,
-  FakeRunnerPort,
+  FakeAgentRunControl,
 } from '../../testing/fake-scheduler-ports.js';
 
 const approvedPullRequest: ClosingPullRequest = {
@@ -32,16 +32,16 @@ function buildSubject(
   projectLookup: ProjectLookup = new FakeProjectLookup(),
 ) {
   const pullRequestMerges = new FakePullRequestMerges();
-  const runner = new FakeRunnerPort();
+  const agentRunControl = new FakeAgentRunControl();
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
   const service = new MergeService({
     pullRequestMerges,
-    runner,
+    agentRunControl,
     reviewedTicketLookup: new FakeReviewedTicketLookup(tickets),
     projectLookup,
     logger,
   });
-  return { service, pullRequestMerges, runner, logger };
+  return { service, pullRequestMerges, agentRunControl, logger };
 }
 
 describe('MergeService', () => {
@@ -66,8 +66,8 @@ describe('MergeService', () => {
   });
 
   it('should merge nothing when the ticket has an active run', async () => {
-    const { service, pullRequestMerges, runner } = buildSubject();
-    runner.activeTicketNumbers = [140];
+    const { service, pullRequestMerges, agentRunControl } = buildSubject();
+    agentRunControl.activeTicketNumbers = [140];
 
     await service.mergeApproved('moritz/aisf');
 

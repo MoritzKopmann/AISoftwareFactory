@@ -18,17 +18,17 @@ import {
   toRunDto,
   toStartRunRequest,
 } from '../dto/mapper/run-mapper.js';
-import type { RunnerApi } from './runner-api.js';
+import type { AgentRunsApi } from './agent-runs-api.js';
 
-export type RunnerFacadeServices = {
+export type AgentRunsFacadeServices = {
   readonly runStartService: RunStartService;
   readonly runEndService: RunEndService;
   readonly runAnswerService: RunAnswerService;
   readonly runQueryService: RunQueryService;
 };
 
-export class RunnerFacade implements RunnerApi {
-  constructor(private readonly services: RunnerFacadeServices) {}
+export class AgentRunsFacade implements AgentRunsApi {
+  constructor(private readonly services: AgentRunsFacadeServices) {}
 
   async start(request: StartRunRequestDto): Promise<StartRunResultDto> {
     try {

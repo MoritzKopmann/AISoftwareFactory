@@ -7,11 +7,11 @@ import type { StartRunRequestDto } from '../dto/internal/start-run-request-dto.j
 import type { StartRunResultDto } from '../dto/internal/start-run-result-dto.js';
 
 /**
- * What other modules may ask of runner. Only shared error kinds are thrown (for example a
+ * What other modules may ask of agent-runs. Only shared error kinds are thrown (for example a
  * `NotFoundError` when the ticket is unknown). Two conflicts come back as results instead,
  * because the caller tells them apart: `already-active` and `not-resumable`.
  */
-export interface RunnerApi {
+export interface AgentRunsApi {
   start(request: StartRunRequestDto): Promise<StartRunResultDto>;
   answer(runId: string, answer: RunAnswerDto): Promise<AnswerRunResultDto>;
   findRun(runId: string): Promise<RunDto | undefined>;

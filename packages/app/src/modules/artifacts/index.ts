@@ -3,7 +3,7 @@ import type { ArtifactRepository } from './business/port/repository/artifact-rep
 import { ArtifactService } from './business/service/artifact-service.js';
 import { PageService } from './business/service/page-service.js';
 import { FileSystemArtifactFiles } from './infrastructure/file/file-system-artifact-files.js';
-import { RunnerTicketRunLookup } from './infrastructure/internal/runner-ticket-run-lookup.js';
+import { AgentRunsTicketRunLookup } from './infrastructure/internal/agent-runs-ticket-run-lookup.js';
 import { SchedulerCheckpointAnswers } from './infrastructure/internal/scheduler-checkpoint-answers.js';
 import { SqliteArtifactRepository } from './infrastructure/repository/sqlite-artifact-repository.js';
 import { createArtifactsRoutes } from './presentation/api/artifacts-routes.js';
@@ -13,7 +13,7 @@ import type {
   ArtifactsModuleDependencies,
 } from './presentation/internal/artifacts-module.js';
 import { createShowArtifactTool } from './presentation/tool/create-show-artifact-tool.js';
-import type { RunnerApi } from '../runner/index.js';
+import type { AgentRunsApi } from '../agent-runs/index.js';
 import type { SchedulerApi } from '../scheduler/index.js';
 
 export type { ArtifactsApi } from './presentation/internal/artifacts-api.js';
@@ -29,7 +29,7 @@ type ArtifactsInfrastructure = {
 
 export function createArtifactsModule(
   dependencies: ArtifactsModuleDependencies & {
-    readonly runner: Pick<RunnerApi, 'latestRun'>;
+    readonly agentRuns: Pick<AgentRunsApi, 'latestRun'>;
     readonly scheduler: Pick<SchedulerApi, 'answer'>;
   },
   overrides: Partial<ArtifactsInfrastructure> = {},
@@ -39,7 +39,7 @@ export function createArtifactsModule(
     artifactFiles: new FileSystemArtifactFiles(),
     ...overrides,
   };
-  const ticketRunLookup = new RunnerTicketRunLookup(dependencies.runner);
+  const ticketRunLookup = new AgentRunsTicketRunLookup(dependencies.agentRuns);
   const artifactService = new ArtifactService({
     artifactRepository,
     artifactFiles,
