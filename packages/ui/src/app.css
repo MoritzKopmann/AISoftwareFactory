@@ -939,47 +939,6 @@ details:not([open]) .t-hide {
   color: var(--text);
 }
 
-.steps {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.steps li {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
-  gap: 10px;
-  align-items: baseline;
-  padding: 8px 14px 8px 18px;
-  border-top: 1px solid var(--border);
-}
-
-.steps time {
-  font: 500 12px var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-}
-
-.steps .what {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  font: 13px / 1.4 var(--font-mono);
-}
-
-.steps li.latest .what {
-  font-weight: 700;
-}
-
-.steps li.empty {
-  display: block;
-  font-size: 13px;
-  color: var(--muted);
-}
-
 .perm {
   display: grid;
   gap: 12px;
@@ -1128,11 +1087,6 @@ details:not([open]) .t-hide {
   gap: 8px 12px;
 }
 
-.runlog {
-  max-width: 720px;
-  min-width: 0;
-}
-
 .ticket-body {
   max-width: 720px;
   min-width: 0;
@@ -1150,62 +1104,6 @@ details:not([open]) .t-hide {
   margin: 0;
   font-size: 13px;
   color: var(--muted);
-}
-
-.log-box {
-  min-width: 0;
-  background: var(--surface-sunken);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.log-note {
-  padding: 8px 12px;
-  font-size: var(--text-size-sm);
-  color: var(--muted);
-  border-bottom: 1px solid var(--border);
-}
-
-.log-msg {
-  padding: 10px 12px;
-  font-size: var(--text-size-sm);
-  line-height: var(--line-sm);
-  color: var(--muted);
-}
-
-.log {
-  max-height: 420px;
-  overflow: auto;
-  margin: 0;
-  padding: 4px 0;
-  list-style: none;
-}
-
-.log li {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: 10px;
-  align-items: baseline;
-  padding: 3px 12px;
-}
-
-.log .idx {
-  font: 500 12px var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-  text-align: right;
-}
-
-.log .what {
-  font: 13px / 1.5 var(--font-mono);
-  color: var(--text);
-  overflow-wrap: anywhere;
-}
-
-.sk-log {
-  display: grid;
-  gap: 10px;
-  padding: 12px;
 }
 
 .findings {
@@ -1536,4 +1434,42 @@ details:not([open]) .t-hide {
 
 .ny-sk + .ny-sk {
   border-top: 1px solid var(--border);
+}
+
+.session {
+  display: grid;
+  gap: 8px;
+  max-width: 720px;
+  min-width: 0;
+}
+
+.session-entry {
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-wrap: anywhere;
+}
+
+.session-prompt {
+  background: var(--surface-sunken);
+}
+
+.session pre {
+  max-height: 420px;
+  overflow: auto;
+  margin: 4px 0 0;
+  font: 13px / 1.5 var(--font-mono);
+  white-space: pre-wrap;
+}
+
+.session img {
+  display: block;
+  max-width: 100%;
+  margin-top: 4px;
+}
+
+.session-message {
+  font-size: var(--text-size-sm);
+  color: var(--muted);
 }

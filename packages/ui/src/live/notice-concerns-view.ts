@@ -35,14 +35,13 @@ export function noticeConcernsView(notice: LiveNotice, view: LiveView): boolean 
     case 'run.waiting':
     case 'run.wait-cleared':
       return view.kind === 'needs-you' || (isTicketScoped(view) && sameTicket(notice, view));
-    case 'run.step-added':
-      return view.kind === 'run' && sameTicket(notice, view);
     case 'artifact.published':
       return view.kind === 'artifacts' && sameTicket(notice, view);
     case 'finding.changed':
       return (
         view.kind === 'findings' && (view.ticketNumber === undefined || sameTicket(notice, view))
       );
+    case 'run.step-added':
     case 'snapshot.changed':
     case 'project.added':
       return false;

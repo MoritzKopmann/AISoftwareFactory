@@ -42,8 +42,8 @@ function build(view: LiveView) {
 }
 
 const run7: LiveView = { kind: 'run', projectId: 'octo/repo', ticketNumber: 7 };
-const step = (ticketNumber: number): LiveNotice => ({
-  event: 'run.step-added',
+const waitCleared = (ticketNumber: number): LiveNotice => ({
+  event: 'run.wait-cleared',
   projectId: 'octo/repo',
   ticketNumber,
 });
@@ -54,9 +54,9 @@ describe('startLiveRead', () => {
     expect(pending).toHaveLength(1);
     await settle(0, 1);
 
-    liveUpdates.notice(step(8));
+    liveUpdates.notice(waitCleared(8));
     expect(pending).toHaveLength(1);
-    liveUpdates.notice(step(7));
+    liveUpdates.notice(waitCleared(7));
     expect(pending).toHaveLength(2);
     await settle(1, 2);
 
@@ -90,9 +90,9 @@ describe('startLiveRead', () => {
   it('should start exactly one more read when a burst arrives during a read', async () => {
     const { liveUpdates, pending, settle } = build(run7);
 
-    liveUpdates.notice(step(7));
-    liveUpdates.notice(step(7));
-    liveUpdates.notice(step(7));
+    liveUpdates.notice(waitCleared(7));
+    liveUpdates.notice(waitCleared(7));
+    liveUpdates.notice(waitCleared(7));
     expect(pending).toHaveLength(1);
     await settle(0, 1);
 
@@ -103,7 +103,7 @@ describe('startLiveRead', () => {
 
   it('should deliver outcomes in read order so an older answer never overwrites a newer one', async () => {
     const { liveUpdates, outcomes, settle } = build(run7);
-    liveUpdates.notice(step(7));
+    liveUpdates.notice(waitCleared(7));
 
     await settle(0, 10);
     await settle(1, 20);
@@ -127,7 +127,7 @@ describe('startLiveRead', () => {
 
     reader.stop();
     await settle(0, 1);
-    liveUpdates.notice(step(7));
+    liveUpdates.notice(waitCleared(7));
 
     expect(outcomes).toEqual([]);
     expect(pending).toHaveLength(1);

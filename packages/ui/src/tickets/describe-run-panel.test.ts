@@ -45,7 +45,7 @@ describe('describeRunPanel', () => {
     expect(describeRunPanel(input({ ticketStuck: false }), now)).toEqual({ kind: 'hidden' });
   });
 
-  it('should show a live panel with Stop and the starting line when the active run has no steps', () => {
+  it('should show a live panel with Stop when the active run has no steps', () => {
     const starting = live(localTime(9, 44, 30), []);
 
     expect(describeRunPanel(input({ response: starting }), now)).toEqual({
@@ -53,30 +53,7 @@ describe('describeRunPanel', () => {
       waiting: false,
       startedLabel: 'Started just now',
       stop: { label: 'Stop', pressable: true },
-      steps: [],
-      emptyMessage: 'Starting the session. Steps show up here as they happen.',
     });
-  });
-
-  it('should keep the last 5 steps oldest first with clock times and mark the newest when there are more', () => {
-    const steps = [1, 2, 3, 4, 5, 6, 7].map((second) => ({
-      at: localTime(9, 41, second),
-      summary: `Step ${second}`,
-    }));
-
-    const description = describeRunPanel(input({ response: live(localTime(9, 26), steps) }), now);
-
-    expect(description).toMatchObject({
-      kind: 'live',
-      startedLabel: 'Started 19 min ago',
-      steps: [3, 4, 5, 6, 7].map((second) => ({
-        at: localTime(9, 41, second),
-        time: `09:41:0${second}`,
-        summary: `Step ${second}`,
-        latest: second === 7,
-      })),
-    });
-    expect(description).not.toHaveProperty('emptyMessage');
   });
 
   it('should show an unpressable Stopping… button with an announcement when Stop was pressed', () => {
@@ -91,7 +68,7 @@ describe('describeRunPanel', () => {
     });
   });
 
-  it('should keep the steps and Stop and add the banner with the last answer time when the poll failed', () => {
+  it('should keep Stop and add the banner with the last answer time when the poll failed', () => {
     const steps = [{ at: localTime(9, 41, 52), summary: 'Bash: npm test' }];
 
     const description = describeRunPanel(
@@ -106,9 +83,8 @@ describe('describeRunPanel', () => {
     expect(description).toMatchObject({
       kind: 'live',
       stop: { label: 'Stop', pressable: true },
-      steps: [{ summary: 'Bash: npm test' }],
       banner:
-        "Can't reach aisf. Showing the steps from 09:41. Loads again on the next change, or on Retry.",
+        "Can't reach aisf. Showing the run from 09:41. Loads again on the next change, or on Retry.",
     });
   });
 

@@ -10,10 +10,6 @@ const live: Extract<RunPanelDescription, { kind: 'live' }> = {
   waiting: false,
   startedLabel: 'Started 4 min ago',
   stop: { label: 'Stop', pressable: true },
-  steps: [
-    { at: '2026-09-30T09:41:19Z', time: '09:41:19', summary: 'Wrote a test', latest: false },
-    { at: '2026-09-30T09:41:52Z', time: '09:41:52', summary: 'Bash: npm test', latest: true },
-  ],
 };
 
 function render(description: RunPanelDescription): string {
@@ -34,15 +30,6 @@ describe('RunPanel', () => {
     expect(markup).not.toContain('aria-disabled');
   });
 
-  it('should give each step its full text as a title and mark only the newest as latest', () => {
-    const markup = render(live);
-    expect(markup).toContain('<time dateTime="2026-09-30T09:41:52Z">09:41:52</time>');
-    expect(markup).toContain('title="Wrote a test"');
-    expect(markup).toContain('title="Bash: npm test"');
-    expect(markup.match(/\(latest step\)/g)).toHaveLength(1);
-    expect(markup).toMatch(/Bash: npm test<span class="vh"> \(latest step\)<\/span>/);
-  });
-
   it('should keep the Stopping… button focusable and announce it when Stop was pressed', () => {
     const markup = render({
       ...live,
@@ -54,15 +41,9 @@ describe('RunPanel', () => {
     expect(markup).toMatch(/role="status"[^>]*>Stopping the run</);
   });
 
-  it('should announce the starting line when the run has no steps yet', () => {
-    const markup = render({ ...live, steps: [], emptyMessage: 'Starting the session.' });
-    expect(markup).toMatch(/<li[^>]*role="status"[^>]*>Starting the session.<\/li>/);
-  });
-
-  it('should announce the banner and keep the steps when the poll failed', () => {
+  it('should announce the banner when the poll failed', () => {
     const markup = render({ ...live, banner: "Can't reach aisf." });
     expect(markup).toMatch(/role="status"[^>]*>.*Can&#x27;t reach aisf./);
-    expect(markup).toContain('Bash: npm test');
   });
 
   it('should put a Retry button under the banner message when the poll failed', () => {
@@ -76,7 +57,7 @@ describe('RunPanel', () => {
     expect(render(live)).not.toContain('Retry');
   });
 
-  it('should announce the reason and show no Stop and no steps when the run ended', () => {
+  it('should announce the reason and show no Stop when the run ended', () => {
     const markup = render({
       kind: 'ended',
       endedLabel: 'Ended 09:47 · ran 6 min',
