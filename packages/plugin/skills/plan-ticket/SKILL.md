@@ -184,11 +184,14 @@ its data settled in the ledger.
 **Frontend and backend first.** Frontend is every surface a human sees, judged from the codebase. All of it becomes **one UI sub-issue**, built later through the design
 path, never by `aisf:implement-ticket`. It is blocked by every backend sub-issue it reads from.
 
-**Backend** splits into small, ordered sub-issues along the seams `project-architecture` draws
-(module boundaries, then layer boundaries), not line counts. Infrastructure before consumers. A
-sub-issue may depend on an earlier one but must not need a sibling half-done.
+**Backend** splits into small, ordered sub-issues, **one module and one layer each**, as
+`project-architecture` names them. Wiring a sub-issue's classes into the composition root is part
+of that sub-issue. A sub-issue touching a second module or layer is cut again. An exception is a
+question to the human; an agreed one goes to Risks as a knowing override. Infrastructure before
+consumers. A sub-issue may depend on an earlier one but must not need a sibling half-done.
 
-Per sub-issue: **Title** (the outcome) · **Scope** (one sentence, in and out) · **Blocked-by** ·
+Per sub-issue: **Title** (the outcome) · **Module · Layer** · **Scope** (one sentence, in and
+out) · **Blocked-by** ·
 **Proves** (which acceptance criteria) · **`hitl`** proposed or not. Nothing before it may need
 the human. A criterion that needs the running app or a real external write goes to a `hitl`
 sub-issue only. A check a scenario can state is a scenario, never the checkpoint.
@@ -213,9 +216,10 @@ at Confirm with the reason, and goes to Risks.
 
 ## 6. Confirm
 
-Show the split as a table: **Title** · **Blocked-by** · **Proposed `hitl`** and its checkpoint.
-On the bridge page it is the last round: an `<aisf-confirm>` with one `<aisf-task>` per
-sub-issue and its `hitl` switch, plus the decision tree from the ledger as `<aisf-tree-node>`
+Show the split as a table: **Title** · **Module** · **Layer** · **Blocked-by** · **Proposed
+`hitl`** and its checkpoint. On the bridge page it is the last round: an `<aisf-confirm>` with
+one `<aisf-task>` per sub-issue, `heading="<Title> · <module> · <layer>"`, and its `hitl`
+switch, plus the decision tree from the ledger as `<aisf-tree-node>`
 rows. Without `aisf_show_artifact`, the table goes in chat. Confirm locks the `hitl` flags.
 
 **This is the only gate** (besides an accepted split, which is its own gate). Confirmed → the rest runs without further approval. Not confirmed →
