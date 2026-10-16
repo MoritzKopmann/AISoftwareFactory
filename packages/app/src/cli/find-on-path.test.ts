@@ -49,4 +49,8 @@ describe('findOnPath', () => {
 
     expect(findOnPath('claude', firstDirectory)).toBeUndefined();
   });
+
+  it('should rethrow when the path holds an invalid entry', () => {
+    expect(() => findOnPath('claude', `${firstDirectory}\0`)).toThrow();
+  });
 });

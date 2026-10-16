@@ -1,15 +1,19 @@
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 import { NONCE, secureHeaders } from 'hono/secure-headers';
 import { getMimeType } from 'hono/utils/mime';
+import { ConflictError } from '../../../../shared/errors.js';
 import { statusForDomainError } from '../../../../shared/http.js';
-import { PageBusyError } from '../../business/errors/page-busy-error.js';
-import { PageClosedError } from '../../business/errors/page-closed-error.js';
 import type { PageService } from '../../business/service/page-service.js';
 import { pageEventBodySchema } from '../dto/api/page-events-schemas.js';
 import { toPageStatusResponse } from '../dto/mapper/artifact-mapper.js';
 import { toPageEvent } from '../dto/mapper/page-event-mapper.js';
 
 const maxEventBytes = 32 * 1024;
+
+const eventConflictStatuses: Readonly<Record<string, 'busy' | 'closed' | undefined>> = {
+  PageBusyError: 'busy',
+  PageClosedError: 'closed',
+};
 
 const loopbackHostPattern = /^(127\.0\.0\.1|localhost)(:\d+)?$/i;
 
@@ -144,13 +148,12 @@ export function createPageRoutes(pageService: PageService): Hono {
         try {
           await pageService.submitEvent(context.req.param('token'), toPageEvent(parsed.data));
         } catch (error) {
-          if (error instanceof PageBusyError) {
-            return context.json({ status: 'busy' }, 409);
+          const conflictStatus =
+            error instanceof ConflictError ? eventConflictStatuses[error.name] : undefined;
+          if (conflictStatus === undefined) {
+            throw error;
           }
-          if (error instanceof PageClosedError) {
-            return context.json({ status: 'closed' }, 409);
-          }
-          throw error;
+          return context.json({ status: conflictStatus }, 409);
         }
         return context.body(null, 201);
       }),

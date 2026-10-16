@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { findOnPath } from './cli/find-on-path.js';
 import { isOnPath } from './cli/is-on-path.js';
 import { openBrowser } from './cli/open-browser.js';
 import { parseCliArguments } from './cli/parse-cli-arguments.js';
@@ -26,7 +27,13 @@ const staticDirectory = fileURLToPath(new URL('../../ui/dist', import.meta.url))
 const kitDirectory = fileURLToPath(new URL('../assets/kit', import.meta.url));
 const pluginDirectory = fileURLToPath(new URL('../../plugin', import.meta.url));
 
-const application = composeApplication({ config, logger, kitDirectory, pluginDirectory });
+const application = composeApplication({
+  config,
+  logger,
+  kitDirectory,
+  pluginDirectory,
+  claudeExecutablePath: findOnPath('claude') ?? 'claude',
+});
 
 function runJob(jobs: Jobs, name: string): Promise<void> {
   const job = jobs[name];
@@ -36,6 +43,7 @@ function runJob(jobs: Jobs, name: string): Promise<void> {
   return job();
 }
 
+// Never-crash boundary: a failed repository watch must not end the process.
 runJob(application.jobs, 'tickets.watch-repositories').catch((error: unknown) => {
   logger.error(`The tickets module failed to start: ${String(error)}`);
 });
@@ -43,11 +51,13 @@ runJob(application.jobs, 'tickets.watch-repositories').catch((error: unknown) =>
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
     // The job stops the sessions before its first await, so it is done when the process exits.
+    // Never-crash boundary: the process is exiting, so a failed abort has nowhere to go.
     runJob(application.jobs, 'runner.abort-sessions').catch(() => undefined);
     process.exit(0);
   });
 }
 
+// Never-crash boundary: a failed recovery must not keep the server from starting.
 try {
   await runJob(application.jobs, 'runner.recover-interrupted-runs');
 } catch (error) {
@@ -69,7 +79,7 @@ runJob(application.jobs, 'projects.sync-labels').catch((error: unknown) => {
   logger.error(`Syncing the project labels failed: ${String(error)}`);
 });
 
-// The browser panel polls the status route while the start-up checks run.
+// Never-crash boundary: the browser panel polls the status route while the start-up checks run.
 try {
   await runJob(application.jobs, 'skills.start-up-checks');
 } catch (error) {
