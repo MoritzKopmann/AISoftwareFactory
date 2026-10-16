@@ -1,90 +1,69 @@
-import { Hono } from 'hono';
-import type { EventPublisher } from '../../shared/event-bus.js';
-import type { Clock } from '../../shared/clock/clock.js';
-import type { Identifiers } from '../../shared/identifiers/identifiers.js';
-import type { AgentToolRegistry } from '../../shared/agent-tools.js';
-import { createKitRoutes } from './api/routes/create-kit-routes.js';
-import { createPageRoutes } from './api/routes/create-page-routes.js';
-import { createTicketArtifactsRoutes } from './api/routes/create-ticket-artifacts-routes.js';
-import { createShowArtifactTool } from './api/tools/create-show-artifact-tool.js';
-import type { TicketLatestRun } from './logic/domain/types/ticket-latest-run.js';
-import type { ArtifactFiles } from './logic/ports/artifact-files.js';
-import type { ArtifactRepository } from './logic/ports/artifact-repository.js';
-import type { CheckpointAnswers } from './logic/ports/checkpoint-answers.js';
-import type { TicketRunLookup } from './logic/ports/ticket-run-lookup.js';
-import { ListTicketArtifactsUseCase } from './logic/use-cases/list-ticket-artifacts-use-case.js';
-import { PublishArtifactUseCase } from './logic/use-cases/publish-artifact-use-case.js';
-import { ReadPageAssetUseCase } from './logic/use-cases/read-page-asset-use-case.js';
-import { ReadPageUserInputStateUseCase } from './logic/use-cases/read-page-user-input-state-use-case.js';
-import { ReadPageStatusUseCase } from './logic/use-cases/read-page-status-use-case.js';
-import { ReadPageUseCase } from './logic/use-cases/read-page-use-case.js';
-import { SubmitPageEventUseCase } from './logic/use-cases/submit-page-event-use-case.js';
-import { WritePageUserInputStateUseCase } from './logic/use-cases/write-page-user-input-state-use-case.js';
+import type { ArtifactFiles } from './business/port/file/artifact-files.js';
+import type { ArtifactRepository } from './business/port/repository/artifact-repository.js';
+import { ArtifactService } from './business/service/artifact-service.js';
+import { PageService } from './business/service/page-service.js';
+import { FileSystemArtifactFiles } from './infrastructure/file/file-system-artifact-files.js';
+import { RunnerTicketRunLookup } from './infrastructure/internal/runner-ticket-run-lookup.js';
+import { SchedulerCheckpointAnswers } from './infrastructure/internal/scheduler-checkpoint-answers.js';
+import { SqliteArtifactRepository } from './infrastructure/repository/sqlite-artifact-repository.js';
+import { createArtifactsRoutes } from './presentation/api/artifacts-routes.js';
+import { ArtifactsFacade } from './presentation/internal/artifacts-facade.js';
+import type {
+  ArtifactsModule,
+  ArtifactsModuleDependencies,
+} from './presentation/internal/artifacts-module.js';
+import { createShowArtifactTool } from './presentation/tool/create-show-artifact-tool.js';
+import type { RunnerApi } from '../runner/index.js';
+import type { SchedulerApi } from '../scheduler/index.js';
 
-export { PageBusyError } from './logic/errors/page-busy-error.js';
-export type { CheckpointAnswers, TicketLatestRun, TicketRunLookup };
+export type { ArtifactsApi } from './presentation/internal/artifacts-api.js';
+export type {
+  ArtifactsModule,
+  ArtifactsModuleDependencies,
+} from './presentation/internal/artifacts-module.js';
 
-export type ArtifactsModuleDependencies = {
-  readonly agentTools: AgentToolRegistry;
-  readonly kitDirectory: string;
+type ArtifactsInfrastructure = {
   readonly artifactRepository: ArtifactRepository;
   readonly artifactFiles: ArtifactFiles;
-  readonly ticketRunLookup: TicketRunLookup;
-  readonly checkpointAnswers: CheckpointAnswers;
-  readonly events: EventPublisher;
-  readonly identifiers: Identifiers;
-  readonly clock: Clock;
 };
 
-export type ArtifactsModule = {
-  readonly kitRoutes: Hono;
-  readonly pageRoutes: Hono;
-  readonly routes: Hono;
-};
-
-export function createArtifactsModule(dependencies: ArtifactsModuleDependencies): ArtifactsModule {
-  const {
-    agentTools,
+export function createArtifactsModule(
+  dependencies: ArtifactsModuleDependencies & {
+    readonly runner: Pick<RunnerApi, 'latestRun'>;
+    readonly scheduler: Pick<SchedulerApi, 'answer'>;
+  },
+  overrides: Partial<ArtifactsInfrastructure> = {},
+): ArtifactsModule {
+  const { artifactRepository, artifactFiles }: ArtifactsInfrastructure = {
+    artifactRepository: new SqliteArtifactRepository(dependencies.database),
+    artifactFiles: new FileSystemArtifactFiles(),
+    ...overrides,
+  };
+  const ticketRunLookup = new RunnerTicketRunLookup(dependencies.runner);
+  const artifactService = new ArtifactService({
     artifactRepository,
     artifactFiles,
     ticketRunLookup,
-    checkpointAnswers,
-    events,
-    identifiers,
-    clock,
-  } = dependencies;
-
-  const publishArtifact = new PublishArtifactUseCase({
+    events: dependencies.events,
+    identifiers: dependencies.identifiers,
+    clock: dependencies.clock,
+  });
+  const pageService = new PageService({
     artifactRepository,
     artifactFiles,
-    events,
-    identifiers,
-    clock,
-  });
-  const listTicketArtifacts = new ListTicketArtifactsUseCase({
-    artifactRepository,
     ticketRunLookup,
+    checkpointAnswers: new SchedulerCheckpointAnswers(dependencies.scheduler),
   });
 
-  agentTools.register(createShowArtifactTool(publishArtifact));
+  dependencies.agentTools.register(createShowArtifactTool(artifactService));
 
   return {
-    kitRoutes: createKitRoutes({ kitDirectory: dependencies.kitDirectory }),
-    pageRoutes: createPageRoutes({
-      readPage: new ReadPageUseCase({ artifactRepository, artifactFiles }),
-      readAsset: new ReadPageAssetUseCase({ artifactRepository, artifactFiles }),
-      readStatus: new ReadPageStatusUseCase({ artifactRepository, ticketRunLookup }),
-      readUserInputState: new ReadPageUserInputStateUseCase({ artifactRepository, artifactFiles }),
-      writeUserInputState: new WritePageUserInputStateUseCase({
-        artifactRepository,
-        artifactFiles,
-      }),
-      submitEvent: new SubmitPageEventUseCase({
-        artifactRepository,
-        ticketRunLookup,
-        checkpointAnswers,
-      }),
+    routes: createArtifactsRoutes({
+      kitDirectory: dependencies.kitDirectory,
+      artifactService,
+      pageService,
     }),
-    routes: new Hono().route('/projects', createTicketArtifactsRoutes(listTicketArtifacts)),
+    jobs: {},
+    internal: new ArtifactsFacade(),
   };
 }

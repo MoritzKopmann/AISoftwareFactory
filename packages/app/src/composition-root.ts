@@ -1,14 +1,7 @@
 import { Hono } from 'hono';
 import { findOnPath } from './cli/find-on-path.js';
 import type { DatabaseSync } from 'node:sqlite';
-import { FileSystemArtifactFiles } from './modules/artifacts/infra/integrations/file-system-artifact-files.js';
-import { SqliteArtifactRepository } from './modules/artifacts/infra/repositories/sqlite-artifact-repository.js';
-import {
-  createArtifactsModule,
-  PageBusyError,
-  type ArtifactsModule,
-  type CheckpointAnswers,
-} from './modules/artifacts/index.js';
+import { createArtifactsModule, type ArtifactsModule } from './modules/artifacts/index.js';
 import { createFindingsModule, type FindingsModule } from './modules/findings/index.js';
 import { SystemClock } from './shared/clock/system-clock.js';
 import {
@@ -19,7 +12,11 @@ import {
 import { createSkillsModule, type SkillsApi, type SkillsModule } from './modules/skills/index.js';
 import { RandomUuidIdentifiers } from './shared/identifiers/random-uuid-identifiers.js';
 import { createRunnerModule, type RunnerApi, type RunnerModule } from './modules/runner/index.js';
-import { createSchedulerModule, type SchedulerModule } from './modules/scheduler/index.js';
+import {
+  createSchedulerModule,
+  type SchedulerApi,
+  type SchedulerModule,
+} from './modules/scheduler/index.js';
 import {
   createTicketsModule,
   type TicketsApi,
@@ -33,7 +30,6 @@ import type {
   EventPublisher,
   EventSubscriber,
 } from './shared/event-bus.js';
-import { ConflictError } from './shared/errors.js';
 import { createLiveModule } from './modules/live/index.js';
 import { InMemoryEventBus } from './shared/in-memory-event-bus.js';
 import type { Config } from './shared/config/load-config.js';
@@ -47,19 +43,16 @@ function buildArtifactsModule(
   kitDirectory: string,
   database: DatabaseSync,
   agentTools: AgentToolRegistry,
-  runner: Pick<RunnerApi, 'latestRun'>,
-  checkpointAnswers: CheckpointAnswers,
+  runner: RunnerApi,
+  scheduler: SchedulerApi,
   events: EventPublisher,
 ): ArtifactsModule {
   return createArtifactsModule({
+    database,
     agentTools,
     kitDirectory,
-    artifactRepository: new SqliteArtifactRepository(database),
-    artifactFiles: new FileSystemArtifactFiles(),
-    ticketRunLookup: {
-      latest: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber),
-    },
-    checkpointAnswers,
+    runner,
+    scheduler,
     events,
     identifiers: new RandomUuidIdentifiers(),
     clock: new SystemClock(),
@@ -217,18 +210,7 @@ export function composeApplication(options: ApplicationOptions): Application {
     database,
     agentTools,
     runner.internal,
-    {
-      answer: async (runId, text) => {
-        try {
-          await scheduler.internal.answer(runId, { kind: 'checkpoint', text });
-        } catch (error) {
-          if (error instanceof ConflictError) {
-            throw new PageBusyError(error.message);
-          }
-          throw error;
-        }
-      },
-    },
+    scheduler.internal,
     eventBus,
   );
 
@@ -237,14 +219,11 @@ export function composeApplication(options: ApplicationOptions): Application {
     skills.routes,
     projects.routes,
     runner.routes,
-    new Hono().route('/aisf', artifacts.kitRoutes),
-    new Hono().route('/a', artifacts.pageRoutes),
+    artifacts.routes,
     tickets.routes,
     findings.routes,
     scheduler.routes,
-    ...[artifacts.routes, live.routes].map((moduleRoutes) =>
-      new Hono().route('/api', moduleRoutes),
-    ),
+    new Hono().route('/api', live.routes),
   ];
 
   const jobs: Jobs = {
@@ -254,6 +233,7 @@ export function composeApplication(options: ApplicationOptions): Application {
     ...runner.jobs,
     ...projects.jobs,
     ...findings.jobs,
+    ...artifacts.jobs,
   };
 
   return { routes, jobs };
