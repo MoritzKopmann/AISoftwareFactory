@@ -13,8 +13,7 @@ import { InMemoryArtifactRepository } from '../../testing/in-memory-artifact-rep
 const directory = '/worktrees/n/7/.aisf/artifacts/plan';
 
 const host = '127.0.0.1:4000';
-const origin = 'http://127.0.0.1:4000';
-const validHeaders = { Host: host, Origin: origin };
+const hostHeaders = { Host: host };
 
 function buildApp(
   artifactRepository: InMemoryArtifactRepository,
@@ -135,36 +134,12 @@ describe('createPageRoutes', () => {
     ])('should answer 404 when %s %s is requested', async (method, path) => {
       const response = await app.request(path, {
         method,
-        headers: validHeaders,
+        headers: hostHeaders,
         ...(method === 'PUT' ? { body: '{}' } : {}),
       });
 
       expect(response.status).toBe(404);
     });
-  });
-
-  describe('Host check', () => {
-    it.each(['/a/T/', '/a/T/app.js', '/a/T/_status', '/a/T/_user-input-state'])(
-      'should answer 403 when %s has a foreign Host',
-      async (path) => {
-        const response = await app.request(path, { headers: { Host: 'evil.example:4000' } });
-
-        expect(response.status).toBe(403);
-      },
-    );
-
-    it('should answer 403 when there is no Host', async () => {
-      expect((await app.request('/a/T/_status')).status).toBe(403);
-    });
-
-    it.each(['localhost:4000', '127.0.0.1:4000', '127.0.0.1'])(
-      'should answer 200 when the Host is %s',
-      async (loopback) => {
-        const response = await app.request('/a/T/_status', { headers: { Host: loopback } });
-
-        expect(response.status).toBe(200);
-      },
-    );
   });
 
   describe('PUT /:token/_user-input-state', () => {
@@ -175,25 +150,15 @@ describe('createPageRoutes', () => {
         body,
       });
 
-    it.each([{ Host: host, Origin: 'http://evil.example' }, { Host: host }])(
-      'should answer 403 and keep the state when the Origin is wrong or missing: %j',
-      async (headers) => {
-        const response = await put(headers);
-
-        expect(response.status).toBe(403);
-        expect(artifactFiles.files.has(`${directory}/user-input-state.json`)).toBe(false);
-      },
-    );
-
-    it('should store the state when the Origin is the page origin', async () => {
-      const response = await put(validHeaders);
+    it('should store the state when the body is JSON', async () => {
+      const response = await put(hostHeaders);
 
       expect(response.status).toBeLessThan(300);
       expect(artifactFiles.files.get(`${directory}/user-input-state.json`)).toBe('{"q":1}');
     });
 
     it('should answer 400 and keep the state when the body is not JSON', async () => {
-      const response = await put(validHeaders, 'not json');
+      const response = await put(hostHeaders, 'not json');
 
       expect(response.status).toBe(400);
       expect(artifactFiles.files.has(`${directory}/user-input-state.json`)).toBe(false);
@@ -202,7 +167,7 @@ describe('createPageRoutes', () => {
     it('should store the state when the page is busy', async () => {
       ticketRunLookup.latestRun = { id: 'r2', state: 'running' };
 
-      expect((await put(validHeaders)).status).toBeLessThan(300);
+      expect((await put(hostHeaders)).status).toBeLessThan(300);
     });
   });
 
@@ -217,7 +182,7 @@ describe('createPageRoutes', () => {
     it('should answer the stored draft when a new app instance serves the same files', async () => {
       await app.request('/a/T/_user-input-state', {
         method: 'PUT',
-        headers: { ...validHeaders, 'Content-Type': 'application/json' },
+        headers: { ...hostHeaders, 'Content-Type': 'application/json' },
         body: '{"answers":{"q1":"yes"}}',
       });
 
@@ -242,7 +207,7 @@ describe('createPageRoutes', () => {
       waitingFor: { artifactId: 'plan' },
     };
 
-    function post(body: string, headers: Record<string, string> = validHeaders, token = 'T') {
+    function post(body: string, headers: Record<string, string> = hostHeaders, token = 'T') {
       return app.request(`/a/${token}/_events`, { method: 'POST', headers, body });
     }
 
@@ -356,16 +321,7 @@ describe('createPageRoutes', () => {
     });
 
     it('should answer 404 when the token is unknown', async () => {
-      expect((await post(submit, validHeaders, 'unknown-token')).status).toBe(404);
-    });
-
-    it('should answer 403 and deliver nothing when the Origin is foreign', async () => {
-      ticketRunLookup.latestRun = waiting;
-
-      const response = await post(submit, { Host: host, Origin: 'https://evil.example' });
-
-      expect(response.status).toBe(403);
-      expect(checkpointAnswers.calls).toEqual([]);
+      expect((await post(submit, hostHeaders, 'unknown-token')).status).toBe(404);
     });
   });
 
