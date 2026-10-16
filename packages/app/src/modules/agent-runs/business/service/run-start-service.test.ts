@@ -11,6 +11,8 @@ import {
   FakeRecentRunSteps,
   FakeRunAnswerWaits,
   FakeRunRepository,
+  FakeRunTranscripts,
+  FakeSessionFeed,
   FakeProjectPort,
   FakeWorktrees,
   SequentialIdentifiers,
@@ -45,6 +47,8 @@ function buildService(options: BuildOptions = {}) {
   const worktrees = new FakeWorktrees();
   const recentRunSteps = new FakeRecentRunSteps();
   const runAnswerWaits = new FakeRunAnswerWaits();
+  const runTranscripts = new FakeRunTranscripts();
+  const sessionFeed = new FakeSessionFeed();
   const events = new FakeEventPublisher();
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
   const finishCalls: Array<{ runId: string; ending: RunEnding }> = [];
@@ -61,6 +65,8 @@ function buildService(options: BuildOptions = {}) {
     projectPort: options.projectPort ?? new FakeProjectPort(defaultTarget),
     agentSessions,
     recentRunSteps,
+    runTranscripts,
+    sessionFeed,
     runAnswerWaits,
     identifiers: new SequentialIdentifiers(),
     clock: new FakeClock(options.now ?? '2026-09-29T10:00:00.000Z'),
@@ -77,6 +83,8 @@ function buildService(options: BuildOptions = {}) {
     agentSessions,
     worktrees,
     recentRunSteps,
+    runTranscripts,
+    sessionFeed,
     runAnswerWaits,
     events,
     logger,
@@ -274,6 +282,69 @@ describe('RunStartService', () => {
 
       await vi.waitFor(() => expect(finishCalls).toHaveLength(1));
       expect(recentRunSteps.read('id-1')).toEqual([{ at: 'a', summary: 'Read package.json' }]);
+    });
+
+    it('should publish the transcript prompt before the first delta and entry when the session streams', async () => {
+      const { service, agentSessions, finishCalls, runTranscripts, sessionFeed } =
+        buildStartSubject();
+      runTranscripts.sessionEntries = [
+        { kind: 'prompt', id: 'p#0', text: 'earlier prompt' },
+        { kind: 'text', id: 'a#0', text: 'answer' },
+        { kind: 'prompt', id: 'p2#0', text: 'implement #12' },
+      ];
+      await service.start(startRequest);
+      const entry = { kind: 'text', id: 'u#0', text: 'Hello' } as const;
+
+      agentSessions.push('id-2', { kind: 'text-delta', opensBlock: true, text: 'Hel' });
+      agentSessions.push('id-2', { kind: 'entry', entry });
+      agentSessions.push('id-2', { kind: 'completed' });
+
+      await vi.waitFor(() => expect(finishCalls).toHaveLength(1));
+      expect(sessionFeed.published).toEqual([
+        {
+          runId: 'id-1',
+          event: { kind: 'entry', entry: { kind: 'prompt', id: 'p2#0', text: 'implement #12' } },
+        },
+        { runId: 'id-1', event: { kind: 'text-delta', opensBlock: true, text: 'Hel' } },
+        { runId: 'id-1', event: { kind: 'entry', entry } },
+      ]);
+      expect(runTranscripts.sessionEntryReads).toHaveLength(1);
+    });
+
+    it('should still publish the entry and log the failure when the prompt read fails', async () => {
+      const { service, agentSessions, finishCalls, runTranscripts, sessionFeed, logger } =
+        buildStartSubject();
+      runTranscripts.sessionEntriesFailure = new Error('disk failure');
+      await service.start(startRequest);
+      const entry = { kind: 'text', id: 'u#0', text: 'Hello' } as const;
+
+      agentSessions.push('id-2', { kind: 'entry', entry });
+      agentSessions.push('id-2', { kind: 'completed' });
+
+      await vi.waitFor(() => expect(finishCalls).toHaveLength(1));
+      expect(sessionFeed.published).toEqual([{ runId: 'id-1', event: { kind: 'entry', entry } }]);
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('disk failure'));
+    });
+
+    it('should end the feed when the session completes', async () => {
+      const { service, agentSessions, sessionFeed } = buildStartSubject();
+      await service.start(startRequest);
+
+      agentSessions.push('id-2', { kind: 'completed' });
+      agentSessions.close('id-2');
+
+      await vi.waitFor(() => expect(sessionFeed.endedRunIds).toEqual(['id-1']));
+      expect(sessionFeed.endedRunIds).toEqual(['id-1']);
+    });
+
+    it('should end the feed when the session throws', async () => {
+      const { service, agentSessions, sessionFeed } = buildStartSubject();
+      await service.start(startRequest);
+
+      agentSessions.fail('id-2', new Error('boom'));
+
+      await vi.waitFor(() => expect(sessionFeed.endedRunIds).toEqual(['id-1']));
+      expect(sessionFeed.endedRunIds).toEqual(['id-1']);
     });
 
     it('should end the run as finished when the session completes', async () => {

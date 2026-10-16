@@ -4,6 +4,8 @@ import type { RunEnding } from '../business/domain/types/run-ending.js';
 import type { RunWait } from '../business/domain/types/run-wait.js';
 import type { RunStep } from '../business/domain/types/run-step.js';
 import type { RunLogEntry } from '../business/domain/types/run-log-entry.js';
+import type { SessionEntry } from '../business/domain/types/session-entry.js';
+import type { SessionFeed, SessionFeedEvent } from '../business/port/session/session-feed.js';
 import type { RunTarget } from '../business/domain/types/run-target.js';
 import type { SessionEvent } from '../business/domain/types/session-event.js';
 import type { ResumeSessionSpec } from '../business/domain/types/resume-session-spec.js';
@@ -185,6 +187,11 @@ export class FakeAgentSessions implements AgentSessions {
     this.queuesBySessionId.get(sessionId)?.push(event);
   }
 
+  /** Ends the stream like a real session does after its last event. */
+  close(sessionId: string): void {
+    this.queuesBySessionId.get(sessionId)?.close();
+  }
+
   fail(sessionId: string, error: Error): void {
     this.queuesBySessionId.get(sessionId)?.fail(error);
   }
@@ -278,6 +285,17 @@ export class FakeRunTranscripts implements RunTranscripts {
   readonly reads: Array<{ sessionId: string; worktreePath: string }> = [];
   entries: ReadonlyArray<RunLogEntry> = [];
   failure: Error | undefined;
+  readonly sessionEntryReads: Array<{ sessionId: string; worktreePath: string }> = [];
+  sessionEntries: ReadonlyArray<SessionEntry> = [];
+  sessionEntriesFailure: Error | undefined;
+
+  async readEntries(sessionId: string, worktreePath: string): Promise<ReadonlyArray<SessionEntry>> {
+    this.sessionEntryReads.push({ sessionId, worktreePath });
+    if (this.sessionEntriesFailure !== undefined) {
+      throw this.sessionEntriesFailure;
+    }
+    return this.sessionEntries;
+  }
 
   async read(sessionId: string, worktreePath: string): Promise<ReadonlyArray<RunLogEntry>> {
     this.reads.push({ sessionId, worktreePath });
@@ -323,4 +341,31 @@ export function buildRun(overrides: Partial<Run> = {}): Run {
     startedAt: '2026-09-29T10:00:00.000Z',
     ...overrides,
   };
+}
+
+export class FakeSessionFeed implements SessionFeed {
+  readonly published: Array<{ runId: string; event: SessionFeedEvent }> = [];
+  readonly endedRunIds: string[] = [];
+
+  publish(runId: string, event: SessionFeedEvent): void {
+    this.published.push({ runId, event });
+  }
+
+  entries(runId: string): ReadonlyArray<SessionEntry> {
+    return this.published.flatMap((published) =>
+      published.runId === runId && published.event.kind === 'entry' ? [published.event.entry] : [],
+    );
+  }
+
+  subscribe(): () => void {
+    return () => undefined;
+  }
+
+  isActive(runId: string): boolean {
+    return this.published.some((published) => published.runId === runId);
+  }
+
+  end(runId: string): void {
+    this.endedRunIds.push(runId);
+  }
 }

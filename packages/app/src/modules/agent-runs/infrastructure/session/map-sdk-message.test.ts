@@ -1,11 +1,16 @@
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
+import type { SessionEvent } from '../../business/domain/types/session-event.js';
 import { describe, expect, it } from 'vitest';
-import { mapSdkMessage } from './map-sdk-message.js';
+import { createStreamState, mapSdkMessage } from './map-sdk-message.js';
 
 const at = '2026-09-29T10:00:00.000Z';
 
 function message(partial: Record<string, unknown>): SDKMessage {
   return partial as unknown as SDKMessage;
+}
+
+function stepsOf(events: ReadonlyArray<SessionEvent>): ReadonlyArray<SessionEvent> {
+  return events.filter((event) => event.kind === 'step');
 }
 
 function assistantMessage(...content: Array<Record<string, unknown>>): SDKMessage {
@@ -24,7 +29,7 @@ describe('mapSdkMessage', () => {
       at,
     );
 
-    expect(events).toEqual([{ kind: 'step', step: { at, summary: 'Bash: npm test' } }]);
+    expect(stepsOf(events)).toEqual([{ kind: 'step', step: { at, summary: 'Bash: npm test' } }]);
   });
 
   it('should map a file tool call to a step naming the file path', () => {
@@ -38,7 +43,7 @@ describe('mapSdkMessage', () => {
       at,
     );
 
-    expect(events).toEqual([
+    expect(stepsOf(events)).toEqual([
       { kind: 'step', step: { at, summary: 'Edit: /worktrees/aisf/137/src/main.ts' } },
     ]);
   });
@@ -49,7 +54,7 @@ describe('mapSdkMessage', () => {
       at,
     );
 
-    expect(events).toEqual([{ kind: 'step', step: { at, summary: 'TodoWrite' } }]);
+    expect(stepsOf(events)).toEqual([{ kind: 'step', step: { at, summary: 'TodoWrite' } }]);
   });
 
   it('should map assistant text to a step with its first line when the text has several lines', () => {
@@ -58,7 +63,9 @@ describe('mapSdkMessage', () => {
       at,
     );
 
-    expect(events).toEqual([{ kind: 'step', step: { at, summary: 'Reading the ticket now.' } }]);
+    expect(stepsOf(events)).toEqual([
+      { kind: 'step', step: { at, summary: 'Reading the ticket now.' } },
+    ]);
   });
 
   it('should shorten a step summary to 120 characters when the command is long', () => {
@@ -140,5 +147,246 @@ describe('mapSdkMessage', () => {
   it('should map nothing when the message is a user or system message', () => {
     expect(mapSdkMessage(message({ type: 'user', message: { content: [] } }), at)).toEqual([]);
     expect(mapSdkMessage(message({ type: 'system', subtype: 'init' }), at)).toEqual([]);
+  });
+});
+
+function entriesOf(events: ReadonlyArray<SessionEvent>): ReadonlyArray<SessionEvent> {
+  return events.filter((event) => event.kind === 'entry');
+}
+
+function streamEvent(event: Record<string, unknown>, parentToolUseId: string | null = null) {
+  return message({ type: 'stream_event', event, parent_tool_use_id: parentToolUseId });
+}
+
+function textDelta(text: string) {
+  return streamEvent({
+    type: 'content_block_delta',
+    index: 0,
+    delta: { type: 'text_delta', text },
+  });
+}
+
+describe('mapSdkMessage entries', () => {
+  it('should yield a text entry with the full text and the id uuid#index when an assistant message has a text block', () => {
+    const events = mapSdkMessage(
+      message({
+        type: 'assistant',
+        uuid: 'u1',
+        parent_tool_use_id: null,
+        message: {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'First line.\nSecond line.' }],
+        },
+      }),
+      at,
+    );
+
+    expect(entriesOf(events)).toEqual([
+      { kind: 'entry', entry: { kind: 'text', id: 'u1#0', text: 'First line.\nSecond line.' } },
+    ]);
+  });
+
+  it('should yield a tool-call entry with the full input when an assistant message has a tool_use block', () => {
+    const input = { command: 'npm test', description: 'Run the tests', extra: { a: [1, 2] } };
+    const events = mapSdkMessage(
+      message({
+        type: 'assistant',
+        uuid: 'u2',
+        parent_tool_use_id: null,
+        message: {
+          role: 'assistant',
+          content: [
+            { type: 'text', text: 'Running.' },
+            { type: 'tool_use', id: 'toolu_1', name: 'Bash', input },
+          ],
+        },
+      }),
+      at,
+    );
+
+    expect(entriesOf(events)).toContainEqual({
+      kind: 'entry',
+      entry: { kind: 'tool-call', id: 'u2#1', toolUseId: 'toolu_1', name: 'Bash', input },
+    });
+  });
+
+  it('should keep the whole text of a long multi-line tool result when a user message has a tool_result block', () => {
+    const text = `${'line of output '.repeat(20)}\nsecond line\nthird line`;
+    const events = mapSdkMessage(
+      message({
+        type: 'user',
+        uuid: 'u3',
+        parent_tool_use_id: null,
+        message: {
+          role: 'user',
+          content: [{ type: 'tool_result', tool_use_id: 'toolu_1', content: text }],
+        },
+      }),
+      at,
+    );
+
+    expect(events).toEqual([
+      {
+        kind: 'entry',
+        entry: {
+          kind: 'tool-result',
+          id: 'u3#0',
+          toolUseId: 'toolu_1',
+          isError: false,
+          parts: [{ kind: 'text', text }],
+        },
+      },
+    ]);
+  });
+
+  it('should yield an image part with media type and data when a tool_result holds an image block', () => {
+    const events = mapSdkMessage(
+      message({
+        type: 'user',
+        uuid: 'u4',
+        parent_tool_use_id: null,
+        message: {
+          role: 'user',
+          content: [
+            {
+              type: 'tool_result',
+              tool_use_id: 'toolu_2',
+              is_error: true,
+              content: [
+                { type: 'text', text: 'Shot taken' },
+                {
+                  type: 'image',
+                  source: { type: 'base64', media_type: 'image/png', data: 'AAAA' },
+                },
+              ],
+            },
+          ],
+        },
+      }),
+      at,
+    );
+
+    expect(events).toEqual([
+      {
+        kind: 'entry',
+        entry: {
+          kind: 'tool-result',
+          id: 'u4#0',
+          toolUseId: 'toolu_2',
+          isError: true,
+          parts: [
+            { kind: 'text', text: 'Shot taken' },
+            { kind: 'image', mediaType: 'image/png', data: 'AAAA' },
+          ],
+        },
+      },
+    ]);
+  });
+
+  it('should yield no entry when the assistant message belongs to a subagent', () => {
+    const events = mapSdkMessage(
+      message({
+        type: 'assistant',
+        uuid: 'u5',
+        parent_tool_use_id: 'toolu_9',
+        message: { role: 'assistant', content: [{ type: 'text', text: 'inner' }] },
+      }),
+      at,
+    );
+
+    expect(entriesOf(events)).toEqual([]);
+  });
+
+  it('should yield no entry when the assistant block is thinking', () => {
+    const events = mapSdkMessage(
+      message({
+        type: 'assistant',
+        uuid: 'u6',
+        parent_tool_use_id: null,
+        message: {
+          role: 'assistant',
+          content: [{ type: 'thinking', thinking: 'hmm', signature: 's' }],
+        },
+      }),
+      at,
+    );
+
+    expect(entriesOf(events)).toEqual([]);
+  });
+
+  it('should yield no entry when a user message is synthetic', () => {
+    const events = mapSdkMessage(
+      message({
+        type: 'user',
+        uuid: 'u7',
+        parent_tool_use_id: null,
+        isSynthetic: true,
+        message: { role: 'user', content: [{ type: 'text', text: 'skill body' }] },
+      }),
+      at,
+    );
+
+    expect(events).toEqual([]);
+  });
+});
+
+describe('mapSdkMessage text deltas', () => {
+  it('should yield a text-delta per delta with opensBlock only on the first when one text block streams', () => {
+    const streamState = createStreamState();
+    const events = [
+      streamEvent({
+        type: 'content_block_start',
+        index: 0,
+        content_block: { type: 'text', text: '' },
+      }),
+      textDelta('Hel'),
+      textDelta('lo '),
+      textDelta('world'),
+    ].flatMap((streamed) => mapSdkMessage(streamed, at, streamState));
+
+    expect(events).toEqual([
+      { kind: 'text-delta', opensBlock: true, text: 'Hel' },
+      { kind: 'text-delta', opensBlock: false, text: 'lo ' },
+      { kind: 'text-delta', opensBlock: false, text: 'world' },
+    ]);
+  });
+
+  it('should open a block again when a second text block starts', () => {
+    const streamState = createStreamState();
+    const start = streamEvent({
+      type: 'content_block_start',
+      index: 1,
+      content_block: { type: 'text', text: '' },
+    });
+    const events = [textDelta('a'), start, textDelta('b')].flatMap((streamed) =>
+      mapSdkMessage(streamed, at, streamState),
+    );
+
+    expect(events.map((event) => event.kind === 'text-delta' && event.opensBlock)).toEqual([
+      true,
+      true,
+    ]);
+  });
+
+  it('should drop thinking deltas, input_json deltas and subagent deltas', () => {
+    const streamState = createStreamState();
+    const events = [
+      streamEvent({
+        type: 'content_block_delta',
+        index: 0,
+        delta: { type: 'thinking_delta', thinking: 'x' },
+      }),
+      streamEvent({
+        type: 'content_block_delta',
+        index: 1,
+        delta: { type: 'input_json_delta', partial_json: '{' },
+      }),
+      streamEvent(
+        { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'inner' } },
+        'toolu_9',
+      ),
+    ].flatMap((streamed) => mapSdkMessage(streamed, at, streamState));
+
+    expect(events).toEqual([]);
   });
 });

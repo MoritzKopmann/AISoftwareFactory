@@ -7,12 +7,14 @@ import { RunEndService } from './business/service/run-end-service.js';
 import { RunQueryService } from './business/service/run-query-service.js';
 import { RunStartService } from './business/service/run-start-service.js';
 import type { ProjectPort } from './business/port/project/project-port.js';
+import type { SessionFeed } from './business/port/session/session-feed.js';
 import type { RunTranscripts } from './business/port/transcript/run-transcripts.js';
 import type { Worktrees } from './business/port/worktree/worktrees.js';
 import { InMemoryRecentRunSteps } from './infrastructure/repository/in-memory-recent-run-steps.js';
 import { InMemoryRunAnswerWaits } from './infrastructure/repository/in-memory-run-answer-waits.js';
 import { SqliteRunRepository } from './infrastructure/repository/sqlite-run-repository.js';
 import { ProjectsAdapter } from './infrastructure/internal/projects-adapter.js';
+import { InMemorySessionFeed } from './infrastructure/session/in-memory-session-feed.js';
 import { ClaudeAgentSdkSessions } from './infrastructure/session/claude-agent-sdk-sessions.js';
 import { ClaudeAgentSdkRunTranscripts } from './infrastructure/transcript/claude-agent-sdk-run-transcripts.js';
 import { GitCliWorktrees } from './infrastructure/worktree/git-cli-worktrees.js';
@@ -52,6 +54,7 @@ type AgentRunsInfrastructure = {
   readonly recentRunSteps: RecentRunSteps;
   readonly runTranscripts: RunTranscripts;
   readonly runAnswerWaits: RunAnswerWaits;
+  readonly sessionFeed: SessionFeed;
 };
 
 const answerTimeoutMarginMilliseconds = 600_000;
@@ -75,6 +78,7 @@ export function createAgentRunsModule(
     recentRunSteps: new InMemoryRecentRunSteps(),
     runTranscripts: new ClaudeAgentSdkRunTranscripts(),
     runAnswerWaits: new InMemoryRunAnswerWaits(),
+    sessionFeed: new InMemorySessionFeed(),
     ...overrides,
   };
   const { runRepository, agentSessions, recentRunSteps, runAnswerWaits } = infrastructure;
@@ -93,6 +97,8 @@ export function createAgentRunsModule(
     projectPort: infrastructure.projectPort,
     agentSessions,
     recentRunSteps,
+    runTranscripts: infrastructure.runTranscripts,
+    sessionFeed: infrastructure.sessionFeed,
     runAnswerWaits,
     identifiers: dependencies.identifiers,
     clock,
