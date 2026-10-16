@@ -19,13 +19,7 @@ import {
 import { createSkillsModule, type SkillsApi, type SkillsModule } from './modules/skills/index.js';
 import { RandomUuidIdentifiers } from './shared/identifiers/random-uuid-identifiers.js';
 import { createRunnerModule, type RunnerApi, type RunnerModule } from './modules/runner/index.js';
-import { GhCliPullRequestMerges } from './modules/scheduler/infra/integrations/gh-cli-pull-request-merges.js';
-import {
-  createSchedulerModule,
-  RunNotAnswerableError,
-  RunAlreadyActiveError,
-  type SchedulerModule,
-} from './modules/scheduler/index.js';
+import { createSchedulerModule, type SchedulerModule } from './modules/scheduler/index.js';
 import {
   createTicketsModule,
   type TicketsApi,
@@ -158,88 +152,14 @@ function buildRunnerModule(
 }
 
 function buildSchedulerModule(
-  events: EventPublisher & EventSubscriber,
+  events: EventSubscriber,
   projects: ProjectsApi,
   skills: SkillsApi,
   tickets: TicketsApi,
   runner: RunnerApi,
   logger: Logger,
 ): SchedulerModule {
-  return createSchedulerModule({
-    ticketAnswerGate: {
-      begin: async (projectId, ticketNumber) => {
-        try {
-          await tickets.beginAnswer(projectId, ticketNumber);
-        } catch (error) {
-          if (error instanceof ConflictError) {
-            throw new RunNotAnswerableError(error.message);
-          }
-          throw error;
-        }
-      },
-      revert: (projectId, ticketNumber) => tickets.revertAnswer(projectId, ticketNumber),
-    },
-    pullRequestMerges: new GhCliPullRequestMerges(),
-    runner: {
-      start: async (request) => {
-        const result = await runner.start({ ...request, mode: 'afk' });
-        if (result.kind === 'already-active') {
-          throw new RunAlreadyActiveError(result.message);
-        }
-        return result.run;
-      },
-      answer: async (runId, answer) => {
-        const result = await runner.answer(runId, answer);
-        switch (result.kind) {
-          case 'already-active':
-            throw new RunAlreadyActiveError(result.message);
-          case 'not-resumable':
-            throw new RunNotAnswerableError(result.message);
-          case 'answered':
-            return result.run;
-        }
-      },
-      findRun: (runId) => runner.findRun(runId),
-      activeRuns: (projectId) => runner.activeRuns(projectId),
-      latestRun: (projectId, ticketNumber) => runner.latestRun(projectId, ticketNumber),
-    },
-    ideaCreation: { create: (repository, idea) => tickets.createIdea(repository, idea) },
-    ticketLookup: {
-      find: async (projectId, ticketNumber) => {
-        const projectTicket = await tickets.ticket(projectId, ticketNumber);
-        const ticket = projectTicket?.ticket;
-        if (projectTicket === undefined || ticket === undefined) {
-          return undefined;
-        }
-        const snapshotTakenAt =
-          projectTicket.sync.state === 'pending' ? undefined : projectTicket.sync.snapshotTakenAt;
-        return {
-          number: ticket.number,
-          title: ticket.title,
-          status: ticket.status,
-          types: ticket.types,
-          isLeaf: ticket.subIssueNumbers.length === 0,
-          hasOpenBlocker: ticket.blockedBy.some((blocker) => blocker.open),
-          subIssueNumbers: ticket.subIssueNumbers,
-          ...(snapshotTakenAt === undefined ? {} : { snapshotTakenAt }),
-        };
-      },
-    },
-    reviewedTicketLookup: {
-      list: async (projectId) => tickets.openTickets(projectId),
-    },
-    runsGate: { check: () => skills.runsBlocked() },
-    projectLookup: {
-      find: async (projectId) => {
-        const project = (await projects.list()).find(({ id }) => id === projectId);
-        return project === undefined
-          ? undefined
-          : { repository: project.repository, onboarded: project.contract.passed };
-      },
-    },
-    subscriber: events,
-    logger,
-  });
+  return createSchedulerModule({ events, projects, skills, tickets, runner, logger });
 }
 
 export type ApplicationOptions = {
@@ -300,9 +220,9 @@ export function composeApplication(options: ApplicationOptions): Application {
     {
       answer: async (runId, text) => {
         try {
-          await scheduler.answer(runId, { kind: 'checkpoint', text });
+          await scheduler.internal.answer(runId, { kind: 'checkpoint', text });
         } catch (error) {
-          if (error instanceof RunNotAnswerableError || error instanceof RunAlreadyActiveError) {
+          if (error instanceof ConflictError) {
             throw new PageBusyError(error.message);
           }
           throw error;
@@ -321,17 +241,15 @@ export function composeApplication(options: ApplicationOptions): Application {
     new Hono().route('/a', artifacts.pageRoutes),
     tickets.routes,
     findings.routes,
-    ...[scheduler.routes, artifacts.routes, live.routes].map((moduleRoutes) =>
+    scheduler.routes,
+    ...[artifacts.routes, live.routes].map((moduleRoutes) =>
       new Hono().route('/api', moduleRoutes),
     ),
   ];
 
   const jobs: Jobs = {
     ...skills.jobs,
-    'scheduler.start': () => {
-      scheduler.start();
-      return Promise.resolve();
-    },
+    ...scheduler.jobs,
     ...tickets.jobs,
     ...runner.jobs,
     ...projects.jobs,

@@ -1,128 +1,79 @@
-import { Hono } from 'hono';
-import type { EventSubscriber } from '../../shared/event-bus.js';
-import type { Logger } from '../../shared/logger/create-logger.js';
-import { createIdeaRoutes } from './api/routes/create-idea-routes.js';
-import { createRunAnswerRoutes } from './api/routes/create-run-answer-routes.js';
-import { createRunRoutes } from './api/routes/create-run-routes.js';
-import { subscribeToSnapshotChanged } from './api/subscriptions/subscribe-to-snapshot-changed.js';
-import { RunNotAnswerableError } from './logic/errors/run-not-answerable-error.js';
-import { RunAlreadyActiveError } from './logic/errors/run-already-active-error.js';
-import { RunNotAvailableError } from './logic/errors/run-not-available-error.js';
-import type { RunAnswer } from './logic/domain/types/run-answer.js';
-import type { StartedRun } from './logic/domain/types/started-run.js';
-import type { IdeaCreation } from './logic/ports/idea-creation.js';
-import type { ProjectLookup } from './logic/ports/project-lookup.js';
-import type { PullRequestMerges } from './logic/ports/pull-request-merges.js';
-import type { ReviewedTicketLookup } from './logic/ports/reviewed-ticket-lookup.js';
-import type { RunnerPort } from './logic/ports/runner-port.js';
-import type { RunsGate } from './logic/ports/runs-gate.js';
-import type { TicketAnswerGate } from './logic/ports/ticket-answer-gate.js';
-import type { TicketLookup } from './logic/ports/ticket-lookup.js';
-import { AnswerRunUseCase } from './logic/use-cases/answer-run-use-case.js';
-import { MergeApprovedPullRequestsUseCase } from './logic/use-cases/merge-approved-pull-requests-use-case.js';
-import { ReadRunAvailabilityUseCase } from './logic/use-cases/read-run-availability-use-case.js';
-import { ReadTicketRunUseCase } from './logic/use-cases/read-ticket-run-use-case.js';
-import { StartIdeaSessionUseCase } from './logic/use-cases/start-idea-session-use-case.js';
-import { StartTicketRunUseCase } from './logic/use-cases/start-ticket-run-use-case.js';
+import type { PullRequestMerges } from './business/port/github/pull-request-merges.js';
+import { MergeService } from './business/service/merge-service.js';
+import { TicketRunService } from './business/service/ticket-run-service.js';
+import { GhCliPullRequestMerges } from './infrastructure/github/gh-cli-pull-request-merges.js';
+import { ProjectsProjectLookup } from './infrastructure/internal/projects-project-lookup.js';
+import { RunnerRunnerPort } from './infrastructure/internal/runner-runner-port.js';
+import { SkillsRunsGate } from './infrastructure/internal/skills-runs-gate.js';
+import { TicketsIdeaCreation } from './infrastructure/internal/tickets-idea-creation.js';
+import { TicketsReviewedTicketLookup } from './infrastructure/internal/tickets-reviewed-ticket-lookup.js';
+import { TicketsTicketAnswerGate } from './infrastructure/internal/tickets-ticket-answer-gate.js';
+import { TicketsTicketLookup } from './infrastructure/internal/tickets-ticket-lookup.js';
+import { createSchedulerRoutes } from './presentation/api/scheduler-routes.js';
+import { subscribeToSnapshotChanged } from './presentation/bus/subscribe-to-snapshot-changed.js';
+import { SchedulerFacade } from './presentation/internal/scheduler-facade.js';
+import type {
+  SchedulerModule,
+  SchedulerModuleDependencies,
+} from './presentation/internal/scheduler-module.js';
+import type { ProjectsApi } from '../projects/index.js';
+import type { RunnerApi } from '../runner/index.js';
+import type { SkillsApi } from '../skills/index.js';
+import type { TicketsApi } from '../tickets/index.js';
 
-export type { PermissionDecision } from './logic/domain/types/permission-decision.js';
-export type { RunAnswer } from './logic/domain/types/run-answer.js';
-export type { RunRecord } from './logic/domain/types/run-record.js';
-export type { RunsBlocked } from './logic/domain/types/runs-blocked.js';
-export type { SchedulableTicket } from './logic/domain/types/schedulable-ticket.js';
-export type { StartedRun } from './logic/domain/types/started-run.js';
-export type { SchedulerProject } from './logic/ports/project-lookup.js';
-export { RunAlreadyActiveError, RunNotAnswerableError, RunNotAvailableError };
+export type { SchedulerApi } from './presentation/internal/scheduler-api.js';
+export type {
+  SchedulerModule,
+  SchedulerModuleDependencies,
+} from './presentation/internal/scheduler-module.js';
+export type { RunAnswerDto } from './presentation/dto/internal/run-answer-dto.js';
+export type { StartedRunDto } from './presentation/dto/internal/started-run-dto.js';
 
-export type SchedulerModuleDependencies = {
-  readonly ticketAnswerGate: TicketAnswerGate;
+type SchedulerInfrastructure = {
   readonly pullRequestMerges: PullRequestMerges;
-  readonly runner: RunnerPort;
-  readonly ticketLookup: TicketLookup;
-  readonly reviewedTicketLookup: ReviewedTicketLookup;
-  readonly runsGate: RunsGate;
-  readonly projectLookup: ProjectLookup;
-  readonly ideaCreation: IdeaCreation;
-  readonly subscriber: EventSubscriber;
-  readonly logger: Logger;
 };
 
-export type SchedulerModule = {
-  readonly start: () => void;
-  readonly answer: (runId: string, answer: RunAnswer) => Promise<StartedRun>;
-  readonly routes: Hono;
-};
+export function createSchedulerModule(
+  dependencies: SchedulerModuleDependencies & {
+    readonly projects: Pick<ProjectsApi, 'list'>;
+    readonly skills: Pick<SkillsApi, 'runsBlocked'>;
+    readonly tickets: Pick<
+      TicketsApi,
+      'ticket' | 'openTickets' | 'beginAnswer' | 'revertAnswer' | 'createIdea'
+    >;
+    readonly runner: Pick<RunnerApi, 'start' | 'answer' | 'findRun' | 'activeRuns' | 'latestRun'>;
+  },
+  overrides: Partial<SchedulerInfrastructure> = {},
+): SchedulerModule {
+  const { events, logger, projects, skills, tickets, runner } = dependencies;
+  const infrastructure: SchedulerInfrastructure = {
+    pullRequestMerges: new GhCliPullRequestMerges(),
+    ...overrides,
+  };
+  const projectLookup = new ProjectsProjectLookup(projects);
+  const runnerPort = new RunnerRunnerPort(runner);
 
-export function createSchedulerModule(dependencies: SchedulerModuleDependencies): SchedulerModule {
-  const {
-    ticketAnswerGate,
-    pullRequestMerges,
-    runner,
-    ticketLookup,
-    reviewedTicketLookup,
-    runsGate,
+  const ticketRunService = new TicketRunService({
+    ticketLookup: new TicketsTicketLookup(tickets),
+    runner: runnerPort,
+    runsGate: new SkillsRunsGate(skills),
     projectLookup,
-    ideaCreation,
-    subscriber,
-    logger,
-  } = dependencies;
-
-  const readRunAvailability = new ReadRunAvailabilityUseCase({
-    ticketLookup,
-    runner,
-    runsGate,
-    projectLookup,
+    ideaCreation: new TicketsIdeaCreation(tickets),
+    ticketAnswerGate: new TicketsTicketAnswerGate(tickets),
   });
-  const startTicketRun = new StartTicketRunUseCase({
-    readRunAvailability: (projectId, ticketNumber) =>
-      readRunAvailability.execute(projectId, ticketNumber),
-    ticketLookup,
-    runner,
-  });
-  const startIdeaSession = new StartIdeaSessionUseCase({
-    projectLookup,
-    runsGate,
-    ideaCreation,
-    startTicketRun: (projectId, ticketNumber) => startTicketRun.execute(projectId, ticketNumber),
-  });
-  const readTicketRun = new ReadTicketRunUseCase({
-    readRunAvailability: (projectId, ticketNumber) =>
-      readRunAvailability.execute(projectId, ticketNumber),
-    runner,
-  });
-  const answerRun = new AnswerRunUseCase({ ticketAnswerGate, runner });
-  const mergeApprovedPullRequests = new MergeApprovedPullRequestsUseCase({
-    pullRequestMerges,
-    runner,
-    reviewedTicketLookup,
+  const mergeService = new MergeService({
+    pullRequestMerges: infrastructure.pullRequestMerges,
+    runner: runnerPort,
+    reviewedTicketLookup: new TicketsReviewedTicketLookup(tickets),
     projectLookup,
     logger,
   });
+
+  subscribeToSnapshotChanged(events, mergeService, logger);
 
   return {
-    routes: new Hono()
-      .route(
-        '/projects',
-        createRunRoutes({
-          read: (projectId, ticketNumber) => readTicketRun.execute(projectId, ticketNumber),
-          start: (projectId, ticketNumber) => startTicketRun.execute(projectId, ticketNumber),
-        }),
-      )
-      .route(
-        '/projects',
-        createIdeaRoutes({
-          start: (projectId, text) => startIdeaSession.execute(projectId, text),
-        }),
-      )
-      .route(
-        '/runs',
-        createRunAnswerRoutes({
-          answer: (runId, answer) => answerRun.execute(runId, answer),
-        }),
-      ),
-    answer: (runId, answer) => answerRun.execute(runId, answer),
-    start: () => {
-      subscribeToSnapshotChanged(subscriber, mergeApprovedPullRequests, logger);
-    },
+    routes: createSchedulerRoutes({ ticketRunService }),
+    jobs: {},
+    internal: new SchedulerFacade({ ticketRunService }),
   };
 }
