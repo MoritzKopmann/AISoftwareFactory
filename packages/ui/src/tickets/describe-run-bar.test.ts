@@ -9,7 +9,7 @@ const disabled: TicketRunResponse = {
 const absent: TicketRunResponse = { availability: { kind: 'absent' } };
 const live: TicketRunResponse = {
   availability: { kind: 'disabled', reason: '#56 is running.' },
-  activeRun: { id: 'run-1', startedAt: '2026-09-30T10:00:00Z', steps: [] },
+  activeRun: { id: 'run-1', startedAt: '2026-09-30T10:00:00Z' },
 };
 const lastRun: NonNullable<TicketRunResponse['lastRun']> = {
   id: 'run-1',

@@ -64,11 +64,6 @@ export type DomainEvents = {
     readonly projectId: string;
     readonly ticketNumber: number;
   };
-  readonly 'run.step-added': {
-    readonly runId: string;
-    readonly projectId: string;
-    readonly ticketNumber: number;
-  };
   readonly 'run.wait-cleared': {
     readonly runId: string;
     readonly projectId: string;
@@ -113,7 +108,6 @@ export const domainEventNames = listEveryName([
   'project.added',
   'snapshot.changed',
   'run.started',
-  'run.step-added',
   'run.waiting',
   'run.wait-cleared',
   'run.finished',

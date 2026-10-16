@@ -8,7 +8,6 @@ import type { TicketType } from '../../../../shared/ticket-type/ticket-type.js';
 import {
   buildRun,
   FakeAgentSessions,
-  FakeRecentRunSteps,
   FakeRunAnswerWaits,
   FakeRunRepository,
   FakeRunTranscripts,
@@ -45,7 +44,6 @@ function buildService(options: BuildOptions = {}) {
   const runRepository = new FakeRunRepository();
   const agentSessions = new FakeAgentSessions();
   const worktrees = new FakeWorktrees();
-  const recentRunSteps = new FakeRecentRunSteps();
   const runAnswerWaits = new FakeRunAnswerWaits();
   const runTranscripts = new FakeRunTranscripts();
   const sessionFeed = new FakeSessionFeed();
@@ -64,7 +62,6 @@ function buildService(options: BuildOptions = {}) {
     worktrees,
     projectPort: options.projectPort ?? new FakeProjectPort(defaultTarget),
     agentSessions,
-    recentRunSteps,
     runTranscripts,
     sessionFeed,
     runAnswerWaits,
@@ -82,7 +79,6 @@ function buildService(options: BuildOptions = {}) {
     runRepository,
     agentSessions,
     worktrees,
-    recentRunSteps,
     runTranscripts,
     sessionFeed,
     runAnswerWaits,
@@ -271,17 +267,6 @@ describe('RunStartService', () => {
         { runId: 'id-1', ending: { kind: 'crashed', reason: 'git worktree add failed' } },
       ]);
       expect(agentSessions.startedSpecs).toEqual([]);
-    });
-
-    it('should keep the steps the session reports when it runs', async () => {
-      const { service, agentSessions, finishCalls, recentRunSteps } = buildStartSubject();
-      await service.start(startRequest);
-
-      agentSessions.push('id-2', { kind: 'step', step: { at: 'a', summary: 'Read package.json' } });
-      agentSessions.push('id-2', { kind: 'completed' });
-
-      await vi.waitFor(() => expect(finishCalls).toHaveLength(1));
-      expect(recentRunSteps.read('id-1')).toEqual([{ at: 'a', summary: 'Read package.json' }]);
     });
 
     it('should publish the transcript prompt before the first delta and entry when the session streams', async () => {
@@ -481,28 +466,19 @@ describe('RunStartService', () => {
       ]);
     });
 
-    it('should emit run.step-added after the step is readable when the session reports a step', async () => {
-      const { service, agentSessions, events, recentRunSteps } = buildStartSubject();
+    it('should emit only run.started and still feed the entry when the session yields assistant text', async () => {
+      const { service, agentSessions, events, sessionFeed, finishCalls } = buildStartSubject();
       await service.start(startRequest);
-      let stepsAtEmit: unknown;
-      const baseEmit = events.emit.bind(events);
-      events.emit = (name, payload) => {
-        if (name === 'run.step-added') {
-          stepsAtEmit = recentRunSteps.read('id-1');
-        }
-        baseEmit(name, payload);
-      };
 
-      agentSessions.push('id-2', { kind: 'step', step: { at: 'a', summary: 'Read package.json' } });
-
-      await vi.waitFor(() =>
-        expect(events.emittedEvents.map(({ name }) => name)).toContain('run.step-added'),
-      );
-      expect(stepsAtEmit).toEqual([{ at: 'a', summary: 'Read package.json' }]);
-      expect(events.emittedEvents.at(-1)).toEqual({
-        name: 'run.step-added',
-        payload: { runId: 'id-1', projectId: 'moritz/aisf', ticketNumber: 137 },
+      agentSessions.push('id-2', {
+        kind: 'entry',
+        entry: { kind: 'text', id: 'e1', text: 'Reading the ticket now.' },
       });
+      agentSessions.push('id-2', { kind: 'completed' });
+
+      await vi.waitFor(() => expect(finishCalls).toHaveLength(1));
+      expect(events.emittedEvents.map(({ name }) => name)).toEqual(['run.started']);
+      expect(sessionFeed.published.some(({ event }) => event.kind === 'entry')).toBe(true);
     });
   });
 
@@ -640,24 +616,17 @@ describe('RunStartService', () => {
       expect(agentSessions.resumedSpecs).toEqual([]);
     });
 
-    it('should record the resumed steps and the ending on the new run when the session carries on', async () => {
-      const { service, agentSessions, finishCalls, recentRunSteps, runRepository, insertEndedRun } =
+    it('should record the ending on the new run when the session carries on', async () => {
+      const { service, agentSessions, finishCalls, runRepository, insertEndedRun } =
         buildResumeSubject();
       await insertEndedRun();
       await service.resume('run-1', allow);
 
-      agentSessions.push('session-1', {
-        kind: 'step',
-        step: { at: '2026-09-29T11:01:00.000Z', summary: 'Ran git push' },
-      });
       agentSessions.push('session-1', { kind: 'completed' });
       await vi.waitFor(() => {
         expect(finishCalls).toEqual([{ runId: 'id-1', ending: { kind: 'finished' } }]);
       });
 
-      expect(recentRunSteps.read('id-1')).toEqual([
-        { at: '2026-09-29T11:01:00.000Z', summary: 'Ran git push' },
-      ]);
       expect(runRepository.runs.get('run-1')?.ending).toEqual(permissionNeeded);
     });
 

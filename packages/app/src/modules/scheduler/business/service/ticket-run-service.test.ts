@@ -194,18 +194,13 @@ describe('TicketRunService', () => {
       });
     });
 
-    it('should return the active run with its steps when the active run is this ticket', async () => {
+    it('should return the active run when the active run is this ticket', async () => {
       const runPort = new FakeRunPort();
       runPort.activeTicketNumbers = [138];
-      runPort.activeSteps = [{ at: '2026-09-29T09:01:00.000Z', summary: 'Read the ticket' }];
 
       expect(await buildSubject({ runPort }).service.readTicketRun('moritz/aisf', 138)).toEqual({
         availability: { kind: 'disabled', reason: '#138 is running' },
-        activeRun: {
-          id: 'run-1',
-          startedAt,
-          steps: [{ at: '2026-09-29T09:01:00.000Z', summary: 'Read the ticket' }],
-        },
+        activeRun: { id: 'run-1', startedAt },
       });
     });
 

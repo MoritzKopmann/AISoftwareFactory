@@ -7,7 +7,6 @@ const withPage: TicketRunResponse = {
   activeRun: {
     id: 'run-1',
     startedAt: '2026-10-10T10:00:00Z',
-    steps: [],
     waitingFor: {
       kind: 'checkpoint',
       request: 'Pick',
@@ -24,7 +23,7 @@ describe('rememberRoundRun', () => {
   it('should forget the run when a run is active without a page wait', () => {
     const answered: TicketRunResponse = {
       availability: { kind: 'disabled', reason: 'r' },
-      activeRun: { id: 'run-1', startedAt: '2026-10-10T10:00:00Z', steps: [] },
+      activeRun: { id: 'run-1', startedAt: '2026-10-10T10:00:00Z' },
     };
     expect(rememberRoundRun('run-1', answered)).toBeUndefined();
   });

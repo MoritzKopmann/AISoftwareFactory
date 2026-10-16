@@ -5,10 +5,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ClaudeAgentSdkRunTranscripts } from './claude-agent-sdk-run-transcripts.js';
 import { TranscriptNotFoundError } from '../../business/errors/transcript-not-found-error.js';
 
-const fixturePath = new URL(
-  '../../testing/fixtures/sessions/implement-run-transcript.jsonl',
-  import.meta.url,
-);
 const entriesFixturePath = new URL(
   '../../testing/fixtures/sessions/entries-run-transcript.jsonl',
   import.meta.url,
@@ -39,7 +35,7 @@ describe('ClaudeAgentSdkRunTranscripts', () => {
     await rm(temporaryDirectory, { recursive: true, force: true });
   });
 
-  async function recordTranscript(fixture: URL = fixturePath): Promise<void> {
+  async function recordTranscript(fixture: URL): Promise<void> {
     const projectDirectory = join(
       claudeConfigDirectory,
       'projects',
@@ -48,24 +44,6 @@ describe('ClaudeAgentSdkRunTranscripts', () => {
     await mkdir(projectDirectory, { recursive: true });
     await copyFile(fixture, join(projectDirectory, `${sessionId}.jsonl`));
   }
-
-  it('should describe the assistant steps in the wording of the running panel when the transcript exists', async () => {
-    await recordTranscript();
-
-    const entries = await new ClaudeAgentSdkRunTranscripts().read(sessionId, worktreePath);
-
-    expect(entries).toEqual([
-      { summary: "I'll read the ticket first." },
-      { summary: 'Bash: gh issue view 137' },
-      { summary: 'Edit: /worktrees/aisf/137/src/main.ts' },
-    ]);
-  });
-
-  it('should throw transcript not found when Claude Code has no transcript for the session', async () => {
-    await expect(
-      new ClaudeAgentSdkRunTranscripts().read(sessionId, worktreePath),
-    ).rejects.toBeInstanceOf(TranscriptNotFoundError);
-  });
 
   describe('readEntries', () => {
     it('should return the prompt, text, tool call and tool result with live ids when the transcript exists', async () => {

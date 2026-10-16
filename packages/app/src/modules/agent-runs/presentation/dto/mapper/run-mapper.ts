@@ -14,10 +14,7 @@ export function toRunDto(run: Run): RunDto {
 }
 
 export function toActiveRunDto(activeRun: ActiveRun): ActiveRunDto {
-  return {
-    run: toRunDto(activeRun.run),
-    steps: activeRun.steps.map((step) => ({ at: step.at, summary: step.summary })),
-  };
+  return { run: toRunDto(activeRun.run) };
 }
 
 export function toActiveWaitDto(wait: ActiveWait): ActiveWaitDto {

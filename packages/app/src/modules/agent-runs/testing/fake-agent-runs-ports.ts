@@ -2,8 +2,6 @@ import { RunAlreadyActiveError } from '../business/errors/run-already-active-err
 import type { Run } from '../business/domain/types/run.js';
 import type { RunEnding } from '../business/domain/types/run-ending.js';
 import type { RunWait } from '../business/domain/types/run-wait.js';
-import type { RunStep } from '../business/domain/types/run-step.js';
-import type { RunLogEntry } from '../business/domain/types/run-log-entry.js';
 import type { SessionEntry } from '../business/domain/types/session-entry.js';
 import type { SessionFeed, SessionFeedEvent } from '../business/port/session/session-feed.js';
 import type { RunTarget } from '../business/domain/types/run-target.js';
@@ -15,7 +13,6 @@ import type { WorktreeSpec } from '../business/domain/types/worktree-spec.js';
 import type { AgentSessions } from '../business/port/session/agent-sessions.js';
 import type { Identifiers } from '../../../shared/identifiers/identifiers.js';
 import type { RunAnswer } from '../business/domain/types/run-answer.js';
-import type { RecentRunSteps } from '../business/port/repository/recent-run-steps.js';
 import type {
   RunAnswerWaitOutcome,
   RunAnswerWaits,
@@ -282,9 +279,6 @@ export class FakeProjectPort implements ProjectPort {
 }
 
 export class FakeRunTranscripts implements RunTranscripts {
-  readonly reads: Array<{ sessionId: string; worktreePath: string }> = [];
-  entries: ReadonlyArray<RunLogEntry> = [];
-  failure: Error | undefined;
   readonly sessionEntryReads: Array<{ sessionId: string; worktreePath: string }> = [];
   sessionEntries: ReadonlyArray<SessionEntry> = [];
   sessionEntriesFailure: Error | undefined;
@@ -295,26 +289,6 @@ export class FakeRunTranscripts implements RunTranscripts {
       throw this.sessionEntriesFailure;
     }
     return this.sessionEntries;
-  }
-
-  async read(sessionId: string, worktreePath: string): Promise<ReadonlyArray<RunLogEntry>> {
-    this.reads.push({ sessionId, worktreePath });
-    if (this.failure !== undefined) {
-      throw this.failure;
-    }
-    return this.entries;
-  }
-}
-
-export class FakeRecentRunSteps implements RecentRunSteps {
-  private readonly stepsByRunId = new Map<string, RunStep[]>();
-
-  append(runId: string, step: RunStep): void {
-    this.stepsByRunId.set(runId, [...(this.stepsByRunId.get(runId) ?? []), step]);
-  }
-
-  read(runId: string): ReadonlyArray<RunStep> {
-    return this.stepsByRunId.get(runId) ?? [];
   }
 }
 

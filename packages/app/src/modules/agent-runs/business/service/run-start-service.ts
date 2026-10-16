@@ -25,7 +25,6 @@ import type { SessionTool } from '../domain/types/session-tool.js';
 import type { StartRunRequest } from '../domain/types/start-run-request.js';
 import { RunNotResumableError } from '../errors/run-not-resumable-error.js';
 import { RunTargetNotFoundError } from '../errors/run-target-not-found-error.js';
-import type { RecentRunSteps } from '../port/repository/recent-run-steps.js';
 import type { RunAnswerWaits } from '../port/repository/run-answer-waits.js';
 import type { RunRepository } from '../port/repository/run-repository.js';
 import type { AgentSessions } from '../port/session/agent-sessions.js';
@@ -40,7 +39,6 @@ export type RunStartServiceDependencies = {
   readonly worktrees: Worktrees;
   readonly projectPort: ProjectPort;
   readonly agentSessions: AgentSessions;
-  readonly recentRunSteps: RecentRunSteps;
   readonly runTranscripts: RunTranscripts;
   readonly sessionFeed: SessionFeed;
   readonly runAnswerWaits: RunAnswerWaits;
@@ -60,7 +58,7 @@ function answerText(answer: RunAnswer): string {
   return answer.kind === 'checkpoint' ? answer.text : answer.decision;
 }
 
-/** Only entries and text deltas go onto the session feed; steps and run endings do not. */
+/** Only entries and text deltas go onto the session feed; run endings do not. */
 function goesOnFeed(event: SessionEvent): boolean {
   return event.kind === 'entry' || event.kind === 'text-delta';
 }
@@ -316,7 +314,7 @@ export class RunStartService {
   }
 
   private async consume(run: Run, sessionEvents: AsyncIterable<SessionEvent>): Promise<void> {
-    const { runEndService, recentRunSteps, events, sessionFeed } = this.dependencies;
+    const { runEndService, sessionFeed } = this.dependencies;
     let promptPulled = false;
     try {
       for await (const event of sessionEvents) {
@@ -329,14 +327,6 @@ export class RunStartService {
           case 'entry':
           case 'text-delta':
             sessionFeed.publish(run.id, event);
-            break;
-          case 'step':
-            recentRunSteps.append(run.id, event.step);
-            events.emit('run.step-added', {
-              runId: run.id,
-              projectId: run.projectId,
-              ticketNumber: run.ticketNumber,
-            });
             break;
           case 'completed':
             await runEndService.finish(run.id, { kind: 'finished' });

@@ -57,7 +57,6 @@ export function toTicketRunResponse({
           activeRun: {
             id: activeRun.id,
             startedAt: activeRun.startedAt,
-            steps: [...activeRun.steps],
             ...(activeRun.waitingFor === undefined
               ? {}
               : {

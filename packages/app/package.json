@@ -12,7 +12,6 @@
     "./api-schemas/needs-you-schemas.js": "./src/modules/tickets/presentation/dto/api/needs-you-schemas.ts",
     "./api-schemas/runs-schemas.js": "./src/modules/scheduler/presentation/dto/api/runs-schemas.ts",
     "./api-schemas/ideas-schemas.js": "./src/modules/scheduler/presentation/dto/api/ideas-schemas.ts",
-    "./api-schemas/run-log-schemas.js": "./src/modules/agent-runs/presentation/dto/api/run-log-schemas.ts",
     "./api-schemas/session-stream-schemas.js": "./src/modules/agent-runs/presentation/dto/api/session-stream-schemas.ts",
     "./api-schemas/findings-schemas.js": "./src/modules/findings/presentation/dto/api/findings-schemas.ts",
     "./api-schemas/artifacts-schemas.js": "./src/modules/artifacts/presentation/dto/api/artifacts-schemas.ts",

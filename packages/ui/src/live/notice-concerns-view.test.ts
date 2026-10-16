@@ -54,7 +54,6 @@ describe('noticeConcernsView', () => {
     ['run.finished', on('run.finished', 7), artifacts(), true],
     ['run.waiting', on('run.waiting', 7), board(), false],
     ['run.wait-cleared', on('run.wait-cleared', 7), artifacts(), true],
-    ['run.step-added', on('run.step-added', 7), run(), false],
     ['artifact.published', on('artifact.published', 7), artifacts(), true],
     ['finding.changed', on('finding.changed', 7), findings(), true],
     ['finding.changed', on('finding.changed', 7), findings(8), false],
@@ -98,9 +97,5 @@ describe('noticeConcernsView for needs-you', () => {
 
   it('should not concern the list when the notice is of another project', () => {
     expect(noticeConcernsView(on('run.waiting', 7), needsYou('octo/other'))).toBe(false);
-  });
-
-  it('should not concern the list when run.step-added arrives', () => {
-    expect(noticeConcernsView(on('run.step-added', 7), needsYou())).toBe(false);
   });
 });

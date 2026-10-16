@@ -1,5 +1,4 @@
 import type { RunWait } from './run-wait.js';
-import type { RunStep } from './run-step.js';
 
 export type ActiveTicketRun = {
   readonly run: {
@@ -9,5 +8,4 @@ export type ActiveTicketRun = {
     readonly waitingFor?: RunWait;
     readonly waitingSince?: string;
   };
-  readonly steps: ReadonlyArray<RunStep>;
 };

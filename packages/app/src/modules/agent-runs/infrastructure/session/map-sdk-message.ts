@@ -1,52 +1,9 @@
-import type { SDKAssistantMessage, SDKMessage } from '@anthropic-ai/claude-agent-sdk';
+import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import type {
   SessionEntry,
   SessionToolResultPart,
 } from '../../business/domain/types/session-entry.js';
 import type { SessionEvent } from '../../business/domain/types/session-event.js';
-
-const maximumSummaryLength = 120;
-const inputFieldsThatDescribeACall: ReadonlyArray<string> = [
-  'command',
-  'file_path',
-  'path',
-  'pattern',
-  'url',
-];
-
-function shorten(text: string): string {
-  return text.length > maximumSummaryLength ? text.slice(0, maximumSummaryLength) : text;
-}
-
-function describeToolCall(toolName: string, input: unknown): string {
-  if (typeof input === 'object' && input !== null) {
-    for (const field of inputFieldsThatDescribeACall) {
-      const value = (input as Record<string, unknown>)[field];
-      if (typeof value === 'string' && value !== '') {
-        return shorten(`${toolName}: ${value}`);
-      }
-    }
-  }
-  return shorten(toolName);
-}
-
-function firstLine(text: string): string {
-  return text.trim().split('\n')[0] ?? '';
-}
-
-export function describeAssistantMessage(
-  message: SDKAssistantMessage['message'],
-): ReadonlyArray<string> {
-  const summaries: string[] = [];
-  for (const block of message.content) {
-    if (block.type === 'tool_use') {
-      summaries.push(describeToolCall(block.name, block.input));
-    } else if (block.type === 'text' && firstLine(block.text) !== '') {
-      summaries.push(shorten(firstLine(block.text)));
-    }
-  }
-  return summaries;
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -192,7 +149,6 @@ function mapStreamEvent(
 
 export function mapSdkMessage(
   message: SDKMessage,
-  at: string,
   streamState: StreamState = createStreamState(),
 ): ReadonlyArray<SessionEvent> {
   if (message.type === 'stream_event') {
@@ -200,14 +156,10 @@ export function mapSdkMessage(
   }
 
   if (message.type === 'assistant') {
-    const steps = describeAssistantMessage(message.message).map((summary): SessionEvent => ({
-      kind: 'step',
-      step: { at, summary },
-    }));
     const entries = isFromMainAgent(message)
       ? entriesFromContent(message.uuid, 'assistant', message.message.content, false)
       : [];
-    return [...steps, ...entries.map((entry): SessionEvent => ({ kind: 'entry', entry }))];
+    return entries.map((entry): SessionEvent => ({ kind: 'entry', entry }));
   }
 
   if (message.type === 'user') {

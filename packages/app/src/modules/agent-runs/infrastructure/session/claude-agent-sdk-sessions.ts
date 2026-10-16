@@ -13,7 +13,6 @@ type ToolInputSchema = Parameters<typeof tool>[2];
 export type ClaudeAgentSdkSessionsOptions = {
   readonly claudeExecutablePath: string;
   readonly pluginDirectory: string;
-  readonly now: () => string;
   readonly answerTimeoutMilliseconds: number;
 };
 
@@ -108,7 +107,7 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
       });
 
       for await (const message of sdkQuery) {
-        for (const event of mapSdkMessage(message, this.options.now(), streamState)) {
+        for (const event of mapSdkMessage(message, streamState)) {
           yield event;
           if (event.kind === 'crashed' || event.kind === 'usage-limit') {
             return;

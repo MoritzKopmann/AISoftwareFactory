@@ -4,7 +4,6 @@ import type { SessionEntry } from '../../business/domain/types/session-entry.js'
 import { RunQueryService } from '../../business/service/run-query-service.js';
 import {
   buildRun,
-  FakeRecentRunSteps,
   FakeRunRepository,
   FakeRunTranscripts,
   FakeSessionFeed,
@@ -37,7 +36,6 @@ async function createSubject(run?: Parameters<typeof buildRun>[0]) {
   const sessionFeed = new FakeSessionFeed();
   const service = new RunQueryService({
     runRepository,
-    recentRunSteps: new FakeRecentRunSteps(),
     runTranscripts,
     sessionFeed,
   });

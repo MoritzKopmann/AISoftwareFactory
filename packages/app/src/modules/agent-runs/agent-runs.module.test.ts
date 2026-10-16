@@ -2,8 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { createAgentRunsModule, type AgentRunsModule } from './index.js';
 import type { ProjectsApi } from '../projects/index.js';
-import { runLogResponseSchema } from './presentation/dto/api/run-log-schemas.js';
-import { TranscriptNotFoundError } from './business/errors/transcript-not-found-error.js';
 import type { AgentTool } from '../../shared/agent-tools.js';
 import { InMemoryAgentToolRegistry } from '../../shared/in-memory-agent-tool-registry.js';
 import { FakeClock } from '../../shared/testing/fake-clock.js';
@@ -11,7 +9,6 @@ import { FakeEventPublisher } from '../../shared/testing/fake-event-publisher.js
 import {
   buildRun,
   FakeAgentSessions,
-  FakeRecentRunSteps,
   FakeRunAnswerWaits,
   FakeRunRepository,
   FakeProjectPort,
@@ -94,7 +91,6 @@ describe('createAgentRunsModule', () => {
           checkoutPath: '/checkouts/aisf',
           repositoryName: 'aisf',
         }),
-        recentRunSteps: new FakeRecentRunSteps(),
         runTranscripts,
         runAnswerWaits,
       },
@@ -210,16 +206,10 @@ describe('createAgentRunsModule', () => {
     expect(events.emittedEvents[0]).toMatchObject({ payload: { ending: { kind: 'stopped' } } });
   });
 
-  it('should return the running run with its steps when activeRuns is asked', async () => {
+  it('should return the running run when activeRuns is asked', async () => {
     const run = await startRun();
-    agentSessions.push('id-2', { kind: 'step', step: { at: 'a', summary: 'Read package.json' } });
 
-    await vi.waitFor(async () =>
-      expect((await agentRuns.internal.activeRuns('moritz/aisf'))[0]?.steps).toEqual([
-        { at: 'a', summary: 'Read package.json' },
-      ]),
-    );
-    expect((await agentRuns.internal.activeRuns('moritz/aisf'))[0]?.run).toEqual(run);
+    expect((await agentRuns.internal.activeRuns('moritz/aisf'))[0]).toEqual({ run });
   });
 
   it("should return the ticket's latest run when latestRun is asked", async () => {
@@ -228,53 +218,12 @@ describe('createAgentRunsModule', () => {
     expect(await agentRuns.internal.latestRun('moritz/aisf', 137)).toEqual(run);
   });
 
-  describe('GET /api/projects/:owner/:name/tickets/:number/run-log', () => {
-    it('should answer the entries with the total when the ticket has a run', async () => {
-      await runRepository.insert(buildRun({ state: 'ended', ending: { kind: 'finished' } }));
-      runTranscripts.entries = [{ summary: 'Read: ticket' }];
+  it('should answer 404 when GET /api/projects/:owner/:name/tickets/:number/run-log is called', async () => {
+    const response = await agentRuns.routes.request(
+      '/api/projects/moritz/aisf/tickets/137/run-log',
+    );
 
-      const response = await agentRuns.routes.request(
-        '/api/projects/moritz/aisf/tickets/137/run-log',
-      );
-
-      expect(response.status).toBe(200);
-      expect(runLogResponseSchema.parse(await response.json())).toEqual({
-        kind: 'found',
-        entries: [{ summary: 'Read: ticket' }],
-        total: 1,
-      });
-    });
-
-    it('should answer no session when the ticket has no run', async () => {
-      const response = await agentRuns.routes.request(
-        '/api/projects/moritz/aisf/tickets/137/run-log',
-      );
-
-      expect(response.status).toBe(200);
-      expect(runLogResponseSchema.parse(await response.json())).toEqual({ kind: 'no-session' });
-    });
-
-    it('should answer transcript not found when the transcript is gone', async () => {
-      await runRepository.insert(buildRun({ state: 'ended', ending: { kind: 'finished' } }));
-      runTranscripts.failure = new TranscriptNotFoundError('session-1');
-
-      const response = await agentRuns.routes.request(
-        '/api/projects/moritz/aisf/tickets/137/run-log',
-      );
-
-      expect(response.status).toBe(200);
-      expect(runLogResponseSchema.parse(await response.json())).toEqual({
-        kind: 'transcript-not-found',
-      });
-    });
-
-    it('should answer 400 when the ticket number is not a positive integer', async () => {
-      const response = await agentRuns.routes.request(
-        '/api/projects/moritz/aisf/tickets/abc/run-log',
-      );
-
-      expect(response.status).toBe(400);
-    });
+    expect(response.status).toBe(404);
   });
 
   it('should resume the session with the app tools hosted when answer is called on a run needing permission', async () => {
