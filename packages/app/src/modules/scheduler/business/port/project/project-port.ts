@@ -3,6 +3,7 @@ import type { RepositoryReference } from '../../domain/types/repository-referenc
 export type SchedulerProject = {
   readonly repository: RepositoryReference;
   readonly onboarded: boolean;
+  readonly paused: boolean;
 };
 
 export interface ProjectPort {

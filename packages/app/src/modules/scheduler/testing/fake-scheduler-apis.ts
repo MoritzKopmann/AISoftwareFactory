@@ -47,7 +47,7 @@ export function buildTicketDto(overrides: Partial<TicketDto> = {}): TicketDto {
   };
 }
 
-export function fakeProjectsApi(): Pick<ProjectsApi, 'list'> {
+export function fakeProjectsApi(paused = false): Pick<ProjectsApi, 'list'> {
   return {
     list: async () => [
       {
@@ -55,7 +55,7 @@ export function fakeProjectsApi(): Pick<ProjectsApi, 'list'> {
         repository: { owner: 'moritz', name: 'aisf' },
         checkoutPath: '/checkout',
         addedAt: '2026-09-29T08:00:00.000Z',
-        paused: false,
+        paused,
         contract: { passed: true, missingSlots: [], missingKeys: [] },
       },
     ],
@@ -73,6 +73,7 @@ export class FakeTicketsApi implements Pick<
   readonly calls: string[] = [];
   openTicketDtos: ReadonlyArray<TicketDto> = [];
   beginFailure: Error | undefined;
+  syncState: 'ok' | 'failed' = 'ok';
 
   constructor(private readonly ticketDto: TicketDto | undefined = buildTicketDto()) {}
 
@@ -81,11 +82,19 @@ export class FakeTicketsApi implements Pick<
       ? undefined
       : {
           projectId: 'moritz/aisf',
-          sync: {
-            state: 'ok' as const,
-            checkedAt: '2026-09-29T10:00:00.000Z',
-            snapshotTakenAt: '2026-09-29T10:00:00.000Z',
-          },
+          sync:
+            this.syncState === 'failed'
+              ? {
+                  state: 'failed' as const,
+                  cause: 'unavailable' as const,
+                  message: 'down',
+                  failedAt: '2026-09-29T10:00:00.000Z',
+                }
+              : {
+                  state: 'ok' as const,
+                  checkedAt: '2026-09-29T10:00:00.000Z',
+                  snapshotTakenAt: '2026-09-29T10:00:00.000Z',
+                },
           ticket: this.ticketDto,
         };
   }
