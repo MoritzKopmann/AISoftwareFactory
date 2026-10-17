@@ -89,10 +89,29 @@ describe('describeToolRow', () => {
     });
   });
 
-  it('should use the command as a mono headline and no second line when Bash has no description', () => {
+  it('should show Command as a plain headline and the command as second line when Bash has no label or description', () => {
     const row = describeToolRow(call('Bash', { command: 'npm test' }), undefined, true);
-    expect(row.headline).toEqual({ text: 'npm test', mono: true });
-    expect(row.secondLine).toBeUndefined();
+    expect(row.headline).toEqual({ text: 'Command', mono: false });
+    expect(row.secondLine).toBe('$ npm test');
+  });
+
+  it('should show the label as a plain headline when Bash has a label', () => {
+    const row = describeToolRow(
+      { ...call('Bash', { command: 'npm test' }), label: 'Runs the tests.' },
+      undefined,
+      true,
+    );
+    expect(row.headline).toEqual({ text: 'Runs the tests.', mono: false });
+    expect(row.secondLine).toBe('$ npm test');
+  });
+
+  it('should prefer the description over the label when Bash has both', () => {
+    const row = describeToolRow(
+      { ...call('Bash', { command: 'npm test', description: 'Run tests' }), label: 'Runs.' },
+      undefined,
+      true,
+    );
+    expect(row.headline).toEqual({ text: 'Run tests', mono: false });
   });
 
   it('should use the url as headline and the read tag when the tool is Screenshot', () => {

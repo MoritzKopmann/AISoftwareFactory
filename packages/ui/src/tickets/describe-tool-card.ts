@@ -71,7 +71,7 @@ export function describeToolRow(
   live: boolean,
   root?: string,
 ): ToolRowDescription {
-  const { headline, secondLine } = describeHeadlines(call.name, call.input, root);
+  const { headline, secondLine } = describeHeadlines(call.name, call.input, root, call.label);
   return {
     status: statusOf(result, live),
     tag: tagOf(call.name),
@@ -145,6 +145,7 @@ function describeHeadlines(
   name: string,
   input: unknown,
   root: string | undefined,
+  label: string | undefined,
 ): { headline?: { text: string; mono: boolean }; secondLine?: string } {
   const field = (key: string): string | undefined => {
     const value =
@@ -189,11 +190,9 @@ function describeHeadlines(
       };
     }
     case 'Bash': {
-      const description = field('description');
       const command = field('command');
-      if (description === undefined) return mono(command);
       return {
-        headline: { text: description, mono: false },
+        headline: { text: field('description') ?? label ?? 'Command', mono: false },
         ...(command !== undefined && { secondLine: `$ ${command}` }),
       };
     }

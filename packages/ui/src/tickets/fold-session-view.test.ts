@@ -112,6 +112,32 @@ describe('foldSessionView', () => {
     });
   });
 
+  describe('label frames', () => {
+    const snapshot = foldSessionView(initialSessionView, {
+      kind: 'snapshot',
+      entries: [prompt, call, result],
+      root: '/w/repo/7',
+    });
+
+    it('should set the label on that tool call and leave other entries when a label frame arrives', () => {
+      const view = foldSessionView(snapshot, {
+        kind: 'label',
+        toolUseId: 't1',
+        label: 'Runs the tests.',
+      });
+      expect(view).toMatchObject({
+        kind: 'entries',
+        entries: [prompt, { ...call, label: 'Runs the tests.' }, result],
+      });
+    });
+
+    it('should return the same view when the label is for an unknown call', () => {
+      expect(foldSessionView(snapshot, { kind: 'label', toolUseId: 't9', label: 'x' })).toBe(
+        snapshot,
+      );
+    });
+  });
+
   describe('markConnectionLost', () => {
     it('should return the same object when the view is already lost', () => {
       const lost = markConnectionLost(
