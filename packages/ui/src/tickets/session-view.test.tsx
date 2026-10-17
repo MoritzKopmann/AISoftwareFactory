@@ -356,5 +356,20 @@ describe('SessionViewBody titles', () => {
     it('should show the report when the handback id is opened', () => {
       expect(renderEntries(entries, new Set(['h1']))).toContain('Full report');
     });
+
+    it('should show the header alone in the label and the chevron apart when collapsed', () => {
+      const html = renderEntries(entries);
+      expect(html).toContain('<span class="hb-label">Subagent response</span>');
+      expect(html).toContain('<span class="hb-chev" aria-hidden="true">▸</span>');
+      expect(html).toContain('aria-expanded="false"');
+    });
+
+    it('should turn the chevron and expose a labelled scrollable body when opened', () => {
+      const html = renderEntries(entries, new Set(['h1']));
+      expect(html).toContain('<span class="hb-chev" aria-hidden="true">▾</span>');
+      expect(html).toContain('aria-expanded="true"');
+      expect(html).toContain('tabindex="0"');
+      expect(html).toContain('aria-label="Subagent response, scrolls"');
+    });
   });
 });

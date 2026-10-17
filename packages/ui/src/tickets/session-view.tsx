@@ -144,11 +144,33 @@ function Handback({
   readonly onToggle: (key: string) => void;
 }) {
   return (
-    <div>
-      <button type="button" aria-expanded={open} onClick={() => onToggle(id)}>
-        {`${header} ${open ? '▾' : '▸'}`}
+    <div className="hb">
+      <button type="button" className="hb-head" aria-expanded={open} onClick={() => onToggle(id)}>
+        <svg
+          className="hb-icon"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M13 3v4.5a2 2 0 0 1-2 2H3" />
+          <path d="M6 6.5 3 9.5l3 3" />
+        </svg>
+        <span className="hb-label">{header}</span>
+        <span className="hb-chev" aria-hidden="true">
+          {open ? '▾' : '▸'}
+        </span>
       </button>
-      {open && <Markdown>{text}</Markdown>}
+      {open && (
+        <div className="hb-body" tabIndex={0} aria-label={`${header}, scrolls`}>
+          <Markdown>{text}</Markdown>
+        </div>
+      )}
     </div>
   );
 }
