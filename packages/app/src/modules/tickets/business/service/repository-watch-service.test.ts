@@ -89,6 +89,78 @@ describe('RepositoryWatchService', () => {
       };
     }
 
+    describe('ticket.closed', () => {
+      function closedEvents(emitted: ReadonlyArray<{ name: string; payload: unknown }>) {
+        return emitted.filter(({ name }) => name === 'ticket.closed').map(({ payload }) => payload);
+      }
+
+      it('should emit ticket.closed once when a ticket closed between two polls', async () => {
+        const { watchPolling, ticketSource, clock, allEvents } = createSubject();
+        ticketSource.snapshotToReturn = buildSnapshot(startedAt, [
+          buildTicket({ number: 7, status: 'ready' }),
+        ]);
+        const [firstWatch] = await watchPolling.pollWatches([buildWatch('owner/name')]);
+        clock.setNow('2026-09-28T12:10:00.000Z');
+        ticketSource.snapshotToReturn = buildSnapshot('2026-09-28T12:10:00.000Z', [
+          buildTicket({ number: 7, status: 'closed' }),
+        ]);
+
+        await watchPolling.pollWatches([firstWatch as RepositoryWatch]);
+
+        expect(closedEvents(allEvents.emittedEvents)).toEqual([
+          { projectId: 'owner/name', ticketNumber: 7 },
+        ]);
+      });
+
+      it('should emit ticket.closed for each closed ticket when there is no previous snapshot', async () => {
+        const { watchPolling, ticketSource, allEvents } = createSubject();
+        ticketSource.snapshotToReturn = buildSnapshot(startedAt, [
+          buildTicket({ number: 3, status: 'closed' }),
+          buildTicket({ number: 4, status: 'closed' }),
+          buildTicket({ number: 5, status: 'ready' }),
+        ]);
+
+        await watchPolling.pollWatches([buildWatch('owner/name')]);
+
+        expect(closedEvents(allEvents.emittedEvents)).toEqual([
+          { projectId: 'owner/name', ticketNumber: 3 },
+          { projectId: 'owner/name', ticketNumber: 4 },
+        ]);
+      });
+
+      it('should not emit ticket.closed when the ticket was already closed', async () => {
+        const { watchPolling, ticketSource, clock, allEvents } = createSubject();
+        ticketSource.snapshotToReturn = buildSnapshot(startedAt, [
+          buildTicket({ number: 7, status: 'closed' }),
+        ]);
+        const [firstWatch] = await watchPolling.pollWatches([buildWatch('owner/name')]);
+        allEvents.emittedEvents.length = 0;
+        clock.setNow('2026-09-28T12:10:00.000Z');
+        ticketSource.snapshotToReturn = buildSnapshot('2026-09-28T12:10:00.000Z', [
+          buildTicket({ number: 7, status: 'closed', title: 'Renamed' }),
+        ]);
+
+        await watchPolling.pollWatches([firstWatch as RepositoryWatch]);
+
+        expect(closedEvents(allEvents.emittedEvents)).toEqual([]);
+      });
+
+      it('should emit ticket.closed after snapshot.changed when the snapshot has both', async () => {
+        const { watchPolling, ticketSource, allEvents } = createSubject();
+        ticketSource.snapshotToReturn = buildSnapshot(startedAt, [
+          buildTicket({ number: 9, status: 'closed' }),
+        ]);
+
+        await watchPolling.pollWatches([buildWatch('owner/name')]);
+
+        expect(
+          allEvents.emittedEvents
+            .map(({ name }) => name)
+            .filter((name) => name !== 'watch.updated'),
+        ).toEqual(['snapshot.changed', 'ticket.closed']);
+      });
+    });
+
     describe('polling', () => {
       it('should snapshot and announce every ticket as added when the repository has no snapshot', async () => {
         const { watchPolling, ticketSource, events } = createSubject();

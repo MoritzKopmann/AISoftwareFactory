@@ -12,6 +12,10 @@ export type DomainEvents = {
     readonly changedTicketNumbers: ReadonlyArray<number>;
     readonly removedTicketNumbers: ReadonlyArray<number>;
   };
+  readonly 'ticket.closed': {
+    readonly projectId: string;
+    readonly ticketNumber: number;
+  };
   readonly 'run.finished': {
     readonly runId: string;
     readonly projectId: string;
@@ -107,6 +111,7 @@ function listEveryName<const List extends ReadonlyArray<EventName>>(
 export const domainEventNames = listEveryName([
   'project.added',
   'snapshot.changed',
+  'ticket.closed',
   'run.started',
   'run.waiting',
   'run.wait-cleared',

@@ -62,6 +62,8 @@ describe('noticeConcernsView', () => {
     ['skills.status-changed', { event: 'skills.status-changed' }, run(), true],
     ['snapshot.changed', on('snapshot.changed'), board(), false],
     ['project.added', on('project.added'), board(), false],
+    ['ticket.closed', on('ticket.closed', 7), board(), false],
+    ['ticket.closed', on('ticket.closed', 7), ticket(true), false],
     ['watch.updated no-change', noChange(), board(), false],
     ['watch.updated no-change', noChange(), ticket(false), false],
     ['watch.updated no-change', noChange(), run(), false],
