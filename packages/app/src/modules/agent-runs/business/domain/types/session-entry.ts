@@ -7,6 +7,12 @@ export type SessionEntry =
   | { readonly kind: 'prompt'; readonly id: string; readonly text: string }
   | { readonly kind: 'text'; readonly id: string; readonly text: string }
   | {
+      readonly kind: 'handback';
+      readonly id: string;
+      readonly agentId: string | null;
+      readonly text: string;
+    }
+  | {
       readonly kind: 'tool-call';
       readonly id: string;
       readonly toolUseId: string;
@@ -19,4 +25,5 @@ export type SessionEntry =
       readonly toolUseId: string;
       readonly isError: boolean;
       readonly parts: ReadonlyArray<SessionToolResultPart>;
+      readonly agentId?: string;
     };
