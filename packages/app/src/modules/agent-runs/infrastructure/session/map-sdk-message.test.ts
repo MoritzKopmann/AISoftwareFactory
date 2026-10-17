@@ -1,7 +1,7 @@
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { SessionEvent } from '../../business/domain/types/session-event.js';
 import { describe, expect, it } from 'vitest';
-import { createStreamState, mapSdkMessage } from './map-sdk-message.js';
+import { createStreamState, entriesFromContent, mapSdkMessage } from './map-sdk-message.js';
 
 function message(partial: Record<string, unknown>): SDKMessage {
   return partial as unknown as SDKMessage;
@@ -323,5 +323,33 @@ describe('mapSdkMessage text deltas', () => {
     ].flatMap((streamed) => mapSdkMessage(streamed, streamState));
 
     expect(events).toEqual([]);
+  });
+});
+
+describe('entriesFromContent', () => {
+  const promptText = (content: string): unknown =>
+    entriesFromContent('u1', 'user', content, true)[0];
+  const asPrompt = (text: string): unknown => ({ kind: 'prompt', id: 'u1#0', text });
+  const cli = (name: string, args?: string): string =>
+    `<command-message>${name.slice(1)}</command-message>\n<command-name>${name}</command-name>` +
+    (args === undefined ? '' : `\n<command-args>${args}</command-args>`);
+
+  it('should yield the slash command as prompt text when the string is the CLI command form', () => {
+    expect(promptText(cli('/aisf:plan-ticket', '31'))).toEqual(asPrompt('/aisf:plan-ticket 31'));
+  });
+
+  it('should yield the command name alone when the CLI command form has no args', () => {
+    expect(promptText(cli('/aisf:plan-ticket'))).toEqual(asPrompt('/aisf:plan-ticket'));
+  });
+
+  it('should keep multi-line args verbatim when the CLI command form has them', () => {
+    expect(promptText(cli('/aisf:spike', '134\nmore text'))).toEqual(
+      asPrompt('/aisf:spike 134\nmore text'),
+    );
+  });
+
+  it('should keep the text unchanged when a command tag sits inside other text', () => {
+    const text = 'before <command-name>/x</command-name> after';
+    expect(promptText(text)).toEqual(asPrompt(text));
   });
 });
