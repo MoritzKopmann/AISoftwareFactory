@@ -1601,7 +1601,75 @@ details:not([open]) .t-hide {
   margin-top: 4px;
 }
 
-.session-message {
-  font-size: var(--text-size-sm);
+.sv-skel {
+  height: 34px;
+}
+
+.sv-skel-right {
+  align-self: flex-end;
+  width: 48%;
+  height: 64px;
+  border-radius: 16px 16px 4px 16px;
+  background: var(--sv-skel-right);
+}
+
+.sv-skel-left {
+  align-self: flex-start;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--sv-skel-left);
+}
+
+.sv-skel-wide {
+  width: 62%;
+}
+
+.sv-skel-narrow {
+  width: 40%;
+}
+
+.sv-caption {
+  margin: 4px 0 0;
+  text-align: center;
+}
+
+.sv-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: 700 11px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   color: var(--muted);
+}
+
+.sv-line::before,
+.sv-line::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--border);
+}
+
+.session-panel > .chat:has(> .sv-line:only-child) {
+  padding: 34px 20px;
+}
+
+.session-panel > .chat:has(> .sv-missing) {
+  padding: 30px 20px;
+}
+
+.sv-missing {
+  text-align: center;
+}
+
+.sv-missing p {
+  margin: 0;
+}
+
+.sv-missing-title {
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.sv-missing .sm {
+  margin: 2px 0 0;
 }

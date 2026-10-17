@@ -2,11 +2,18 @@ import type { SessionEntryResponse } from '@aisf/app/api-schemas/session-stream-
 import type { SessionView } from './fold-session-view.js';
 
 export type SessionViewDescription =
-  | { readonly kind: 'message'; readonly message: string }
+  | { readonly kind: 'loading'; readonly caption: string }
+  | { readonly kind: 'system-line'; readonly message: string }
+  | {
+      readonly kind: 'transcript-not-found';
+      readonly title: string;
+      readonly detail: string;
+    }
   | {
       readonly kind: 'entries';
       readonly entries: ReadonlyArray<SessionEntryResponse>;
       readonly openText?: string;
+      readonly ended: boolean;
     };
 
 export type ResultPartDescription =
@@ -29,22 +36,24 @@ const imageMediaType = /^image\/[a-z0-9.+-]+$/i;
 export function describeSessionView(view: SessionView): SessionViewDescription {
   switch (view.kind) {
     case 'waiting':
-      return { kind: 'message', message: 'Loading the session…' };
+      return { kind: 'loading', caption: 'Connecting to session…' };
     case 'no-session':
-      return { kind: 'message', message: 'No session yet. A run on this ticket starts one.' };
+      return { kind: 'system-line', message: 'This ticket has no run with a session' };
     case 'transcript-not-found':
       return {
-        kind: 'message',
-        message: "Transcript not found. Claude Code has removed this session's transcript.",
+        kind: 'transcript-not-found',
+        title: 'Transcript not found',
+        detail: 'The run ended, but its transcript is missing. There is nothing to show.',
       };
     case 'entries':
       if (hasNothingToShow(view)) {
-        return { kind: 'message', message: 'No entries yet.' };
+        return { kind: 'system-line', message: 'No entries yet.' };
       }
       return {
         kind: 'entries',
         entries: view.entries,
         ...(view.openText === undefined ? {} : { openText: view.openText }),
+        ended: view.ended,
       };
   }
 }
