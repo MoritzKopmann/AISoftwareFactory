@@ -55,6 +55,8 @@ export class FakeRunPort implements RunPort {
   latest: LatestRun | undefined;
   record: RunRecord | undefined;
   startFailure: Error | undefined;
+  startFailureTicket: number | undefined;
+  startGate: Promise<void> = Promise.resolve();
   answerFailure: Error | undefined;
 
   readonly startRequests: Array<Parameters<RunPort['start']>[0]> = [];
@@ -64,7 +66,11 @@ export class FakeRunPort implements RunPort {
   ): Promise<{ readonly id: string; readonly startedAt: string }> {
     this.startRequests.push(request);
     this.calls.push(`start ${request.projectId} #${request.ticketNumber}`);
-    if (this.startFailure !== undefined) {
+    await this.startGate;
+    if (
+      this.startFailure !== undefined &&
+      (this.startFailureTicket === undefined || this.startFailureTicket === request.ticketNumber)
+    ) {
       throw this.startFailure;
     }
     return { id: 'run-1', startedAt: '2026-09-29T09:00:00.000Z' };

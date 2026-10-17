@@ -3,10 +3,27 @@ import type { SchedulableTicket } from '../types/schedulable-ticket.js';
 import type { RunAvailabilityInput } from '../types/run-availability-input.js';
 
 export function determineRunAvailability(input: RunAvailabilityInput): RunAvailability {
-  const { ticket, subIssues, ticketIsRunning, runsBlocked, projectOnboarded, lastRunEndedAt } =
-    input;
+  const {
+    ticket,
+    subIssues,
+    ticketIsRunning,
+    runsBlocked,
+    projectOnboarded,
+    lastRunEndedAt,
+    trigger,
+    projectPaused,
+  } = input;
   if (ticket === undefined || ticket.hasOpenBlocker || !isRunnableTicket(ticket)) {
     return { kind: 'absent' };
+  }
+  if (trigger === 'auto') {
+    if (ticket.status === 'idea') {
+      return { kind: 'absent' };
+    }
+    const autoBlock = findAutoBlock(ticket, projectPaused);
+    if (autoBlock !== undefined) {
+      return { kind: 'disabled', reason: autoBlock };
+    }
   }
   if (ticketIsRunning) {
     return { kind: 'disabled', reason: `#${ticket.number} is running` };
@@ -30,6 +47,22 @@ export function determineRunAvailability(input: RunAvailabilityInput): RunAvaila
     return { kind: 'disabled', reason: 'Waiting for GitHub to catch up' };
   }
   return { kind: 'available' };
+}
+
+function findAutoBlock(ticket: SchedulableTicket, projectPaused: boolean): string | undefined {
+  if (projectPaused) {
+    return 'The project is paused';
+  }
+  if (ticket.syncFailed) {
+    return 'The last sync failed';
+  }
+  if (ticket.stuck) {
+    return `#${ticket.number} is stuck`;
+  }
+  if (ticket.waiting) {
+    return `#${ticket.number} is waiting for a human`;
+  }
+  return undefined;
 }
 
 function isRunnableTicket(ticket: SchedulableTicket): boolean {

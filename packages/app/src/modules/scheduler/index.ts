@@ -59,6 +59,7 @@ export function createSchedulerModule(
     runPort,
     skillPort: new SkillsAdapter(skills),
     projectPort,
+    logger,
   });
   const mergeService = new MergeService({
     pullRequestMerges: infrastructure.pullRequestMerges,

@@ -1,6 +1,8 @@
+import type { Logger } from '../../../../shared/logger/create-logger.js';
 import { awaitedStatusFor } from '../domain/functions/awaited-status-for.js';
 import { determineRunAvailability } from '../domain/functions/determine-run-availability.js';
 import { ideaFromText } from '../domain/functions/idea-from-text.js';
+import { rankDueTickets } from '../domain/functions/rank-due-tickets.js';
 import type { RunAnswer } from '../domain/types/run-answer.js';
 import type { RunAvailability } from '../domain/types/run-availability.js';
 import type { StartedRun } from '../domain/types/started-run.js';
@@ -16,16 +18,27 @@ import type { SkillPort } from '../port/skill/skill-port.js';
 import type { TicketPort } from '../port/ticket/ticket-port.js';
 
 export type TicketRunServiceDependencies = {
-  readonly ticketPort: Pick<TicketPort, 'find' | 'create' | 'begin' | 'revert'>;
+  readonly ticketPort: Pick<TicketPort, 'find' | 'list' | 'create' | 'begin' | 'revert'>;
   readonly runPort: RunPort;
   readonly skillPort: SkillPort;
   readonly projectPort: ProjectPort;
+  readonly logger: Logger;
 };
 
+function isRepeatingRefusal(error: unknown): boolean {
+  return error instanceof RunNotAvailableError || error instanceof RunAlreadyActiveError;
+}
+
 export class TicketRunService {
+  private readonly ticketsBeingStarted = new Set<string>();
+
   constructor(private readonly dependencies: TicketRunServiceDependencies) {}
 
-  async readAvailability(projectId: string, ticketNumber: number): Promise<RunAvailability> {
+  async readAvailability(
+    projectId: string,
+    ticketNumber: number,
+    trigger: 'manual' | 'auto' = 'manual',
+  ): Promise<RunAvailability> {
     const { ticketPort, runPort, skillPort, projectPort } = this.dependencies;
 
     const [ticket, activeRuns, latestRun, project] = await Promise.all([
@@ -49,6 +62,8 @@ export class TicketRunService {
       ...(lastRunEndedAt === undefined ? {} : { lastRunEndedAt }),
       runsBlocked: skillPort.check(),
       projectOnboarded: project?.onboarded === true,
+      trigger,
+      projectPaused: project?.paused === true,
     });
   }
 
@@ -91,7 +106,41 @@ export class TicketRunService {
   }
 
   async start(projectId: string, ticketNumber: number): Promise<StartedRun> {
-    const availability = await this.readAvailability(projectId, ticketNumber);
+    return this.startWith(projectId, ticketNumber, 'manual');
+  }
+
+  async startDue(projectId: string): Promise<ReadonlyArray<StartedRun>> {
+    const { ticketPort, logger } = this.dependencies;
+
+    const dueTickets = rankDueTickets(await ticketPort.list(projectId));
+    const startedRuns: StartedRun[] = [];
+    for (const { number } of dueTickets) {
+      const key = `${projectId}#${number}`;
+      if (this.ticketsBeingStarted.has(key)) {
+        continue;
+      }
+      this.ticketsBeingStarted.add(key);
+      try {
+        startedRuns.push(await this.startWith(projectId, number, 'auto'));
+      } catch (error) {
+        if (!isRepeatingRefusal(error)) {
+          logger.error(
+            `Starting #${number} of ${projectId} failed: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      } finally {
+        this.ticketsBeingStarted.delete(key);
+      }
+    }
+    return startedRuns;
+  }
+
+  private async startWith(
+    projectId: string,
+    ticketNumber: number,
+    trigger: 'manual' | 'auto',
+  ): Promise<StartedRun> {
+    const availability = await this.readAvailability(projectId, ticketNumber, trigger);
     if (availability.kind === 'absent') {
       throw new RunNotAvailableError(`Ticket #${ticketNumber} cannot be run`);
     }

@@ -30,13 +30,18 @@ function buildSubject(
 ) {
   const runPort = options.runPort ?? new FakeRunPort();
   const ticketPort = options.ticketPort ?? new FakeTicketPort(readyLeaf);
+  const errors: string[] = [];
+  const error = (message: string) => {
+    errors.push(message);
+  };
   const service = new TicketRunService({
     ticketPort,
     runPort,
     skillPort: options.skillPort ?? new FakeSkillPort(),
     projectPort: options.projectPort ?? new FakeProjectPort(),
+    logger: { info: () => undefined, warn: () => undefined, error },
   });
-  return { service, runPort, ticketPort };
+  return { service, runPort, ticketPort, errors };
 }
 
 const ideaTicket = { ...readyLeaf, number: 501, status: 'idea' as const };
@@ -378,6 +383,160 @@ describe('TicketRunService', () => {
         buildSubject({ runPort, ticketPort }).service.start('moritz/aisf', 138),
       ).rejects.toThrow(RunNotAvailableError);
       expect(runPort.calls).toEqual([]);
+    });
+  });
+
+  describe('startDue', () => {
+    const project = 'moritz/aisf';
+    const leaf7 = { ...readyLeaf, number: 7 };
+    const leaf8 = { ...readyLeaf, number: 8 };
+    const plan11 = { ...readyLeaf, number: 11, status: 'plan' as const };
+    const reviewedOf = (...tickets: ReadonlyArray<typeof readyLeaf>) =>
+      tickets.map(({ number, status }) => ({ number, status, closingPullRequests: [] }));
+
+    function buildDueSubject(
+      tickets: ReadonlyArray<typeof readyLeaf>,
+      options: { project?: SchedulerProject } = {},
+    ) {
+      const [first = readyLeaf] = tickets;
+      return buildSubject({
+        ticketPort: new FakeTicketPort(first, tickets, reviewedOf(...tickets)),
+        ...(options.project === undefined
+          ? {}
+          : { projectPort: new FakeProjectPort(options.project) }),
+      });
+    }
+
+    it('should start an implement run when a ready leaf is due', async () => {
+      const { service, runPort } = buildDueSubject([leaf7]);
+
+      const started = await service.startDue(project);
+
+      expect(started).toHaveLength(1);
+      expect(
+        runPort.startRequests.map(({ ticketNumber, status }) => [ticketNumber, status]),
+      ).toEqual([[7, 'ready']]);
+    });
+
+    it('should start nothing when the ticket has an open blocker', async () => {
+      const { service, runPort } = buildDueSubject([{ ...leaf8, hasOpenBlocker: true }]);
+
+      await service.startDue(project);
+
+      expect(runPort.calls).toEqual([]);
+    });
+
+    it('should start a plan run when a plan ticket is due', async () => {
+      const { service, runPort } = buildDueSubject([plan11]);
+
+      await service.startDue(project);
+
+      expect(
+        runPort.startRequests.map(({ ticketNumber, status }) => [ticketNumber, status]),
+      ).toEqual([[11, 'plan']]);
+    });
+
+    it.each(['backlog', 'idea'] as const)(
+      'should start nothing when the ticket is %s',
+      async (status) => {
+        const { service, runPort } = buildDueSubject([{ ...leaf7, status }]);
+
+        await service.startDue(project);
+
+        expect(runPort.calls).toEqual([]);
+      },
+    );
+
+    it('should start ready before plan when both are due', async () => {
+      const { service, runPort } = buildDueSubject([plan11, { ...leaf7, number: 12 }]);
+
+      await service.startDue(project);
+
+      expect(runPort.calls).toEqual([`start ${project} #12`, `start ${project} #11`]);
+    });
+
+    it('should start a ready spike before plan when both are due', async () => {
+      const { service, runPort } = buildDueSubject([
+        plan11,
+        { ...leaf7, number: 13, types: ['spike'] },
+      ]);
+
+      await service.startDue(project);
+
+      expect(runPort.calls).toEqual([`start ${project} #13`, `start ${project} #11`]);
+    });
+
+    it.each([
+      ['a waiting plan ticket', { ...plan11, waiting: true }],
+      ['a stuck ready leaf', { ...leaf7, stuck: true }],
+      ['a ticket whose sync failed', { ...leaf7, syncFailed: true }],
+    ])('should start nothing for %s', async (_description, ticket) => {
+      const { service, runPort } = buildDueSubject([ticket]);
+
+      await service.startDue(project);
+
+      expect(runPort.calls).toEqual([]);
+    });
+
+    it('should start nothing when the project is paused', async () => {
+      const { service, runPort } = buildDueSubject([leaf7], {
+        project: { repository, onboarded: true, paused: true },
+      });
+      runPort.activeTicketNumbers = [15];
+
+      await service.startDue(project);
+
+      expect(runPort.calls).toEqual([]);
+    });
+
+    it('should still start a manual run when the project is paused', async () => {
+      const { service, runPort } = buildDueSubject([leaf7], {
+        project: { repository, onboarded: true, paused: true },
+      });
+
+      await service.start(project, 7);
+
+      expect(runPort.calls).toEqual([`start ${project} #7`]);
+    });
+
+    it('should log the error and start the next ticket when one start fails unexpectedly', async () => {
+      const { service, runPort, errors } = buildDueSubject([leaf7, leaf8]);
+      runPort.startFailure = new Error('boom');
+      runPort.startFailureTicket = 7;
+
+      const started = await service.startDue(project);
+
+      expect(started).toHaveLength(1);
+      expect(runPort.calls).toEqual([`start ${project} #7`, `start ${project} #8`]);
+      expect(errors).toHaveLength(1);
+      expect(errors[0]).toContain('boom');
+    });
+
+    it('should skip silently when a ticket already has a run active', async () => {
+      const { service, runPort, errors } = buildDueSubject([leaf7]);
+      runPort.activeTicketNumbers = [7];
+
+      await service.startDue(project);
+
+      expect(runPort.calls).toEqual([]);
+      expect(errors).toEqual([]);
+    });
+
+    it('should start a ticket once when two calls overlap', async () => {
+      const { service, runPort } = buildDueSubject([leaf7]);
+      let release = (): void => undefined;
+      runPort.startGate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+
+      const first = service.startDue(project);
+      await Promise.resolve();
+      const second = service.startDue(project);
+      await new Promise((resolve) => setImmediate(resolve));
+      release();
+      await Promise.all([first, second]);
+
+      expect(runPort.calls).toEqual([`start ${project} #7`]);
     });
   });
 
