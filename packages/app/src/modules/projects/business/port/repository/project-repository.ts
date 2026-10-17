@@ -4,4 +4,5 @@ export interface ProjectRepository {
   findById(id: string): Promise<Project | undefined>;
   list(): Promise<ReadonlyArray<Project>>;
   save(project: Project): Promise<void>;
+  setPaused(id: string, paused: boolean): Promise<void>;
 }

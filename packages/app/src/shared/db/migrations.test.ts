@@ -98,4 +98,24 @@ describe('migrations', () => {
       expect(columns.find((column) => column.name === name)).toMatchObject({ notnull: 0 });
     }
   });
+
+  it('should add a paused column that reads false for an existing project when migration 9 runs', () => {
+    const older = openDatabase(':memory:');
+    runMigrations(
+      older,
+      migrations.filter(({ version }) => version <= 8),
+    );
+    older
+      .prepare(
+        `INSERT INTO projects (id, owner, name, checkout_path, added_at) VALUES ('o/n', 'o', 'n', '/c', '2026-10-06T10:00:00.000Z')`,
+      )
+      .run();
+
+    runMigrations(older, migrations);
+
+    expect(older.prepare('SELECT paused FROM projects WHERE id = ?').get('o/n')).toEqual({
+      paused: 0,
+    });
+    older.close();
+  });
 });

@@ -9,6 +9,7 @@ type ProjectRow = {
   readonly name: string;
   readonly checkout_path: string;
   readonly added_at: string;
+  readonly paused: number;
 };
 
 function toProject(row: ProjectRow): Project {
@@ -17,6 +18,7 @@ function toProject(row: ProjectRow): Project {
     repository: { owner: String(row.owner), name: String(row.name) },
     checkoutPath: String(row.checkout_path),
     addedAt: String(row.added_at),
+    paused: row.paused === 1,
   };
 }
 
@@ -31,7 +33,7 @@ export class SqliteProjectRepository implements ProjectRepository {
     const row = this.database
       .prepare(
         `
-        SELECT id, owner, name, checkout_path, added_at
+        SELECT id, owner, name, checkout_path, added_at, paused
         FROM projects
         WHERE id = ?
       `,
@@ -45,7 +47,7 @@ export class SqliteProjectRepository implements ProjectRepository {
     const rows = this.database
       .prepare(
         `
-        SELECT id, owner, name, checkout_path, added_at
+        SELECT id, owner, name, checkout_path, added_at, paused
         FROM projects
         ORDER BY added_at
       `,
@@ -60,8 +62,8 @@ export class SqliteProjectRepository implements ProjectRepository {
       this.database
         .prepare(
           `
-          INSERT INTO projects (id, owner, name, checkout_path, added_at)
-          VALUES (?, ?, ?, ?, ?)
+          INSERT INTO projects (id, owner, name, checkout_path, added_at, paused)
+          VALUES (?, ?, ?, ?, ?, ?)
         `,
         )
         .run(
@@ -70,6 +72,7 @@ export class SqliteProjectRepository implements ProjectRepository {
           project.repository.name,
           project.checkoutPath,
           project.addedAt,
+          project.paused ? 1 : 0,
         );
     } catch (error) {
       if (isUniqueConstraintViolation(error)) {
@@ -77,5 +80,17 @@ export class SqliteProjectRepository implements ProjectRepository {
       }
       throw error;
     }
+  }
+
+  async setPaused(id: string, paused: boolean): Promise<void> {
+    this.database
+      .prepare(
+        `
+        UPDATE projects
+        SET paused = ?
+        WHERE id = ?
+      `,
+      )
+      .run(paused ? 1 : 0, id);
   }
 }

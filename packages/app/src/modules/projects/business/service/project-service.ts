@@ -4,6 +4,7 @@ import type { Project } from '../domain/types/project.js';
 import type { ProjectWithContract } from '../domain/types/project-with-contract.js';
 import { PluginInstallFailedError } from '../errors/plugin-install-failed-error.js';
 import { ProjectAlreadyAddedError } from '../errors/project-already-added-error.js';
+import { ProjectNotFoundError } from '../errors/project-not-found-error.js';
 import type { LabelSync } from '../port/github/label-sync.js';
 import type { RepositoryResolver } from '../port/github/repository-resolver.js';
 import type { SkillPort } from '../port/skill/skill-port.js';
@@ -44,6 +45,7 @@ export class ProjectService {
       repository,
       checkoutPath,
       addedAt: clock.now(),
+      paused: false,
     };
 
     await projectRepository.save(project);
@@ -65,5 +67,16 @@ export class ProjectService {
         contract: await skillPort.check(project.checkoutPath),
       })),
     );
+  }
+
+  async setPaused(id: string, paused: boolean): Promise<ProjectWithContract> {
+    const { projectRepository, skillPort } = this.dependencies;
+    const project = await projectRepository.findById(id);
+    if (project === undefined) {
+      throw new ProjectNotFoundError(`${id} is not a registered project`);
+    }
+
+    await projectRepository.setPaused(id, paused);
+    return { ...project, paused, contract: await skillPort.check(project.checkoutPath) };
   }
 }

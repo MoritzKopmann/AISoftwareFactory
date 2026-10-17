@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PluginInstallFailedError } from '../errors/plugin-install-failed-error.js';
 import { ProjectAlreadyAddedError } from '../errors/project-already-added-error.js';
+import { ProjectNotFoundError } from '../errors/project-not-found-error.js';
 import { ProjectService } from './project-service.js';
 import { FakeClock } from '../../../../shared/testing/fake-clock.js';
 import { FakeEventPublisher } from '../../../../shared/testing/fake-event-publisher.js';
@@ -53,6 +54,7 @@ describe('ProjectService', () => {
         repository: reference,
         checkoutPath,
         addedAt,
+        paused: false,
       });
       expect(await projectRepository.findById('moritz/aisf')).toEqual(project);
     });
@@ -99,6 +101,7 @@ describe('ProjectService', () => {
         repository: reference,
         checkoutPath: '/some/other/path',
         addedAt,
+        paused: false,
       });
 
       await expect(service.add(checkoutPath)).rejects.toThrow(ProjectAlreadyAddedError);
@@ -113,6 +116,7 @@ describe('ProjectService', () => {
         repository: reference,
         checkoutPath: '/some/other/path',
         addedAt,
+        paused: false,
       });
 
       await expect(service.add(checkoutPath)).rejects.toThrow(ProjectAlreadyAddedError);
@@ -125,6 +129,7 @@ describe('ProjectService', () => {
         repository: reference,
         checkoutPath: '/some/other/path',
         addedAt,
+        paused: false,
       });
 
       await expect(service.add(checkoutPath)).rejects.toThrow(ProjectAlreadyAddedError);
@@ -158,6 +163,7 @@ describe('ProjectService', () => {
         repository: reference,
         checkoutPath: '/some/other/path',
         addedAt,
+        paused: false,
       });
 
       await expect(service.add(checkoutPath)).rejects.toThrow(ProjectAlreadyAddedError);
@@ -187,6 +193,7 @@ describe('ProjectService', () => {
       repository: reference,
       checkoutPath,
       addedAt,
+      paused: false,
     };
 
     it('should return every saved project with its freshly computed contract report when listing', async () => {
@@ -219,6 +226,41 @@ describe('ProjectService', () => {
 
       expect(firstListing?.contract).toEqual(failingReport);
       expect(secondListing?.contract.passed).toBe(true);
+    });
+  });
+
+  describe('setPaused', () => {
+    const savedProject = {
+      id: 'moritz/aisf',
+      repository: reference,
+      checkoutPath,
+      addedAt,
+      paused: false,
+    };
+
+    it('should return the project paused and list it paused when pausing', async () => {
+      const { service, projectRepository } = createSubject();
+      await projectRepository.save(savedProject);
+
+      const paused = await service.setPaused('moritz/aisf', true);
+
+      expect(paused).toMatchObject({ id: 'moritz/aisf', paused: true });
+      expect(await service.list()).toEqual([expect.objectContaining({ paused: true })]);
+    });
+
+    it('should list the project unpaused when unpausing', async () => {
+      const { service, projectRepository } = createSubject();
+      await projectRepository.save({ ...savedProject, paused: true });
+
+      await service.setPaused('moritz/aisf', false);
+
+      expect(await service.list()).toEqual([expect.objectContaining({ paused: false })]);
+    });
+
+    it('should throw ProjectNotFoundError when the project is unknown', async () => {
+      const { service } = createSubject();
+
+      await expect(service.setPaused('owner/missing', true)).rejects.toThrow(ProjectNotFoundError);
     });
   });
 });
