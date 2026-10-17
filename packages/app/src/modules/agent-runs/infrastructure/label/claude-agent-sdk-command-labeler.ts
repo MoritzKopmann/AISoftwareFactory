@@ -3,7 +3,7 @@ import { CommandLabelFailedError } from '../../business/errors/command-label-fai
 import type { CommandLabeler } from '../../business/port/label/command-labeler.js';
 
 const systemPrompt =
-  'Answer with one sentence of at most 100 chars saying what the given shell command does, nothing else.';
+  'Answer with one sentence of at most 70 chars saying what the given shell command does, nothing else.';
 
 export type ClaudeAgentSdkCommandLabelerOptions = {
   readonly claudeExecutablePath: string;
