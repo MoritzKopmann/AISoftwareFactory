@@ -1,8 +1,11 @@
 import { existsSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { runProcess } from '../../../../shared/process/run-process.js';
 import type { DetachedWorktreeSpec } from '../../business/domain/types/detached-worktree-spec.js';
 import type { WorktreeSpec } from '../../business/domain/types/worktree-spec.js';
+import type { RemovableWorktreeSpec } from '../../business/domain/types/removable-worktree-spec.js';
+import { WorktreeRemovalFailedError } from '../../business/errors/worktree-removal-failed-error.js';
 import { WorktreeSetupFailedError } from '../../business/errors/worktree-setup-failed-error.js';
 import type { Worktrees } from '../../business/port/worktree/worktrees.js';
 
@@ -48,6 +51,30 @@ export class GitCliWorktrees implements Worktrees {
     await this.git(spec.checkoutPath, ['worktree', 'add', '--detach', spec.worktreePath, baseRef]);
   }
 
+  async remove(spec: RemovableWorktreeSpec): Promise<void> {
+    if (!existsSync(spec.worktreePath)) {
+      return;
+    }
+    try {
+      if (existsSync(join(spec.worktreePath, '.git'))) {
+        await this.git(
+          spec.checkoutPath,
+          ['worktree', 'remove', '--force', spec.worktreePath],
+          WorktreeRemovalFailedError,
+        );
+      }
+      await rm(spec.worktreePath, { recursive: true, force: true });
+    } catch (error) {
+      if (error instanceof WorktreeRemovalFailedError) {
+        throw error;
+      }
+      throw new WorktreeRemovalFailedError(
+        `Removing ${spec.worktreePath} failed: ${String(error)}`,
+      );
+    }
+    await this.git(spec.checkoutPath, ['worktree', 'prune'], WorktreeRemovalFailedError);
+  }
+
   private async refExists(checkoutPath: string, ref: string): Promise<boolean> {
     const result = await runProcess('git', ['show-ref', '--verify', '--quiet', ref], {
       workingDirectory: checkoutPath,
@@ -66,24 +93,26 @@ export class GitCliWorktrees implements Worktrees {
     return result.exitCode === 0 && baseRef !== '' ? baseRef : fallbackBaseRef;
   }
 
-  private async git(checkoutPath: string, argumentList: ReadonlyArray<string>): Promise<void> {
+  private async git(
+    checkoutPath: string,
+    argumentList: ReadonlyArray<string>,
+    ErrorType:
+      | typeof WorktreeSetupFailedError
+      | typeof WorktreeRemovalFailedError = WorktreeSetupFailedError,
+  ): Promise<void> {
     try {
       const result = await runProcess('git', argumentList, {
         workingDirectory: checkoutPath,
         timeoutMilliseconds: gitTimeoutMilliseconds,
       });
       if (result.exitCode !== 0) {
-        throw new WorktreeSetupFailedError(
-          `git ${argumentList.join(' ')} failed: ${result.standardError.trim()}`,
-        );
+        throw new ErrorType(`git ${argumentList.join(' ')} failed: ${result.standardError.trim()}`);
       }
     } catch (error) {
-      if (error instanceof WorktreeSetupFailedError) {
+      if (error instanceof ErrorType) {
         throw error;
       }
-      throw new WorktreeSetupFailedError(
-        `git ${argumentList.join(' ')} could not run: ${String(error)}`,
-      );
+      throw new ErrorType(`git ${argumentList.join(' ')} could not run: ${String(error)}`);
     }
   }
 }

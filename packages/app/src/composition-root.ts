@@ -126,7 +126,7 @@ function buildFindingsModule(
 function buildAgentRunsModule(
   config: Config,
   database: DatabaseSync,
-  events: EventPublisher,
+  events: EventBus,
   projects: ProjectsApi,
   claudeExecutablePath: string,
   agentTools: AgentToolRegistry,

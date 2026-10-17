@@ -267,6 +267,19 @@ describe('RunStartService', () => {
       expect(runRepository.runs.size).toBe(0);
     });
 
+    it('should not launch the session when the run ended during worktree setup', async () => {
+      const { service, runRepository, worktrees, agentSessions } = buildStartSubject();
+      const ensure = worktrees.ensure.bind(worktrees);
+      worktrees.ensure = async (spec) => {
+        await ensure(spec);
+        await runRepository.recordEnding('id-1', { kind: 'stopped' }, '2026-09-29T10:00:01.000Z');
+      };
+
+      await service.start(startRequest);
+
+      expect(agentSessions.startedSpecs).toEqual([]);
+    });
+
     it('should end the run as crashed and rethrow when the worktree cannot be set up', async () => {
       const { service, worktrees, finishCalls, agentSessions } = buildStartSubject();
       worktrees.failure = new WorktreeSetupFailedError('git worktree add failed');

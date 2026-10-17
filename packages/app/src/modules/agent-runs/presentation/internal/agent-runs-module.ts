@@ -2,7 +2,7 @@ import type { Hono } from 'hono';
 import type { DatabaseSync } from 'node:sqlite';
 import type { AgentToolRegistry } from '../../../../shared/agent-tools.js';
 import type { Clock } from '../../../../shared/clock/clock.js';
-import type { EventPublisher } from '../../../../shared/event-bus.js';
+import type { EventBus } from '../../../../shared/event-bus.js';
 import type { Identifiers } from '../../../../shared/identifiers/identifiers.js';
 import type { Jobs } from '../../../../shared/jobs.js';
 import type { Logger } from '../../../../shared/logger/create-logger.js';
@@ -12,7 +12,7 @@ export type AgentRunsModuleDependencies = {
   readonly database: DatabaseSync;
   readonly clock: Clock;
   readonly identifiers: Identifiers;
-  readonly events: EventPublisher;
+  readonly events: EventBus;
   readonly agentTools: AgentToolRegistry;
   readonly logger: Logger;
   readonly claudeExecutablePath: string;
