@@ -1,10 +1,12 @@
 ---
 name: code-rules
 description: >
-  Code rules for review: naming, conditions, modules, immutability, errors, SQL and comments.
-  Use when reviewing code for style and correctness-of-form, not for structure.
+  Code rules for review: naming, functions, conditions, layout, modules, immutability, errors, SQL
+  and comments. Use when reviewing code for style and correctness-of-form, not for structure.
 user-invocable: false
 ---
+
+These rules apply to test code too.
 
 ## Naming
 
@@ -15,6 +17,11 @@ user-invocable: false
 - **Must:** full English words for every name: locals, fields, parameters, constants, callback and destructured names, generic type parameters beyond a single obvious `T`. No abbreviations, no single letters, no truncation. The name states what the value holds.
 - **Exception:** a port to another module is `<Thing>Port` and its adapter is `<Provider>Adapter` (`UserPort`, `UsersAdapter`), one each per provider. See project-architecture rule 16.
 - **Exception:** a classic numeric `for` loop counter may be `index`. Prefer `for … of` with a real name.
+- **Must:** one word per concept. Pick `fetch`, `get` or `load` for an act and use it everywhere. One word never means two things.
+- **Must:** no noise words. `Data`, `Info`, `Manager`, `Helper`, `Object` and a `the` prefix add nothing: `OrderData` vs `OrderInfo` says no difference.
+- **Must:** a function name is a verb (`placeOrder`). A boolean reads as a question (`isActive`, `hasRuns`, `canRetry`).
+- **Must:** a name never lies about its type. `orderList` is not a `Set`.
+- **Must:** no magic numbers or strings. A literal with hidden meaning becomes a named constant.
 
 ```ts
 // Bad
@@ -23,6 +30,7 @@ const n = orders.length;
 const cfg = loadConfig();
 const res = await client.fetch(q);
 orders.map((o) => o.id);
+setTimeout(retry, 30000);
 
 // Good
 const elapsedMilliseconds = Date.now() - startedAt;
@@ -30,7 +38,20 @@ const orderCount = orders.length;
 const config = loadConfig();
 const orderResponse = await client.fetch(orderQuery);
 orders.map((order) => order.id);
+setTimeout(retry, RETRY_DELAY_MILLISECONDS);
 ```
+
+## Functions
+
+**Rule:** a function does one thing, and its name says all of it.
+
+- **Must:** do one thing. If you can extract a function whose name isn't a restatement, it does more than one.
+- **Must:** one level of abstraction per function. High-level steps don't sit next to string or index fiddling.
+- **Must:** no flag arguments. A boolean parameter means two functions: `renderForPrint()` and `renderForScreen()`, not `render(true)`.
+- **Must:** no hidden side effects. `checkPassword()` doesn't also start a session.
+- **Must:** stepdown order. A file reads top-down: a caller sits above its callees. In a class, public methods come first, each private helper below its first caller.
+- **Should:** three or more related parameters become one options object.
+- **Should:** a function either changes state or answers a question, not both.
 
 ## Conditions
 
@@ -38,6 +59,8 @@ orders.map((order) => order.id);
 
 - **Must:** a condition that combines checks, or whose purpose the code doesn't show, is a helper function named after what it checks. The `if` then reads as a sentence.
 - **Must:** the helper's name states the question it answers (`goesOnFeed`, `isOverdue`), not the fields it reads.
+- **Must:** booleans are named positively. `!isReady` is fine; `isNotReady` is not, since `!isNotReady` is a double negative.
+- **Should:** a dense expression gets a named local that says what it means: `const isStale = now - fetchedAt > CACHE_LIFETIME_MILLISECONDS;`, then `if (isStale)`.
 
 ```ts
 // Bad
@@ -50,6 +73,13 @@ function goesOnFeed(event: SessionEvent): boolean {
 
 if (goesOnFeed(event) && !promptPulled) {
 ```
+
+## Layout
+
+Prettier owns spacing and wrapping. These are the parts it leaves alone.
+
+- **Must:** a local is declared right before its first use, not at the top of the function.
+- **Should:** related lines sit together. A blank line marks the next step.
 
 ## Modules
 
@@ -69,6 +99,8 @@ if (goesOnFeed(event) && !promptPulled) {
 
 - **Must:** callers catch a named error, never a bare `catch` or `Error`.
 - **Exception:** a documented "never crash" boundary, like a server's top-level error handler.
+- **Must:** an error message says what failed and on what input: `Ticket #42: label update rejected (403)`, not `write failed`.
+- **Should:** a `try` body is one call. The work lives in its own function.
 
 ```ts
 // Bad
@@ -111,12 +143,13 @@ database.prepare(`
 - **Add banners.** No `// ---- Helpers ----`. Split the file instead.
 - **Leave a TODO without a ticket.** Use `// TODO(#123): …`, or open an issue.
 - **Add a JSDoc block that repeats the name and signature.** Types already document parameters and return values.
+- **Describe code elsewhere.** A comment covers the code next to it, not a far-off default or caller. It goes stale when that code changes.
 
 **Must:**
 - **Rename before commenting.** If a name needs a comment, fix the name first.
-- **Comment only when the code can't explain itself:** how a function works when its name and body don't show it, why unusual code is the way it is, or a constraint from outside the code (an API quirk, a protocol rule).
+- **Comment only when the code can't explain itself:** how a function works when its name and body don't show it, why unusual code is the way it is, a constraint from outside the code (an API quirk, a protocol rule), or a warning of consequences (`// Not reentrant: call only from the worker loop.`).
 - **Keep comments true.** Change the code, update or delete its comment in the same change.
-- **Follow the same rules in tests.** A short comment on a non-obvious arrange step is fine.
+- **In tests,** a short comment on a non-obvious arrange step is fine.
 
 ```ts
 // Bad: history and restating

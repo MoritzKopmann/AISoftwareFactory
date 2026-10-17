@@ -45,6 +45,8 @@ Anything not in this table gets a failing test first.
   - `it('should queue the run when another run is active for the project', …)`
   - `it('should emit snapshot.changed when a label differs', …)`
   - `it('should return 404 when the ticket is unknown', …)`
+- A test body has three blocks, arrange, act and assert, each separated by one blank line.
+- **Should:** test the boundaries: empty, zero, one, the limit and one past it.
 
 ## Fakes and fixtures
 
@@ -54,6 +56,7 @@ Anything not in this table gets a failing test first.
 - **SQLite:** each test that needs it gets a fresh database in a temp dir via `shared/config`'s overridable home, with migrations applied. Removed in `afterEach`.
 - **GitHub payloads:** recorded JSON under `testing/fixtures/github/` of the module that reads them.
 - **SDK messages and transcripts:** recorded JSONL under `testing/fixtures/sessions/` of the module that reads them.
+- **Should:** a test builds its data with a named builder in `testing/` that takes only the fields the test cares about: `aReadyTicket({ priority: 'high' })`, not a 30-field literal.
 - The bus in tests is the real `InMemoryEventBus` from `shared/`. It has no I/O, so it isn't faked.
 - **Until a module migrates,** its tests, fakes and fixtures stay in `packages/app/test/` in the old layout (`logic/`, `infra/`, `api/`).
 
