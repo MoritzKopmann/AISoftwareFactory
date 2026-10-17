@@ -8,6 +8,7 @@ import { SkillsAdapter } from './infrastructure/internal/skills-adapter.js';
 import { TicketsAdapter } from './infrastructure/internal/tickets-adapter.js';
 import { createSchedulerRoutes } from './presentation/api/scheduler-routes.js';
 import { subscribeToSnapshotChanged } from './presentation/bus/subscribe-to-snapshot-changed.js';
+import { subscribeToWatchUpdated } from './presentation/bus/subscribe-to-watch-updated.js';
 import { SchedulerFacade } from './presentation/internal/scheduler-facade.js';
 import type {
   SchedulerModule,
@@ -70,6 +71,7 @@ export function createSchedulerModule(
   });
 
   subscribeToSnapshotChanged(events, mergeService, logger);
+  subscribeToWatchUpdated(events, ticketRunService, logger);
 
   return {
     routes: createSchedulerRoutes({ ticketRunService }),
