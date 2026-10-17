@@ -73,6 +73,19 @@ function toolResultParts(content: unknown): ReadonlyArray<SessionToolResultPart>
   return parts;
 }
 
+const CLI_COMMAND =
+  /^<command-message>[^]*?<\/command-message>\n<command-name>([^]*?)<\/command-name>(?:\n<command-args>([^]*)<\/command-args>)?$/;
+
+/** The CLI stores a slash command as tagged text. This turns it back into `/<name> <args>`. */
+function promptText(content: string): string {
+  const match = CLI_COMMAND.exec(content);
+  if (match === null) {
+    return content;
+  }
+  const [, name = '', args = ''] = match;
+  return args === '' ? name : `${name} ${args}`;
+}
+
 /**
  * The entries of one message's content blocks. Live and transcript share it, so a block gets the
  * same id on both paths. Prompts only come from the transcript; the live stream never carries them.
@@ -85,7 +98,7 @@ export function entriesFromContent(
 ): ReadonlyArray<SessionEntry> {
   if (typeof content === 'string') {
     return yieldsPrompts(role, includePrompts)
-      ? [{ kind: 'prompt', id: `${uuid}#0`, text: content }]
+      ? [{ kind: 'prompt', id: `${uuid}#0`, text: promptText(content) }]
       : [];
   }
   if (!Array.isArray(content)) {
