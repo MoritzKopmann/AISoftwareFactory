@@ -5,6 +5,11 @@ export const addProjectRequestSchema = z.object({
 });
 export type AddProjectRequest = z.infer<typeof addProjectRequestSchema>;
 
+export const setProjectPausedRequestSchema = z.object({
+  paused: z.boolean(),
+});
+export type SetProjectPausedRequest = z.infer<typeof setProjectPausedRequestSchema>;
+
 export const contractPreflightReportSchema = z.object({
   passed: z.boolean(),
   missingSlots: z.array(z.string()),
@@ -17,6 +22,7 @@ export const projectResponseSchema = z.object({
   repository: z.object({ owner: z.string(), name: z.string() }),
   checkoutPath: z.string(),
   addedAt: z.string(),
+  paused: z.boolean(),
   contract: contractPreflightReportSchema,
 });
 export type ProjectResponse = z.infer<typeof projectResponseSchema>;

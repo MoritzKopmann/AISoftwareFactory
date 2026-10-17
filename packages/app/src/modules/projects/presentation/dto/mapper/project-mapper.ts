@@ -13,6 +13,7 @@ export function toProjectAddedResponse(project: Project): ProjectAddedResponse {
     repository: toRepository(project),
     checkoutPath: project.checkoutPath,
     addedAt: project.addedAt,
+    paused: project.paused,
   };
 }
 
@@ -33,6 +34,7 @@ export function toProjectDto(project: ProjectWithContract): ProjectDto {
     repository: toRepository(project),
     checkoutPath: project.checkoutPath,
     addedAt: project.addedAt,
+    paused: project.paused,
     contract: {
       passed: project.contract.passed,
       missingSlots: project.contract.missingSlots,

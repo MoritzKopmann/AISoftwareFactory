@@ -76,4 +76,20 @@ describe('createProjectsModule', () => {
 
     expect(labelSync.syncCalls).toEqual([{ owner: 'owner', name: 'name' }]);
   });
+
+  it('should show paused true in ProjectsApi.list when the project is paused', async () => {
+    const projectRepository = new FakeProjectRepository();
+    await projectRepository.save({
+      id: 'owner/name',
+      repository: { owner: 'owner', name: 'name' },
+      checkoutPath: '/repo',
+      addedAt: '2026-01-01T00:00:00.000Z',
+      paused: true,
+    });
+    const projects = createSubject({ projectRepository });
+
+    const list = await projects.internal.list();
+
+    expect(list).toMatchObject([{ id: 'owner/name', paused: true }]);
+  });
 });
