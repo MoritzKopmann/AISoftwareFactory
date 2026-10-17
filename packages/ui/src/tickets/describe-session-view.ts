@@ -13,6 +13,7 @@ export type SessionViewDescription =
   | {
       readonly kind: 'entries';
       readonly turns: ReadonlyArray<SessionTurnDescription>;
+      readonly root?: string;
       readonly ended: boolean;
     };
 
@@ -51,6 +52,7 @@ export function describeSessionView(view: SessionView): SessionViewDescription {
       return {
         kind: 'entries',
         turns: groupIntoTurns(view.entries, view.openText),
+        ...(view.root !== undefined && { root: view.root }),
         ended: view.ended,
       };
   }

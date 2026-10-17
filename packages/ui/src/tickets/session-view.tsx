@@ -55,6 +55,7 @@ export function SessionViewBody({ view, opened, onToggle }: SessionViewBodyProps
               key={turn.id}
               turn={turn}
               live={!description.ended}
+              root={description.root}
               opened={opened}
               onToggle={onToggle}
             />
@@ -69,11 +70,13 @@ export function SessionViewBody({ view, opened, onToggle }: SessionViewBodyProps
 function SessionTurn({
   turn,
   live,
+  root,
   opened,
   onToggle,
 }: {
   readonly turn: SessionTurnDescription;
   readonly live: boolean;
+  readonly root: string | undefined;
   readonly opened: ReadonlySet<string>;
   readonly onToggle: (key: string) => void;
 }) {
@@ -100,6 +103,7 @@ function SessionTurn({
                 key={item.card.id}
                 card={item.card}
                 live={live}
+                root={root}
                 opened={opened}
                 onToggle={onToggle}
               />
@@ -120,11 +124,13 @@ function SessionTurn({
 function ToolCard({
   card,
   live,
+  root,
   opened,
   onToggle,
 }: {
   readonly card: ToolCardEntries;
   readonly live: boolean;
+  readonly root: string | undefined;
   readonly opened: ReadonlySet<string>;
   readonly onToggle: (key: string) => void;
 }) {
@@ -157,6 +163,7 @@ function ToolCard({
           call={call}
           result={result}
           live={live}
+          root={root}
           grouped={header !== undefined}
           inputOpen={opened.has(toolKeys(call.id).input)}
           resultOpen={opened.has(toolKeys(call.id).result)}
@@ -171,6 +178,7 @@ const ToolRow = memo(function ToolRow({
   call,
   result,
   live,
+  root,
   grouped,
   inputOpen,
   resultOpen,
@@ -179,12 +187,13 @@ const ToolRow = memo(function ToolRow({
   readonly call: ToolCallEntry;
   readonly result: ToolResultEntry | undefined;
   readonly live: boolean;
+  readonly root: string | undefined;
   readonly grouped: boolean;
   readonly inputOpen: boolean;
   readonly resultOpen: boolean;
   readonly onToggle: (key: string) => void;
 }) {
-  const row = describeToolRow(call, result, live);
+  const row = describeToolRow(call, result, live, root);
   const chevron = (open: boolean) => (open ? '▾' : '▸');
   return (
     <div className="tc-row">
@@ -194,14 +203,16 @@ const ToolRow = memo(function ToolRow({
         <span className={row.headline?.mono === false ? 'tc-hl' : 'tc-hl tc-mono'}>
           {row.headline?.text}
         </span>
-        <button
-          className="tc-toggle"
-          type="button"
-          aria-expanded={inputOpen}
-          onClick={() => onToggle(row.inputKey)}
-        >
-          {`input ${chevron(inputOpen)}`}
-        </button>
+        {row.inputToggle && (
+          <button
+            className="tc-toggle"
+            type="button"
+            aria-expanded={inputOpen}
+            onClick={() => onToggle(row.inputKey)}
+          >
+            {`input ${chevron(inputOpen)}`}
+          </button>
+        )}
         {row.resultToggle !== undefined && (
           <button
             className={row.resultToggle.error ? 'tc-toggle tc-toggle-error' : 'tc-toggle'}
@@ -218,7 +229,7 @@ const ToolRow = memo(function ToolRow({
         )}
       </div>
       {row.secondLine !== undefined && <div className="tc-second">{row.secondLine}</div>}
-      {inputOpen && (
+      {row.inputToggle && inputOpen && (
         <pre className="tc-pane tc-input" tabIndex={0} aria-label="Input, scrolls">
           {describeToolInput(call)}
         </pre>

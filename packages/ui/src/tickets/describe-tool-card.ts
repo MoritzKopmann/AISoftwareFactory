@@ -1,4 +1,5 @@
 import type { SessionEntryResponse } from '@aisf/app/api-schemas/session-stream-schemas.js';
+import { relativePath } from './relative-path.js';
 
 export type ToolCallEntry = Extract<SessionEntryResponse, { kind: 'tool-call' }>;
 export type ToolResultEntry = Extract<SessionEntryResponse, { kind: 'tool-result' }>;
@@ -27,6 +28,8 @@ export type ToolRowDescription = {
     readonly size?: string;
     readonly error: boolean;
   };
+  /** False when the title already says what the input held. */
+  readonly inputToggle: boolean;
   readonly inputKey: string;
   readonly resultKey: string;
 };
@@ -66,14 +69,16 @@ export function describeToolRow(
   call: ToolCallEntry,
   result: ToolResultEntry | undefined,
   live: boolean,
+  root?: string,
 ): ToolRowDescription {
-  const { headline, secondLine } = describeHeadlines(call.name, call.input);
+  const { headline, secondLine } = describeHeadlines(call.name, call.input, root);
   return {
     status: statusOf(result, live),
     tag: tagOf(call.name),
     ...(headline !== undefined && { headline }),
     ...(secondLine !== undefined && { secondLine }),
-    ...(result !== undefined && { resultToggle: describeResultToggle(result) }),
+    ...(hasResultToggle(call.name, result) && { resultToggle: describeResultToggle(result) }),
+    inputToggle: !titleCoversInput(call.name),
     inputKey: toolKeys(call.id).input,
     resultKey: toolKeys(call.id).result,
   };
@@ -102,6 +107,19 @@ export function toggleOpened(opened: ReadonlySet<string>, key: string): Readonly
   return next;
 }
 
+function titleCoversInput(name: string): boolean {
+  return name === 'Skill' || name === 'Read';
+}
+
+/** A successful Skill result says nothing the title does not. */
+function hasResultToggle(
+  name: string,
+  result: ToolResultEntry | undefined,
+): result is ToolResultEntry {
+  if (result === undefined) return false;
+  return name !== 'Skill' || result.isError;
+}
+
 function statusOf(result: ToolResultEntry | undefined, live: boolean): ToolStatus {
   if (result === undefined) return live ? 'running' : 'none';
   return result.isError ? 'failed' : 'done';
@@ -126,6 +144,7 @@ function tagColour(name: string): TagColour {
 function describeHeadlines(
   name: string,
   input: unknown,
+  root: string | undefined,
 ): { headline?: { text: string; mono: boolean }; secondLine?: string } {
   const field = (key: string): string | undefined => {
     const value =
@@ -136,17 +155,27 @@ function describeHeadlines(
   };
   const mono = (text: string | undefined) =>
     text === undefined ? {} : { headline: { text, mono: true } };
+  const pathField = (key: string) => {
+    const value = field(key);
+    return value === undefined ? undefined : relativePath(root, value);
+  };
   switch (name) {
     case 'Read':
     case 'Write':
-      return mono(field('file_path'));
+      return mono(pathField('file_path'));
+    case 'Skill':
+      return mono(field('skill'));
+    case 'Agent': {
+      const description = field('description');
+      return description === undefined ? {} : { headline: { text: description, mono: false } };
+    }
     case 'Glob':
       return mono(field('pattern'));
     case 'Screenshot':
       return mono(field('url'));
     case 'Grep': {
       const pattern = field('pattern');
-      const path = field('path');
+      const path = pathField('path');
       if (pattern === undefined) return {};
       return mono(path === undefined ? `"${pattern}"` : `"${pattern}" in ${path}`);
     }
@@ -154,7 +183,7 @@ function describeHeadlines(
       const oldString = field('old_string');
       const newString = field('new_string');
       return {
-        ...mono(field('file_path')),
+        ...mono(pathField('file_path')),
         ...(oldString !== undefined &&
           newString !== undefined && { secondLine: `"${oldString}" → "${newString}"` }),
       };
@@ -168,8 +197,11 @@ function describeHeadlines(
         ...(command !== undefined && { secondLine: `$ ${command}` }),
       };
     }
-    default:
-      return {};
+    default: {
+      if (!name.startsWith('mcp__')) return {};
+      const separator = name.indexOf('__', 'mcp__'.length);
+      return separator === -1 ? {} : mono(name.slice(separator + 2));
+    }
   }
 }
 
