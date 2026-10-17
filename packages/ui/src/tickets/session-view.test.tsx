@@ -75,6 +75,59 @@ describe('SessionViewBody', () => {
     expect(markup.indexOf('typing')).toBeGreaterThan(markup.indexOf('bold'));
   });
 
+  it('should render a prompt as markdown under an App label', () => {
+    const markup = renderSession({
+      kind: 'entries',
+      entries: [{ kind: 'prompt', id: 'p', text: '### Ticket\n\nBuild it.\n\n- one\n- `two`' }],
+      ended: false,
+    });
+    expect(markup).toContain('sv-prompt');
+    expect(markup).toContain('>App</');
+    expect(markup).toContain('>Ticket</h3>');
+    expect(markup).toContain('<li>one</li>');
+    expect(markup).toContain('<code>two</code>');
+  });
+
+  it('should render text as a bubble inside the turn column', () => {
+    const markup = renderSession({
+      kind: 'entries',
+      entries: [{ kind: 'text', id: 'x', text: 'hello' }],
+      ended: false,
+    });
+    expect(markup).toMatch(/class="sv-turn"[^>]*><div class="sv-bubble"/);
+  });
+
+  it('should render two turn columns when a second prompt follows text', () => {
+    const markup = renderSession({
+      kind: 'entries',
+      entries: [
+        { kind: 'prompt', id: 'p1', text: 'One' },
+        { kind: 'text', id: 't1', text: 'a' },
+        { kind: 'text', id: 't2', text: 'b' },
+        { kind: 'prompt', id: 'p2', text: 'Two' },
+        { kind: 'text', id: 't3', text: 'c' },
+      ],
+      ended: false,
+    });
+    expect(markup.match(/class="sv-turn"/g)).toHaveLength(2);
+    expect(markup.match(/class="sv-prompt"/g)).toHaveLength(2);
+  });
+
+  it('should render the open block with a caret hidden from readers', () => {
+    const markup = renderSession({ kind: 'entries', entries: [], openText: 'Hel', ended: false });
+    expect(markup).toMatch(/Hel<span class="sv-caret" aria-hidden="true">/);
+  });
+
+  it('should render no caret when the block has closed into an entry', () => {
+    const markup = renderSession({
+      kind: 'entries',
+      entries: [{ kind: 'text', id: 'x', text: 'Hello' }],
+      ended: false,
+    });
+    expect(markup).toContain('Hello');
+    expect(markup).not.toContain('sv-caret');
+  });
+
   it('should render the pulsing caption before any frame arrives', () => {
     const markup = renderSession({ kind: 'waiting' });
     expect(markup).toContain('Connecting to session…');
