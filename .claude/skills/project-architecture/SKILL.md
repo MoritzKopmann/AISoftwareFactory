@@ -106,6 +106,14 @@ that belongs to nobody else is a module. Example: storing "paid" status on the o
 is wrong — payment records belong to a `payments` module, and `orders` asks it for status through its
 internal API. The "When to create a module" section in `references/rules.md` has the full version with more examples.
 
+### Splitting a class
+Do this when placing a service, repository or adapter, before writing it.
+
+- **Must:** a class has one reason to change. Test: describe it in one sentence without "and" or
+  "or". `RunService` that starts runs **and** formats log lines is two classes.
+- **Should:** its methods use most of its fields. A group of methods sharing only some of the
+  fields is its own class.
+
 ### Adding a module
 Follow the checklist at the end of `references/rules.md`. Every module's `index.ts` exports exactly one
 `create<Module>Module(deps)` factory returning `{ routes, jobs, internal }` (all always present, possibly
