@@ -81,6 +81,7 @@ function BoardRow({
       {row.tickets.map((ticket) => (
         <TicketCard
           key={ticket.number}
+          projectId={projectId}
           {...describeTicketCard(ticket, projectId, runningTicketNumbers)}
         />
       ))}
