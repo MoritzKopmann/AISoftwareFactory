@@ -29,6 +29,13 @@ function isConnected(view: SessionView): view is Extract<SessionView, { kind: 'e
   return view.kind === 'entries' && !view.connectionLost;
 }
 
+function isToolCallOf(
+  entry: SessionEntryResponse,
+  toolUseId: string,
+): entry is Extract<SessionEntryResponse, { kind: 'tool-call' }> {
+  return entry.kind === 'tool-call' && entry.toolUseId === toolUseId;
+}
+
 export function foldSessionView(view: SessionView, frame: SessionStreamFrame): SessionView {
   switch (frame.kind) {
     case 'snapshot':
@@ -42,8 +49,17 @@ export function foldSessionView(view: SessionView, frame: SessionStreamFrame): S
     case 'no-session':
     case 'transcript-not-found':
       return { kind: frame.kind };
-    case 'label':
-      return view;
+    case 'label': {
+      if (view.kind !== 'entries') return view;
+      const { toolUseId, label } = frame;
+      if (!view.entries.some((entry) => isToolCallOf(entry, toolUseId))) return view;
+      return {
+        ...view,
+        entries: view.entries.map((entry) =>
+          isToolCallOf(entry, toolUseId) ? { ...entry, label } : entry,
+        ),
+      };
+    }
     case 'entry': {
       const { entries, root, ended, connectionLost } =
         view.kind === 'entries'

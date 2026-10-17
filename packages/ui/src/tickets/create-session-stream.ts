@@ -29,6 +29,7 @@ const frameKinds: ReadonlySet<string> = new Set([
   'transcript-not-found',
   'entry',
   'delta',
+  'label',
   'ended',
 ]);
 

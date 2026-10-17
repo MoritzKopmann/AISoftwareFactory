@@ -90,6 +90,20 @@ describe('createSessionStream', () => {
     expect(views.at(-1)).toMatchObject({ kind: 'entries', entries: [{ id: 'a' }] });
   });
 
+  it('should apply a label frame to the view when it arrives', () => {
+    const { streams, views } = build();
+    streams[0]?.send({
+      kind: 'snapshot',
+      entries: [{ kind: 'tool-call', id: 'a', toolUseId: 't1', name: 'Bash', input: {} }],
+      root: '/w/repo/7',
+    });
+    streams[0]?.send({ kind: 'label', toolUseId: 't1', label: 'Runs the tests.' });
+    expect(views.at(-1)).toMatchObject({
+      kind: 'entries',
+      entries: [{ id: 'a', label: 'Runs the tests.' }],
+    });
+  });
+
   it('should update the view once holding all deltas when three deltas arrive before the next frame', () => {
     const { streams, views, runFrames } = build();
     streams[0]?.send({ kind: 'snapshot', entries: [], root: '/w/repo/7' });
