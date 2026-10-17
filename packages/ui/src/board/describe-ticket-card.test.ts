@@ -10,14 +10,35 @@ describe('describeTicketCard', () => {
     const card = describeTicketCard(buildTicketResponse({ number: 12, title: 'Plain' }), 'o/n', []);
     expect(card).toEqual({
       href: '#/projects/o/n/tickets/12',
+      number: 12,
       numberLabel: '#12',
       title: 'Plain',
+      backlog: false,
       hitl: false,
       spike: false,
       blockerLabels: [],
       conflictLabels: [],
       pullRequestChips: [],
     });
+  });
+
+  it('should flag the card as backlog when the ticket is in backlog', () => {
+    const card = describeTicketCard(buildTicketResponse({ status: 'backlog' }), 'o/n', []);
+    expect(card.backlog).toBe(true);
+  });
+
+  it.each([
+    'idea',
+    'plan',
+    'planned',
+    'ready',
+    'in-progress',
+    'in-review',
+    'conflict',
+    'closed',
+  ] as const)('should not flag the card as backlog when the ticket is %s', (status) => {
+    const card = describeTicketCard(buildTicketResponse({ status }), 'o/n', []);
+    expect(card.backlog).toBe(false);
   });
 
   it('should include the parent title and hitl flag when the ticket has them', () => {

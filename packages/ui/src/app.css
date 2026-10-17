@@ -438,6 +438,61 @@ a.ext::after {
   margin-right: 6px;
 }
 
+.card-backlog {
+  gap: 8px;
+}
+
+.card-backlog:hover {
+  border-color: var(--border-strong);
+}
+
+.card-backlog:has(.card-err) {
+  border-color: var(--danger);
+}
+
+.card-backlog .title {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.card-backlog .title:hover {
+  text-decoration: underline;
+}
+
+.card-backlog .btn {
+  justify-self: start;
+}
+
+.card-backlog .pulse {
+  color: var(--accent);
+}
+
+.card-done,
+.card-err {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.card-done {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.card-done .shape {
+  color: var(--ok);
+}
+
+.card-err {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 8px;
+}
+
+.card-err .shape {
+  color: var(--danger);
+}
+
 .card .parent {
   font-size: var(--text-size-sm);
   color: var(--muted);

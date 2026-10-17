@@ -6,8 +6,10 @@ export type RunMarker = 'running' | LabelMarker;
 
 export type TicketCardDescription = {
   readonly href: string;
+  readonly number: number;
   readonly numberLabel: string;
   readonly title: string;
+  readonly backlog: boolean;
   readonly parentTitle?: string;
   readonly hitl: boolean;
   readonly spike: boolean;
@@ -46,8 +48,10 @@ export function describeTicketCard(
   const runMarker = describeRunMarker(ticket, runningTicketNumbers);
   return {
     href: `#/projects/${projectId}/tickets/${ticket.number}`,
+    number: ticket.number,
     numberLabel: `#${ticket.number}`,
     title: ticket.title,
+    backlog: ticket.status === 'backlog',
     ...(ticket.parent === undefined ? {} : { parentTitle: ticket.parent.title }),
     hitl: ticket.hitl,
     spike: ticket.types.includes('spike'),
