@@ -3,19 +3,8 @@ import { describe, expect, it } from 'vitest';
 import type { RunPanelDescription } from './describe-run-panel.js';
 import { RunPanel } from './run-panel.js';
 
-const ignore = () => undefined;
-
-const live: Extract<RunPanelDescription, { kind: 'live' }> = {
-  kind: 'live',
-  waiting: false,
-  startedLabel: 'Started 4 min ago',
-  stop: { label: 'Stop', pressable: true },
-};
-
 function render(description: RunPanelDescription): string {
-  return renderToStaticMarkup(
-    <RunPanel description={description} onStop={ignore} onRetry={ignore} />,
-  );
+  return renderToStaticMarkup(<RunPanel description={description} />);
 }
 
 describe('RunPanel', () => {
@@ -23,38 +12,15 @@ describe('RunPanel', () => {
     expect(render({ kind: 'hidden' })).toBe('');
   });
 
-  it('should render a labelled Run region with a pressable Stop when the run is live', () => {
-    const markup = render(live);
-    expect(markup).toContain('aria-label="Run"');
-    expect(markup).toMatch(/<button[^>]*>Stop<\/button>/);
-    expect(markup).not.toContain('aria-disabled');
-  });
-
-  it('should keep the Stopping… button focusable and announce it when Stop was pressed', () => {
-    const markup = render({
-      ...live,
-      stop: { label: 'Stopping…', pressable: false, announcement: 'Stopping the run' },
-    });
-    expect(markup).toContain('aria-disabled="true"');
-    expect(markup).not.toMatch(/\sdisabled=""/);
-    expect(markup).toContain('Stopping…');
-    expect(markup).toMatch(/role="status"[^>]*>Stopping the run</);
-  });
-
-  it('should announce the banner when the poll failed', () => {
-    const markup = render({ ...live, banner: "Can't reach aisf." });
-    expect(markup).toMatch(/role="status"[^>]*>.*Can&#x27;t reach aisf./);
-  });
-
-  it('should put a Retry button under the banner message when the poll failed', () => {
-    const markup = render({ ...live, banner: "Can't reach aisf." });
-    expect(markup).toMatch(
-      /class="inline-banner".*<p class="sm">Can&#x27;t reach aisf\.<\/p><button[^>]*>Retry<\/button><\/div>/,
-    );
-  });
-
-  it('should show no Retry when the poll did not fail', () => {
-    expect(render(live)).not.toContain('Retry');
+  it('should render nothing when the run is live, the session panel holds its head', () => {
+    expect(
+      render({
+        kind: 'live',
+        waiting: false,
+        startedLabel: 'Started 4 min ago',
+        stop: { label: 'Stop', pressable: true },
+      }),
+    ).toBe('');
   });
 
   it('should announce the reason and show no Stop when the run ended', () => {
@@ -63,26 +29,10 @@ describe('RunPanel', () => {
       endedLabel: 'Ended 09:47 · ran 6 min',
       note: 'Run ended: you pressed Stop.',
     });
+    expect(markup).toContain('aria-label="Run"');
     expect(markup).toContain('Ended 09:47 · ran 6 min');
     expect(markup).toMatch(/role="status"[^>]*>Run ended: you pressed Stop.</);
     expect(markup).not.toContain('<button');
     expect(markup).not.toContain('<ol');
-  });
-});
-
-describe('RunPanel while waiting', () => {
-  it('should show Waiting for you with the hitl mark, no pulse and a pressable Stop when the run waits', () => {
-    const markup = render({ ...live, waiting: true });
-    expect(markup).toContain('Waiting for you');
-    expect(markup).toContain('s-hitl');
-    expect(markup).not.toContain('pulse');
-    expect(markup).not.toContain('Running');
-    expect(markup).toMatch(/<button[^>]*>Stop<\/button>/);
-  });
-
-  it('should keep the pulsing Running header when the run works', () => {
-    const markup = render({ ...live, waiting: false });
-    expect(markup).toContain('Running');
-    expect(markup).toContain('pulse');
   });
 });

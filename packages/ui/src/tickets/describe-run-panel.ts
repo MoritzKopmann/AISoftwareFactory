@@ -20,7 +20,7 @@ function describeStartedLabel(startedAt: string, runSkill: RunSkill, now: Date):
   return isIdeaOrPlanSkill(runSkill) ? `${runSkill} · started ${timeAgo}` : `Started ${timeAgo}`;
 }
 
-type LiveRunDescription = {
+export type LiveRunDescription = {
   readonly kind: 'live';
   readonly waiting: boolean;
   readonly startedLabel: string;
