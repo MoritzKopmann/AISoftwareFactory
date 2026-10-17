@@ -1801,9 +1801,55 @@ details:not([open]) .t-hide {
   text-overflow: ellipsis;
 }
 
-.session-panel .tc-row > pre,
-.session-panel .tc-row > img {
-  margin: 4px 8px 8px;
+.tc-pane,
+.tc-frame {
+  margin: 0 8px 8px;
+  border-radius: 8px;
+  animation: sv-unfold 0.16s ease-out both;
+}
+
+.tc-pane {
+  box-sizing: border-box;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.tc-input {
+  max-height: 240px;
+  padding: 8px 10px;
+  font: 12.5px / 1.5 var(--font-mono);
+  background: var(--surface-sunken);
+}
+
+.tc-term {
+  max-height: 320px;
+  padding: 10px 12px;
+  font: 13px / 1.55 var(--font-mono);
+  color: var(--sv-term-text);
+  background: var(--sv-term-bg);
+  border: 1px solid var(--sv-term-border);
+}
+
+.tc-term-error {
+  border-color: var(--sv-term-danger);
+  box-shadow: inset 3px 0 0 var(--sv-term-danger);
+}
+
+.tc-frame {
+  padding: 8px;
+  background: var(--sv-term-bg);
+  border: 1px solid var(--sv-term-border);
+}
+
+.tc-image {
+  display: block;
+  box-sizing: border-box;
+  max-width: min(100%, 560px);
+  max-height: 360px;
+  object-fit: contain;
+  border: 1px solid var(--sv-term-border);
+  border-radius: 4px;
 }
 
 .sv-bubble {
@@ -1860,6 +1906,13 @@ details:not([open]) .t-hide {
   }
 }
 
+@keyframes sv-unfold {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
 @keyframes sv-spin {
   to {
     transform: rotate(360deg);
@@ -1871,12 +1924,15 @@ details:not([open]) .t-hide {
   .sv-bubble,
   .sv-caret,
   .tc,
+  .tc-pane,
+  .tc-frame,
   .tc-spinner {
     animation: none;
   }
 }
 
-.session-panel pre {
+.sv-bubble pre,
+.sv-prompt-bubble pre {
   max-height: 420px;
   overflow: auto;
   margin: 4px 0 0;
@@ -1884,7 +1940,8 @@ details:not([open]) .t-hide {
   white-space: pre-wrap;
 }
 
-.session-panel img {
+.sv-bubble img,
+.sv-prompt-bubble img {
   display: block;
   max-width: 100%;
   margin-top: 4px;

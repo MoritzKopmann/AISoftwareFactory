@@ -152,6 +152,48 @@ describe('SessionViewBody', () => {
     expect(markup.match(/aria-expanded="true"/g)).toHaveLength(2);
   });
 
+  it('should make the open input pane keyboard reachable with a scroll label', () => {
+    const markup = renderEntries([call], new Set(['c:input']));
+    expect(markup).toMatch(
+      /<pre class="tc-pane tc-input" tabindex="0" aria-label="Input, scrolls">/,
+    );
+  });
+
+  it('should make each open result text pane keyboard reachable with a scroll label', () => {
+    const twoTexts: SessionEntryResponse = {
+      ...result,
+      parts: [
+        { kind: 'text', text: 'one' },
+        { kind: 'text', text: 'two' },
+      ],
+    };
+    const entries = [call, twoTexts];
+    const markup = renderEntries(entries, new Set(['c:result']));
+    expect(
+      markup.match(/<pre class="tc-pane tc-term" tabindex="0" aria-label="Result text, scrolls">/g),
+    ).toHaveLength(2);
+  });
+
+  it('should mark the result pane as an error when the result failed', () => {
+    const markup = renderEntries(
+      [readCall('a'), textResult('a', 'boom', true)],
+      new Set(['a:result']),
+    );
+    expect(markup).toMatch(/<pre class="tc-pane tc-term tc-term-error"[^>]*>boom</);
+  });
+
+  it('should not mark the result pane as an error when the result succeeded', () => {
+    const markup = renderEntries([readCall('a'), textResult('a', 'fine')], new Set(['a:result']));
+    expect(markup).not.toContain('tc-term-error');
+  });
+
+  it('should wrap each image part in a frame', () => {
+    const markup = renderEntries([call, result], new Set(['c:result']));
+    expect(markup).toMatch(
+      /<div class="tc-frame"><img class="tc-image" src="data:image\/png;base64,AAAA" alt=""\/><\/div>/,
+    );
+  });
+
   it('should render assistant text as markdown and the open block after the entries', () => {
     const markup = renderToStaticMarkup(
       <SessionViewBody

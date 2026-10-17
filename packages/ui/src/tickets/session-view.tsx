@@ -218,14 +218,27 @@ const ToolRow = memo(function ToolRow({
         )}
       </div>
       {row.secondLine !== undefined && <div className="tc-second">{row.secondLine}</div>}
-      {inputOpen && <pre>{describeToolInput(call)}</pre>}
+      {inputOpen && (
+        <pre className="tc-pane tc-input" tabIndex={0} aria-label="Input, scrolls">
+          {describeToolInput(call)}
+        </pre>
+      )}
       {resultOpen &&
         result !== undefined &&
         describeResultParts(result).map((part, position) =>
           part.kind === 'text' ? (
-            <pre key={position}>{part.text}</pre>
+            <pre
+              key={position}
+              className={result.isError ? 'tc-pane tc-term tc-term-error' : 'tc-pane tc-term'}
+              tabIndex={0}
+              aria-label="Result text, scrolls"
+            >
+              {part.text}
+            </pre>
           ) : (
-            <img key={position} src={part.src} alt="" />
+            <div key={position} className="tc-frame">
+              <img className="tc-image" src={part.src} alt="" />
+            </div>
           ),
         )}
     </div>
