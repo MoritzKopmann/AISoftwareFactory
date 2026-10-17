@@ -126,6 +126,11 @@ export class RunStartService {
       throw error;
     }
 
+    // The ticket may have closed during setup, which ended the run.
+    if (await this.hasEndedMeanwhile(run.id)) {
+      return run;
+    }
+
     this.launchSession(run, {
       kind: 'start',
       prompt: `/${stageSkills[run.stage]} ${run.ticketNumber}`,
@@ -382,5 +387,10 @@ export class RunStartService {
 
   private reportFailure(run: Run, error: unknown): void {
     this.dependencies.logger.error(`Run ${run.id} failed: ${describeError(error)}`);
+  }
+
+  private async hasEndedMeanwhile(runId: string): Promise<boolean> {
+    const current = await this.dependencies.runRepository.findById(runId);
+    return current?.state !== 'running';
   }
 }

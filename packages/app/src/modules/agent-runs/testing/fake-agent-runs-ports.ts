@@ -9,6 +9,7 @@ import type { SessionEvent } from '../business/domain/types/session-event.js';
 import type { ResumeSessionSpec } from '../business/domain/types/resume-session-spec.js';
 import type { SessionSpec } from '../business/domain/types/session-spec.js';
 import type { DetachedWorktreeSpec } from '../business/domain/types/detached-worktree-spec.js';
+import type { RemovableWorktreeSpec } from '../business/domain/types/removable-worktree-spec.js';
 import type { WorktreeSpec } from '../business/domain/types/worktree-spec.js';
 import type { AgentSessions } from '../business/port/session/agent-sessions.js';
 import type { Identifiers } from '../../../shared/identifiers/identifiers.js';
@@ -255,7 +256,17 @@ class SessionQueue implements AsyncIterable<SessionEvent> {
 export class FakeWorktrees implements Worktrees {
   readonly ensuredSpecs: WorktreeSpec[] = [];
   readonly detachedSpecs: DetachedWorktreeSpec[] = [];
+  readonly removedSpecs: RemovableWorktreeSpec[] = [];
+  readonly removalFailuresByPath = new Map<string, Error>();
   failure: Error | undefined;
+
+  async remove(spec: RemovableWorktreeSpec): Promise<void> {
+    const removalFailure = this.removalFailuresByPath.get(spec.worktreePath);
+    if (removalFailure !== undefined) {
+      throw removalFailure;
+    }
+    this.removedSpecs.push(spec);
+  }
 
   async ensureDetached(spec: DetachedWorktreeSpec): Promise<void> {
     if (this.failure !== undefined) {

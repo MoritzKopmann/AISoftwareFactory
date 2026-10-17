@@ -163,4 +163,30 @@ describe('GitCliWorktrees', () => {
       ).rejects.toThrow(WorktreeSetupFailedError);
     });
   });
+
+  describe('remove', () => {
+    it('should remove a dirty worktree and keep its branch when git knows the worktree', async () => {
+      await worktrees.ensure({ checkoutPath, worktreePath, branchName: 'aisf/7-x' });
+      writeFileSync(join(worktreePath, 'uncommitted.md'), 'lost');
+
+      await worktrees.remove({ checkoutPath, worktreePath });
+
+      expect(existsSync(worktreePath)).toBe(false);
+      expect(git(checkoutPath, 'worktree', 'list')).not.toContain(worktreePath);
+      expect(git(checkoutPath, 'branch', '--list', 'aisf/7-x')).toContain('aisf/7-x');
+    });
+
+    it('should resolve without error when no folder exists at the path', async () => {
+      await expect(worktrees.remove({ checkoutPath, worktreePath })).resolves.toBeUndefined();
+    });
+
+    it('should delete the folder when it is a plain folder without .git', async () => {
+      mkdirSync(worktreePath, { recursive: true });
+      writeFileSync(join(worktreePath, 'leftover.md'), 'x');
+
+      await worktrees.remove({ checkoutPath, worktreePath });
+
+      expect(existsSync(worktreePath)).toBe(false);
+    });
+  });
 });

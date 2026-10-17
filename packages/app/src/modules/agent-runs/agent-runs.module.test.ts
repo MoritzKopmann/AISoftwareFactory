@@ -5,7 +5,8 @@ import type { ProjectsApi } from '../projects/index.js';
 import type { AgentTool } from '../../shared/agent-tools.js';
 import { InMemoryAgentToolRegistry } from '../../shared/in-memory-agent-tool-registry.js';
 import { FakeClock } from '../../shared/testing/fake-clock.js';
-import { FakeEventPublisher } from '../../shared/testing/fake-event-publisher.js';
+import type { DomainEvents, EventBus } from '../../shared/event-bus.js';
+import { InMemoryEventBus } from '../../shared/in-memory-event-bus.js';
 import {
   buildRun,
   FakeAgentSessions,
@@ -17,12 +18,23 @@ import {
   SequentialIdentifiers,
 } from './testing/fake-agent-runs-ports.js';
 
+class RecordingEventBus extends InMemoryEventBus<DomainEvents> implements EventBus {
+  readonly emittedEvents: Array<{ readonly name: keyof DomainEvents; readonly payload: unknown }> =
+    [];
+
+  override emit<Name extends keyof DomainEvents>(name: Name, payload: DomainEvents[Name]): void {
+    this.emittedEvents.push({ name, payload });
+    super.emit(name, payload);
+  }
+}
+
 describe('createAgentRunsModule', () => {
   let runRepository: FakeRunRepository;
   let agentSessions: FakeAgentSessions;
   let runAnswerWaits: FakeRunAnswerWaits;
   let runTranscripts: FakeRunTranscripts;
-  let events: FakeEventPublisher;
+  let events: RecordingEventBus;
+  let worktrees: FakeWorktrees;
   let agentTools: InMemoryAgentToolRegistry;
   let agentRuns: AgentRunsModule;
 
@@ -68,7 +80,8 @@ describe('createAgentRunsModule', () => {
     runTranscripts = new FakeRunTranscripts();
     agentSessions = new FakeAgentSessions();
     runAnswerWaits = new FakeRunAnswerWaits();
-    events = new FakeEventPublisher();
+    events = new RecordingEventBus();
+    worktrees = new FakeWorktrees();
     agentRuns = createAgentRunsModule(
       {
         database: undefined as never,
@@ -86,7 +99,7 @@ describe('createAgentRunsModule', () => {
       {
         runRepository,
         agentSessions,
-        worktrees: new FakeWorktrees(),
+        worktrees,
         projectPort: new FakeProjectPort({
           checkoutPath: '/checkouts/aisf',
           repositoryName: 'aisf',
@@ -106,6 +119,17 @@ describe('createAgentRunsModule', () => {
       'aisf_checkpoint',
       'aisf_report_finding',
     ]);
+  });
+
+  it('should remove both worktrees of the ticket when ticket.closed is emitted', async () => {
+    events.emit('ticket.closed', { projectId: 'moritz/aisf', ticketNumber: 7 });
+
+    await vi.waitFor(() =>
+      expect(worktrees.removedSpecs.map((spec) => spec.worktreePath)).toEqual([
+        '/worktrees/aisf/7',
+        '/worktrees/aisf/7-authoring',
+      ]),
+    );
   });
 
   it('should host a tool registered after the module was built when a run starts', async () => {
