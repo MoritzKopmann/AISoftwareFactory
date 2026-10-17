@@ -24,6 +24,8 @@ function buildInput(overrides: Partial<RunAvailabilityInput> = {}): RunAvailabil
     ticketIsRunning: false,
     runsBlocked: { blocked: false },
     projectOnboarded: true,
+    trigger: 'manual',
+    projectPaused: false,
     ...overrides,
   };
 }
@@ -39,6 +41,8 @@ describe('determineRunAvailability', () => {
       ticketIsRunning: false,
       runsBlocked: { blocked: false },
       projectOnboarded: true,
+      trigger: 'manual',
+      projectPaused: false,
     };
 
     expect(determineRunAvailability(input)).toEqual({ kind: 'absent' });
@@ -173,6 +177,56 @@ describe('determineRunAvailability', () => {
 
     expect(determineRunAvailability(buildInput({ ticket, subIssues }))).toEqual({
       kind: 'available',
+    });
+  });
+
+  describe('manual trigger', () => {
+    it('should be available when the project is paused', () => {
+      expect(determineRunAvailability(buildInput({ projectPaused: true }))).toEqual({
+        kind: 'available',
+      });
+    });
+  });
+
+  describe('auto trigger', () => {
+    it('should be available when the ticket is an unblocked ready leaf', () => {
+      expect(determineRunAvailability(buildInput({ trigger: 'auto' }))).toEqual({
+        kind: 'available',
+      });
+    });
+
+    it('should be available when the ticket is a ready spike', () => {
+      const ticket: SchedulableTicket = { ...readyLeaf, types: ['spike'] };
+
+      expect(determineRunAvailability(buildInput({ trigger: 'auto', ticket }))).toEqual({
+        kind: 'available',
+      });
+    });
+
+    it('should be absent when the ticket is an idea', () => {
+      const ticket: SchedulableTicket = { ...readyLeaf, status: 'idea' };
+
+      expect(determineRunAvailability(buildInput({ trigger: 'auto', ticket }))).toEqual({
+        kind: 'absent',
+      });
+    });
+
+    it.each<[string, Partial<SchedulableTicket>]>([
+      ['is stuck', { stuck: true }],
+      ['is waiting', { waiting: true }],
+      ['failed to sync', { syncFailed: true }],
+    ])('should be disabled when the ticket %s', (_description, ticketOverrides) => {
+      const ticket = { ...readyLeaf, ...ticketOverrides };
+
+      expect(determineRunAvailability(buildInput({ trigger: 'auto', ticket })).kind).toBe(
+        'disabled',
+      );
+    });
+
+    it('should be disabled when the project is paused', () => {
+      expect(
+        determineRunAvailability(buildInput({ trigger: 'auto', projectPaused: true })).kind,
+      ).toBe('disabled');
     });
   });
 });

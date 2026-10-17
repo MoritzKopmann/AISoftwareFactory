@@ -7,5 +7,7 @@ export type RunAvailabilityInput = {
   readonly ticketIsRunning: boolean;
   readonly runsBlocked: RunsBlocked;
   readonly projectOnboarded: boolean;
+  readonly trigger: 'manual' | 'auto';
+  readonly projectPaused: boolean;
   readonly lastRunEndedAt?: string;
 };
