@@ -14,19 +14,52 @@ const result: SessionEntryResponse = {
 };
 
 describe('describeSessionView', () => {
-  it('should list the entries in order and add the open block last when text is streaming', () => {
+  it('should put the open block into the last turn when text is streaming', () => {
     const prompt: SessionEntryResponse = { kind: 'prompt', id: 'p', text: 'Go' };
     expect(
       describeSessionView({ kind: 'entries', entries: [prompt], openText: 'Hel', ended: false }),
-    ).toEqual({ kind: 'entries', entries: [prompt], openText: 'Hel', ended: false });
+    ).toEqual({
+      kind: 'entries',
+      turns: [{ id: 'p', prompt, entries: [], openText: 'Hel' }],
+      ended: false,
+    });
   });
 
   it('should carry the ended flag so the end line can be drawn', () => {
     const prompt: SessionEntryResponse = { kind: 'prompt', id: 'p', text: 'Go' };
     expect(describeSessionView({ kind: 'entries', entries: [prompt], ended: true })).toEqual({
       kind: 'entries',
-      entries: [prompt],
+      turns: [{ id: 'p', prompt, entries: [] }],
       ended: true,
+    });
+  });
+
+  it('should group the entries after each prompt into one turn when there are two prompts', () => {
+    const p1: SessionEntryResponse = { kind: 'prompt', id: 'p1', text: 'One' };
+    const t1: SessionEntryResponse = { kind: 'text', id: 't1', text: 'a' };
+    const t2: SessionEntryResponse = { kind: 'text', id: 't2', text: 'b' };
+    const p2: SessionEntryResponse = { kind: 'prompt', id: 'p2', text: 'Two' };
+    const t3: SessionEntryResponse = { kind: 'text', id: 't3', text: 'c' };
+    expect(
+      describeSessionView({ kind: 'entries', entries: [p1, t1, t2, p2, t3], ended: false }),
+    ).toEqual({
+      kind: 'entries',
+      turns: [
+        { id: 'p1', prompt: p1, entries: [t1, t2] },
+        { id: 'p2', prompt: p2, entries: [t3] },
+      ],
+      ended: false,
+    });
+  });
+
+  it('should open a turn without a prompt when entries come before any prompt', () => {
+    const t1: SessionEntryResponse = { kind: 'text', id: 't1', text: 'a' };
+    expect(
+      describeSessionView({ kind: 'entries', entries: [t1], openText: 'x', ended: false }),
+    ).toEqual({
+      kind: 'entries',
+      turns: [{ id: 'start', entries: [t1], openText: 'x' }],
+      ended: false,
     });
   });
 
@@ -108,11 +141,7 @@ describe('describeSessionEntry', () => {
     });
   });
 
-  it('should pass a prompt and a text entry through', () => {
-    expect(describeSessionEntry({ kind: 'prompt', id: 'p', text: 'Go' }, false)).toEqual({
-      kind: 'prompt',
-      text: 'Go',
-    });
+  it('should pass a text entry through', () => {
     expect(describeSessionEntry({ kind: 'text', id: 'x', text: 'Hi' }, false)).toEqual({
       kind: 'text',
       text: 'Hi',

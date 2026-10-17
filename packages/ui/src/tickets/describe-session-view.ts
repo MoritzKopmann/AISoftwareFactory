@@ -11,17 +11,27 @@ export type SessionViewDescription =
     }
   | {
       readonly kind: 'entries';
-      readonly entries: ReadonlyArray<SessionEntryResponse>;
-      readonly openText?: string;
+      readonly turns: ReadonlyArray<SessionTurnDescription>;
       readonly ended: boolean;
     };
+
+type PromptEntry = Extract<SessionEntryResponse, { kind: 'prompt' }>;
+type AgentEntry = Exclude<SessionEntryResponse, { kind: 'prompt' }>;
+
+/** A prompt and the entries after it, up to the next prompt. */
+export type SessionTurnDescription = {
+  readonly id: string;
+  readonly prompt?: PromptEntry;
+  readonly entries: ReadonlyArray<AgentEntry>;
+  /** Only the last turn can hold the block being written. */
+  readonly openText?: string;
+};
 
 export type ResultPartDescription =
   | { readonly kind: 'text'; readonly text: string }
   | { readonly kind: 'image'; readonly src: string };
 
 export type SessionEntryDescription =
-  | { readonly kind: 'prompt'; readonly text: string }
   | { readonly kind: 'text'; readonly text: string }
   | { readonly kind: 'tool-call'; readonly name: string; readonly input: string }
   | {
@@ -51,11 +61,30 @@ export function describeSessionView(view: SessionView): SessionViewDescription {
       }
       return {
         kind: 'entries',
-        entries: view.entries,
-        ...(view.openText === undefined ? {} : { openText: view.openText }),
+        turns: groupIntoTurns(view.entries, view.openText),
         ended: view.ended,
       };
   }
+}
+
+function groupIntoTurns(
+  entries: ReadonlyArray<SessionEntryResponse>,
+  openText: string | undefined,
+): ReadonlyArray<SessionTurnDescription> {
+  const turns: Array<{ id: string; prompt?: PromptEntry; entries: AgentEntry[] }> = [];
+  for (const entry of entries) {
+    if (entry.kind === 'prompt') {
+      turns.push({ id: entry.id, prompt: entry, entries: [] });
+    } else {
+      if (turns.length === 0) turns.push({ id: 'start', entries: [] });
+      turns[turns.length - 1]?.entries.push(entry);
+    }
+  }
+  if (openText === undefined) return turns;
+  if (turns.length === 0) turns.push({ id: 'start', entries: [] });
+  return turns.map((turn, position) =>
+    position === turns.length - 1 ? { ...turn, openText } : turn,
+  );
 }
 
 function hasNothingToShow(view: { entries: ReadonlyArray<unknown>; openText?: string }): boolean {
@@ -63,14 +92,10 @@ function hasNothingToShow(view: { entries: ReadonlyArray<unknown>; openText?: st
 }
 
 /** A result's body is described only when `open`. */
-export function describeSessionEntry(
-  entry: SessionEntryResponse,
-  open: boolean,
-): SessionEntryDescription {
+export function describeSessionEntry(entry: AgentEntry, open: boolean): SessionEntryDescription {
   switch (entry.kind) {
-    case 'prompt':
     case 'text':
-      return { kind: entry.kind, text: entry.text };
+      return { kind: 'text', text: entry.text };
     case 'tool-call':
       return {
         kind: 'tool-call',

@@ -1,7 +1,10 @@
 import Markdown from 'markdown-to-jsx/react';
 import { memo } from 'react';
-import type { SessionEntryResponse } from '@aisf/app/api-schemas/session-stream-schemas.js';
-import { describeSessionEntry, describeSessionView } from './describe-session-view.js';
+import {
+  describeSessionEntry,
+  describeSessionView,
+  type SessionTurnDescription,
+} from './describe-session-view.js';
 import type { SessionView } from './fold-session-view.js';
 
 type SessionViewBodyProps = {
@@ -40,7 +43,39 @@ export function SessionViewBody({ view, opened, onToggle }: SessionViewBodyProps
       )}
       {description.kind === 'entries' && (
         <>
-          {description.entries.map((entry) => (
+          {description.turns.map((turn) => (
+            <SessionTurn key={turn.id} turn={turn} opened={opened} onToggle={onToggle} />
+          ))}
+          {description.ended && <div className="sv-line">End of session</div>}
+        </>
+      )}
+    </>
+  );
+}
+
+function SessionTurn({
+  turn,
+  opened,
+  onToggle,
+}: {
+  readonly turn: SessionTurnDescription;
+  readonly opened: ReadonlySet<string>;
+  readonly onToggle: (id: string) => void;
+}) {
+  const hasColumn = turn.entries.length > 0 || turn.openText !== undefined;
+  return (
+    <>
+      {turn.prompt !== undefined && (
+        <div className="sv-prompt">
+          <div className="sv-who">App</div>
+          <div className="sv-prompt-bubble">
+            <Markdown>{turn.prompt.text}</Markdown>
+          </div>
+        </div>
+      )}
+      {hasColumn && (
+        <div className="sv-turn">
+          {turn.entries.map((entry) => (
             <SessionEntryRow
               key={entry.id}
               entry={entry}
@@ -48,13 +83,13 @@ export function SessionViewBody({ view, opened, onToggle }: SessionViewBodyProps
               onToggle={onToggle}
             />
           ))}
-          {description.openText !== undefined && (
-            <div className="session-entry session-text">
-              <Markdown>{description.openText}</Markdown>
+          {turn.openText !== undefined && (
+            <div className="sv-bubble sv-open">
+              <Markdown>{turn.openText}</Markdown>
+              <span className="sv-caret" aria-hidden="true" />
             </div>
           )}
-          {description.ended && <div className="sv-line">End of session</div>}
-        </>
+        </div>
       )}
     </>
   );
@@ -65,21 +100,15 @@ const SessionEntryRow = memo(function SessionEntryRow({
   open,
   onToggle,
 }: {
-  readonly entry: SessionEntryResponse;
+  readonly entry: SessionTurnDescription['entries'][number];
   readonly open: boolean;
   readonly onToggle: (id: string) => void;
 }) {
   const description = describeSessionEntry(entry, open);
   switch (description.kind) {
-    case 'prompt':
-      return (
-        <div className="session-entry session-prompt">
-          <Markdown>{description.text}</Markdown>
-        </div>
-      );
     case 'text':
       return (
-        <div className="session-entry session-text">
+        <div className="sv-bubble">
           <Markdown>{description.text}</Markdown>
         </div>
       );

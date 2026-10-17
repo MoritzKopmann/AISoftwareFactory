@@ -1583,8 +1583,132 @@ details:not([open]) .t-hide {
   overflow-wrap: anywhere;
 }
 
-.session-prompt {
-  background: var(--surface-sunken);
+.sv-prompt {
+  align-self: flex-end;
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  animation: sv-rise 0.28s ease-out both;
+}
+
+.sv-who {
+  font: 700 11px var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sv-prompt-bubble {
+  min-width: 0;
+  padding: 9px 14px;
+  background: linear-gradient(135deg, var(--sv-app-1), var(--sv-app-2));
+  color: #fff;
+  border-radius: 16px 16px 4px 16px;
+  box-shadow: var(--sv-app-shadow);
+  overflow-wrap: anywhere;
+}
+
+.sv-prompt-bubble h3 {
+  margin: 0 0 3px;
+  font-size: 15px;
+}
+
+.sv-prompt-bubble p {
+  margin: 0 0 4px;
+}
+
+.sv-prompt-bubble p:last-child {
+  margin: 0;
+}
+
+.sv-prompt-bubble ul {
+  margin: 0 0 4px;
+  padding-left: 20px;
+}
+
+.sv-prompt-bubble code {
+  font: 13px var(--font-mono);
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0 5px;
+  border-radius: 3px;
+}
+
+.sv-turn {
+  align-self: flex-start;
+  width: 88%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.sv-turn > .session-entry {
+  align-self: stretch;
+}
+
+.sv-bubble {
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 7px 14px;
+  color: var(--text);
+  background: var(--sv-glass);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--sv-glass-border);
+  border-radius: 16px 16px 16px 4px;
+  box-shadow:
+    0 0 0 1px var(--sv-glass-hi) inset,
+    var(--sv-glow);
+  overflow-wrap: anywhere;
+  animation: sv-rise 0.28s ease-out both;
+}
+
+.sv-bubble p {
+  margin: 0;
+}
+
+.sv-bubble code {
+  font: 13px var(--font-mono);
+  background: var(--sv-toggle-on);
+  padding: 0 5px;
+  border-radius: 3px;
+}
+
+.sv-caret {
+  display: inline-block;
+  width: 7px;
+  height: 1em;
+  margin-left: 3px;
+  vertical-align: text-bottom;
+  background: var(--sv-live);
+  border-radius: 1px;
+  box-shadow:
+    0 0 0 1px var(--sv-live-ring),
+    0 0 12px var(--sv-live);
+  animation: sv-blink 1s steps(2, start) infinite;
+}
+
+@keyframes sv-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes sv-blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sv-prompt,
+  .sv-bubble,
+  .sv-caret {
+    animation: none;
+  }
 }
 
 .session-panel pre {
