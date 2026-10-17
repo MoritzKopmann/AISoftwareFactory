@@ -98,7 +98,8 @@ body {
   flex: 1;
 }
 
-.page-head h1 {
+.page-head h1,
+.page-title {
   text-transform: none;
   letter-spacing: 0;
   font-family: var(--font-ui);
@@ -2036,4 +2037,43 @@ details:not([open]) .t-hide {
 
 .sv-missing .sm {
   margin: 2px 0 0;
+}
+
+.facts.plain {
+  grid-template-columns: max-content minmax(0, 1fr);
+  max-width: none;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.facts.plain dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.chip.paused {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.ctl {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+.btn .shape.acc {
+  color: var(--accent);
+}
+
+.page-title {
+  line-height: 1.25;
+}
+
+.back.info {
+  color: var(--info);
+}
+
+.back.info:hover {
+  color: var(--text);
 }

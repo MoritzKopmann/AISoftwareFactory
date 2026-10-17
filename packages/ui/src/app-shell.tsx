@@ -7,6 +7,7 @@ import { parseAppRoute, type AppRoute } from './app-route.js';
 import { ProjectSidebar } from './projects/project-sidebar.js';
 import { AddProjectForm } from './projects/add-project-form.js';
 import { ProjectPage } from './projects/project-page.js';
+import { ProjectSettingsPage } from './projects/project-settings-page.js';
 import { TicketPage } from './tickets/ticket-page.js';
 import { isRequestFailure } from './shared/is-request-failure.js';
 
@@ -93,6 +94,8 @@ export function AppShell() {
             project={projects.find((project) => project.id === route.id)}
           />
         );
+      case 'settings':
+        return <ProjectSettingsPage key={route.id} id={route.id} />;
       case 'ticket':
         return (
           <TicketPage

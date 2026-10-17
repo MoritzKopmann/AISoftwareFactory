@@ -40,4 +40,12 @@ describe('parseAppRoute', () => {
   it('should return home when the hash is an unrelated route', () => {
     expect(parseAppRoute('#/tickets/5')).toEqual({ kind: 'home' });
   });
+
+  it('should return the settings route when the hash is #/projects/owner/name/settings', () => {
+    expect(parseAppRoute('#/projects/o/n/settings')).toEqual({ kind: 'settings', id: 'o/n' });
+  });
+
+  it('should return the project route when the hash is #/projects/o/settings', () => {
+    expect(parseAppRoute('#/projects/o/settings')).toEqual({ kind: 'project', id: 'o/settings' });
+  });
 });

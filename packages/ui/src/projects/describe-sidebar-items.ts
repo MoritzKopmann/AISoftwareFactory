@@ -19,7 +19,9 @@ export function describeSidebarItems(
   route: AppRoute,
 ): SidebarDescription {
   const currentProjectId =
-    route.kind === 'project' || route.kind === 'ticket' ? route.id : undefined;
+    route.kind === 'project' || route.kind === 'settings' || route.kind === 'ticket'
+      ? route.id
+      : undefined;
   return {
     projects: projects.map((project) => ({
       id: project.id,
