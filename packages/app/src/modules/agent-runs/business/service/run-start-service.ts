@@ -9,6 +9,7 @@ import { authoringWorktreePathFor } from '../domain/functions/authoring-worktree
 import { branchNameFor } from '../domain/functions/branch-name-for.js';
 import { buildCheckpointResumePrompt } from '../domain/functions/build-checkpoint-resume-prompt.js';
 import { buildResumePrompt } from '../domain/functions/build-resume-prompt.js';
+import { commandToLabel } from '../domain/functions/command-to-label.js';
 import { describeError } from '../domain/functions/describe-error.js';
 import { runStageFor } from '../domain/functions/run-stage-for.js';
 import { worktreePathFor } from '../domain/functions/worktree-path-for.js';
@@ -18,6 +19,7 @@ import type { RunAnswer } from '../domain/types/run-answer.js';
 import type { RunWaitOutcome } from '../domain/types/run-wait-outcome.js';
 import type { RunWait } from '../domain/types/run-wait.js';
 import type { Run } from '../domain/types/run.js';
+import type { SessionEntry } from '../domain/types/session-entry.js';
 import type { SessionEvent } from '../domain/types/session-event.js';
 import type { SessionLaunch } from '../domain/types/session-launch.js';
 import type { SessionSpec } from '../domain/types/session-spec.js';
@@ -32,6 +34,7 @@ import type { SessionFeed } from '../port/session/session-feed.js';
 import type { RunTranscripts } from '../port/transcript/run-transcripts.js';
 import type { ProjectPort } from '../port/project/project-port.js';
 import type { Worktrees } from '../port/worktree/worktrees.js';
+import type { CommandLabelService } from './command-label-service.js';
 import type { RunEndService } from './run-end-service.js';
 
 export type RunStartServiceDependencies = {
@@ -47,6 +50,7 @@ export type RunStartServiceDependencies = {
   readonly events: EventPublisher;
   readonly logger: Logger;
   readonly runEndService: Pick<RunEndService, 'finish'>;
+  readonly commandLabelService: Pick<CommandLabelService, 'labelFor'>;
   readonly tools: () => ReadonlyArray<AgentTool>;
   readonly worktreesDirectory: string;
   readonly windowMilliseconds: number;
@@ -325,6 +329,9 @@ export class RunStartService {
         }
         switch (event.kind) {
           case 'entry':
+            this.startLabelling(run, event.entry);
+            sessionFeed.publish(run.id, event);
+            break;
           case 'text-delta':
             sessionFeed.publish(run.id, event);
             break;
@@ -346,6 +353,17 @@ export class RunStartService {
     } finally {
       sessionFeed.end(run.id);
     }
+  }
+
+  /** Labels the entry's command without waiting. A failure is logged and never ends the run. */
+  private startLabelling(run: Run, entry: SessionEntry): void {
+    const command = commandToLabel(entry);
+    if (command === undefined) {
+      return;
+    }
+    this.dependencies.commandLabelService.labelFor(command).catch((error: unknown) => {
+      this.reportFailure(run, error);
+    });
   }
 
   /** The prompt is on disk by the first stream event. A failed read is logged and skipped. */

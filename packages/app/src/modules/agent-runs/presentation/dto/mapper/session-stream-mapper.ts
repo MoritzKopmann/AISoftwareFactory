@@ -14,6 +14,7 @@ function toSessionEntryResponse(entry: SessionEntry): SessionEntryResponse {
         toolUseId: entry.toolUseId,
         name: entry.name,
         input: entry.input,
+        ...(entry.label !== undefined && { label: entry.label }),
       };
     case 'tool-result':
       return {
@@ -42,6 +43,8 @@ export function toSessionStreamFrame(event: TicketSessionWatchEvent): SessionStr
       return { kind: 'entry', entry: toSessionEntryResponse(event.entry) };
     case 'delta':
       return { kind: 'delta', opensBlock: event.opensBlock, text: event.text };
+    case 'label':
+      return { kind: 'label', toolUseId: event.toolUseId, label: event.label };
     case 'no-session':
     case 'transcript-not-found':
     case 'ended':

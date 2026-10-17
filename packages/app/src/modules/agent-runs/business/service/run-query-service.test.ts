@@ -1,13 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { TranscriptNotFoundError } from '../errors/transcript-not-found-error.js';
 import {
   buildRun,
+  FakeCommandLabeler,
+  FakeCommandLabelRepository,
   FakeRunRepository,
   FakeRunTranscripts,
   FakeSessionFeed,
 } from '../../testing/fake-agent-runs-ports.js';
 import type { SessionEntry } from '../domain/types/session-entry.js';
 import type { TicketSessionWatchEvent } from '../domain/types/ticket-session-watch.js';
+import { CommandLabelService } from './command-label-service.js';
 import { RunQueryService } from './run-query-service.js';
 
 function query(
@@ -18,6 +21,10 @@ function query(
     runRepository,
     runTranscripts,
     sessionFeed: new FakeSessionFeed(),
+    commandLabelService: new CommandLabelService({
+      commandLabelRepository: new FakeCommandLabelRepository(),
+      commandLabeler: new FakeCommandLabeler(),
+    }),
   });
 }
 
@@ -121,7 +128,10 @@ describe('RunQueryService', () => {
       parts: [{ kind: 'text', text: 'ok' }],
     };
 
-    async function createWatchSubject(runOverrides: Parameters<typeof buildRun>[0] | 'none' = {}) {
+    async function createWatchSubject(
+      runOverrides: Parameters<typeof buildRun>[0] | 'none' = {},
+      commandLabeler = new FakeCommandLabeler(),
+    ) {
       const runRepository = new FakeRunRepository();
       if (runOverrides !== 'none') {
         await runRepository.insert(buildRun({ worktreePath: '/w/repo/7', ...runOverrides }));
@@ -132,6 +142,10 @@ describe('RunQueryService', () => {
         runRepository,
         runTranscripts,
         sessionFeed,
+        commandLabelService: new CommandLabelService({
+          commandLabelRepository: new FakeCommandLabelRepository(),
+          commandLabeler,
+        }),
       });
       const events: TicketSessionWatchEvent[] = [];
       const watch = () => subject.watchTicketSession('moritz/aisf', 137, (e) => events.push(e));
@@ -241,6 +255,129 @@ describe('RunQueryService', () => {
       unsubscribe();
 
       expect(sessionFeed.listenerCount).toBe(0);
+    });
+
+    describe('command labels', () => {
+      const bash = (toolUseId: string, command: string): SessionEntry => ({
+        kind: 'tool-call',
+        id: `${toolUseId}#0`,
+        toolUseId,
+        name: 'Bash',
+        input: { command },
+      });
+      const labelled = (entry: SessionEntry, label: string): SessionEntry =>
+        ({ ...entry, label }) as SessionEntry;
+
+      it('should send the label frame between snapshot and ended when a stored session has an unlabelled call', async () => {
+        const { runTranscripts, events, watch } = await createWatchSubject(
+          { state: 'ended' },
+          new FakeCommandLabeler('Runs the tests.'),
+        );
+        runTranscripts.sessionEntries = [bash('t1', 'npm test')];
+
+        await watch();
+
+        expect(events).toEqual([
+          { kind: 'snapshot', entries: [bash('t1', 'npm test')], root: '/w/repo/7' },
+          { kind: 'label', toolUseId: 't1', label: 'Runs the tests.' },
+          { kind: 'ended' },
+        ]);
+      });
+
+      it('should use the stored label and call the labeler once when the session is watched twice', async () => {
+        const labeler = new FakeCommandLabeler('Runs the tests.');
+        const { runTranscripts, events, watch } = await createWatchSubject(
+          { state: 'ended' },
+          labeler,
+        );
+        runTranscripts.sessionEntries = [bash('t1', 'npm test')];
+        await watch();
+        events.length = 0;
+
+        await watch();
+
+        expect(labeler.commands).toEqual(['npm test']);
+        expect(events).toEqual([
+          {
+            kind: 'snapshot',
+            entries: [labelled(bash('t1', 'npm test'), 'Runs the tests.')],
+            root: '/w/repo/7',
+          },
+          { kind: 'ended' },
+        ]);
+      });
+
+      it('should send a label event after the entry when a live Bash call is published', async () => {
+        const labeler = new FakeCommandLabeler('Lists files.');
+        const { sessionFeed, events, watch } = await createWatchSubject({}, labeler);
+        sessionFeed.publish('run-1', { kind: 'entry', entry: prompt });
+        await watch();
+
+        sessionFeed.publish('run-1', { kind: 'entry', entry: bash('t2', 'ls') });
+
+        await vi.waitFor(() => expect(events).toHaveLength(3));
+        expect(events.slice(1)).toEqual([
+          { kind: 'entry', entry: bash('t2', 'ls') },
+          { kind: 'label', toolUseId: 't2', label: 'Lists files.' },
+        ]);
+        expect(labeler.commands).toEqual(['ls']);
+      });
+
+      it('should send the pending label before ended when the feed ends', async () => {
+        let answer: (label: string) => void = () => undefined;
+        const labeler = new FakeCommandLabeler(
+          new Promise<string>((resolve) => {
+            answer = resolve;
+          }),
+        );
+        const { sessionFeed, events, watch } = await createWatchSubject({}, labeler);
+        sessionFeed.publish('run-1', { kind: 'entry', entry: prompt });
+        await watch();
+        sessionFeed.publish('run-1', { kind: 'entry', entry: bash('t2', 'ls') });
+        sessionFeed.end('run-1');
+        await Promise.resolve();
+        expect(events.map(({ kind }) => kind)).toEqual(['snapshot', 'entry']);
+
+        answer('Lists files.');
+
+        await vi.waitFor(() => expect(events.at(-1)).toEqual({ kind: 'ended' }));
+        expect(events.slice(2)).toEqual([
+          { kind: 'label', toolUseId: 't2', label: 'Lists files.' },
+          { kind: 'ended' },
+        ]);
+      });
+
+      it('should leave the call unlabelled when the labeler rejects', async () => {
+        const { runTranscripts, events, watch } = await createWatchSubject(
+          { state: 'ended' },
+          new FakeCommandLabeler(new Error('haiku down')),
+        );
+        runTranscripts.sessionEntries = [bash('t1', 'npm test')];
+
+        await watch();
+
+        expect(events.map(({ kind }) => kind)).toEqual(['snapshot', 'ended']);
+      });
+
+      it('should send no further event when the label resolves after unsubscribe', async () => {
+        let answer: (label: string) => void = () => undefined;
+        const labeler = new FakeCommandLabeler(
+          new Promise<string>((resolve) => {
+            answer = resolve;
+          }),
+        );
+        const { sessionFeed, events, watch } = await createWatchSubject({}, labeler);
+        sessionFeed.publish('run-1', { kind: 'entry', entry: prompt });
+        const unsubscribe = await watch();
+        sessionFeed.publish('run-1', { kind: 'entry', entry: bash('t2', 'ls') });
+        const before = events.length;
+
+        unsubscribe();
+        answer('Lists files.');
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(events).toHaveLength(before);
+      });
     });
   });
 });

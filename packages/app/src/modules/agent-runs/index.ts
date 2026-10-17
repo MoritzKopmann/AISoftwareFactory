@@ -1,6 +1,9 @@
+import type { CommandLabeler } from './business/port/label/command-labeler.js';
+import type { CommandLabelRepository } from './business/port/repository/command-label-repository.js';
 import type { AgentSessions } from './business/port/session/agent-sessions.js';
 import type { RunAnswerWaits } from './business/port/repository/run-answer-waits.js';
 import type { RunRepository } from './business/port/repository/run-repository.js';
+import { CommandLabelService } from './business/service/command-label-service.js';
 import { RunAnswerService } from './business/service/run-answer-service.js';
 import { RunEndService } from './business/service/run-end-service.js';
 import { RunQueryService } from './business/service/run-query-service.js';
@@ -9,10 +12,12 @@ import type { ProjectPort } from './business/port/project/project-port.js';
 import type { SessionFeed } from './business/port/session/session-feed.js';
 import type { RunTranscripts } from './business/port/transcript/run-transcripts.js';
 import type { Worktrees } from './business/port/worktree/worktrees.js';
+import { SqliteCommandLabelRepository } from './infrastructure/repository/sqlite-command-label-repository.js';
 import { InMemoryRunAnswerWaits } from './infrastructure/repository/in-memory-run-answer-waits.js';
 import { SqliteRunRepository } from './infrastructure/repository/sqlite-run-repository.js';
 import { ProjectsAdapter } from './infrastructure/internal/projects-adapter.js';
 import { InMemorySessionFeed } from './infrastructure/session/in-memory-session-feed.js';
+import { ClaudeAgentSdkCommandLabeler } from './infrastructure/label/claude-agent-sdk-command-labeler.js';
 import { ClaudeAgentSdkSessions } from './infrastructure/session/claude-agent-sdk-sessions.js';
 import { ClaudeAgentSdkRunTranscripts } from './infrastructure/transcript/claude-agent-sdk-run-transcripts.js';
 import { GitCliWorktrees } from './infrastructure/worktree/git-cli-worktrees.js';
@@ -51,9 +56,12 @@ type AgentRunsInfrastructure = {
   readonly runTranscripts: RunTranscripts;
   readonly runAnswerWaits: RunAnswerWaits;
   readonly sessionFeed: SessionFeed;
+  readonly commandLabelRepository: CommandLabelRepository;
+  readonly commandLabeler: CommandLabeler;
 };
 
 const answerTimeoutMarginMilliseconds = 600_000;
+const commandLabelTimeoutMilliseconds = 60_000;
 
 export function createAgentRunsModule(
   dependencies: AgentRunsModuleDependencies & { readonly projects: ProjectsApi },
@@ -73,6 +81,11 @@ export function createAgentRunsModule(
     runTranscripts: new ClaudeAgentSdkRunTranscripts(),
     runAnswerWaits: new InMemoryRunAnswerWaits(),
     sessionFeed: new InMemorySessionFeed(),
+    commandLabelRepository: new SqliteCommandLabelRepository(dependencies.database),
+    commandLabeler: new ClaudeAgentSdkCommandLabeler({
+      claudeExecutablePath: dependencies.claudeExecutablePath,
+      timeoutMilliseconds: commandLabelTimeoutMilliseconds,
+    }),
     ...overrides,
   };
   const { runRepository, agentSessions, runAnswerWaits } = infrastructure;
@@ -83,6 +96,10 @@ export function createAgentRunsModule(
     runAnswerWaits,
     clock,
     events,
+  });
+  const commandLabelService = new CommandLabelService({
+    commandLabelRepository: infrastructure.commandLabelRepository,
+    commandLabeler: infrastructure.commandLabeler,
   });
   const ownTools = [createEscalateTool(), createParkTool(), createCheckpointTool()];
   const runStartService = new RunStartService({
@@ -98,6 +115,7 @@ export function createAgentRunsModule(
     events,
     logger: dependencies.logger,
     runEndService,
+    commandLabelService,
     tools: () => [...ownTools, ...dependencies.agentTools.list()],
     worktreesDirectory: dependencies.worktreesDirectory,
     windowMilliseconds: dependencies.liveAnswerWindowMilliseconds,
@@ -107,6 +125,7 @@ export function createAgentRunsModule(
     runRepository,
     runTranscripts: infrastructure.runTranscripts,
     sessionFeed: infrastructure.sessionFeed,
+    commandLabelService,
   });
 
   return {

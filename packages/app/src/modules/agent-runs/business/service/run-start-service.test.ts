@@ -8,6 +8,8 @@ import type { TicketType } from '../../../../shared/ticket-type/ticket-type.js';
 import {
   buildRun,
   FakeAgentSessions,
+  FakeCommandLabeler,
+  FakeCommandLabelRepository,
   FakeRunAnswerWaits,
   FakeRunRepository,
   FakeRunTranscripts,
@@ -26,12 +28,14 @@ import { RunAlreadyActiveError } from '../errors/run-already-active-error.js';
 import { RunNotResumableError } from '../errors/run-not-resumable-error.js';
 import { RunTargetNotFoundError } from '../errors/run-target-not-found-error.js';
 import { WorktreeSetupFailedError } from '../errors/worktree-setup-failed-error.js';
+import { CommandLabelService } from './command-label-service.js';
 import { RunStartService } from './run-start-service.js';
 
 type BuildOptions = {
   readonly now?: string;
   readonly tools?: ReadonlyArray<AgentTool>;
   readonly projectPort?: FakeProjectPort;
+  readonly commandLabeler?: FakeCommandLabeler;
   readonly finish?: (runId: string, ending: RunEnding) => Promise<void>;
 };
 
@@ -57,7 +61,12 @@ function buildService(options: BuildOptions = {}) {
         finishCalls.push({ runId, ending });
       }),
   };
+  const commandLabeler = options.commandLabeler ?? new FakeCommandLabeler();
   const service = new RunStartService({
+    commandLabelService: new CommandLabelService({
+      commandLabelRepository: new FakeCommandLabelRepository(),
+      commandLabeler,
+    }),
     runRepository,
     worktrees,
     projectPort: options.projectPort ?? new FakeProjectPort(defaultTarget),
@@ -85,6 +94,7 @@ function buildService(options: BuildOptions = {}) {
     events,
     logger,
     finishCalls,
+    commandLabeler,
   };
 }
 
@@ -309,6 +319,45 @@ describe('RunStartService', () => {
       await vi.waitFor(() => expect(finishCalls).toHaveLength(1));
       expect(sessionFeed.published).toEqual([{ runId: 'id-1', event: { kind: 'entry', entry } }]);
       expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('disk failure'));
+    });
+
+    describe('command labels', () => {
+      const bashCall = (input: unknown) =>
+        ({ kind: 'tool-call', id: 'u#0', toolUseId: 't1', name: 'Bash', input }) as const;
+
+      async function runWith(commandLabeler: FakeCommandLabeler, input: unknown) {
+        const subject = buildService({ commandLabeler });
+        await subject.service.start(startRequest);
+        subject.agentSessions.push('id-2', { kind: 'entry', entry: bashCall(input) });
+        subject.agentSessions.push('id-2', { kind: 'completed' });
+        await vi.waitFor(() => expect(subject.finishCalls).toHaveLength(1));
+        return subject;
+      }
+
+      it('should label the command once when the session emits a Bash call without description', async () => {
+        const commandLabeler = new FakeCommandLabeler('Runs the tests.');
+
+        await runWith(commandLabeler, { command: 'npm test' });
+
+        expect(commandLabeler.commands).toEqual(['npm test']);
+      });
+
+      it('should not label the command when the Bash call has a description', async () => {
+        const commandLabeler = new FakeCommandLabeler('x');
+
+        await runWith(commandLabeler, { command: 'npm test', description: 'Run tests' });
+
+        expect(commandLabeler.commands).toEqual([]);
+      });
+
+      it('should finish the run when the labeler rejects', async () => {
+        const commandLabeler = new FakeCommandLabeler(new Error('haiku down'));
+
+        const { finishCalls, logger } = await runWith(commandLabeler, { command: 'npm test' });
+
+        expect(finishCalls).toEqual([{ runId: 'id-1', ending: { kind: 'finished' } }]);
+        await vi.waitFor(() => expect(logger.error).toHaveBeenCalled());
+      });
     });
 
     it('should end the feed when the session completes', async () => {

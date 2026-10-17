@@ -9,6 +9,7 @@ export const sessionEntryResponseSchema = z.discriminatedUnion('kind', [
     toolUseId: z.string(),
     name: z.string(),
     input: z.unknown(),
+    label: z.string().optional(),
   }),
   z.object({
     kind: z.literal('tool-result'),
@@ -35,6 +36,7 @@ export const sessionStreamFrameSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('transcript-not-found') }),
   z.object({ kind: z.literal('entry'), entry: sessionEntryResponseSchema }),
   z.object({ kind: z.literal('delta'), opensBlock: z.boolean(), text: z.string() }),
+  z.object({ kind: z.literal('label'), toolUseId: z.string(), label: z.string() }),
   z.object({ kind: z.literal('ended') }),
 ]);
 export type SessionStreamFrame = z.infer<typeof sessionStreamFrameSchema>;

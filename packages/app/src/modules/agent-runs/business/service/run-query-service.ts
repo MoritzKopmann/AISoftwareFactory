@@ -1,3 +1,4 @@
+import { commandToLabel } from '../domain/functions/command-to-label.js';
 import type { ActiveRun } from '../domain/types/active-run.js';
 import type { ActiveWait } from '../domain/types/active-wait.js';
 import type { Run } from '../domain/types/run.js';
@@ -7,12 +8,27 @@ import { TranscriptNotFoundError } from '../errors/transcript-not-found-error.js
 import type { RunRepository } from '../port/repository/run-repository.js';
 import type { SessionFeed, SessionFeedEvent } from '../port/session/session-feed.js';
 import type { RunTranscripts } from '../port/transcript/run-transcripts.js';
+import type { CommandLabelService } from './command-label-service.js';
 
 export type RunQueryServiceDependencies = {
   readonly runRepository: RunRepository;
   readonly runTranscripts: RunTranscripts;
   readonly sessionFeed: SessionFeed;
+  readonly commandLabelService: Pick<CommandLabelService, 'labelFor' | 'storedLabelFor'>;
 };
+
+type LabellableCall = {
+  readonly toolUseId: string;
+  readonly command: string;
+};
+
+function labellableCallOf(entry: SessionEntry): LabellableCall | undefined {
+  const command = commandToLabel(entry);
+  if (command === undefined || entry.kind !== 'tool-call') {
+    return undefined;
+  }
+  return { toolUseId: entry.toolUseId, command };
+}
 
 /** Reads runs, their waits and their session. */
 export class RunQueryService {
@@ -57,7 +73,7 @@ export class RunQueryService {
     ticketNumber: number,
     onEvent: (event: TicketSessionWatchEvent) => void,
   ): Promise<() => void> {
-    const { runRepository, runTranscripts, sessionFeed } = this.dependencies;
+    const { runRepository, runTranscripts, sessionFeed, commandLabelService } = this.dependencies;
 
     const run = await runRepository.findLatest(projectId, ticketNumber);
     if (run === undefined) {
@@ -65,12 +81,47 @@ export class RunQueryService {
       return () => undefined;
     }
 
+    let closed = false;
+    const emit = (event: TicketSessionWatchEvent): void => {
+      if (!closed) {
+        onEvent(event);
+      }
+    };
+    const pendingLabels = new Set<Promise<void>>();
+    const startLabel = (entry: SessionEntry): void => {
+      const call = labellableCallOf(entry);
+      if (call === undefined) {
+        return;
+      }
+      const pending = commandLabelService
+        .labelFor(call.command)
+        .then((label) => {
+          if (label !== undefined) {
+            emit({ kind: 'label', toolUseId: call.toolUseId, label });
+          }
+        })
+        // Never-crash boundary: a failed label leaves the call unlabelled and must not reject unhandled.
+        .catch(() => undefined)
+        .finally(() => pendingLabels.delete(pending));
+      pendingLabels.add(pending);
+    };
+    const end = async (): Promise<void> => {
+      if (pendingLabels.size > 0) {
+        await Promise.all([...pendingLabels]);
+      }
+      emit({ kind: 'ended' });
+    };
+
     const active = sessionFeed.isActive(run.id);
     const buffered: SessionFeedEvent[] = [];
     let forward: (event: SessionFeedEvent) => void = (event) => buffered.push(event);
-    const unsubscribe = active
+    const unsubscribeFeed = active
       ? sessionFeed.subscribe(run.id, (event) => forward(event))
       : () => undefined;
+    const unsubscribe = (): void => {
+      closed = true;
+      unsubscribeFeed();
+    };
 
     let transcriptEntries: ReadonlyArray<SessionEntry> = [];
     try {
@@ -90,25 +141,42 @@ export class RunQueryService {
     const feedEntries = active
       ? sessionFeed.entries(run.id).filter(({ id }) => !knownIds.has(id))
       : [];
-    const entries = [...transcriptEntries, ...feedEntries];
-    const snapshotIds = new Set(entries.map(({ id }) => id));
-    onEvent({ kind: 'snapshot', entries, root: run.worktreePath });
+    const snapshotEntries = [...transcriptEntries, ...feedEntries];
+    const snapshotIds = new Set(snapshotEntries.map(({ id }) => id));
+    const unlabelled: SessionEntry[] = [];
+    const entries = await Promise.all(
+      snapshotEntries.map(async (entry) => {
+        const call = labellableCallOf(entry);
+        if (call === undefined) {
+          return entry;
+        }
+        const label = await commandLabelService.storedLabelFor(call.command);
+        if (label === undefined) {
+          unlabelled.push(entry);
+          return entry;
+        }
+        return { ...entry, label };
+      }),
+    );
+    emit({ kind: 'snapshot', entries, root: run.worktreePath });
+    unlabelled.forEach(startLabel);
 
     if (!active) {
-      onEvent({ kind: 'ended' });
-      return () => undefined;
+      await end();
+      return unsubscribe;
     }
 
     const deliver = (event: SessionFeedEvent): void => {
       if (event.kind === 'entry') {
         if (!snapshotIds.has(event.entry.id)) {
           snapshotIds.add(event.entry.id);
-          onEvent(event);
+          emit(event);
+          startLabel(event.entry);
         }
       } else if (event.kind === 'text-delta') {
-        onEvent({ kind: 'delta', opensBlock: event.opensBlock, text: event.text });
+        emit({ kind: 'delta', opensBlock: event.opensBlock, text: event.text });
       } else {
-        onEvent({ kind: 'ended' });
+        void end();
       }
     };
     forward = deliver;
