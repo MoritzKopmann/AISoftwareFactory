@@ -24,6 +24,7 @@ describe('foldSessionView', () => {
     const view = foldSessionView(initialSessionView, {
       kind: 'snapshot',
       entries: [prompt, text, call, result],
+      root: '/w/repo/7',
     });
     expect(view).toMatchObject({ kind: 'entries', entries: [prompt, text, call, result] });
   });
@@ -50,7 +51,11 @@ describe('foldSessionView', () => {
   });
 
   it('should show no partial text and the whole entry when the view joined mid-block', () => {
-    const joined = foldSessionView(initialSessionView, { kind: 'snapshot', entries: [prompt] });
+    const joined = foldSessionView(initialSessionView, {
+      kind: 'snapshot',
+      entries: [prompt],
+      root: '/w/repo/7',
+    });
     const mid = foldSessionView(joined, { kind: 'delta', opensBlock: false, text: 'world' });
     expect('openText' in mid && mid.openText).toBeFalsy();
     const view = foldSessionView(mid, { kind: 'entry', entry: text });
@@ -59,7 +64,11 @@ describe('foldSessionView', () => {
   });
 
   it('should keep the entries and mark the end when the stream ends', () => {
-    const joined = foldSessionView(initialSessionView, { kind: 'snapshot', entries: [prompt] });
+    const joined = foldSessionView(initialSessionView, {
+      kind: 'snapshot',
+      entries: [prompt],
+      root: '/w/repo/7',
+    });
     expect(foldSessionView(joined, { kind: 'ended' })).toMatchObject({
       kind: 'entries',
       entries: [prompt],
@@ -83,7 +92,7 @@ describe('foldSessionView', () => {
       text: 'x',
     });
     const ended = foldSessionView(open, { kind: 'ended' });
-    const view = foldSessionView(ended, { kind: 'snapshot', entries: [prompt] });
+    const view = foldSessionView(ended, { kind: 'snapshot', entries: [prompt], root: '/w/repo/7' });
     expect(view).toEqual({
       kind: 'entries',
       entries: [prompt],
@@ -95,7 +104,11 @@ describe('foldSessionView', () => {
   describe('markConnectionLost', () => {
     it('should return the same object when the view is already lost', () => {
       const lost = markConnectionLost(
-        foldSessionView(initialSessionView, { kind: 'snapshot', entries: [prompt] }),
+        foldSessionView(initialSessionView, {
+          kind: 'snapshot',
+          entries: [prompt],
+          root: '/w/repo/7',
+        }),
       );
       expect(lost).toMatchObject({ kind: 'entries', connectionLost: true, entries: [prompt] });
       expect(markConnectionLost(lost)).toBe(lost);
@@ -107,9 +120,15 @@ describe('foldSessionView', () => {
 
     it('should clear the flag when a snapshot follows', () => {
       const lost = markConnectionLost(
-        foldSessionView(initialSessionView, { kind: 'snapshot', entries: [prompt] }),
+        foldSessionView(initialSessionView, {
+          kind: 'snapshot',
+          entries: [prompt],
+          root: '/w/repo/7',
+        }),
       );
-      expect(foldSessionView(lost, { kind: 'snapshot', entries: [text] })).toMatchObject({
+      expect(
+        foldSessionView(lost, { kind: 'snapshot', entries: [text], root: '/w/repo/7' }),
+      ).toMatchObject({
         entries: [text],
         connectionLost: false,
       });
@@ -117,7 +136,11 @@ describe('foldSessionView', () => {
 
     it('should keep the flag when an entry, delta or ended frame follows', () => {
       const lost = markConnectionLost(
-        foldSessionView(initialSessionView, { kind: 'snapshot', entries: [prompt] }),
+        foldSessionView(initialSessionView, {
+          kind: 'snapshot',
+          entries: [prompt],
+          root: '/w/repo/7',
+        }),
       );
       const withEntry = foldSessionView(lost, { kind: 'entry', entry: text });
       const withDelta = foldSessionView(withEntry, { kind: 'delta', opensBlock: true, text: 'x' });

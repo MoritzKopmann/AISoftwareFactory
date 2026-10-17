@@ -33,7 +33,11 @@ function toSessionEntryResponse(entry: SessionEntry): SessionEntryResponse {
 export function toSessionStreamFrame(event: TicketSessionWatchEvent): SessionStreamFrame {
   switch (event.kind) {
     case 'snapshot':
-      return { kind: 'snapshot', entries: event.entries.map(toSessionEntryResponse) };
+      return {
+        kind: 'snapshot',
+        entries: event.entries.map(toSessionEntryResponse),
+        root: event.root,
+      };
     case 'entry':
       return { kind: 'entry', entry: toSessionEntryResponse(event.entry) };
     case 'delta':

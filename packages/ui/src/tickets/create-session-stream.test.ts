@@ -81,14 +81,18 @@ function build() {
 describe('createSessionStream', () => {
   it('should open the session url and show the snapshot when it arrives', () => {
     const { streams, views } = build();
-    streams[0]?.send({ kind: 'snapshot', entries: [{ kind: 'prompt', id: 'a', text: 'Hi' }] });
+    streams[0]?.send({
+      kind: 'snapshot',
+      entries: [{ kind: 'prompt', id: 'a', text: 'Hi' }],
+      root: '/w/repo/7',
+    });
     expect(streams[0]?.url).toBe('/api/projects/o/n/tickets/7/session');
     expect(views.at(-1)).toMatchObject({ kind: 'entries', entries: [{ id: 'a' }] });
   });
 
   it('should update the view once holding all deltas when three deltas arrive before the next frame', () => {
     const { streams, views, runFrames } = build();
-    streams[0]?.send({ kind: 'snapshot', entries: [] });
+    streams[0]?.send({ kind: 'snapshot', entries: [], root: '/w/repo/7' });
     const before = views.length;
     streams[0]?.send({ kind: 'delta', opensBlock: true, text: 'a' });
     streams[0]?.send({ kind: 'delta', opensBlock: false, text: 'b' });
@@ -101,7 +105,7 @@ describe('createSessionStream', () => {
 
   it('should apply waiting deltas before an entry when an entry arrives within a frame', () => {
     const { streams, views } = build();
-    streams[0]?.send({ kind: 'snapshot', entries: [] });
+    streams[0]?.send({ kind: 'snapshot', entries: [], root: '/w/repo/7' });
     streams[0]?.send({ kind: 'delta', opensBlock: true, text: 'Hel' });
     streams[0]?.send({ kind: 'entry', entry: { kind: 'text', id: 'b', text: 'Hello' } });
     const last = views.at(-1);
@@ -111,7 +115,11 @@ describe('createSessionStream', () => {
 
   it('should close the stream and keep the entries when ended arrives', () => {
     const { streams, views } = build();
-    streams[0]?.send({ kind: 'snapshot', entries: [{ kind: 'prompt', id: 'a', text: 'Hi' }] });
+    streams[0]?.send({
+      kind: 'snapshot',
+      entries: [{ kind: 'prompt', id: 'a', text: 'Hi' }],
+      root: '/w/repo/7',
+    });
     streams[0]?.send({ kind: 'ended' });
     expect(streams[0]?.closed).toBe(true);
     expect(views.at(-1)).toMatchObject({ entries: [{ id: 'a' }], ended: true });
@@ -173,7 +181,11 @@ describe('createSessionStream', () => {
   });
 
   describe('connection loss', () => {
-    const snapshot = { kind: 'snapshot', entries: [{ kind: 'prompt', id: 'a', text: 'Hi' }] };
+    const snapshot = {
+      kind: 'snapshot',
+      entries: [{ kind: 'prompt', id: 'a', text: 'Hi' }],
+      root: '/w/repo/7',
+    };
 
     it('should emit a lost view with the entries when the stream errors while retrying', () => {
       const { streams, views } = build();
@@ -192,7 +204,11 @@ describe('createSessionStream', () => {
       streams[0]?.send(snapshot);
       if (streams[0]) streams[0].readyState = 0;
       streams[0]?.onerror?.({});
-      streams[0]?.send({ kind: 'snapshot', entries: [{ kind: 'prompt', id: 'b', text: 'Yo' }] });
+      streams[0]?.send({
+        kind: 'snapshot',
+        entries: [{ kind: 'prompt', id: 'b', text: 'Yo' }],
+        root: '/w/repo/7',
+      });
       expect(views.at(-1)).toMatchObject({ entries: [{ id: 'b' }], connectionLost: false });
     });
 

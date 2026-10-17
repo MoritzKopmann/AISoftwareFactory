@@ -92,7 +92,7 @@ export class RunQueryService {
       : [];
     const entries = [...transcriptEntries, ...feedEntries];
     const snapshotIds = new Set(entries.map(({ id }) => id));
-    onEvent({ kind: 'snapshot', entries });
+    onEvent({ kind: 'snapshot', entries, root: run.worktreePath });
 
     if (!active) {
       onEvent({ kind: 'ended' });

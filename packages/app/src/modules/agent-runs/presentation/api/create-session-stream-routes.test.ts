@@ -30,7 +30,9 @@ const result: SessionEntry = {
 async function createSubject(run?: Parameters<typeof buildRun>[0]) {
   const runRepository = new FakeRunRepository();
   if (run !== undefined) {
-    await runRepository.insert(buildRun({ projectId: 'o/r', ticketNumber: 12, ...run }));
+    await runRepository.insert(
+      buildRun({ projectId: 'o/r', ticketNumber: 12, worktreePath: '/w/repo/7', ...run }),
+    );
   }
   const runTranscripts = new FakeRunTranscripts();
   const sessionFeed = new FakeSessionFeed();
@@ -60,7 +62,7 @@ describe('createSessionStreamRoutes', () => {
 
     expect(response.headers.get('content-type')).toContain('text/event-stream');
     expect(parseFrames(await response.text())).toEqual([
-      { kind: 'snapshot', entries: [prompt, text, call, result] },
+      { kind: 'snapshot', entries: [prompt, text, call, result], root: '/w/repo/7' },
       { kind: 'ended' },
     ]);
   });
@@ -79,7 +81,7 @@ describe('createSessionStreamRoutes', () => {
     sessionFeed.end('run-1');
 
     expect(parseFrames(await body)).toEqual([
-      { kind: 'snapshot', entries: [prompt, text] },
+      { kind: 'snapshot', entries: [prompt, text], root: '/w/repo/7' },
       { kind: 'delta', opensBlock: true, text: 'Hel' },
       { kind: 'entry', entry: call },
       { kind: 'ended' },
@@ -105,7 +107,7 @@ describe('createSessionStreamRoutes', () => {
 
   it('should parse every frame kind with the exported schema', () => {
     const frames = [
-      { kind: 'snapshot', entries: [] },
+      { kind: 'snapshot', entries: [], root: '/w/repo/7' },
       { kind: 'no-session' },
       { kind: 'transcript-not-found' },
       { kind: 'entry', entry: { kind: 'text', id: 'a', text: 'b' } },
