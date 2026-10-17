@@ -3,4 +3,5 @@ export type Project = {
   readonly repository: { readonly owner: string; readonly name: string };
   readonly checkoutPath: string;
   readonly addedAt: string;
+  readonly paused: boolean;
 };

@@ -44,6 +44,13 @@ export class FakeProjectRepository implements ProjectRepository {
   async save(project: Project): Promise<void> {
     this.projectsById.set(project.id, project);
   }
+
+  async setPaused(id: string, paused: boolean): Promise<void> {
+    const project = this.projectsById.get(id);
+    if (project !== undefined) {
+      this.projectsById.set(id, { ...project, paused });
+    }
+  }
 }
 
 export class FakeLabelSync implements LabelSync {

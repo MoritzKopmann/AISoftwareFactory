@@ -68,6 +68,7 @@ describe('createProjectsModule', () => {
       repository: { owner: 'owner', name: 'name' },
       checkoutPath: '/repo',
       addedAt: '2026-01-01T00:00:00.000Z',
+      paused: false,
     });
     const projects = createSubject({ projectRepository, labelSync });
 

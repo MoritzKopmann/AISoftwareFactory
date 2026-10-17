@@ -20,6 +20,7 @@ describe('SqliteProjectRepository', () => {
     repository: { owner: 'moritz', name: 'aisf' },
     checkoutPath: '/home/user/repo',
     addedAt: '2026-09-27T00:00:00.000Z',
+    paused: false,
   };
 
   beforeEach(() => {
@@ -75,11 +76,36 @@ describe('SqliteProjectRepository', () => {
         repository: { owner: 'moritz', name: 'other' },
         checkoutPath: '/home/user/other',
         addedAt: '2026-09-27T01:00:00.000Z',
+        paused: false,
       };
       await repository.save(project);
       await repository.save(otherProject);
 
       expect(await repository.list()).toEqual(expect.arrayContaining([project, otherProject]));
+    });
+  });
+
+  describe('setPaused', () => {
+    it('should persist the paused flag across reopening the database', async () => {
+      await repository.save(project);
+      await repository.setPaused('moritz/aisf', true);
+      database.close();
+
+      database = openDatabase(join(homeDirectory, 'aisf.db'));
+      const reopenedRepository = new SqliteProjectRepository(database);
+
+      expect(await reopenedRepository.findById('moritz/aisf')).toEqual({
+        ...project,
+        paused: true,
+      });
+    });
+
+    it('should clear the paused flag when set to false', async () => {
+      await repository.save(project);
+      await repository.setPaused('moritz/aisf', true);
+      await repository.setPaused('moritz/aisf', false);
+
+      expect(await repository.findById('moritz/aisf')).toEqual(project);
     });
   });
 });

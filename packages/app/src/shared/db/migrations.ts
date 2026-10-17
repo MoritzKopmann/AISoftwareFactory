@@ -125,4 +125,11 @@ export const migrations: ReadonlyArray<Migration> = [
       WHERE checkpoint_artifact_id IS NOT NULL;
     `,
   },
+  {
+    version: 9,
+    name: 'projects-paused',
+    sql: `
+      ALTER TABLE projects ADD COLUMN paused INTEGER NOT NULL DEFAULT 0;
+    `,
+  },
 ];

@@ -11,6 +11,7 @@ function createProject(owner: string, name: string): Project {
     repository: { owner, name },
     checkoutPath: `/home/user/${name}`,
     addedAt: '2026-09-27T00:00:00.000Z',
+    paused: false,
   };
 }
 
