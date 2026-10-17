@@ -60,6 +60,8 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
             ? { resume: spec.sessionId }
             : { sessionId: spec.sessionId }),
           model: spec.model,
+          // Without it, mid-turn and foreground handbacks never reach the live stream.
+          extraArgs: { 'replay-user-messages': null },
           permissionMode: 'auto',
           settingSources: ['project'],
           plugins: [{ type: 'local', path: this.options.pluginDirectory }],

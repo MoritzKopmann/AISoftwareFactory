@@ -26,6 +26,14 @@ function isInjectedBySdk(message: { readonly isSynthetic?: boolean }): boolean {
   return message.isSynthetic === true;
 }
 
+// A handback is synthetic too, so it is kept.
+function isDroppedSyntheticMessage(
+  message: { readonly isSynthetic?: boolean },
+  origin: unknown,
+): boolean {
+  return isInjectedBySdk(message) && handbackOrigin(origin) === null;
+}
+
 function isTextBlock(block: ContentBlock): block is TextBlock {
   return block['type'] === 'text' && typeof block['text'] === 'string';
 }
@@ -46,6 +54,52 @@ function startsTextBlock(event: StreamEvent): boolean {
 
 function isTextDelta(event: StreamEvent): event is TextDeltaEvent {
   return event.type === 'content_block_delta' && event.delta.type === 'text_delta';
+}
+
+const HANDBACK_FRAME = /^\[Subagent hand-back\]/;
+const BACKGROUND_AGENT_ID = /^agentId: (\S+)/m;
+const FOREGROUND_AGENT_ID = /message from "([^"]+)"/;
+
+/** `origin` is undocumented CLI output: it is on neither `SDKUserMessage` nor `SessionMessage`. */
+function handbackOrigin(origin: unknown): Record<string, unknown> | null {
+  return isRecord(origin) && origin['kind'] === 'peer' && origin['handback'] === true
+    ? origin
+    : null;
+}
+
+function handbackText(origin: Record<string, unknown>): string {
+  const { handbackReportText, body } = origin;
+  if (typeof handbackReportText === 'string') {
+    return handbackReportText;
+  }
+  if (typeof body !== 'string') {
+    return '';
+  }
+  const lines = body.split('\n');
+  const rest = HANDBACK_FRAME.test(lines[0] ?? '') ? lines.slice(1) : lines;
+  return rest.map((line) => line.replace(/^ {2}/, '')).join('\n');
+}
+
+/** A subagent's final report, which the CLI injects as a synthetic user message. */
+function handbackEntry(uuid: string, origin: Record<string, unknown>): SessionEntry {
+  return {
+    kind: 'handback',
+    id: `${uuid}#0`,
+    agentId: typeof origin['from'] === 'string' ? origin['from'] : null,
+    text: handbackText(origin),
+  };
+}
+
+function subagentIdOf(parts: ReadonlyArray<SessionToolResultPart>): string | undefined {
+  for (const part of parts) {
+    if (part.kind === 'text') {
+      const id = (BACKGROUND_AGENT_ID.exec(part.text) ?? FOREGROUND_AGENT_ID.exec(part.text))?.[1];
+      if (id !== undefined) {
+        return id;
+      }
+    }
+  }
+  return undefined;
 }
 
 function toolResultParts(content: unknown): ReadonlyArray<SessionToolResultPart> {
@@ -95,7 +149,12 @@ export function entriesFromContent(
   role: 'user' | 'assistant',
   content: unknown,
   includePrompts: boolean,
+  origin?: unknown,
 ): ReadonlyArray<SessionEntry> {
+  const handback = role === 'user' ? handbackOrigin(origin) : null;
+  if (handback !== null) {
+    return [handbackEntry(uuid, handback)];
+  }
   if (typeof content === 'string') {
     return yieldsPrompts(role, includePrompts)
       ? [{ kind: 'prompt', id: `${uuid}#0`, text: promptText(content) }]
@@ -121,12 +180,15 @@ export function entriesFromContent(
         input: block['input'],
       });
     } else if (role === 'user' && block['type'] === 'tool_result') {
+      const parts = toolResultParts(block['content']);
+      const agentId = subagentIdOf(parts);
       entries.push({
         kind: 'tool-result',
         id,
         toolUseId: String(block['tool_use_id']),
         isError: block['is_error'] === true,
-        parts: toolResultParts(block['content']),
+        parts,
+        ...(agentId === undefined ? {} : { agentId }),
       });
     } else if (yieldsPrompts(role, includePrompts) && isTextBlock(block)) {
       entries.push({ kind: 'prompt', id, text: block.text });
@@ -176,12 +238,20 @@ export function mapSdkMessage(
   }
 
   if (message.type === 'user') {
-    if (!isFromMainAgent(message) || isInjectedBySdk(message)) {
+    if (!isFromMainAgent(message)) {
       return [];
     }
-    return entriesFromContent(message.uuid ?? '', 'user', message.message.content, false).map(
-      (entry): SessionEvent => ({ kind: 'entry', entry }),
-    );
+    const origin = (message as { readonly origin?: unknown }).origin;
+    if (isDroppedSyntheticMessage(message, origin)) {
+      return [];
+    }
+    return entriesFromContent(
+      message.uuid ?? '',
+      'user',
+      message.message.content,
+      false,
+      origin,
+    ).map((entry): SessionEvent => ({ kind: 'entry', entry }));
   }
 
   if (message.type === 'rate_limit_event') {

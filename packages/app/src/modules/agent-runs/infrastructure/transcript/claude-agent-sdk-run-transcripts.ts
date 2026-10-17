@@ -26,6 +26,7 @@ export class ClaudeAgentSdkRunTranscripts implements RunTranscripts {
               message.type,
               (message.message as { content?: unknown }).content,
               true,
+              (message as { origin?: unknown }).origin,
             ),
       );
   }
