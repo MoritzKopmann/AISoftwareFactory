@@ -20,6 +20,8 @@ import type {
 import type { RunRepository } from '../business/port/repository/run-repository.js';
 import type { ProjectPort } from '../business/port/project/project-port.js';
 import type { RunTranscripts } from '../business/port/transcript/run-transcripts.js';
+import type { CommandLabeler } from '../business/port/label/command-labeler.js';
+import type { CommandLabelRepository } from '../business/port/repository/command-label-repository.js';
 import type { Worktrees } from '../business/port/worktree/worktrees.js';
 
 function withoutWait(run: Run): Run {
@@ -363,5 +365,38 @@ export class FakeSessionFeed implements SessionFeed {
         registration.listener(event);
       }
     }
+  }
+}
+
+export class FakeCommandLabelRepository implements CommandLabelRepository {
+  readonly labelsByHash = new Map<string, string>();
+
+  async findByCommandHash(commandHash: string): Promise<string | undefined> {
+    return this.labelsByHash.get(commandHash);
+  }
+
+  async insert(commandHash: string, label: string): Promise<void> {
+    if (!this.labelsByHash.has(commandHash)) {
+      this.labelsByHash.set(commandHash, label);
+    }
+  }
+}
+
+/** Answers are scripted per call; a rejected answer is an Error to throw. */
+export class FakeCommandLabeler implements CommandLabeler {
+  readonly commands: string[] = [];
+  private readonly answers: Array<string | Error | Promise<string>> = [];
+
+  constructor(...answers: Array<string | Error | Promise<string>>) {
+    this.answers.push(...answers);
+  }
+
+  async label(command: string): Promise<string> {
+    this.commands.push(command);
+    const answer = this.answers.shift() ?? '';
+    if (answer instanceof Error) {
+      throw answer;
+    }
+    return answer;
   }
 }
