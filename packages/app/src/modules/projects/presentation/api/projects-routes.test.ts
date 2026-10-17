@@ -136,4 +136,93 @@ describe('createProjectsRoutes', () => {
     expect(response.status).toBe(400);
     expect(repositoryResolver.resolveCalls).toHaveLength(0);
   });
+
+  it('should show paused true in the list when the project is paused', async () => {
+    const { app, projectRepository } = createSubject();
+    await postProject(app);
+    await projectRepository.setPaused('owner/name', true);
+
+    const response = await app.request('/api/projects');
+
+    expect(await response.json()).toMatchObject([{ paused: true }]);
+  });
+
+  it('should show paused false in the 201 body when a project is added', async () => {
+    const { app } = createSubject();
+
+    const response = await postProject(app);
+
+    expect(await response.json()).toMatchObject({ paused: false });
+  });
+
+  describe('PATCH /api/projects/:owner/:name', () => {
+    function patchProject(
+      app: Hono,
+      path: string,
+      body: unknown,
+      contentType = 'application/json',
+    ) {
+      return app.request(path, {
+        method: 'PATCH',
+        headers: { 'content-type': contentType },
+        body: typeof body === 'string' ? body : JSON.stringify(body),
+      });
+    }
+
+    it('should answer 200 with the paused project when paused is set to true', async () => {
+      const { app } = createSubject();
+      await postProject(app);
+
+      const response = await patchProject(app, '/api/projects/owner/name', { paused: true });
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({
+        id: 'owner/name',
+        paused: true,
+        contract: passingReport,
+      });
+    });
+
+    it('should answer 400 and leave the project unchanged when paused is not a boolean', async () => {
+      const { app, projectRepository } = createSubject();
+      await postProject(app);
+
+      const response = await patchProject(app, '/api/projects/owner/name', { paused: 'yes' });
+
+      expect(response.status).toBe(400);
+      expect((await projectRepository.findById('owner/name'))?.paused).toBe(false);
+    });
+
+    it('should answer 415 when the content type is not JSON', async () => {
+      const { app } = createSubject();
+      await postProject(app);
+
+      const response = await patchProject(app, '/api/projects/owner/name', 'x', 'text/plain');
+
+      expect(response.status).toBe(415);
+    });
+
+    it('should keep the checkout path when the body also carries one', async () => {
+      const { app, projectRepository } = createSubject();
+      await postProject(app);
+
+      await patchProject(app, '/api/projects/owner/name', {
+        paused: true,
+        checkoutPath: '/other',
+      });
+
+      expect((await projectRepository.findById('owner/name'))?.checkoutPath).toBe('/repo');
+    });
+
+    it('should answer 404 with a message when the project is unknown', async () => {
+      const { app } = createSubject();
+
+      const response = await patchProject(app, '/api/projects/owner/missing', { paused: true });
+
+      expect(response.status).toBe(404);
+      expect(await response.json()).toEqual({
+        message: 'owner/missing is not a registered project',
+      });
+    });
+  });
 });

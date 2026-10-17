@@ -55,6 +55,7 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
             repository: registered.repository,
             checkoutPath: '/checkout',
             addedAt: startedAt,
+            paused: false,
             contract: { passed: true, missingSlots: [], missingKeys: [] },
           },
         ],

@@ -55,6 +55,7 @@ export function fakeProjectsApi(): Pick<ProjectsApi, 'list'> {
         repository: { owner: 'moritz', name: 'aisf' },
         checkoutPath: '/checkout',
         addedAt: '2026-09-29T08:00:00.000Z',
+        paused: false,
         contract: { passed: true, missingSlots: [], missingKeys: [] },
       },
     ],

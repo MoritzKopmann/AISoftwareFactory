@@ -10,6 +10,7 @@ export const knownProject: ProjectDto = {
   repository,
   checkoutPath: '/checkouts/aisf',
   addedAt: '2026-09-29T09:00:00.000Z',
+  paused: false,
   contract: { passed: true, missingSlots: [], missingKeys: [] },
 };
 
