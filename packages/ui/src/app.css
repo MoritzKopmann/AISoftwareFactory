@@ -773,7 +773,6 @@ details:not([open]) .t-hide {
 
 .runpanel {
   display: grid;
-  box-shadow: inset 4px 0 0 var(--info);
 }
 
 .runpanel.ended {
@@ -786,10 +785,6 @@ details:not([open]) .t-hide {
   align-items: center;
   gap: 6px 12px;
   padding: 10px 14px 10px 18px;
-}
-
-.runpanel > .head .grow {
-  flex: 1;
 }
 
 .runpanel .lead,
@@ -1436,11 +1431,148 @@ details:not([open]) .t-hide {
   border-top: 1px solid var(--border);
 }
 
-.session {
-  display: grid;
-  gap: 8px;
+.session-panel {
+  --sv-shadow: 0 10px 40px rgba(19, 36, 58, 0.12);
+  --sv-chat:
+    radial-gradient(520px 320px at 0% 0%, rgba(45, 95, 147, 0.12), transparent),
+    radial-gradient(520px 320px at 100% 100%, rgba(56, 189, 248, 0.1), transparent),
+    linear-gradient(rgba(19, 36, 58, 0.035) 1px, transparent 1px) 0 0 / 100% 24px, #eef2f6;
+  --sv-live: #38bdf8;
+  --sv-live-ring: #0284c7;
+  --sv-glass: rgba(255, 255, 255, 0.72);
+  --sv-glass-border: rgba(45, 95, 147, 0.3);
+  --sv-glass-hi: rgba(255, 255, 255, 0.7);
+  --sv-glow: 0 6px 22px rgba(45, 95, 147, 0.13);
+  --sv-card: rgba(248, 250, 251, 0.82);
+  --sv-hair: rgba(45, 95, 147, 0.22);
+  --sv-toggle-on: rgba(45, 95, 147, 0.12);
+  --sv-danger-bg: rgba(184, 50, 47, 0.09);
+  --sv-app-1: #1f4468;
+  --sv-app-2: #13243a;
+  --sv-app-shadow: 0 6px 20px rgba(19, 36, 58, 0.35);
+  --sv-read: #1d5f8f;
+  --sv-read-bg: rgba(45, 95, 147, 0.1);
+  --sv-edit: #5b3aa8;
+  --sv-edit-bg: rgba(107, 71, 194, 0.1);
+  --sv-run: #935902;
+  --sv-run-bg: rgba(147, 89, 2, 0.1);
+  --sv-term-bg: #070f17;
+  --sv-term-text: #d8e4ee;
+  --sv-term-border: #2e4760;
+  --sv-term-danger: #ff8f84;
+  --sv-skel-right: rgba(19, 36, 58, 0.22);
+  --sv-skel-left: rgba(45, 95, 147, 0.16);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .session-panel {
+    --sv-shadow: 0 14px 48px rgba(0, 0, 0, 0.4);
+    --sv-chat:
+      radial-gradient(560px 360px at 0% 0%, rgba(56, 189, 248, 0.2), transparent),
+      radial-gradient(560px 360px at 100% 100%, rgba(107, 71, 194, 0.24), transparent),
+      linear-gradient(rgba(216, 228, 238, 0.035) 1px, transparent 1px) 0 0 / 100% 24px, #0b1520;
+    --sv-live-ring: #38bdf8;
+    --sv-glass: rgba(25, 43, 61, 0.55);
+    --sv-glass-border: rgba(124, 180, 234, 0.28);
+    --sv-glass-hi: rgba(255, 255, 255, 0.07);
+    --sv-glow: 0 8px 30px rgba(56, 189, 248, 0.12);
+    --sv-card: rgba(18, 33, 48, 0.62);
+    --sv-hair: rgba(124, 180, 234, 0.18);
+    --sv-toggle-on: rgba(124, 180, 234, 0.16);
+    --sv-danger-bg: rgba(255, 143, 132, 0.12);
+    --sv-app-1: #2f6aa8;
+    --sv-app-2: #1b4170;
+    --sv-app-shadow: 0 8px 26px rgba(47, 106, 168, 0.42);
+    --sv-read: #7cb4ea;
+    --sv-read-bg: rgba(124, 180, 234, 0.13);
+    --sv-edit: #baa0ff;
+    --sv-edit-bg: rgba(186, 160, 255, 0.13);
+    --sv-run: #e5ab4e;
+    --sv-run-bg: rgba(229, 171, 78, 0.13);
+    --sv-skel-right: rgba(47, 106, 168, 0.45);
+    --sv-skel-left: rgba(124, 180, 234, 0.16);
+  }
+}
+
+:root[data-theme='dark'] .session-panel {
+  --sv-shadow: 0 14px 48px rgba(0, 0, 0, 0.4);
+  --sv-chat:
+    radial-gradient(560px 360px at 0% 0%, rgba(56, 189, 248, 0.2), transparent),
+    radial-gradient(560px 360px at 100% 100%, rgba(107, 71, 194, 0.24), transparent),
+    linear-gradient(rgba(216, 228, 238, 0.035) 1px, transparent 1px) 0 0 / 100% 24px, #0b1520;
+  --sv-live-ring: #38bdf8;
+  --sv-glass: rgba(25, 43, 61, 0.55);
+  --sv-glass-border: rgba(124, 180, 234, 0.28);
+  --sv-glass-hi: rgba(255, 255, 255, 0.07);
+  --sv-glow: 0 8px 30px rgba(56, 189, 248, 0.12);
+  --sv-card: rgba(18, 33, 48, 0.62);
+  --sv-hair: rgba(124, 180, 234, 0.18);
+  --sv-toggle-on: rgba(124, 180, 234, 0.16);
+  --sv-danger-bg: rgba(255, 143, 132, 0.12);
+  --sv-app-1: #2f6aa8;
+  --sv-app-2: #1b4170;
+  --sv-app-shadow: 0 8px 26px rgba(47, 106, 168, 0.42);
+  --sv-read: #7cb4ea;
+  --sv-read-bg: rgba(124, 180, 234, 0.13);
+  --sv-edit: #baa0ff;
+  --sv-edit-bg: rgba(186, 160, 255, 0.13);
+  --sv-run: #e5ab4e;
+  --sv-run-bg: rgba(229, 171, 78, 0.13);
+  --sv-skel-right: rgba(47, 106, 168, 0.45);
+  --sv-skel-left: rgba(124, 180, 234, 0.16);
+}
+
+.session-panel {
+  --rail: var(--border-strong);
+  display: flex;
+  flex-direction: column;
   max-width: 720px;
   min-width: 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow:
+    inset 4px 0 0 var(--rail),
+    var(--sv-shadow);
+}
+
+.session-panel.rail-info {
+  --rail: var(--info);
+}
+
+.session-panel.rail-danger {
+  --rail: var(--danger);
+}
+
+.session-panel > .head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 8px 14px 8px 18px;
+}
+
+.session-panel > .head .grow {
+  flex: 1;
+}
+
+.session-panel .lead {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 13px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.session-panel > .chat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 16px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--sv-chat);
 }
 
 .session-entry {
@@ -1455,7 +1587,7 @@ details:not([open]) .t-hide {
   background: var(--surface-sunken);
 }
 
-.session pre {
+.session-panel pre {
   max-height: 420px;
   overflow: auto;
   margin: 4px 0 0;
@@ -1463,7 +1595,7 @@ details:not([open]) .t-hide {
   white-space: pre-wrap;
 }
 
-.session img {
+.session-panel img {
   display: block;
   max-width: 100%;
   margin-top: 4px;

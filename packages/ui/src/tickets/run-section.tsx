@@ -27,7 +27,8 @@ import {
   type RunSkill,
   type StartState,
 } from './describe-run-bar.js';
-import { describeRunPanel } from './describe-run-panel.js';
+import { describeRunPanel, type RunPanelDescription } from './describe-run-panel.js';
+import { describeSessionPanel } from './describe-session-panel.js';
 import { editCheckpointDraft } from './edit-checkpoint-draft.js';
 import { fetchTicketArtifacts, type TicketArtifactsFailure } from './fetch-ticket-artifacts.js';
 import { PermissionPrompt } from './permission-prompt.js';
@@ -38,8 +39,11 @@ import { RoundPanel } from './round-panel.js';
 import { RunBar } from './run-bar.js';
 import { describeRoundPanel } from './describe-round-panel.js';
 import { RunPanel } from './run-panel.js';
+import { SessionPanel } from './session-panel.js';
+import { SessionViewBody } from './session-view.js';
 import { startTicketRun } from './start-ticket-run.js';
 import { stopTicketRun } from './stop-ticket-run.js';
+import { useSessionView } from './use-session-view.js';
 import { useTicketRun } from './use-ticket-run.js';
 
 type RunSectionProps = {
@@ -59,6 +63,7 @@ export function RunSection({
 }: RunSectionProps) {
   const { status: ticketStatus, stuck: ticketStuck } = ticketState;
   const { ticketRun, retry: retryRun } = useTicketRun(liveUpdates, projectId, number);
+  const session = useSessionView(liveUpdates, projectId, number);
   const [start, setStart] = useState<StartState>({ kind: 'idle' });
   const [stoppingRunId, setStoppingRunId] = useState<string | undefined>(undefined);
   const [permissionAnswer, setPermissionAnswer] = useState<PermissionAnswer>({ kind: 'idle' });
@@ -172,6 +177,9 @@ export function RunSection({
     stopping,
   });
 
+  // The round panel carries its own Stop and ended note, so the run panel stays out of its way.
+  const shownPanel: RunPanelDescription = roundPanel.kind === 'hidden' ? panel : { kind: 'hidden' };
+
   const stopActiveRun = () => {
     if (activeRunId !== undefined) void stop(activeRunId);
   };
@@ -216,9 +224,14 @@ export function RunSection({
         description={describeArtifactLinks(artifacts, artifactsFailure)}
         onRetry={retryArtifacts}
       />
-      {roundPanel.kind === 'hidden' && (
-        <RunPanel description={panel} onRetry={retryRun} onStop={stopActiveRun} />
-      )}
+      <RunPanel description={shownPanel} />
+      <SessionPanel
+        description={describeSessionPanel(shownPanel, session.view, ticketRun.response?.lastRun)}
+        onRetry={retryRun}
+        onStop={stopActiveRun}
+      >
+        <SessionViewBody view={session.view} opened={session.opened} onToggle={session.toggle} />
+      </SessionPanel>
       <ResetAction
         description={describeResetAction(ticketRun.response, ticketState, reset, number)}
         onReset={() => void resetToReady()}

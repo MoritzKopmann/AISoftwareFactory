@@ -1,8 +1,7 @@
 import type { SessionEntryResponse } from '@aisf/app/api-schemas/session-stream-schemas.js';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import type { LiveUpdates } from '../live/live-updates.js';
-import { LiveSession, SessionViewBody } from './session-view.js';
+import { SessionViewBody } from './session-view.js';
 
 const ignore = () => undefined;
 
@@ -71,20 +70,17 @@ describe('SessionViewBody', () => {
     expect(markup.indexOf('typing')).toBeGreaterThan(markup.indexOf('bold'));
   });
 
+  it('should render the loading message before any frame arrives', () => {
+    const markup = renderToStaticMarkup(
+      <SessionViewBody view={{ kind: 'waiting' }} opened={new Set()} onToggle={ignore} />,
+    );
+    expect(markup).toContain('Loading the session…');
+  });
+
   it('should render the message when the session is missing', () => {
     const markup = renderToStaticMarkup(
       <SessionViewBody view={{ kind: 'no-session' }} opened={new Set()} onToggle={ignore} />,
     );
     expect(markup).toContain('No session yet.');
-  });
-});
-
-describe('LiveSession', () => {
-  it('should render the loading message before any frame arrives', () => {
-    const liveUpdates: LiveUpdates = { listen: () => ignore, connection: () => 'open' };
-    const markup = renderToStaticMarkup(
-      <LiveSession liveUpdates={liveUpdates} projectId="o/n" number={7} />,
-    );
-    expect(markup).toContain('Loading the session…');
   });
 });

@@ -7,7 +7,7 @@ const ignore = () => undefined;
 const liveUpdates: LiveUpdates = { listen: () => ignore, connection: () => 'open' };
 
 describe('TicketPageView', () => {
-  it('should end with the session, then the collapsed description, and show no run log or steps list when the ticket is loaded', () => {
+  it('should hold the session in one framed panel before the facts and end with the collapsed description when the ticket is loaded', () => {
     const markup = renderToStaticMarkup(
       <TicketPageView
         liveUpdates={liveUpdates}
@@ -33,8 +33,9 @@ describe('TicketPageView', () => {
     expect(markup).not.toContain('runlog');
     expect(markup).not.toContain('class="steps"');
     expect(markup).toMatch(
-      /<section class="session" aria-label="Session">.*<\/section><details class="row ticket-body"><summary.*<\/summary>.*<\/details><\/main>$/,
+      /<section class="session-panel rail-border-strong" aria-label="Session">.*role="log" aria-label="Session".*<\/section><dl class="facts">.*<details class="row ticket-body"><summary.*<\/summary>.*<\/details><\/main>$/,
     );
+    expect(markup.match(/aria-label="Session"/g)).toHaveLength(2);
   });
 
   it('should show the status chip, then the Waiting chip, then Open on GitHub when the ticket is marked waiting', () => {
