@@ -132,4 +132,14 @@ export const migrations: ReadonlyArray<Migration> = [
       ALTER TABLE projects ADD COLUMN paused INTEGER NOT NULL DEFAULT 0;
     `,
   },
+  {
+    version: 10,
+    name: 'command-labels',
+    sql: `
+      CREATE TABLE command_labels (
+        command_hash TEXT PRIMARY KEY,
+        label TEXT NOT NULL
+      );
+    `,
+  },
 ];
