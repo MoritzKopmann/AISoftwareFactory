@@ -11,7 +11,7 @@ export type SchedulerModuleDependencies = {
 
 export type SchedulerModule = {
   readonly routes: Hono;
-  /** Empty: the `snapshot.changed` subscription registers in the factory. */
+  /** Empty: the `snapshot.changed` and `watch.updated` subscriptions register in the factory. */
   readonly jobs: Jobs;
   readonly internal: SchedulerApi;
 };

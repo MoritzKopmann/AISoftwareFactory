@@ -182,6 +182,18 @@ describe('createSchedulerModule', () => {
     await vi.waitFor(() => expect(pullRequestMerges.calls).toEqual(['merge #201 abc123']));
   });
 
+  it('should start a run for the ready leaf when watch.updated is emitted', async () => {
+    tickets.openTicketDtos = [buildTicketDto()];
+
+    bus.emit('watch.updated', {
+      projectId: 'moritz/aisf',
+      changed: false,
+      polledAt: '2026-10-17T10:00:00.000Z',
+    });
+
+    await vi.waitFor(() => expect(agentRuns.calls).toContain('start moritz/aisf #138'));
+  });
+
   it('should create the idea and start its run when the ideas route is posted', async () => {
     tickets = new FakeTicketsApi(buildTicketDto({ number: 501, status: 'idea' }));
     scheduler = createSchedulerModule({
