@@ -342,4 +342,19 @@ describe('SessionViewBody titles', () => {
     expect(markup).toContain('>aisf:tdd<');
     expect(markup).not.toContain('>input ');
   });
+  describe('handback', () => {
+    const entries: ReadonlyArray<SessionEntryResponse> = [
+      { kind: 'handback', id: 'h1', agentId: null, text: 'Full report' },
+    ];
+
+    it('should show only the header when the handback is not opened', () => {
+      const html = renderEntries(entries);
+      expect(html).toContain('Subagent response');
+      expect(html).not.toContain('Full report');
+    });
+
+    it('should show the report when the handback id is opened', () => {
+      expect(renderEntries(entries, new Set(['h1']))).toContain('Full report');
+    });
+  });
 });
