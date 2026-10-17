@@ -8,6 +8,7 @@ import { RunAnswerService } from './business/service/run-answer-service.js';
 import { RunEndService } from './business/service/run-end-service.js';
 import { RunQueryService } from './business/service/run-query-service.js';
 import { RunStartService } from './business/service/run-start-service.js';
+import { WorktreeRemovalService } from './business/service/worktree-removal-service.js';
 import type { ProjectPort } from './business/port/project/project-port.js';
 import type { SessionFeed } from './business/port/session/session-feed.js';
 import type { RunTranscripts } from './business/port/transcript/run-transcripts.js';
@@ -29,6 +30,7 @@ import type {
   AgentRunsModule,
   AgentRunsModuleDependencies,
 } from './presentation/internal/agent-runs-module.js';
+import { subscribeToTicketClosed } from './presentation/bus/subscribe-to-ticket-closed.js';
 import { createCheckpointTool } from './presentation/tool/create-checkpoint-tool.js';
 import { createEscalateTool } from './presentation/tool/create-escalate-tool.js';
 import { createParkTool } from './presentation/tool/create-park-tool.js';
@@ -121,6 +123,15 @@ export function createAgentRunsModule(
     windowMilliseconds: dependencies.liveAnswerWindowMilliseconds,
   });
   const runAnswerService = new RunAnswerService({ runRepository, runAnswerWaits, runStartService });
+  const worktreeRemovalService = new WorktreeRemovalService({
+    runRepository,
+    worktrees: infrastructure.worktrees,
+    projectPort: infrastructure.projectPort,
+    runEndService,
+    logger: dependencies.logger,
+    worktreesDirectory: dependencies.worktreesDirectory,
+  });
+  subscribeToTicketClosed(events, worktreeRemovalService, dependencies.logger);
   const runQueryService = new RunQueryService({
     runRepository,
     runTranscripts: infrastructure.runTranscripts,
