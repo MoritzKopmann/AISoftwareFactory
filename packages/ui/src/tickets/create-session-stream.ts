@@ -7,7 +7,12 @@ import type {
   OpenLiveStream,
 } from '../live/live-updates.js';
 import { noticeConcernsView } from '../live/notice-concerns-view.js';
-import { foldSessionView, initialSessionView, type SessionView } from './fold-session-view.js';
+import {
+  foldSessionView,
+  initialSessionView,
+  markConnectionLost,
+  type SessionView,
+} from './fold-session-view.js';
 
 export type FrameScheduler = {
   request(callback: () => void): number;
@@ -15,6 +20,8 @@ export type FrameScheduler = {
 };
 
 export type SessionStream = { close(): void };
+
+const connectingReadyState = 0;
 
 const frameKinds: ReadonlySet<string> = new Set([
   'snapshot',
@@ -81,6 +88,19 @@ export function createSessionStream(dependencies: {
     opened.onmessage = (event) => {
       const frame = parseFrame(event.data);
       if (frame) receive(frame);
+    };
+    opened.onerror = () => {
+      if (opened !== stream) return;
+      if (opened.readyState === connectingReadyState) {
+        flush();
+        const lost = markConnectionLost(view);
+        if (lost !== view) {
+          view = lost;
+          onChange(view);
+        }
+        return;
+      }
+      close();
     };
   };
 
