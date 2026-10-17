@@ -11,7 +11,7 @@ const call: SessionEntryResponse = {
   id: 'c',
   toolUseId: 't',
   name: 'Bash',
-  input: { command: 'ls' },
+  input: { command: 'ls', description: 'List files' },
 };
 const result: SessionEntryResponse = {
   kind: 'tool-result',
@@ -24,14 +24,38 @@ const result: SessionEntryResponse = {
   ],
 };
 
+function readCall(id: string, name = 'Read'): SessionEntryResponse {
+  return {
+    kind: 'tool-call',
+    id,
+    toolUseId: `use-${id}`,
+    name,
+    input: { file_path: `${id}.ts` },
+  };
+}
+
+function textResult(id: string, text: string, isError = false): SessionEntryResponse {
+  return {
+    kind: 'tool-result',
+    id: `r-${id}`,
+    toolUseId: `use-${id}`,
+    isError,
+    parts: [{ kind: 'text', text }],
+  };
+}
+
 function renderSession(view: SessionView) {
   return renderToStaticMarkup(<SessionViewBody view={view} opened={new Set()} onToggle={ignore} />);
 }
 
-function render(opened: ReadonlySet<string>) {
+function renderEntries(
+  entries: ReadonlyArray<SessionEntryResponse>,
+  opened: ReadonlySet<string> = new Set(),
+  ended = false,
+) {
   return renderToStaticMarkup(
     <SessionViewBody
-      view={{ kind: 'entries', entries: [call, result], ended: false, connectionLost: false }}
+      view={{ kind: 'entries', entries, ended, connectionLost: false }}
       opened={opened}
       onToggle={ignore}
     />,
@@ -39,23 +63,93 @@ function render(opened: ReadonlySet<string>) {
 }
 
 describe('SessionViewBody', () => {
-  it('should not render the result body when the result is collapsed', () => {
-    const markup = render(new Set());
+  it('should render a call and its result as one row with a Result toggle', () => {
+    const markup = renderEntries([call, result]);
+    expect(markup.match(/class="tc-row"/g)).toHaveLength(1);
+    expect(markup).toMatch(/>Result <span class="tc-dim">1 line · 1 image<\/span>/);
+  });
+
+  it('should render one card with a header and three rows without tags when three Read calls are adjacent', () => {
+    const markup = renderEntries(
+      ['a', 'b', 'c'].flatMap((id) => [readCall(id), textResult(id, 'x')]),
+    );
+    expect(markup.match(/class="tc"/g)).toHaveLength(1);
+    expect(markup.match(/class="tc-row"/g)).toHaveLength(3);
+    expect(markup).toMatch(/class="tc-head">.*>Read<.*>×3<.*>3 done</);
+    expect(markup.match(/tc-tag/g)).toHaveLength(1);
+  });
+
+  it('should render three cards when Read, Edit and Read follow each other', () => {
+    const edit: SessionEntryResponse = readCall('e', 'Edit');
+    expect(renderEntries([readCall('a'), edit, readCall('b')]).match(/class="tc"/g)).toHaveLength(
+      3,
+    );
+  });
+
+  it('should render a spinner and only the input toggle when a call has no result in a live run', () => {
+    const markup = renderEntries([readCall('a')]);
+    expect(markup).toContain('aria-label="Running"');
+    expect(markup.match(/<button/g)).toHaveLength(1);
+    expect(markup).toContain('>input ');
+  });
+
+  it('should render no spinner when the run ended before the call got a result', () => {
+    const markup = renderEntries([readCall('a')], new Set(), true);
+    expect(markup).not.toContain('aria-label="Running"');
+  });
+
+  it('should mark a failed call and style its Error toggle as an error', () => {
+    const markup = renderEntries([readCall('a'), textResult('a', 'boom', true)]);
+    expect(markup).toMatch(/aria-label="Failed"[^>]*>▲</);
+    expect(markup).toMatch(/class="tc-toggle tc-toggle-error"[^>]*>Error /);
+  });
+
+  it('should mark a done call with a check', () => {
+    expect(renderEntries([readCall('a'), textResult('a', 'x')])).toMatch(
+      /aria-label="Done"[^>]*>✓</,
+    );
+  });
+
+  it('should render the running and failed counts in the group header', () => {
+    const edit = (id: string): SessionEntryResponse => readCall(id, 'Edit');
+    const markup = renderEntries([edit('a'), textResult('a', 'bad', true), edit('b')]);
+    expect(markup).toContain('1 running');
+    expect(markup).toMatch(/<span aria-hidden="true">▲<\/span> 1 failed/);
+    expect(markup).not.toContain('done<');
+  });
+
+  it('should render the description as headline and the command as second line for a Bash call', () => {
+    const markup = renderEntries([call]);
+    expect(markup).toContain('>List files<');
+    expect(markup).toMatch(/class="tc-second"[^>]*>\$ ls</);
+  });
+
+  it('should render the size label with a thousands separator', () => {
+    const long = Array.from({ length: 2418 }, () => 'x').join('\n');
+    expect(renderEntries([readCall('a'), textResult('a', long)])).toContain('2,418 lines');
+  });
+
+  it('should not render the result body or the input when both are collapsed', () => {
+    const markup = renderEntries([call, result]);
     expect(markup).not.toContain('SECRET-BODY');
     expect(markup).not.toContain('<img');
-    expect(markup).toContain('aria-expanded="false"');
+    expect(markup).not.toContain('&quot;command&quot;');
+    expect(markup.match(/aria-expanded="false"/g)).toHaveLength(2);
   });
 
-  it('should render the result text and image when the result is opened', () => {
-    const markup = render(new Set(['r']));
+  it('should open the input pane alone when only its key is opened', () => {
+    const markup = renderEntries([call, result], new Set(['c:input']));
+    expect(markup).toContain('&quot;command&quot;: &quot;ls&quot;');
+    expect(markup).not.toContain('SECRET-BODY');
+    expect(markup.match(/aria-expanded="true"/g)).toHaveLength(1);
+  });
+
+  it('should open both panes and both toggles independently when both keys are opened', () => {
+    const markup = renderEntries([call, result], new Set(['c:input', 'c:result']));
     expect(markup).toContain('SECRET-BODY');
     expect(markup).toContain('src="data:image/png;base64,AAAA"');
-    expect(markup).toContain('aria-expanded="true"');
-  });
-
-  it('should render the tool call name and full input', () => {
-    expect(render(new Set())).toMatch(/Bash/);
-    expect(render(new Set())).toContain('&quot;command&quot;: &quot;ls&quot;');
+    expect(markup).toContain('&quot;command&quot;: &quot;ls&quot;');
+    expect(markup.match(/aria-expanded="true"/g)).toHaveLength(2);
   });
 
   it('should render assistant text as markdown and the open block after the entries', () => {

@@ -1,4 +1,5 @@
 import type { SessionEntryResponse } from '@aisf/app/api-schemas/session-stream-schemas.js';
+import type { ToolCallEntry, ToolCardEntries, ToolResultEntry } from './describe-tool-card.js';
 import type { SessionView } from './fold-session-view.js';
 
 export type SessionViewDescription =
@@ -16,32 +17,20 @@ export type SessionViewDescription =
     };
 
 type PromptEntry = Extract<SessionEntryResponse, { kind: 'prompt' }>;
-type AgentEntry = Exclude<SessionEntryResponse, { kind: 'prompt' }>;
+type TextEntry = Extract<SessionEntryResponse, { kind: 'text' }>;
 
-/** A prompt and the entries after it, up to the next prompt. */
+export type TurnItem =
+  | { readonly kind: 'text'; readonly entry: TextEntry }
+  | { readonly kind: 'tool-card'; readonly card: ToolCardEntries };
+
+/** A prompt and what follows it, up to the next prompt. */
 export type SessionTurnDescription = {
   readonly id: string;
   readonly prompt?: PromptEntry;
-  readonly entries: ReadonlyArray<AgentEntry>;
+  readonly items: ReadonlyArray<TurnItem>;
   /** Only the last turn can hold the block being written. */
   readonly openText?: string;
 };
-
-export type ResultPartDescription =
-  | { readonly kind: 'text'; readonly text: string }
-  | { readonly kind: 'image'; readonly src: string };
-
-export type SessionEntryDescription =
-  | { readonly kind: 'text'; readonly text: string }
-  | { readonly kind: 'tool-call'; readonly name: string; readonly input: string }
-  | {
-      readonly kind: 'tool-result';
-      readonly label: string;
-      readonly open: boolean;
-      readonly parts?: ReadonlyArray<ResultPartDescription>;
-    };
-
-const imageMediaType = /^image\/[a-z0-9.+-]+$/i;
 
 export function describeSessionView(view: SessionView): SessionViewDescription {
   switch (view.kind) {
@@ -67,54 +56,65 @@ export function describeSessionView(view: SessionView): SessionViewDescription {
   }
 }
 
+type MutableCard = { id: string; name: string; calls: ToolCardEntries['calls'][number][] };
+type MutableTurnItem =
+  { kind: 'text'; entry: TextEntry } | { kind: 'tool-card'; card: MutableCard };
+type MutableTurn = { id: string; prompt?: PromptEntry; items: MutableTurnItem[] };
+
 function groupIntoTurns(
   entries: ReadonlyArray<SessionEntryResponse>,
   openText: string | undefined,
 ): ReadonlyArray<SessionTurnDescription> {
-  const turns: Array<{ id: string; prompt?: PromptEntry; entries: AgentEntry[] }> = [];
+  const results = new Map<string, ToolResultEntry>();
   for (const entry of entries) {
-    if (entry.kind === 'prompt') {
-      turns.push({ id: entry.id, prompt: entry, entries: [] });
-    } else {
-      if (turns.length === 0) turns.push({ id: 'start', entries: [] });
-      turns[turns.length - 1]?.entries.push(entry);
+    if (entry.kind === 'tool-result') results.set(entry.toolUseId, entry);
+  }
+  const turns: MutableTurn[] = [];
+  const currentTurn = (): MutableTurn => {
+    let turn = turns[turns.length - 1];
+    if (turn === undefined) {
+      turn = { id: 'start', items: [] };
+      turns.push(turn);
+    }
+    return turn;
+  };
+  for (const entry of entries) {
+    switch (entry.kind) {
+      case 'prompt':
+        turns.push({ id: entry.id, prompt: entry, items: [] });
+        break;
+      case 'text':
+        currentTurn().items.push({ kind: 'text', entry });
+        break;
+      case 'tool-call':
+        addCall(currentTurn().items, entry, results.get(entry.toolUseId));
+        break;
+      case 'tool-result':
+        break;
     }
   }
   if (openText === undefined) return turns;
-  if (turns.length === 0) turns.push({ id: 'start', entries: [] });
+  currentTurn();
   return turns.map((turn, position) =>
     position === turns.length - 1 ? { ...turn, openText } : turn,
   );
 }
 
-function hasNothingToShow(view: { entries: ReadonlyArray<unknown>; openText?: string }): boolean {
-  return view.entries.length === 0 && view.openText === undefined;
+/** Adjacent calls of one tool share a card; a result never ends the group. */
+function addCall(
+  items: MutableTurnItem[],
+  call: ToolCallEntry,
+  result: ToolResultEntry | undefined,
+) {
+  const entry = { call, ...(result !== undefined && { result }) };
+  const last = items[items.length - 1];
+  if (last?.kind === 'tool-card' && last.card.name === call.name) {
+    last.card.calls.push(entry);
+    return;
+  }
+  items.push({ kind: 'tool-card', card: { id: call.id, name: call.name, calls: [entry] } });
 }
 
-/** A result's body is described only when `open`. */
-export function describeSessionEntry(entry: AgentEntry, open: boolean): SessionEntryDescription {
-  switch (entry.kind) {
-    case 'text':
-      return { kind: 'text', text: entry.text };
-    case 'tool-call':
-      return {
-        kind: 'tool-call',
-        name: entry.name,
-        input: JSON.stringify(entry.input, null, 2) ?? '',
-      };
-    case 'tool-result': {
-      const label = entry.isError ? 'Result (error)' : 'Result';
-      if (!open) return { kind: 'tool-result', label, open };
-      return {
-        kind: 'tool-result',
-        label,
-        open,
-        parts: entry.parts.flatMap((part): ResultPartDescription[] => {
-          if (part.kind === 'text') return [part];
-          if (!imageMediaType.test(part.mediaType)) return [];
-          return [{ kind: 'image', src: `data:${part.mediaType};base64,${part.data}` }];
-        }),
-      };
-    }
-  }
+function hasNothingToShow(view: { entries: ReadonlyArray<unknown>; openText?: string }): boolean {
+  return view.entries.length === 0 && view.openText === undefined;
 }
