@@ -4,6 +4,12 @@ export const sessionEntryResponseSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('prompt'), id: z.string(), text: z.string() }),
   z.object({ kind: z.literal('text'), id: z.string(), text: z.string() }),
   z.object({
+    kind: z.literal('handback'),
+    id: z.string(),
+    agentId: z.string().nullable(),
+    text: z.string(),
+  }),
+  z.object({
     kind: z.literal('tool-call'),
     id: z.string(),
     toolUseId: z.string(),
@@ -22,6 +28,7 @@ export const sessionEntryResponseSchema = z.discriminatedUnion('kind', [
         z.object({ kind: z.literal('image'), mediaType: z.string(), data: z.string() }),
       ]),
     ),
+    agentId: z.string().optional(),
   }),
 ]);
 export type SessionEntryResponse = z.infer<typeof sessionEntryResponseSchema>;

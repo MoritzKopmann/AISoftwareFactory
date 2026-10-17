@@ -7,6 +7,8 @@ function toSessionEntryResponse(entry: SessionEntry): SessionEntryResponse {
     case 'prompt':
     case 'text':
       return { kind: entry.kind, id: entry.id, text: entry.text };
+    case 'handback':
+      return { kind: 'handback', id: entry.id, agentId: entry.agentId, text: entry.text };
     case 'tool-call':
       return {
         kind: 'tool-call',
@@ -27,6 +29,7 @@ function toSessionEntryResponse(entry: SessionEntry): SessionEntryResponse {
             ? { kind: 'text', text: part.text }
             : { kind: 'image', mediaType: part.mediaType, data: part.data },
         ),
+        ...(entry.agentId === undefined ? {} : { agentId: entry.agentId }),
       };
   }
 }
