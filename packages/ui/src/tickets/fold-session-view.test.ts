@@ -1,6 +1,6 @@
 import type { SessionEntryResponse } from '@aisf/app/api-schemas/session-stream-schemas.js';
 import { describe, expect, it } from 'vitest';
-import { foldSessionView, initialSessionView } from './fold-session-view.js';
+import { foldSessionView, initialSessionView, markConnectionLost } from './fold-session-view.js';
 
 const prompt: SessionEntryResponse = { kind: 'prompt', id: 'e1', text: 'Do it' };
 const text: SessionEntryResponse = { kind: 'text', id: 'e2', text: 'Hello world' };
@@ -84,6 +84,49 @@ describe('foldSessionView', () => {
     });
     const ended = foldSessionView(open, { kind: 'ended' });
     const view = foldSessionView(ended, { kind: 'snapshot', entries: [prompt] });
-    expect(view).toEqual({ kind: 'entries', entries: [prompt], ended: false });
+    expect(view).toEqual({
+      kind: 'entries',
+      entries: [prompt],
+      ended: false,
+      connectionLost: false,
+    });
+  });
+
+  describe('markConnectionLost', () => {
+    it('should return the same object when the view is already lost', () => {
+      const lost = markConnectionLost(
+        foldSessionView(initialSessionView, { kind: 'snapshot', entries: [prompt] }),
+      );
+      expect(lost).toMatchObject({ kind: 'entries', connectionLost: true, entries: [prompt] });
+      expect(markConnectionLost(lost)).toBe(lost);
+    });
+
+    it('should return the same object when the view is not entries', () => {
+      expect(markConnectionLost(initialSessionView)).toBe(initialSessionView);
+    });
+
+    it('should clear the flag when a snapshot follows', () => {
+      const lost = markConnectionLost(
+        foldSessionView(initialSessionView, { kind: 'snapshot', entries: [prompt] }),
+      );
+      expect(foldSessionView(lost, { kind: 'snapshot', entries: [text] })).toMatchObject({
+        entries: [text],
+        connectionLost: false,
+      });
+    });
+
+    it('should keep the flag when an entry, delta or ended frame follows', () => {
+      const lost = markConnectionLost(
+        foldSessionView(initialSessionView, { kind: 'snapshot', entries: [prompt] }),
+      );
+      const withEntry = foldSessionView(lost, { kind: 'entry', entry: text });
+      const withDelta = foldSessionView(withEntry, { kind: 'delta', opensBlock: true, text: 'x' });
+      const ended = foldSessionView(withDelta, { kind: 'ended' });
+      expect([withEntry, withDelta, ended]).toMatchObject([
+        { connectionLost: true },
+        { connectionLost: true },
+        { connectionLost: true },
+      ]);
+    });
   });
 });

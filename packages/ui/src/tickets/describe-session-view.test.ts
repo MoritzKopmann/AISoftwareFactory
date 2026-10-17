@@ -17,7 +17,13 @@ describe('describeSessionView', () => {
   it('should put the open block into the last turn when text is streaming', () => {
     const prompt: SessionEntryResponse = { kind: 'prompt', id: 'p', text: 'Go' };
     expect(
-      describeSessionView({ kind: 'entries', entries: [prompt], openText: 'Hel', ended: false }),
+      describeSessionView({
+        kind: 'entries',
+        entries: [prompt],
+        openText: 'Hel',
+        ended: false,
+        connectionLost: false,
+      }),
     ).toEqual({
       kind: 'entries',
       turns: [{ id: 'p', prompt, entries: [], openText: 'Hel' }],
@@ -27,7 +33,14 @@ describe('describeSessionView', () => {
 
   it('should carry the ended flag so the end line can be drawn', () => {
     const prompt: SessionEntryResponse = { kind: 'prompt', id: 'p', text: 'Go' };
-    expect(describeSessionView({ kind: 'entries', entries: [prompt], ended: true })).toEqual({
+    expect(
+      describeSessionView({
+        kind: 'entries',
+        entries: [prompt],
+        ended: true,
+        connectionLost: false,
+      }),
+    ).toEqual({
       kind: 'entries',
       turns: [{ id: 'p', prompt, entries: [] }],
       ended: true,
@@ -41,7 +54,12 @@ describe('describeSessionView', () => {
     const p2: SessionEntryResponse = { kind: 'prompt', id: 'p2', text: 'Two' };
     const t3: SessionEntryResponse = { kind: 'text', id: 't3', text: 'c' };
     expect(
-      describeSessionView({ kind: 'entries', entries: [p1, t1, t2, p2, t3], ended: false }),
+      describeSessionView({
+        kind: 'entries',
+        entries: [p1, t1, t2, p2, t3],
+        ended: false,
+        connectionLost: false,
+      }),
     ).toEqual({
       kind: 'entries',
       turns: [
@@ -55,7 +73,13 @@ describe('describeSessionView', () => {
   it('should open a turn without a prompt when entries come before any prompt', () => {
     const t1: SessionEntryResponse = { kind: 'text', id: 't1', text: 'a' };
     expect(
-      describeSessionView({ kind: 'entries', entries: [t1], openText: 'x', ended: false }),
+      describeSessionView({
+        kind: 'entries',
+        entries: [t1],
+        openText: 'x',
+        ended: false,
+        connectionLost: false,
+      }),
     ).toEqual({
       kind: 'entries',
       turns: [{ id: 'start', entries: [t1], openText: 'x' }],
@@ -64,7 +88,12 @@ describe('describeSessionView', () => {
   });
 
   it('should give a system line when there are no entries and no open text', () => {
-    const shown = describeSessionView({ kind: 'entries', entries: [], ended: false });
+    const shown = describeSessionView({
+      kind: 'entries',
+      entries: [],
+      ended: false,
+      connectionLost: false,
+    });
     expect(shown).toEqual({ kind: 'system-line', message: 'No entries yet.' });
   });
 

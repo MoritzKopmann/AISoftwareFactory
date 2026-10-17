@@ -31,7 +31,7 @@ function renderSession(view: SessionView) {
 function render(opened: ReadonlySet<string>) {
   return renderToStaticMarkup(
     <SessionViewBody
-      view={{ kind: 'entries', entries: [call, result], ended: false }}
+      view={{ kind: 'entries', entries: [call, result], ended: false, connectionLost: false }}
       opened={opened}
       onToggle={ignore}
     />,
@@ -66,6 +66,7 @@ describe('SessionViewBody', () => {
           entries: [{ kind: 'text', id: 'x', text: '**bold**' }],
           openText: 'typing',
           ended: false,
+          connectionLost: false,
         }}
         opened={new Set()}
         onToggle={ignore}
@@ -80,6 +81,7 @@ describe('SessionViewBody', () => {
       kind: 'entries',
       entries: [{ kind: 'prompt', id: 'p', text: '### Ticket\n\nBuild it.\n\n- one\n- `two`' }],
       ended: false,
+      connectionLost: false,
     });
     expect(markup).toContain('sv-prompt');
     expect(markup).toContain('>App</');
@@ -93,6 +95,7 @@ describe('SessionViewBody', () => {
       kind: 'entries',
       entries: [{ kind: 'text', id: 'x', text: 'hello' }],
       ended: false,
+      connectionLost: false,
     });
     expect(markup).toMatch(/class="sv-turn"[^>]*><div class="sv-bubble"/);
   });
@@ -108,13 +111,20 @@ describe('SessionViewBody', () => {
         { kind: 'text', id: 't3', text: 'c' },
       ],
       ended: false,
+      connectionLost: false,
     });
     expect(markup.match(/class="sv-turn"/g)).toHaveLength(2);
     expect(markup.match(/class="sv-prompt"/g)).toHaveLength(2);
   });
 
   it('should render the open block with a caret hidden from readers', () => {
-    const markup = renderSession({ kind: 'entries', entries: [], openText: 'Hel', ended: false });
+    const markup = renderSession({
+      kind: 'entries',
+      entries: [],
+      openText: 'Hel',
+      ended: false,
+      connectionLost: false,
+    });
     expect(markup).toMatch(/Hel<span class="sv-caret" aria-hidden="true">/);
   });
 
@@ -123,6 +133,7 @@ describe('SessionViewBody', () => {
       kind: 'entries',
       entries: [{ kind: 'text', id: 'x', text: 'Hello' }],
       ended: false,
+      connectionLost: false,
     });
     expect(markup).toContain('Hello');
     expect(markup).not.toContain('sv-caret');
@@ -148,13 +159,18 @@ describe('SessionViewBody', () => {
   });
 
   it('should render the end line after the last entry when the session ended', () => {
-    const markup = renderSession({ kind: 'entries', entries: [call], ended: true });
+    const markup = renderSession({
+      kind: 'entries',
+      entries: [call],
+      ended: true,
+      connectionLost: false,
+    });
     expect(markup.indexOf('End of session')).toBeGreaterThan(markup.indexOf('Bash'));
   });
 
   it('should render no end line while the session is live', () => {
-    expect(renderSession({ kind: 'entries', entries: [call], ended: false })).not.toContain(
-      'End of session',
-    );
+    expect(
+      renderSession({ kind: 'entries', entries: [call], ended: false, connectionLost: false }),
+    ).not.toContain('End of session');
   });
 });

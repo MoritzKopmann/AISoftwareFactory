@@ -171,4 +171,91 @@ describe('createSessionStream', () => {
     notify({ event: 'run.started', projectId: 'o/n', ticketNumber: 7 });
     expect(streams).toHaveLength(1);
   });
+
+  describe('connection loss', () => {
+    const snapshot = { kind: 'snapshot', entries: [{ kind: 'prompt', id: 'a', text: 'Hi' }] };
+
+    it('should emit a lost view with the entries when the stream errors while retrying', () => {
+      const { streams, views } = build();
+      streams[0]?.send(snapshot);
+      if (streams[0]) streams[0].readyState = 0;
+      streams[0]?.onerror?.({});
+      expect(views.at(-1)).toMatchObject({
+        kind: 'entries',
+        entries: [{ id: 'a' }],
+        connectionLost: true,
+      });
+    });
+
+    it('should clear the flag when a snapshot arrives after a drop', () => {
+      const { streams, views } = build();
+      streams[0]?.send(snapshot);
+      if (streams[0]) streams[0].readyState = 0;
+      streams[0]?.onerror?.({});
+      streams[0]?.send({ kind: 'snapshot', entries: [{ kind: 'prompt', id: 'b', text: 'Yo' }] });
+      expect(views.at(-1)).toMatchObject({ entries: [{ id: 'b' }], connectionLost: false });
+    });
+
+    it('should stay waiting when the stream errors before any frame', () => {
+      const { streams, views } = build();
+      if (streams[0]) streams[0].readyState = 0;
+      streams[0]?.onerror?.({});
+      expect(views).toHaveLength(0);
+    });
+
+    it('should stay no-session when the stream errors on a message view', () => {
+      const { streams, views } = build();
+      streams[0]?.send({ kind: 'no-session' });
+      if (streams[0]) streams[0].readyState = 0;
+      streams[0]?.onerror?.({});
+      expect(views).toEqual([{ kind: 'no-session' }]);
+    });
+
+    it('should not emit a lost view when the tab is hidden and the closed stream errors', () => {
+      const { streams, views, visibility } = build();
+      streams[0]?.send(snapshot);
+      visibility.set('hidden');
+      streams[0]?.onerror?.({});
+      expect(views.some((view) => view.kind === 'entries' && view.connectionLost)).toBe(false);
+    });
+
+    it('should not emit a lost view when the closed stream errors after ended', () => {
+      const { streams, views } = build();
+      streams[0]?.send(snapshot);
+      streams[0]?.send({ kind: 'ended' });
+      streams[0]?.onerror?.({});
+      expect(views.some((view) => view.kind === 'entries' && view.connectionLost)).toBe(false);
+    });
+
+    it('should emit once when the stream errors again while retrying', () => {
+      const { streams, views } = build();
+      streams[0]?.send(snapshot);
+      if (streams[0]) streams[0].readyState = 0;
+      streams[0]?.onerror?.({});
+      const count = views.length;
+      streams[0]?.onerror?.({});
+      expect(views).toHaveLength(count);
+    });
+
+    it('should apply waiting deltas before the flag when the stream errors', () => {
+      const { streams, views } = build();
+      streams[0]?.send(snapshot);
+      streams[0]?.send({ kind: 'delta', opensBlock: true, text: 'abc' });
+      if (streams[0]) streams[0].readyState = 0;
+      streams[0]?.onerror?.({});
+      expect(views.at(-1)).toMatchObject({ openText: 'abc', connectionLost: true });
+    });
+
+    it('should release the stream and open a new one when the browser gave up', () => {
+      const { streams, visibility } = build();
+      streams[0]?.send(snapshot);
+      if (streams[0]) streams[0].readyState = 2;
+      streams[0]?.onerror?.({});
+      visibility.set('hidden');
+      visibility.set('visible');
+      expect(streams[0]?.closed).toBe(true);
+      expect(streams).toHaveLength(2);
+      expect(streams[1]?.url).toBe('/api/projects/o/n/tickets/7/session');
+    });
+  });
 });
