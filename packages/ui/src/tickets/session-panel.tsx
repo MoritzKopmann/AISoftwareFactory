@@ -10,7 +10,7 @@ type SessionPanelProps = {
 };
 
 export function SessionPanel({ description, onStop, onRetry, children }: SessionPanelProps) {
-  const { head } = description;
+  const { head, connectionBanner } = description;
   return (
     <section className={`session-panel rail-${description.rail}`} aria-label={description.label}>
       <div className="head">
@@ -48,6 +48,16 @@ export function SessionPanel({ description, onStop, onRetry, children }: Session
           <button className="btn" type="button" onClick={onRetry}>
             Retry
           </button>
+        </div>
+      )}
+      {connectionBanner !== undefined && (
+        <div className="inline-banner" role="status">
+          <span className="shape" aria-hidden="true">
+            ▲
+          </span>
+          <p>
+            {connectionBanner.line} <span className="sm">{connectionBanner.note}</span>
+          </p>
         </div>
       )}
       <div className="chat" role="log" aria-label="Session">

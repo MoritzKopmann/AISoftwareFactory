@@ -11,6 +11,12 @@ export type SessionPanelDescription = {
   readonly head:
     | { readonly kind: 'live'; readonly run: LiveRunDescription }
     | { readonly kind: 'session'; readonly timeRange?: string };
+  readonly connectionBanner?: { readonly line: string; readonly note: string };
+};
+
+const connectionBanner = {
+  line: 'Connection lost. Reconnecting…',
+  note: 'What is shown stays. New entries continue once it is back.',
 };
 
 function describeTimeRange(view: SessionView, lastRun: LastRun | undefined): string | undefined {
@@ -23,13 +29,15 @@ export function describeSessionPanel(
   view: SessionView,
   lastRun: LastRun | undefined,
 ): SessionPanelDescription {
+  const banner = view.kind === 'entries' && view.connectionLost ? { connectionBanner } : {};
   if (run.kind === 'live') {
-    return { label: 'Run', rail: 'info', head: { kind: 'live', run } };
+    return { label: 'Run', rail: 'info', head: { kind: 'live', run }, ...banner };
   }
   const timeRange = describeTimeRange(view, lastRun);
   return {
     label: 'Session',
     rail: view.kind === 'transcript-not-found' ? 'danger' : 'border-strong',
     head: { kind: 'session', ...(timeRange === undefined ? {} : { timeRange }) },
+    ...banner,
   };
 }
