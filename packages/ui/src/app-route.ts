@@ -2,9 +2,11 @@ export type AppRoute =
   | { readonly kind: 'home' }
   | { readonly kind: 'add-project' }
   | { readonly kind: 'project'; readonly id: string }
+  | { readonly kind: 'settings'; readonly id: string }
   | { readonly kind: 'ticket'; readonly id: string; readonly number: number };
 
 const projectRoutePattern = /^#\/projects\/([^/]+\/[^/]+)$/;
+const settingsRoutePattern = /^#\/projects\/([^/]+\/[^/]+)\/settings$/;
 const ticketRoutePattern = /^#\/projects\/([^/]+\/[^/]+)\/tickets\/([1-9]\d*)$/;
 
 export function parseAppRoute(hash: string): AppRoute {
@@ -16,6 +18,10 @@ export function parseAppRoute(hash: string): AppRoute {
   const ticketNumber = ticketMatch?.[2];
   if (ticketProjectId !== undefined && ticketNumber !== undefined) {
     return { kind: 'ticket', id: ticketProjectId, number: Number(ticketNumber) };
+  }
+  const settingsId = settingsRoutePattern.exec(hash)?.[1];
+  if (settingsId !== undefined) {
+    return { kind: 'settings', id: settingsId };
   }
   const match = projectRoutePattern.exec(hash);
   const id = match?.[1];

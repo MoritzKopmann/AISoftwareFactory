@@ -55,6 +55,12 @@ describe('describeSidebarItems', () => {
     expect(description.projects.map((item) => item.current)).toEqual([true, false]);
   });
 
+  it('should mark the project current when the route is its settings page', () => {
+    const description = describeSidebarItems(projects, { kind: 'settings', id: 'acme/postcards' });
+
+    expect(description.projects.map((item) => item.current)).toEqual([true, false]);
+  });
+
   it('should mark Add project current when the route is the add-project page', () => {
     const description = describeSidebarItems(projects, { kind: 'add-project' });
 

@@ -56,6 +56,9 @@ function RegisteredProjectPage({
               {describeUpdatedTime(updatedAt, now)}
             </time>
           )}
+          <a className="btn" href={`#/projects/${project.id}/settings`}>
+            Settings
+          </a>
         </div>
         <ContractReport report={project.contract} />
         <NewIdeaForm projectId={project.id} />
