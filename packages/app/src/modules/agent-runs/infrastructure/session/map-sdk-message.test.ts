@@ -1,5 +1,6 @@
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { SessionEvent } from '../../business/domain/types/session-event.js';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { createStreamState, entriesFromContent, mapSdkMessage } from './map-sdk-message.js';
 
@@ -351,5 +352,168 @@ describe('entriesFromContent', () => {
   it('should keep the text unchanged when a command tag sits inside other text', () => {
     const text = 'before <command-name>/x</command-name> after';
     expect(promptText(text)).toEqual(asPrompt(text));
+  });
+});
+
+function readFixture(name: string): Array<Record<string, unknown>> {
+  const url = new URL(`../../testing/fixtures/sessions/${name}`, import.meta.url);
+  return readFileSync(url, 'utf8')
+    .trim()
+    .split('\n')
+    .map((line) => JSON.parse(line) as Record<string, unknown>);
+}
+
+const liveFixture = readFixture('handbacks-live.jsonl');
+const storedFixture = readFixture('handbacks-stored.jsonl');
+
+function isHandbackMessage(entry: Record<string, unknown>): boolean {
+  const origin = entry['origin'] as { handback?: boolean } | undefined;
+  return entry['type'] === 'user' && origin?.handback === true;
+}
+
+const handbackUuid = '3d4118bc-8883-4f7c-b124-6e223dc85e8d';
+
+function handbackMessage(origin: Record<string, unknown>, type = 'user'): SDKMessage {
+  return message({
+    type,
+    uuid: 'h1',
+    parent_tool_use_id: null,
+    isSynthetic: true,
+    message: { role: 'user', content: 'frame' },
+    origin,
+  });
+}
+
+describe('handback entries', () => {
+  it('should yield one handback entry per handback and no prompt when entriesFromContent maps the stored fixture', () => {
+    const handbacks = storedFixture.filter(isHandbackMessage);
+
+    const entries = handbacks.flatMap((stored) =>
+      entriesFromContent(
+        String(stored['uuid']),
+        'user',
+        (stored['message'] as { content: unknown }).content,
+        true,
+        stored['origin'],
+      ),
+    );
+
+    expect(handbacks).toHaveLength(3);
+    expect(entries).toEqual(
+      handbacks.map((stored) => {
+        const origin = stored['origin'] as { from: string; handbackReportText: string };
+        return {
+          kind: 'handback',
+          id: `${String(stored['uuid'])}#0`,
+          agentId: origin.from,
+          text: origin.handbackReportText,
+        };
+      }),
+    );
+  });
+
+  it('should emit the same handback entry as the stored path when a live synthetic handback arrives', () => {
+    const live = liveFixture.find((entry) => entry['uuid'] === handbackUuid);
+    const stored = storedFixture.find((entry) => entry['uuid'] === handbackUuid);
+
+    const events = mapSdkMessage(live as unknown as SDKMessage);
+
+    expect(events).toEqual([
+      {
+        kind: 'entry',
+        entry: entriesFromContent(
+          handbackUuid,
+          'user',
+          (stored?.['message'] as { content: unknown }).content,
+          true,
+          stored?.['origin'],
+        )[0],
+      },
+    ]);
+    expect(events[0]).toMatchObject({ entry: { kind: 'handback', agentId: 'a6cdb2946e5157d4b' } });
+  });
+
+  it('should use the body without its frame line and indent when the origin has no handbackReportText', () => {
+    const events = mapSdkMessage(
+      handbackMessage({
+        kind: 'peer',
+        from: 'a1',
+        handback: true,
+        body: '[Subagent hand-back] The text below …\n  Line one\n    Line two',
+      }),
+    );
+
+    expect(events).toEqual([
+      {
+        kind: 'entry',
+        entry: { kind: 'handback', id: 'h1#0', agentId: 'a1', text: 'Line one\n  Line two' },
+      },
+    ]);
+  });
+
+  it('should set agentId null when the origin has no sender id', () => {
+    const events = mapSdkMessage(
+      handbackMessage({ kind: 'peer', handback: true, handbackReportText: 'x' }),
+    );
+
+    expect(events).toMatchObject([{ entry: { kind: 'handback', agentId: null } }]);
+  });
+
+  it('should emit no handback entry when a result message carries a handback origin', () => {
+    const events = mapSdkMessage(
+      message({
+        type: 'result',
+        subtype: 'success',
+        is_error: false,
+        result: '',
+        origin: { kind: 'peer', handback: true, handbackReportText: 'x' },
+      }),
+    );
+
+    expect(events).toEqual([]);
+  });
+
+  it('should emit no entries when the live replayed prompt and task notifications arrive', () => {
+    const dropped = liveFixture.filter(
+      (entry) =>
+        entry['type'] === 'user' &&
+        !isHandbackMessage(entry) &&
+        (entry['isReplay'] === true ||
+          (entry['origin'] as { kind?: string } | undefined)?.kind === 'task-notification'),
+    );
+
+    const events = dropped.flatMap((entry) => mapSdkMessage(entry as unknown as SDKMessage));
+
+    expect(dropped.length).toBeGreaterThanOrEqual(2);
+    expect(events).toEqual([]);
+  });
+});
+
+describe('entriesFromContent agentId on tool results', () => {
+  function resultFor(text: string) {
+    return entriesFromContent(
+      'u1',
+      'user',
+      [{ type: 'tool_result', tool_use_id: 't1', content: [{ type: 'text', text }] }],
+      false,
+    )[0];
+  }
+
+  it('should tag the result with the agent id when a background launch result has an agentId line', () => {
+    const entry = resultFor('Async agent launched\nagentId: a6cdb2946e5157d4b (internal ID)\nmore');
+
+    expect(entry).toMatchObject({ kind: 'tool-result', agentId: 'a6cdb2946e5157d4b' });
+  });
+
+  it('should tag the result with the agent id when a foreground result names the message sender', () => {
+    const entry = resultFor('was delivered as a message from "a715d9ff1a28ad5d1" (its call)');
+
+    expect(entry).toMatchObject({ kind: 'tool-result', agentId: 'a715d9ff1a28ad5d1' });
+  });
+
+  it('should leave agentId off when the result text matches neither pattern', () => {
+    const entry = resultFor('plain output');
+
+    expect(entry).not.toHaveProperty('agentId');
   });
 });
