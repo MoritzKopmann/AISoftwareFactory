@@ -19,10 +19,12 @@ export type SessionViewDescription =
 
 type PromptEntry = Extract<SessionEntryResponse, { kind: 'prompt' }>;
 type TextEntry = Extract<SessionEntryResponse, { kind: 'text' }>;
+type HandbackEntry = Extract<SessionEntryResponse, { kind: 'handback' }>;
 
 export type TurnItem =
   | { readonly kind: 'text'; readonly entry: TextEntry }
-  | { readonly kind: 'tool-card'; readonly card: ToolCardEntries };
+  | { readonly kind: 'tool-card'; readonly card: ToolCardEntries }
+  | { readonly kind: 'handback'; readonly entry: HandbackEntry; readonly header: string };
 
 /** A prompt and what follows it, up to the next prompt. */
 export type SessionTurnDescription = {
@@ -60,7 +62,9 @@ export function describeSessionView(view: SessionView): SessionViewDescription {
 
 type MutableCard = { id: string; name: string; calls: ToolCardEntries['calls'][number][] };
 type MutableTurnItem =
-  { kind: 'text'; entry: TextEntry } | { kind: 'tool-card'; card: MutableCard };
+  | { kind: 'text'; entry: TextEntry }
+  | { kind: 'tool-card'; card: MutableCard }
+  | { kind: 'handback'; entry: HandbackEntry; header: string };
 type MutableTurn = { id: string; prompt?: PromptEntry; items: MutableTurnItem[] };
 
 function groupIntoTurns(
@@ -71,6 +75,7 @@ function groupIntoTurns(
   for (const entry of entries) {
     if (entry.kind === 'tool-result') results.set(entry.toolUseId, entry);
   }
+  const agentCalls = mapAgentCalls(entries);
   const turns: MutableTurn[] = [];
   const currentTurn = (): MutableTurn => {
     let turn = turns[turns.length - 1];
@@ -91,6 +96,13 @@ function groupIntoTurns(
       case 'tool-call':
         addCall(currentTurn().items, entry, results.get(entry.toolUseId));
         break;
+      case 'handback':
+        currentTurn().items.push({
+          kind: 'handback',
+          entry,
+          header: handbackHeader(entry, agentCalls),
+        });
+        break;
       case 'tool-result':
         break;
     }
@@ -100,6 +112,45 @@ function groupIntoTurns(
   return turns.map((turn, position) =>
     position === turns.length - 1 ? { ...turn, openText } : turn,
   );
+}
+
+const GENERIC_HANDBACK_HEADER = 'Subagent response';
+
+/** agentId → the Agent or Task call whose result carries it, wherever the result sits. */
+function mapAgentCalls(
+  entries: ReadonlyArray<SessionEntryResponse>,
+): ReadonlyMap<string, ToolCallEntry> {
+  const calls = new Map<string, ToolCallEntry>();
+  for (const entry of entries) {
+    if (entry.kind === 'tool-call') calls.set(entry.toolUseId, entry);
+  }
+  const byAgent = new Map<string, ToolCallEntry>();
+  for (const entry of entries) {
+    if (entry.kind !== 'tool-result' || entry.agentId === undefined) continue;
+    const call = calls.get(entry.toolUseId);
+    if (call !== undefined && startsSubagent(call)) byAgent.set(entry.agentId, call);
+  }
+  return byAgent;
+}
+
+function startsSubagent(call: ToolCallEntry): boolean {
+  return call.name === 'Agent' || call.name === 'Task';
+}
+
+function descriptionOf(call: ToolCallEntry | undefined): string | undefined {
+  const input = call?.input;
+  if (typeof input !== 'object' || input === null || !('description' in input)) return undefined;
+  const { description } = input;
+  return typeof description === 'string' ? description : undefined;
+}
+
+function handbackHeader(
+  entry: HandbackEntry,
+  agentCalls: ReadonlyMap<string, ToolCallEntry>,
+): string {
+  const call = entry.agentId === null ? undefined : agentCalls.get(entry.agentId);
+  const description = descriptionOf(call);
+  return description === undefined ? GENERIC_HANDBACK_HEADER : `${description} response`;
 }
 
 /** Adjacent calls of one tool share a card; a result never ends the group. */

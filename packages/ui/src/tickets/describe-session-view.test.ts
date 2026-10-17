@@ -33,7 +33,9 @@ function cardsOf(entries: ReadonlyArray<SessionEntryResponse>) {
   if (shown.kind !== 'entries') throw new Error('expected entries');
   return shown.turns
     .flatMap((turn) => turn.items)
-    .map((item) => (item.kind === 'text' ? 'text' : `${item.card.name}×${item.card.calls.length}`));
+    .map((item) =>
+      item.kind === 'tool-card' ? `${item.card.name}×${item.card.calls.length}` : item.kind,
+    );
 }
 
 describe('describeSessionView', () => {
@@ -207,5 +209,108 @@ describe('describeSessionView', () => {
 
   it('should leave out a result whose call is unknown', () => {
     expect(cardsOf([resultOf('missing')])).toEqual([]);
+  });
+});
+
+type Handback = Extract<SessionEntryResponse, { kind: 'handback' }>;
+
+const agentCall = (name = 'Agent'): Call => ({
+  kind: 'tool-call',
+  id: 'c1',
+  toolUseId: 't1',
+  name,
+  input: { description: 'Scan transcripts' },
+});
+const taggedResult = (agentId: string): Result => ({
+  kind: 'tool-result',
+  id: 'r1',
+  toolUseId: 't1',
+  isError: false,
+  parts: [],
+  agentId,
+});
+const handback = (id: string, agentId: string | null): Handback => ({
+  kind: 'handback',
+  id,
+  agentId,
+  text: `report ${id}`,
+});
+
+function turnsOf(entries: ReadonlyArray<SessionEntryResponse>) {
+  const shown = describeSessionView({
+    kind: 'entries',
+    entries,
+    ended: false,
+    connectionLost: false,
+  });
+  if (shown.kind !== 'entries') throw new Error('expected entries');
+  return shown.turns;
+}
+
+function handbackHeaders(entries: ReadonlyArray<SessionEntryResponse>) {
+  return turnsOf(entries)
+    .flatMap((turn) => turn.items)
+    .flatMap((item) => (item.kind === 'handback' ? [item.header] : []));
+}
+
+describe('describeSessionView handbacks', () => {
+  it('should use the call description when the handback matches an Agent call', () => {
+    expect(handbackHeaders([agentCall(), taggedResult('a1'), handback('h', 'a1')])).toEqual([
+      'Scan transcripts response',
+    ]);
+  });
+
+  it('should use the generic header when no result carries the agentId', () => {
+    expect(handbackHeaders([handback('h', 'a9')])).toEqual(['Subagent response']);
+  });
+
+  it('should use the generic header when the handback has no agentId', () => {
+    expect(handbackHeaders([handback('h', null)])).toEqual(['Subagent response']);
+  });
+
+  it('should use the generic header when the tagged call is not Agent or Task', () => {
+    expect(handbackHeaders([agentCall('Bash'), taggedResult('a1'), handback('h', 'a1')])).toEqual([
+      'Subagent response',
+    ]);
+  });
+
+  it('should join a Task call', () => {
+    expect(handbackHeaders([agentCall('Task'), taggedResult('a1'), handback('h', 'a1')])).toEqual([
+      'Scan transcripts response',
+    ]);
+  });
+
+  it('should use the generic header when the call has no string description', () => {
+    const noDescription: Call = { ...agentCall(), input: {} };
+    expect(handbackHeaders([noDescription, taggedResult('a1'), handback('h', 'a1')])).toEqual([
+      'Subagent response',
+    ]);
+  });
+
+  it('should join when the tagged result comes after the handback', () => {
+    expect(handbackHeaders([agentCall(), handback('h', 'a1'), taggedResult('a1')])).toEqual([
+      'Scan transcripts response',
+    ]);
+  });
+
+  it('should give each handback its own item when one subagent hands back twice', () => {
+    expect(
+      handbackHeaders([
+        agentCall(),
+        taggedResult('a1'),
+        handback('h1', 'a1'),
+        handback('h2', 'a1'),
+      ]),
+    ).toEqual(['Scan transcripts response', 'Scan transcripts response']);
+  });
+
+  it('should keep a handback in the turn after the text when it follows a prompt', () => {
+    const turns = turnsOf([
+      { kind: 'prompt', id: 'p', text: 'Go' },
+      text('t'),
+      handback('h', null),
+    ]);
+    expect(turns).toHaveLength(1);
+    expect(turns[0]?.items.map((item) => item.kind)).toEqual(['text', 'handback']);
   });
 });

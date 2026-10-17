@@ -98,6 +98,15 @@ function SessionTurn({
               <div key={item.entry.id} className="sv-bubble">
                 <Markdown>{item.entry.text}</Markdown>
               </div>
+            ) : item.kind === 'handback' ? (
+              <Handback
+                key={item.entry.id}
+                id={item.entry.id}
+                header={item.header}
+                text={item.entry.text}
+                open={opened.has(item.entry.id)}
+                onToggle={onToggle}
+              />
             ) : (
               <ToolCard
                 key={item.card.id}
@@ -118,6 +127,29 @@ function SessionTurn({
         </div>
       )}
     </>
+  );
+}
+
+function Handback({
+  id,
+  header,
+  text,
+  open,
+  onToggle,
+}: {
+  readonly id: string;
+  readonly header: string;
+  readonly text: string;
+  readonly open: boolean;
+  readonly onToggle: (key: string) => void;
+}) {
+  return (
+    <div>
+      <button type="button" aria-expanded={open} onClick={() => onToggle(id)}>
+        {`${header} ${open ? '▾' : '▸'}`}
+      </button>
+      {open && <Markdown>{text}</Markdown>}
+    </div>
   );
 }
 
