@@ -18,29 +18,42 @@ describe('describeSessionView', () => {
     const prompt: SessionEntryResponse = { kind: 'prompt', id: 'p', text: 'Go' };
     expect(
       describeSessionView({ kind: 'entries', entries: [prompt], openText: 'Hel', ended: false }),
-    ).toEqual({ kind: 'entries', entries: [prompt], openText: 'Hel' });
+    ).toEqual({ kind: 'entries', entries: [prompt], openText: 'Hel', ended: false });
   });
 
-  it('should omit the open text when no block is streaming', () => {
+  it('should carry the ended flag so the end line can be drawn', () => {
+    const prompt: SessionEntryResponse = { kind: 'prompt', id: 'p', text: 'Go' };
+    expect(describeSessionView({ kind: 'entries', entries: [prompt], ended: true })).toEqual({
+      kind: 'entries',
+      entries: [prompt],
+      ended: true,
+    });
+  });
+
+  it('should give a system line when there are no entries and no open text', () => {
     const shown = describeSessionView({ kind: 'entries', entries: [], ended: false });
-    expect(shown).toEqual({ kind: 'message', message: 'No entries yet.' });
+    expect(shown).toEqual({ kind: 'system-line', message: 'No entries yet.' });
   });
 
-  it('should give a message for each empty state', () => {
+  it('should give a system line when the ticket has no session', () => {
     expect(describeSessionView({ kind: 'no-session' })).toEqual({
-      kind: 'message',
-      message: 'No session yet. A run on this ticket starts one.',
-    });
-    expect(describeSessionView({ kind: 'transcript-not-found' })).toEqual({
-      kind: 'message',
-      message: "Transcript not found. Claude Code has removed this session's transcript.",
+      kind: 'system-line',
+      message: 'This ticket has no run with a session',
     });
   });
 
-  it('should give a loading message when nothing has arrived', () => {
+  it('should give two lines when the transcript is missing', () => {
+    expect(describeSessionView({ kind: 'transcript-not-found' })).toEqual({
+      kind: 'transcript-not-found',
+      title: 'Transcript not found',
+      detail: 'The run ended, but its transcript is missing. There is nothing to show.',
+    });
+  });
+
+  it('should give a loading caption when nothing has arrived', () => {
     expect(describeSessionView({ kind: 'waiting' })).toEqual({
-      kind: 'message',
-      message: 'Loading the session…',
+      kind: 'loading',
+      caption: 'Connecting to session…',
     });
   });
 });

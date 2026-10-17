@@ -1,6 +1,7 @@
 import type { SessionEntryResponse } from '@aisf/app/api-schemas/session-stream-schemas.js';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import type { SessionView } from './fold-session-view.js';
 import { SessionViewBody } from './session-view.js';
 
 const ignore = () => undefined;
@@ -22,6 +23,10 @@ const result: SessionEntryResponse = {
     { kind: 'image', mediaType: 'image/png', data: 'AAAA' },
   ],
 };
+
+function renderSession(view: SessionView) {
+  return renderToStaticMarkup(<SessionViewBody view={view} opened={new Set()} onToggle={ignore} />);
+}
 
 function render(opened: ReadonlySet<string>) {
   return renderToStaticMarkup(
@@ -70,17 +75,33 @@ describe('SessionViewBody', () => {
     expect(markup.indexOf('typing')).toBeGreaterThan(markup.indexOf('bold'));
   });
 
-  it('should render the loading message before any frame arrives', () => {
-    const markup = renderToStaticMarkup(
-      <SessionViewBody view={{ kind: 'waiting' }} opened={new Set()} onToggle={ignore} />,
-    );
-    expect(markup).toContain('Loading the session…');
+  it('should render the pulsing caption before any frame arrives', () => {
+    const markup = renderSession({ kind: 'waiting' });
+    expect(markup).toContain('Connecting to session…');
+    expect(markup).toContain('pulse');
   });
 
-  it('should render the message when the session is missing', () => {
-    const markup = renderToStaticMarkup(
-      <SessionViewBody view={{ kind: 'no-session' }} opened={new Set()} onToggle={ignore} />,
+  it('should render a system line when the session is missing', () => {
+    const markup = renderSession({ kind: 'no-session' });
+    expect(markup).toContain('This ticket has no run with a session');
+    expect(markup).toContain('role="status"');
+  });
+
+  it('should render both lines, the mark hidden from readers, when the transcript is missing', () => {
+    const markup = renderSession({ kind: 'transcript-not-found' });
+    expect(markup).toContain('<span aria-hidden="true">▲ </span>Transcript not found');
+    expect(markup).toContain('The run ended, but its transcript is missing.');
+    expect(markup).toContain('role="status"');
+  });
+
+  it('should render the end line after the last entry when the session ended', () => {
+    const markup = renderSession({ kind: 'entries', entries: [call], ended: true });
+    expect(markup.indexOf('End of session')).toBeGreaterThan(markup.indexOf('Bash'));
+  });
+
+  it('should render no end line while the session is live', () => {
+    expect(renderSession({ kind: 'entries', entries: [call], ended: false })).not.toContain(
+      'End of session',
     );
-    expect(markup).toContain('No session yet.');
   });
 });

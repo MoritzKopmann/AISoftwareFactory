@@ -14,10 +14,29 @@ export function SessionViewBody({ view, opened, onToggle }: SessionViewBodyProps
   const description = describeSessionView(view);
   return (
     <>
-      {description.kind === 'message' && (
-        <p className="session-message" role="status">
+      {description.kind === 'loading' && (
+        <>
+          <div className="sv-skel sv-skel-right pulse" aria-hidden="true" />
+          <div className="sv-skel sv-skel-left sv-skel-wide pulse" aria-hidden="true" />
+          <div className="sv-skel sv-skel-left sv-skel-narrow pulse" aria-hidden="true" />
+          <p className="sm sv-caption pulse" role="status">
+            {description.caption}
+          </p>
+        </>
+      )}
+      {description.kind === 'system-line' && (
+        <div className="sv-line" role="status">
           {description.message}
-        </p>
+        </div>
+      )}
+      {description.kind === 'transcript-not-found' && (
+        <div className="sv-missing" role="status">
+          <p className="sv-missing-title">
+            <span aria-hidden="true">▲ </span>
+            {description.title}
+          </p>
+          <p className="sm">{description.detail}</p>
+        </div>
       )}
       {description.kind === 'entries' && (
         <>
@@ -34,6 +53,7 @@ export function SessionViewBody({ view, opened, onToggle }: SessionViewBodyProps
               <Markdown>{description.openText}</Markdown>
             </div>
           )}
+          {description.ended && <div className="sv-line">End of session</div>}
         </>
       )}
     </>
