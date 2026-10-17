@@ -42,6 +42,8 @@ export function foldSessionView(view: SessionView, frame: SessionStreamFrame): S
     case 'no-session':
     case 'transcript-not-found':
       return { kind: frame.kind };
+    case 'label':
+      return view;
     case 'entry': {
       const { entries, root, ended, connectionLost } =
         view.kind === 'entries'

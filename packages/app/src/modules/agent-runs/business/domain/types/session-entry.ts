@@ -12,6 +12,7 @@ export type SessionEntry =
       readonly toolUseId: string;
       readonly name: string;
       readonly input: unknown;
+      readonly label?: string;
     }
   | {
       readonly kind: 'tool-result';

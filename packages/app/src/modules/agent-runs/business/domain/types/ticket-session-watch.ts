@@ -11,4 +11,5 @@ export type TicketSessionWatchEvent =
   | { readonly kind: 'transcript-not-found' }
   | { readonly kind: 'entry'; readonly entry: SessionEntry }
   | { readonly kind: 'delta'; readonly opensBlock: boolean; readonly text: string }
+  | { readonly kind: 'label'; readonly toolUseId: string; readonly label: string }
   | { readonly kind: 'ended' };

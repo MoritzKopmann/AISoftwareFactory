@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { sessionStreamFrameSchema } from '../dto/api/session-stream-schemas.js';
 import type { SessionEntry } from '../../business/domain/types/session-entry.js';
+import { CommandLabelService } from '../../business/service/command-label-service.js';
 import { RunQueryService } from '../../business/service/run-query-service.js';
 import {
   buildRun,
+  FakeCommandLabeler,
+  FakeCommandLabelRepository,
   FakeRunRepository,
   FakeRunTranscripts,
   FakeSessionFeed,
@@ -27,7 +30,10 @@ const result: SessionEntry = {
   parts: [{ kind: 'text', text: 'ok' }],
 };
 
-async function createSubject(run?: Parameters<typeof buildRun>[0]) {
+async function createSubject(
+  run?: Parameters<typeof buildRun>[0],
+  commandLabeler = new FakeCommandLabeler(),
+) {
   const runRepository = new FakeRunRepository();
   if (run !== undefined) {
     await runRepository.insert(
@@ -40,6 +46,10 @@ async function createSubject(run?: Parameters<typeof buildRun>[0]) {
     runRepository,
     runTranscripts,
     sessionFeed,
+    commandLabelService: new CommandLabelService({
+      commandLabelRepository: new FakeCommandLabelRepository(),
+      commandLabeler,
+    }),
   });
   return { app: createSessionStreamRoutes(service), runTranscripts, sessionFeed };
 }
@@ -54,6 +64,29 @@ function parseFrames(body: string) {
 const url = '/api/projects/o/r/tickets/12/session';
 
 describe('createSessionStreamRoutes', () => {
+  it('should stream the snapshot, a label frame, then ended when a stored session has an unlabelled Bash call', async () => {
+    const bash: SessionEntry = {
+      kind: 'tool-call',
+      id: 'm2#1',
+      toolUseId: 't1',
+      name: 'Bash',
+      input: { command: 'npm test' },
+    };
+    const { app, runTranscripts } = await createSubject(
+      { state: 'ended' },
+      new FakeCommandLabeler('Runs the tests.'),
+    );
+    runTranscripts.sessionEntries = [bash];
+
+    const response = await app.request(url);
+
+    expect(parseFrames(await response.text())).toEqual([
+      { kind: 'snapshot', entries: [bash], root: '/w/repo/7' },
+      { kind: 'label', toolUseId: 't1', label: 'Runs the tests.' },
+      { kind: 'ended' },
+    ]);
+  });
+
   it('should stream the snapshot then ended when the run is finished', async () => {
     const { app, runTranscripts } = await createSubject({ state: 'ended' });
     runTranscripts.sessionEntries = [prompt, text, call, result];
