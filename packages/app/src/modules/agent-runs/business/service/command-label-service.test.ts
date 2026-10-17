@@ -73,14 +73,14 @@ describe('CommandLabelService', () => {
       expect(commandLabelRepository.labelsByHash.get(hashOf('npm test'))).toBe('Runs the tests.');
     });
 
-    it('should cut the label to 100 chars when the answer is longer', async () => {
+    it('should cut the label to 70 chars when the answer is longer', async () => {
       const answer = 'x'.repeat(150);
       const commandLabeler = new FakeCommandLabeler(answer);
 
       const label = await serviceWith(commandLabeler).labelFor('npm test');
 
-      expect(label).toBe('x'.repeat(100));
-      expect(commandLabelRepository.labelsByHash.get(hashOf('npm test'))).toBe('x'.repeat(100));
+      expect(label).toBe('x'.repeat(70));
+      expect(commandLabelRepository.labelsByHash.get(hashOf('npm test'))).toBe('x'.repeat(70));
     });
 
     it('should store nothing and retry on the next call when the labeler rejects', async () => {

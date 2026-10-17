@@ -3,7 +3,7 @@ import { CommandLabelFailedError } from '../errors/command-label-failed-error.js
 import type { CommandLabeler } from '../port/label/command-labeler.js';
 import type { CommandLabelRepository } from '../port/repository/command-label-repository.js';
 
-const MAX_LABEL_LENGTH = 100;
+const MAX_LABEL_LENGTH = 70;
 
 export type CommandLabelServiceDependencies = {
   readonly commandLabelRepository: CommandLabelRepository;
