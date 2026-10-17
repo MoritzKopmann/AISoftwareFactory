@@ -20,6 +20,16 @@ const result: SessionEntryResponse = {
 };
 
 describe('foldSessionView', () => {
+  it('should keep the snapshot root when an entry follows', () => {
+    const snapshot = foldSessionView(initialSessionView, {
+      kind: 'snapshot',
+      entries: [prompt],
+      root: '/w/repo/7',
+    });
+    const view = foldSessionView(snapshot, { kind: 'entry', entry: text });
+    expect(view).toMatchObject({ kind: 'entries', root: '/w/repo/7' });
+  });
+
   it('should hold the snapshot entries in order when a snapshot arrives', () => {
     const view = foldSessionView(initialSessionView, {
       kind: 'snapshot',
@@ -96,6 +106,7 @@ describe('foldSessionView', () => {
     expect(view).toEqual({
       kind: 'entries',
       entries: [prompt],
+      root: '/w/repo/7',
       ended: false,
       connectionLost: false,
     });

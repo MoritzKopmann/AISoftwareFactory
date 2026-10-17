@@ -87,7 +87,7 @@ describe('SessionViewBody', () => {
   });
 
   it('should render a spinner and only the input toggle when a call has no result in a live run', () => {
-    const markup = renderEntries([readCall('a')]);
+    const markup = renderEntries([readCall('a', 'Edit')]);
     expect(markup).toContain('aria-label="Running"');
     expect(markup.match(/<button/g)).toHaveLength(1);
     expect(markup).toContain('>input ');
@@ -308,5 +308,38 @@ describe('SessionViewBody', () => {
     expect(
       renderSession({ kind: 'entries', entries: [call], ended: false, connectionLost: false }),
     ).not.toContain('End of session');
+  });
+});
+
+describe('SessionViewBody titles', () => {
+  it('should show titles and no input button when rows are Read and Skill', () => {
+    const view: SessionView = {
+      kind: 'entries',
+      root: '/w/repo/7',
+      entries: [
+        {
+          kind: 'tool-call',
+          id: 'a',
+          toolUseId: 'ua',
+          name: 'Read',
+          input: { file_path: '/w/repo/7/a.ts' },
+        },
+        {
+          kind: 'tool-call',
+          id: 'b',
+          toolUseId: 'ub',
+          name: 'Skill',
+          input: { skill: 'aisf:tdd' },
+        },
+      ],
+      ended: false,
+      connectionLost: false,
+    };
+    const markup = renderToStaticMarkup(
+      <SessionViewBody view={view} opened={new Set()} onToggle={ignore} />,
+    );
+    expect(markup).toContain('>a.ts<');
+    expect(markup).toContain('>aisf:tdd<');
+    expect(markup).not.toContain('>input ');
   });
 });

@@ -272,3 +272,83 @@ describe('toggleOpened', () => {
     expect([...toggleOpened(opened, 'a:input')]).toEqual(['a:result']);
   });
 });
+
+describe('describeToolRow titles', () => {
+  const root = '/w/repo/7';
+
+  it('should show only the skill name and no toggles when a Skill call succeeds', () => {
+    const row = describeToolRow(
+      call('Skill', { skill: 'aisf:plan-ticket', args: '521' }),
+      result('ok'),
+      true,
+      root,
+    );
+    expect(row.headline).toEqual({ text: 'aisf:plan-ticket', mono: true });
+    expect(row.inputToggle).toBe(false);
+    expect(row.resultToggle).toBeUndefined();
+  });
+
+  it('should label the result toggle Error when a Skill call fails', () => {
+    const row = describeToolRow(
+      call('Skill', { skill: 'aisf:plan-ticket' }),
+      result('boom', true),
+      true,
+      root,
+    );
+    expect(row.headline?.text).toBe('aisf:plan-ticket');
+    expect(row.inputToggle).toBe(false);
+    expect(row.resultToggle).toMatchObject({ label: 'Error', error: true });
+  });
+
+  it('should show the relative path and keep the result toggle when a Read is inside the root', () => {
+    const row = describeToolRow(
+      call('Read', { file_path: '/w/repo/7/packages/ui/a.ts', offset: 10, limit: 20 }),
+      result('x'),
+      true,
+      root,
+    );
+    expect(row.headline).toEqual({ text: 'packages/ui/a.ts', mono: true });
+    expect(row.inputToggle).toBe(false);
+    expect(row.resultToggle).toBeDefined();
+  });
+
+  it('should use ../ segments when a Read is outside the root', () => {
+    const row = describeToolRow(
+      call('Read', { file_path: '/w/plugins/x.md' }),
+      undefined,
+      true,
+      root,
+    );
+    expect(row.headline?.text).toBe('../../plugins/x.md');
+  });
+
+  it('should show the path as given when no root is known', () => {
+    const row = describeToolRow(call('Read', { file_path: '/w/repo/7/a.ts' }), undefined, true);
+    expect(row.headline?.text).toBe('/w/repo/7/a.ts');
+  });
+
+  it('should make Write, Edit and Grep paths relative and keep their input toggle', () => {
+    const rows = [
+      describeToolRow(call('Write', { file_path: '/w/repo/7/b.ts' }), undefined, true, root),
+      describeToolRow(call('Edit', { file_path: '/w/repo/7/b.ts' }), undefined, true, root),
+      describeToolRow(
+        call('Grep', { pattern: 'foo', path: '/w/repo/7/src' }),
+        undefined,
+        true,
+        root,
+      ),
+    ];
+    expect(rows.map((row) => row.headline?.text)).toEqual(['b.ts', 'b.ts', '"foo" in src']);
+    expect(rows.every((row) => row.inputToggle)).toBe(true);
+  });
+
+  it('should show the description in prose when the tool is Agent', () => {
+    const row = describeToolRow(call('Agent', { description: 'Critic for plan' }), undefined, true);
+    expect(row.headline).toEqual({ text: 'Critic for plan', mono: false });
+  });
+
+  it('should show the tool name after the server when the tool is an mcp tool', () => {
+    const row = describeToolRow(call('mcp__aisf__aisf_show_artifact', {}), undefined, true);
+    expect(row.headline).toEqual({ text: 'aisf_show_artifact', mono: true });
+  });
+});

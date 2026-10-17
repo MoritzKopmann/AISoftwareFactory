@@ -10,6 +10,8 @@ export type SessionView =
   | {
       readonly kind: 'entries';
       readonly entries: ReadonlyArray<SessionEntryResponse>;
+      /** The run's project root from the snapshot; absent before one arrives. */
+      readonly root?: string;
       /** Streamed text of a block this page saw open; absent otherwise. */
       readonly openText?: string;
       readonly ended: boolean;
@@ -30,26 +32,54 @@ function isConnected(view: SessionView): view is Extract<SessionView, { kind: 'e
 export function foldSessionView(view: SessionView, frame: SessionStreamFrame): SessionView {
   switch (frame.kind) {
     case 'snapshot':
-      return { kind: 'entries', entries: frame.entries, ended: false, connectionLost: false };
+      return {
+        kind: 'entries',
+        entries: frame.entries,
+        root: frame.root,
+        ended: false,
+        connectionLost: false,
+      };
     case 'no-session':
     case 'transcript-not-found':
       return { kind: frame.kind };
     case 'entry': {
-      const { entries, ended, connectionLost } =
-        view.kind === 'entries' ? view : { entries: [], ended: false, connectionLost: false };
-      return { kind: 'entries', entries: [...entries, frame.entry], ended, connectionLost };
-    }
-    case 'delta': {
-      const { entries, openText, ended, connectionLost } =
+      const { entries, root, ended, connectionLost } =
         view.kind === 'entries'
           ? view
-          : { entries: [], openText: undefined, ended: false, connectionLost: false };
+          : { entries: [], root: undefined, ended: false, connectionLost: false };
+      return {
+        kind: 'entries',
+        entries: [...entries, frame.entry],
+        ...(root !== undefined && { root }),
+        ended,
+        connectionLost,
+      };
+    }
+    case 'delta': {
+      const { entries, root, openText, ended, connectionLost } =
+        view.kind === 'entries'
+          ? view
+          : {
+              entries: [],
+              root: undefined,
+              openText: undefined,
+              ended: false,
+              connectionLost: false,
+            };
+      const rooted = root !== undefined && { root };
       if (frame.opensBlock) {
-        return { kind: 'entries', entries, openText: frame.text, ended, connectionLost };
+        return { kind: 'entries', entries, ...rooted, openText: frame.text, ended, connectionLost };
       }
       // A block already open when the page connected: ignored, its entry shows it whole.
       if (openText === undefined) return view;
-      return { kind: 'entries', entries, openText: openText + frame.text, ended, connectionLost };
+      return {
+        kind: 'entries',
+        entries,
+        ...rooted,
+        openText: openText + frame.text,
+        ended,
+        connectionLost,
+      };
     }
     case 'ended':
       return view.kind === 'entries' ? { ...view, ended: true } : view;
