@@ -79,4 +79,22 @@ describe('describeSessionPanel', () => {
     const ended: RunPanelDescription = { kind: 'ended', endedLabel: 'Ended 14:19', note: 'x' };
     expect(describeSessionPanel(ended, entries, lastRun).head.kind).toBe('session');
   });
+
+  it('should describe the connection banner when the session view lost its connection', () => {
+    const lost: SessionView = { ...entries, connectionLost: true };
+    expect(describeSessionPanel(live, lost, undefined).connectionBanner).toEqual({
+      line: 'Connection lost. Reconnecting…',
+      note: 'What is shown stays. New entries continue once it is back.',
+    });
+  });
+
+  it('should describe no connection banner when the connection holds', () => {
+    expect(describeSessionPanel(live, entries, undefined)).not.toHaveProperty('connectionBanner');
+  });
+
+  it('should describe no connection banner when the session has not delivered a frame yet', () => {
+    expect(describeSessionPanel(live, { kind: 'waiting' }, undefined)).not.toHaveProperty(
+      'connectionBanner',
+    );
+  });
 });
