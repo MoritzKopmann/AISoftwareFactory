@@ -49,7 +49,8 @@ function buildIdeaSubject(
   } = {},
 ) {
   const runPort = new FakeRunPort();
-  const project = 'project' in options ? options.project : { repository, onboarded: true };
+  const project =
+    'project' in options ? options.project : { repository, onboarded: true, paused: false };
   const subject = buildSubject({
     runPort,
     projectPort: { find: async () => project },
@@ -147,7 +148,7 @@ describe('TicketRunService', () => {
 
     it('should be disabled when the project is not onboarded', async () => {
       const { service } = buildSubject({
-        projectPort: new FakeProjectPort({ repository, onboarded: false }),
+        projectPort: new FakeProjectPort({ repository, onboarded: false, paused: false }),
       });
 
       expect(await service.readAvailability('moritz/aisf', 138)).toEqual({
@@ -429,7 +430,7 @@ describe('TicketRunService', () => {
 
     it('should throw RunNotAvailableError and create nothing when the project is not onboarded', async () => {
       const { service, ticketPort } = buildIdeaSubject({
-        project: { repository, onboarded: false },
+        project: { repository, onboarded: false, paused: false },
       });
 
       await expect(service.startIdeaSession('moritz/aisf', 'x')).rejects.toThrow(

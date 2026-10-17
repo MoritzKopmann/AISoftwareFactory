@@ -8,6 +8,9 @@ export type SchedulableTicket = {
   readonly types: ReadonlyArray<TicketType>;
   readonly isLeaf: boolean;
   readonly hasOpenBlocker: boolean;
+  readonly stuck: boolean;
+  readonly waiting: boolean;
+  readonly syncFailed: boolean;
   readonly subIssueNumbers: ReadonlyArray<number>;
   readonly snapshotTakenAt?: string;
 };

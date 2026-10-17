@@ -16,6 +16,9 @@ describe('TicketsAdapter', () => {
         types: ['task'],
         isLeaf: true,
         hasOpenBlocker: false,
+        stuck: false,
+        waiting: false,
+        syncFailed: false,
         subIssueNumbers: [],
         snapshotTakenAt: '2026-09-29T10:00:00.000Z',
       });
@@ -34,6 +37,29 @@ describe('TicketsAdapter', () => {
         hasOpenBlocker: true,
         subIssueNumbers: [9],
       });
+    });
+
+    it('should flag stuck and not waiting when the ticket is stuck', async () => {
+      const adapter = new TicketsAdapter(
+        new FakeTicketsApi(buildTicketDto({ number: 7, stuck: true, waiting: false })),
+      );
+
+      expect(await adapter.find('moritz/aisf', 7)).toMatchObject({ stuck: true, waiting: false });
+    });
+
+    it('should flag syncFailed when the sync state is failed', async () => {
+      const tickets = new FakeTicketsApi();
+      tickets.syncState = 'failed';
+
+      expect(await new TicketsAdapter(tickets).find('moritz/aisf', 138)).toMatchObject({
+        syncFailed: true,
+      });
+    });
+
+    it('should not flag syncFailed when the sync state is ok', async () => {
+      const adapter = new TicketsAdapter(new FakeTicketsApi());
+
+      expect(await adapter.find('moritz/aisf', 138)).toMatchObject({ syncFailed: false });
     });
 
     it('should return undefined when the ticket is unknown', async () => {

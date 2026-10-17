@@ -22,6 +22,9 @@ export const readyLeaf: SchedulableTicket = {
   types: [],
   isLeaf: true,
   hasOpenBlocker: false,
+  stuck: false,
+  waiting: false,
+  syncFailed: false,
   subIssueNumbers: [],
   snapshotTakenAt: '2026-09-29T10:00:00.000Z',
 };
@@ -110,7 +113,11 @@ export class FakeSkillPort implements SkillPort {
 
 export class FakeProjectPort implements ProjectPort {
   constructor(
-    private readonly project: SchedulerProject | undefined = { repository, onboarded: true },
+    private readonly project: SchedulerProject | undefined = {
+      repository,
+      onboarded: true,
+      paused: false,
+    },
   ) {}
 
   async find(): Promise<SchedulerProject | undefined> {

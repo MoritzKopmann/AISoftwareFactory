@@ -10,6 +10,9 @@ const readyLeaf: SchedulableTicket = {
   types: [],
   isLeaf: true,
   hasOpenBlocker: false,
+  stuck: false,
+  waiting: false,
+  syncFailed: false,
   subIssueNumbers: [],
   snapshotTakenAt: '2026-09-29T10:00:00.000Z',
 };

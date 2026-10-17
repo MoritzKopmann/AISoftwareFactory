@@ -30,6 +30,9 @@ export class TicketsAdapter implements TicketPort {
       types: ticket.types,
       isLeaf: ticket.subIssueNumbers.length === 0,
       hasOpenBlocker: ticket.blockedBy.some((blocker) => blocker.open),
+      stuck: ticket.stuck,
+      waiting: ticket.waiting,
+      syncFailed: projectTicket.sync.state === 'failed',
       subIssueNumbers: ticket.subIssueNumbers,
       ...(snapshotTakenAt === undefined ? {} : { snapshotTakenAt }),
     };

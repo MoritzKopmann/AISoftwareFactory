@@ -8,6 +8,10 @@ export class ProjectsAdapter implements ProjectPort {
     const project = (await this.projects.list()).find(({ id }) => id === projectId);
     return project === undefined
       ? undefined
-      : { repository: project.repository, onboarded: project.contract.passed };
+      : {
+          repository: project.repository,
+          onboarded: project.contract.passed,
+          paused: project.paused,
+        };
   }
 }
