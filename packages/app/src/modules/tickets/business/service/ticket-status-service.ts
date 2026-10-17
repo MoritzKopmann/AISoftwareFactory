@@ -7,6 +7,7 @@ import type { RunEndTransition } from '../domain/types/run-end-transition.js';
 import type { TicketLiveState } from '../domain/types/ticket-live-state.js';
 import type { WaitingRun } from '../domain/types/waiting-run.js';
 import { TicketNotAnswerableError } from '../errors/ticket-not-answerable-error.js';
+import { TicketNotMovableError } from '../errors/ticket-not-movable-error.js';
 import { TicketNotResettableError } from '../errors/ticket-not-resettable-error.js';
 import type { TicketStatusWrites } from '../port/github/ticket-status-writes.js';
 import type { ProjectPort } from '../port/project/project-port.js';
@@ -101,6 +102,28 @@ export class TicketStatusService {
       to: status,
       waiting: false,
       stuck: false,
+    });
+  }
+
+  async moveToPlan(projectId: string, ticketNumber: number): Promise<void> {
+    const { ticketStatusWrites, events } = this.dependencies;
+
+    const project = await this.findProject(projectId);
+    if (project === undefined) {
+      throw new TicketNotMovableError(`${projectId} is unknown`);
+    }
+    const live = await ticketStatusWrites.readState(project.repository, ticketNumber);
+    if (live.status !== 'backlog') {
+      throw new TicketNotMovableError(`#${ticketNumber} is not in backlog`);
+    }
+    await ticketStatusWrites.setStatus(project.repository, ticketNumber, 'plan');
+    events.emit('ticket.status-written', {
+      projectId,
+      ticketNumber,
+      from: 'backlog',
+      to: 'plan',
+      waiting: live.waiting,
+      stuck: live.stuck,
     });
   }
 

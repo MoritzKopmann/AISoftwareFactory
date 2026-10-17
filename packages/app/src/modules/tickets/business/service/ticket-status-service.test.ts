@@ -4,6 +4,7 @@ import type { ProjectPort } from '../port/project/project-port.js';
 import { FakeEventPublisher } from '../../../../shared/testing/fake-event-publisher.js';
 import { FakeProjectPort } from '../../testing/fake-tickets-ports.js';
 import { FakeTicketStatusWrites, FakeRunPort } from '../../testing/fake-ticket-status-writes.js';
+import { TicketNotMovableError } from '../errors/ticket-not-movable-error.js';
 import { TicketNotResettableError } from '../errors/ticket-not-resettable-error.js';
 import type { TicketStatus } from '../../../../shared/ticket-status/ticket-status.js';
 import type { FinishedRun } from '../domain/types/finished-run.js';
@@ -280,6 +281,79 @@ describe('TicketStatusService', () => {
         ]);
       },
     );
+  });
+
+  describe('moveToPlan', () => {
+    function buildSubject(
+      liveStatus: TicketStatus,
+      projectPort: ProjectPort = new FakeProjectPort([
+        { projectId: 'owner/name', repository: { owner: 'owner', name: 'name' } },
+      ]),
+    ) {
+      const ticketStatusWrites = new FakeTicketStatusWrites();
+      ticketStatusWrites.liveStatus = liveStatus;
+      const events = new FakeEventPublisher();
+      const useCase = new TicketStatusService({
+        ...unusedTicketStatusDependencies,
+        ticketStatusWrites,
+        projectPort,
+        events,
+      });
+      return { useCase, ticketStatusWrites, events };
+    }
+
+    it('should write status plan and emit ticket.status-written when the ticket is in backlog', async () => {
+      const { useCase, ticketStatusWrites, events } = buildSubject('backlog');
+
+      await useCase.moveToPlan('owner/name', 7);
+
+      expect(ticketStatusWrites.calls).toEqual(['readState', 'setStatus #7 -> plan']);
+      expect(events.emittedEvents).toEqual([
+        {
+          name: 'ticket.status-written',
+          payload: {
+            projectId: 'owner/name',
+            ticketNumber: 7,
+            from: 'backlog',
+            to: 'plan',
+            waiting: false,
+            stuck: false,
+          },
+        },
+      ]);
+    });
+
+    it('should carry the live flags in the event when the backlog ticket is flagged', async () => {
+      const { useCase, ticketStatusWrites, events } = buildSubject('backlog');
+      ticketStatusWrites.liveStuck = true;
+
+      await useCase.moveToPlan('owner/name', 7);
+
+      expect(events.emittedEvents).toMatchObject([{ payload: { waiting: false, stuck: true } }]);
+    });
+
+    it('should throw and write nothing when the ticket is not in backlog', async () => {
+      const { useCase, ticketStatusWrites, events } = buildSubject('ready');
+
+      await expect(useCase.moveToPlan('owner/name', 7)).rejects.toBeInstanceOf(
+        TicketNotMovableError,
+      );
+      expect(ticketStatusWrites.calls).toEqual(['readState']);
+      expect(events.emittedEvents).toEqual([]);
+    });
+
+    it('should throw and write nothing when the project is unknown', async () => {
+      const { useCase, ticketStatusWrites, events } = buildSubject(
+        'backlog',
+        new FakeProjectPort([]),
+      );
+
+      await expect(useCase.moveToPlan('owner/missing', 7)).rejects.toBeInstanceOf(
+        TicketNotMovableError,
+      );
+      expect(ticketStatusWrites.calls).toEqual([]);
+      expect(events.emittedEvents).toEqual([]);
+    });
   });
 
   describe('settleFinishedRun', () => {
