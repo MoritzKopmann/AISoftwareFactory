@@ -279,6 +279,24 @@ a.ext::after {
   justify-items: start;
 }
 
+.move-to-plan {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+.done-line {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 15px;
+}
+
+.done-line .shape {
+  color: var(--ok);
+  margin-left: 0;
+}
+
 .runline {
   display: flex;
   flex-wrap: wrap;

@@ -9,6 +9,9 @@ import {
   type TicketPageDescription,
   type TicketPageOutcome,
 } from './describe-ticket-page.js';
+import { describeMoveToPlanAction, type MoveToPlanState } from './describe-move-to-plan-action.js';
+import { MoveToPlanAction } from './move-to-plan-action.js';
+import { moveTicketToPlan } from './move-ticket-to-plan.js';
 import { outcomeAfterRefresh } from './outcome-after-refresh.js';
 import { ReviewPanel } from './review-panel.js';
 import { RunSection } from './run-section.js';
@@ -156,6 +159,14 @@ function LoadedTicket({
   readonly description: Extract<TicketPageDescription, { kind: 'loaded' }>;
 }) {
   const { statusMark, parent, pullRequests } = description;
+  const [moveToPlan, setMoveToPlan] = useState<MoveToPlanState>({ kind: 'idle' });
+  const moveToPlanNow = async () => {
+    setMoveToPlan({ kind: 'sending' });
+    const outcome = await moveTicketToPlan(projectId, number, (url, requestInit) =>
+      fetch(url, requestInit),
+    );
+    setMoveToPlan(outcome.kind === 'moved' ? { kind: 'done' } : outcome);
+  };
   return (
     <>
       <div className="ticket-head">
@@ -179,6 +190,10 @@ function LoadedTicket({
           </a>
         </div>
       </div>
+      <MoveToPlanAction
+        description={describeMoveToPlanAction(description.status, moveToPlan, number)}
+        onMove={() => void moveToPlanNow()}
+      />
       <RunSection
         liveUpdates={liveUpdates}
         projectId={projectId}

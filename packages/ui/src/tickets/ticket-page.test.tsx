@@ -38,6 +38,44 @@ describe('TicketPageView', () => {
     expect(markup.match(/aria-label="Session"/g)).toHaveLength(2);
   });
 
+  it.each([
+    { status: 'backlog', shown: true },
+    { status: 'plan', shown: false },
+    { status: 'ready', shown: false },
+  ] as const)(
+    'should show Move to plan between the head and the session only when the status is backlog ($status)',
+    ({ status, shown }) => {
+      const markup = renderToStaticMarkup(
+        <TicketPageView
+          liveUpdates={liveUpdates}
+          projectId="o/n"
+          number={212}
+          description={{
+            kind: 'loaded',
+            numberLabel: '#212',
+            title: 'Export a trip',
+            status,
+            waiting: false,
+            stuck: false,
+            statusLabel: 'Backlog',
+            statusMark: { shape: '○', tone: 'neutral', pulses: false },
+            url: 'https://github.com/o/n/issues/212',
+            body: '',
+            runSkill: 'create-ticket',
+            pullRequests: [],
+          }}
+          onRetry={ignore}
+        />,
+      );
+      expect(markup.includes('aria-label="Move to plan"')).toBe(shown);
+      if (shown) {
+        expect(markup).toMatch(
+          /<\/div><section class="move-to-plan" aria-label="Move to plan">.*<\/section><section[^>]*aria-label="(Run|Session)/,
+        );
+      }
+    },
+  );
+
   it('should show the status chip, then the Waiting chip, then Open on GitHub when the ticket is marked waiting', () => {
     const markup = renderToStaticMarkup(
       <TicketPageView
