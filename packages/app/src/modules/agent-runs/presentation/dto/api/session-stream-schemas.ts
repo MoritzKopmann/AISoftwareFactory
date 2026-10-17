@@ -26,7 +26,11 @@ export const sessionEntryResponseSchema = z.discriminatedUnion('kind', [
 export type SessionEntryResponse = z.infer<typeof sessionEntryResponseSchema>;
 
 export const sessionStreamFrameSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('snapshot'), entries: z.array(sessionEntryResponseSchema) }),
+  z.object({
+    kind: z.literal('snapshot'),
+    entries: z.array(sessionEntryResponseSchema),
+    root: z.string(),
+  }),
   z.object({ kind: z.literal('no-session') }),
   z.object({ kind: z.literal('transcript-not-found') }),
   z.object({ kind: z.literal('entry'), entry: sessionEntryResponseSchema }),

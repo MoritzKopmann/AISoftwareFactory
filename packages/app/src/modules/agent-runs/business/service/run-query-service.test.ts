@@ -124,7 +124,7 @@ describe('RunQueryService', () => {
     async function createWatchSubject(runOverrides: Parameters<typeof buildRun>[0] | 'none' = {}) {
       const runRepository = new FakeRunRepository();
       if (runOverrides !== 'none') {
-        await runRepository.insert(buildRun(runOverrides));
+        await runRepository.insert(buildRun({ worktreePath: '/w/repo/7', ...runOverrides }));
       }
       const runTranscripts = new FakeRunTranscripts();
       const sessionFeed = new FakeSessionFeed();
@@ -145,7 +145,7 @@ describe('RunQueryService', () => {
       await watch();
 
       expect(events).toEqual([
-        { kind: 'snapshot', entries: [prompt, text, call, result] },
+        { kind: 'snapshot', entries: [prompt, text, call, result], root: '/w/repo/7' },
         { kind: 'ended' },
       ]);
     });
@@ -185,7 +185,7 @@ describe('RunQueryService', () => {
       sessionFeed.publish('run-1', { kind: 'entry', entry: call });
 
       expect(events).toEqual([
-        { kind: 'snapshot', entries: [prompt, text] },
+        { kind: 'snapshot', entries: [prompt, text], root: '/w/repo/7' },
         { kind: 'delta', opensBlock: true, text: 'Hel' },
         { kind: 'entry', entry: call },
       ]);
@@ -200,7 +200,7 @@ describe('RunQueryService', () => {
       sessionFeed.publish('run-1', { kind: 'text-delta', opensBlock: false, text: 'x' });
 
       expect(events).toEqual([
-        { kind: 'snapshot', entries: [prompt] },
+        { kind: 'snapshot', entries: [prompt], root: '/w/repo/7' },
         { kind: 'delta', opensBlock: false, text: 'x' },
       ]);
     });
@@ -217,7 +217,7 @@ describe('RunQueryService', () => {
       await watch();
 
       expect(events).toEqual([
-        { kind: 'snapshot', entries: [prompt, text] },
+        { kind: 'snapshot', entries: [prompt, text], root: '/w/repo/7' },
         { kind: 'delta', opensBlock: true, text: 'a' },
       ]);
     });
