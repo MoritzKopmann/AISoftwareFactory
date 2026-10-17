@@ -1,5 +1,6 @@
 import type { Clock } from '../../../../shared/clock/clock.js';
 import type { EventPublisher } from '../../../../shared/event-bus.js';
+import { closedTicketNumbers } from '../domain/functions/closed-ticket-numbers.js';
 import { diffSnapshots } from '../domain/functions/diff-snapshots.js';
 import { failWatch } from '../domain/functions/fail-watch.js';
 import { findRateLimitGate } from '../domain/functions/find-rate-limit-gate.js';
@@ -223,6 +224,9 @@ export class RepositoryWatchService {
     const diff = diffSnapshots(watch.snapshot, snapshot);
     if (hasSnapshotChanges(diff)) {
       events.emit('snapshot.changed', { projectId: watch.projectId, ...diff });
+    }
+    for (const ticketNumber of closedTicketNumbers(watch.snapshot, snapshot)) {
+      events.emit('ticket.closed', { projectId: watch.projectId, ticketNumber });
     }
     return {
       ...watch,
