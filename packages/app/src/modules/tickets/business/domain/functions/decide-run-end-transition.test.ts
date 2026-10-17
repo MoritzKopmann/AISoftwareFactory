@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decideRunEndTransition } from './decide-run-end-transition.js';
+import { decideRunEndTransition, needsSpikeCheck } from './decide-run-end-transition.js';
 import type { RunStage } from '../types/run-stage.js';
 import type { RunEnding } from '../types/run-ending.js';
 import type { TicketLiveState } from '../types/ticket-live-state.js';
@@ -270,5 +270,51 @@ describe('decideRunEndTransition for authoring runs', () => {
     ).toEqual({
       kind: 'none',
     });
+  });
+});
+
+describe('decideRunEndTransition for a plan run that finished', () => {
+  const finished: RunEnding = { kind: 'finished' };
+
+  it('should mark the ticket stuck when the ticket is still at plan with no open spike', () => {
+    expect(decideRunEndTransition(finished, live('plan'), 'plan', false)).toEqual({
+      kind: 'flag',
+      state: 'stuck',
+      comment: 'The plan run finished but the ticket is still at plan',
+    });
+  });
+
+  it('should change nothing when the ticket is still at plan with an open spike', () => {
+    expect(decideRunEndTransition(finished, live('plan'), 'plan', true)).toEqual({ kind: 'none' });
+  });
+
+  it('should change nothing when the ticket moved on to planned', () => {
+    expect(decideRunEndTransition(finished, live('planned'), 'plan', false)).toEqual({
+      kind: 'none',
+    });
+  });
+
+  it('should change nothing when the ticket is already stuck', () => {
+    expect(decideRunEndTransition(finished, live('plan', { stuck: true }), 'plan', false)).toEqual({
+      kind: 'none',
+    });
+  });
+
+  it('should change nothing when a create run finished at idea', () => {
+    expect(decideRunEndTransition(finished, live('idea'), 'create', false)).toEqual({
+      kind: 'none',
+    });
+  });
+});
+
+describe('needsSpikeCheck', () => {
+  it('should be true only when a plan run finished with the ticket at plan and not stuck', () => {
+    expect(needsSpikeCheck({ kind: 'finished' }, live('plan'), 'plan')).toBe(true);
+    expect(needsSpikeCheck({ kind: 'finished' }, live('planned'), 'plan')).toBe(false);
+    expect(needsSpikeCheck({ kind: 'finished' }, live('plan', { stuck: true }), 'plan')).toBe(
+      false,
+    );
+    expect(needsSpikeCheck({ kind: 'finished' }, live('idea'), 'create')).toBe(false);
+    expect(needsSpikeCheck({ kind: 'crashed', reason: 'x' }, live('plan'), 'plan')).toBe(false);
   });
 });

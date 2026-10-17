@@ -9,6 +9,7 @@ export class FakeTicketStatusWrites implements TicketStatusWrites {
   liveStatus: TicketStatus = 'in-progress';
   liveWaiting = false;
   liveStuck = false;
+  openSpike = false;
   setStatusFailure: Error | undefined;
 
   async readState(): Promise<TicketLiveState> {
@@ -43,6 +44,11 @@ export class FakeTicketStatusWrites implements TicketStatusWrites {
       throw this.setStatusFailure;
     }
     this.liveStatus = to;
+  }
+
+  async hasOpenSpike(_repository: RepositoryReference, ticketNumber: number): Promise<boolean> {
+    this.calls.push(`hasOpenSpike #${ticketNumber}`);
+    return this.openSpike;
   }
 
   async comment(

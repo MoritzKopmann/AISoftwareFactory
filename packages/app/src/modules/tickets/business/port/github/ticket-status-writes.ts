@@ -11,5 +11,6 @@ export interface TicketStatusWrites {
     state: 'waiting' | 'stuck',
     on: boolean,
   ): Promise<void>;
+  hasOpenSpike(repository: RepositoryReference, ticketNumber: number): Promise<boolean>;
   comment(repository: RepositoryReference, ticketNumber: number, body: string): Promise<void>;
 }
