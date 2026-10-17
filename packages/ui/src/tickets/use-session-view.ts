@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { LiveUpdates } from '../live/live-updates.js';
 import { createSessionStream } from './create-session-stream.js';
+import { toggleOpened } from './describe-tool-card.js';
 import { initialSessionView, type SessionView } from './fold-session-view.js';
 
 type SessionViewState = {
   readonly view: SessionView;
   readonly opened: ReadonlySet<string>;
-  readonly toggle: (id: string) => void;
+  readonly toggle: (key: string) => void;
 };
 
 export function useSessionView(
@@ -34,12 +35,10 @@ export function useSessionView(
     return () => stream.close();
   }, [liveUpdates, projectId, number]);
 
-  const toggle = (id: string) =>
-    setOpened((current) => {
-      const next = new Set(current);
-      if (!next.delete(id)) next.add(id);
-      return next;
-    });
+  const toggle = useCallback(
+    (key: string) => setOpened((current) => toggleOpened(current, key)),
+    [],
+  );
 
   return { view, opened, toggle };
 }

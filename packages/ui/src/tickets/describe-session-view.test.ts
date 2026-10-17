@@ -1,17 +1,40 @@
 import type { SessionEntryResponse } from '@aisf/app/api-schemas/session-stream-schemas.js';
 import { describe, expect, it } from 'vitest';
-import { describeSessionEntry, describeSessionView } from './describe-session-view.js';
+import { describeSessionView } from './describe-session-view.js';
 
-const result: SessionEntryResponse = {
+type Text = Extract<SessionEntryResponse, { kind: 'text' }>;
+type Call = Extract<SessionEntryResponse, { kind: 'tool-call' }>;
+type Result = Extract<SessionEntryResponse, { kind: 'tool-result' }>;
+
+const textItem = (entry: Text) => ({ kind: 'text', entry });
+const call = (id: string, name: string): Call => ({
+  kind: 'tool-call',
+  id,
+  toolUseId: `use-${id}`,
+  name,
+  input: {},
+});
+const resultOf = (id: string): Result => ({
   kind: 'tool-result',
-  id: 'r1',
-  toolUseId: 't1',
+  id: `r-${id}`,
+  toolUseId: `use-${id}`,
   isError: false,
-  parts: [
-    { kind: 'text', text: 'big output' },
-    { kind: 'image', mediaType: 'image/png', data: 'AAAA' },
-  ],
-};
+  parts: [],
+});
+const text = (id: string): Text => ({ kind: 'text', id, text: id });
+
+function cardsOf(entries: ReadonlyArray<SessionEntryResponse>) {
+  const shown = describeSessionView({
+    kind: 'entries',
+    entries,
+    ended: false,
+    connectionLost: false,
+  });
+  if (shown.kind !== 'entries') throw new Error('expected entries');
+  return shown.turns
+    .flatMap((turn) => turn.items)
+    .map((item) => (item.kind === 'text' ? 'text' : `${item.card.name}×${item.card.calls.length}`));
+}
 
 describe('describeSessionView', () => {
   it('should put the open block into the last turn when text is streaming', () => {
@@ -26,7 +49,7 @@ describe('describeSessionView', () => {
       }),
     ).toEqual({
       kind: 'entries',
-      turns: [{ id: 'p', prompt, entries: [], openText: 'Hel' }],
+      turns: [{ id: 'p', prompt, items: [], openText: 'Hel' }],
       ended: false,
     });
   });
@@ -42,7 +65,7 @@ describe('describeSessionView', () => {
       }),
     ).toEqual({
       kind: 'entries',
-      turns: [{ id: 'p', prompt, entries: [] }],
+      turns: [{ id: 'p', prompt, items: [] }],
       ended: true,
     });
   });
@@ -63,8 +86,8 @@ describe('describeSessionView', () => {
     ).toEqual({
       kind: 'entries',
       turns: [
-        { id: 'p1', prompt: p1, entries: [t1, t2] },
-        { id: 'p2', prompt: p2, entries: [t3] },
+        { id: 'p1', prompt: p1, items: [textItem(t1), textItem(t2)] },
+        { id: 'p2', prompt: p2, items: [textItem(t3)] },
       ],
       ended: false,
     });
@@ -82,7 +105,7 @@ describe('describeSessionView', () => {
       }),
     ).toEqual({
       kind: 'entries',
-      turns: [{ id: 'start', entries: [t1], openText: 'x' }],
+      turns: [{ id: 'start', items: [textItem(t1)], openText: 'x' }],
       ended: false,
     });
   });
@@ -118,62 +141,71 @@ describe('describeSessionView', () => {
       caption: 'Connecting to session…',
     });
   });
-});
 
-describe('describeSessionEntry', () => {
-  it('should show a tool call with its full input as formatted json', () => {
-    expect(
-      describeSessionEntry(
-        { kind: 'tool-call', id: 'c', toolUseId: 't', name: 'Bash', input: { command: 'ls' } },
-        false,
-      ),
-    ).toEqual({
-      kind: 'tool-call',
-      name: 'Bash',
-      input: JSON.stringify({ command: 'ls' }, null, 2),
+  it('should hold a call and its result in one row when the toolUseId matches', () => {
+    const c = call('c', 'Read');
+    const r = resultOf('c');
+    const shown = describeSessionView({
+      kind: 'entries',
+      entries: [c, r],
+      ended: false,
+      connectionLost: false,
     });
-  });
-
-  it('should hold no body for a collapsed tool result', () => {
-    expect(describeSessionEntry(result, false)).toEqual({
-      kind: 'tool-result',
-      label: 'Result',
-      open: false,
-    });
-  });
-
-  it('should hold the text and the image source for an opened tool result', () => {
-    expect(describeSessionEntry(result, true)).toEqual({
-      kind: 'tool-result',
-      label: 'Result',
-      open: true,
-      parts: [
-        { kind: 'text', text: 'big output' },
-        { kind: 'image', src: 'data:image/png;base64,AAAA' },
+    expect(shown).toMatchObject({
+      turns: [
+        { items: [{ kind: 'tool-card', card: { id: 'c', calls: [{ call: c, result: r }] } }] },
       ],
     });
   });
 
-  it('should label an error result and drop an image whose media type is not an image', () => {
-    const bad: SessionEntryResponse = {
-      kind: 'tool-result',
-      id: 'r2',
-      toolUseId: 't',
-      isError: true,
-      parts: [{ kind: 'image', mediaType: 'text/html', data: 'x' }],
-    };
-    expect(describeSessionEntry(bad, true)).toEqual({
-      kind: 'tool-result',
-      label: 'Result (error)',
-      open: true,
-      parts: [],
+  it('should leave the result out of the row when the call has no result yet', () => {
+    const c = call('c', 'Read');
+    const shown = describeSessionView({
+      kind: 'entries',
+      entries: [c],
+      ended: false,
+      connectionLost: false,
     });
+    expect(shown).toMatchObject({ turns: [{ items: [{ card: { calls: [{ call: c }] } }] }] });
+    expect(JSON.stringify(shown)).not.toContain('"result"');
   });
 
-  it('should pass a text entry through', () => {
-    expect(describeSessionEntry({ kind: 'text', id: 'x', text: 'Hi' }, false)).toEqual({
-      kind: 'text',
-      text: 'Hi',
-    });
+  it('should join adjacent calls of one tool into one card when results sit between them', () => {
+    expect(
+      cardsOf([
+        call('a', 'Read'),
+        resultOf('a'),
+        call('b', 'Read'),
+        call('c', 'Read'),
+        resultOf('c'),
+        resultOf('b'),
+      ]),
+    ).toEqual(['Read×3']);
+  });
+
+  it('should start a new card when the tool changes', () => {
+    expect(cardsOf([call('a', 'Read'), call('b', 'Edit'), call('c', 'Read')])).toEqual([
+      'Read×1',
+      'Edit×1',
+      'Read×1',
+    ]);
+  });
+
+  it('should end the group when a text entry comes between two calls of one tool', () => {
+    expect(cardsOf([call('a', 'Read'), text('t'), call('b', 'Read')])).toEqual([
+      'Read×1',
+      'text',
+      'Read×1',
+    ]);
+  });
+
+  it('should end the group when a prompt comes between two calls of one tool', () => {
+    expect(
+      cardsOf([call('a', 'Read'), { kind: 'prompt', id: 'p', text: 'Go' }, call('b', 'Read')]),
+    ).toEqual(['Read×1', 'Read×1']);
+  });
+
+  it('should leave out a result whose call is unknown', () => {
+    expect(cardsOf([resultOf('missing')])).toEqual([]);
   });
 });
