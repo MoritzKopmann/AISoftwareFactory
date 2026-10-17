@@ -11,10 +11,19 @@ const runningStatuses: Readonly<Record<RunStage, ReadonlyArray<TicketStatus>>> =
   plan: ['plan'],
 };
 
+export function needsSpikeCheck(
+  ending: RunEnding,
+  live: TicketLiveState,
+  stage: RunStage,
+): boolean {
+  return stage === 'plan' && ending.kind === 'finished' && live.status === 'plan' && !live.stuck;
+}
+
 export function decideRunEndTransition(
   ending: RunEnding,
   live: TicketLiveState,
   stage: RunStage,
+  hasOpenSpike = true,
 ): RunEndTransition {
   const authoring = stage === 'create' || stage === 'plan';
   if (ending.kind === 'parked') {
@@ -26,8 +35,15 @@ export function decideRunEndTransition(
     return { kind: 'none' };
   }
   // An authoring run that ends `finished` is normal: the ticket moved on by itself.
+  // A plan run left at `plan` with no open spike would be started again every poll.
   if (authoring && ending.kind === 'finished') {
-    return { kind: 'none' };
+    return needsSpikeCheck(ending, live, stage) && !hasOpenSpike
+      ? {
+          kind: 'flag',
+          state: 'stuck',
+          comment: 'The plan run finished but the ticket is still at plan',
+        }
+      : { kind: 'none' };
   }
   if (ending.kind === 'checkpoint' || ending.kind === 'permission-needed') {
     if (live.waiting) {

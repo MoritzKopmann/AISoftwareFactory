@@ -1,6 +1,9 @@
 import type { EventPublisher } from '../../../../shared/event-bus.js';
 import type { Logger } from '../../../../shared/logger/create-logger.js';
-import { decideRunEndTransition } from '../domain/functions/decide-run-end-transition.js';
+import {
+  decideRunEndTransition,
+  needsSpikeCheck,
+} from '../domain/functions/decide-run-end-transition.js';
 import type { FinishedRun } from '../domain/types/finished-run.js';
 import type { RepositoryReference } from '../domain/types/repository-reference.js';
 import type { RunEndTransition } from '../domain/types/run-end-transition.js';
@@ -118,11 +121,14 @@ export class TicketStatusService {
     }
 
     const live = await ticketStatusWrites.readState(project.repository, ticketNumber);
+    const hasOpenSpike = needsSpikeCheck(ending, live, stage)
+      ? await ticketStatusWrites.hasOpenSpike(project.repository, ticketNumber)
+      : true;
     await this.applyTransition(
       project,
       ticketNumber,
       live,
-      decideRunEndTransition(ending, live, stage),
+      decideRunEndTransition(ending, live, stage, hasOpenSpike),
     );
     await runPort.settle(runId);
   }

@@ -362,6 +362,51 @@ describe('TicketStatusService', () => {
       expect(runPort.calls).toEqual(['settle run-1']);
     });
 
+    describe('a plan run that finished', () => {
+      const planRun: FinishedRun = {
+        ...escalatedRun,
+        stage: 'plan',
+        ending: { kind: 'finished' },
+      };
+
+      it('should add the stuck label, comment and emit stuck when the ticket is still at plan with no open spike', async () => {
+        const { useCase, ticketStatusWrites, events } = buildSubject();
+        ticketStatusWrites.liveStatus = 'plan';
+
+        await useCase.settleFinishedRun(planRun);
+
+        expect(ticketStatusWrites.calls).toEqual([
+          'readState',
+          'hasOpenSpike #138',
+          'setSecondaryState #138 stuck on',
+          'comment #138: The plan run finished but the ticket is still at plan',
+        ]);
+        expect(events.emittedEvents).toContainEqual({
+          name: 'ticket.status-written',
+          payload: expect.objectContaining({ ticketNumber: 138, stuck: true }) as unknown,
+        });
+      });
+
+      it('should write nothing when the ticket is still at plan with an open spike', async () => {
+        const { useCase, ticketStatusWrites } = buildSubject();
+        ticketStatusWrites.liveStatus = 'plan';
+        ticketStatusWrites.openSpike = true;
+
+        await useCase.settleFinishedRun(planRun);
+
+        expect(ticketStatusWrites.calls).toEqual(['readState', 'hasOpenSpike #138']);
+      });
+
+      it('should not read spikes when the ticket moved on to planned', async () => {
+        const { useCase, ticketStatusWrites } = buildSubject();
+        ticketStatusWrites.liveStatus = 'planned';
+
+        await useCase.settleFinishedRun(planRun);
+
+        expect(ticketStatusWrites.calls).toEqual(['readState']);
+      });
+    });
+
     it('should write nothing and settle when the ticket was marked stuck during the run', async () => {
       const { useCase, ticketStatusWrites, runPort } = buildSubject();
       ticketStatusWrites.liveStuck = true;
@@ -544,20 +589,6 @@ describe('TicketStatusService', () => {
           'setSecondaryState #138 stuck on',
           'comment #138: The run crashed: boom',
         ]);
-      });
-
-      it('should add no label when a plan run finished at plan', async () => {
-        const { useCase, ticketStatusWrites, runPort } = buildSubject();
-        ticketStatusWrites.liveStatus = 'plan';
-
-        await useCase.settleFinishedRun({
-          ...escalatedRun,
-          stage: 'plan',
-          ending: { kind: 'finished' },
-        });
-
-        expect(ticketStatusWrites.calls).toEqual(['readState']);
-        expect(runPort.calls).toEqual(['settle run-1']);
       });
     });
   });

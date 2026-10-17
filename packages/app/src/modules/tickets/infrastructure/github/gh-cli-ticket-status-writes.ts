@@ -5,9 +5,11 @@ import type { TicketStatus } from '../../../../shared/ticket-status/ticket-statu
 import type { RepositoryReference } from '../../business/domain/types/repository-reference.js';
 import { TicketWriteFailedError } from '../../business/errors/ticket-write-failed-error.js';
 import type { TicketStatusWrites } from '../../business/port/github/ticket-status-writes.js';
+import { runProcess } from '../../../../shared/process/run-process.js';
 import { runGhCommand } from '../../../../shared/process/run-gh-command.js';
 
 const statusLabelPrefix = 'status: ';
+const spikeLabel = 'type: spike';
 
 type LiveTicket = {
   readonly labels: ReadonlyArray<{ readonly name: string }>;
@@ -59,6 +61,26 @@ export class GhCliTicketStatusWrites implements TicketStatusWrites {
       on ? '--add-label' : '--remove-label',
       state,
     ]);
+  }
+
+  async hasOpenSpike(repository: RepositoryReference, ticketNumber: number): Promise<boolean> {
+    const result = await runProcess(
+      'gh',
+      [
+        'api',
+        `repos/${repository.owner}/${repository.name}/issues/${ticketNumber}/sub_issues`,
+        '--paginate',
+        '--jq',
+        '.[] | select(.state == "open") | .labels[].name',
+      ],
+      { timeoutMilliseconds: 30_000 },
+    );
+    if (result.exitCode !== 0) {
+      throw new TicketWriteFailedError(
+        result.standardError.trim() || `gh api sub_issues of #${ticketNumber} failed`,
+      );
+    }
+    return result.standardOutput.split('\n').includes(spikeLabel);
   }
 
   async comment(
