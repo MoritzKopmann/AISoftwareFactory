@@ -224,6 +224,12 @@ function LoadedTicket({
                   </div>
                 </div>
                 <div className="tp-actions">
+                  <KnownBugs
+                    liveUpdates={liveUpdates}
+                    projectId={projectId}
+                    ticketNumber={number}
+                    variant="popover"
+                  />
                   <DescriptionToggle toggle={swap.toggle} onToggle={onToggle} />
                   {slots.runBar}
                 </div>
@@ -242,11 +248,6 @@ function LoadedTicket({
                   {description.reviewPanel === undefined && (
                     <PullRequestsRow pullRequests={pullRequests} />
                   )}
-                  <KnownBugs
-                    liveUpdates={liveUpdates}
-                    projectId={projectId}
-                    ticketNumber={number}
-                  />
                   {slots.lowerPanel !== undefined && (
                     <div className="tp-lower" hidden={swap.panel !== 'round'}>
                       {slots.lowerPanel}

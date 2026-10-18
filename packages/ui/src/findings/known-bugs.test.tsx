@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { KnownBugRowAction, KnownBugsDescription } from './describe-known-bugs.js';
-import { KnownBugsSection } from './known-bugs.js';
+import { KnownBugsPopoverView, KnownBugsSection } from './known-bugs.js';
 
 const ignore = () => undefined;
 
@@ -215,5 +215,91 @@ describe('KnownBugsSection', () => {
       /role="alert"[^>]*>.*Couldn&#x27;t create the ticket. The findings route answered 500\./,
     );
     expect(markup).toContain('>500<');
+  });
+});
+
+function renderPopover(description: KnownBugsDescription, open: boolean): string {
+  return renderToStaticMarkup(
+    <KnownBugsPopoverView
+      description={description}
+      open={open}
+      onOpenEvent={ignore}
+      onRetry={ignore}
+      onShowAll={ignore}
+      onCreateTicket={ignore}
+      onDismiss={ignore}
+    />,
+  );
+}
+
+function renderOpenPopover(description: KnownBugsDescription): string {
+  return renderPopover(description, true);
+}
+
+function renderClosedPopover(description: KnownBugsDescription): string {
+  return renderPopover(description, false);
+}
+
+describe('KnownBugsPopoverView', () => {
+  it('should render nothing when loading', () => {
+    expect(renderOpenPopover({ kind: 'loading' })).toBe('');
+  });
+
+  it('should render nothing when there are no findings', () => {
+    expect(renderOpenPopover({ kind: 'empty' })).toBe('');
+  });
+
+  it('should render a trigger with a hidden mark and the count label when closed', () => {
+    const markup = renderClosedPopover({ ...list, countLabel: '3' });
+
+    expect(markup).toMatch(/<button[^>]*aria-haspopup="dialog"[^>]*aria-expanded="false"/);
+    expect(markup).toMatch(/aria-hidden="true">■<\/span>3 known bugs</);
+    expect(markup).not.toContain('role="dialog"');
+  });
+
+  it('should mark the trigger expanded and render the dialog when open', () => {
+    const markup = renderOpenPopover(list);
+
+    expect(markup).toContain('aria-expanded="true"');
+    expect(markup).toMatch(/role="dialog"[^>]*aria-label="Known bugs"/);
+  });
+
+  it('should put the Known bugs label and the count in the dialog head when open', () => {
+    const markup = renderOpenPopover(list);
+
+    expect(markup).toMatch(/<span class="label">Known bugs<\/span><span[^>]*>1<\/span>/);
+  });
+
+  it('should render the same row and actions as the section when open', () => {
+    const markup = renderOpenPopover(list);
+
+    expect(markup).toContain('The retry counter is never reset.');
+    expect(markup).toContain('packages/app/src/retry-policy.ts:42');
+    expect(markup).toMatch(/<button[^>]*>Create ticket</);
+    expect(markup).toMatch(/<button[^>]*>Dismiss</);
+  });
+
+  it('should render the banner and the footer inside the dialog when the description has them', () => {
+    const markup = renderOpenPopover({
+      ...list,
+      banner: 'Showing the old list.',
+      footer: 'Showing 20 of 25.',
+    });
+
+    expect(markup).toContain('Showing the old list.');
+    expect(markup).toContain('Showing 20 of 25.');
+    expect(markup).toMatch(/<button[^>]*>Show all</);
+  });
+
+  it('should label the trigger Known bugs and show the error with Retry when the read failed', () => {
+    const markup = renderOpenPopover({
+      kind: 'error',
+      message: "Couldn't load known bugs. Can't reach aisf.",
+      detail: 'Failed to fetch',
+    });
+
+    expect(markup).toMatch(/aria-hidden="true">■<\/span>Known bugs<\/button>/);
+    expect(markup).toContain('role="alert"');
+    expect(markup).toMatch(/<button[^>]*>Retry</);
   });
 });
