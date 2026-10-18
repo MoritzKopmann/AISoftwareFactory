@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { LiveUpdates } from '../live/live-updates.js';
 import { useLiveRead } from '../live/use-live-read.js';
 import { RunMarkerChip } from '../board/run-marker-chip.js';
@@ -9,6 +9,12 @@ import {
   type TicketPageDescription,
   type TicketPageOutcome,
 } from './describe-ticket-page.js';
+import {
+  describeDescriptionSwap,
+  settleDescriptionOpen,
+  type DescriptionSwap,
+} from './describe-description-swap.js';
+import { DescriptionToggle } from './description-toggle.js';
 import { describeMoveToPlanAction, type MoveToPlanState } from './describe-move-to-plan-action.js';
 import { MoveToPlanAction } from './move-to-plan-action.js';
 import { moveTicketToPlan } from './move-ticket-to-plan.js';
@@ -176,68 +182,102 @@ function LoadedTicket({
       runSkill={description.runSkill}
     >
       {(slots) => (
-        <>
-          <header className="tp-bar">
-            <div className="tp-id">
-              <BackLink projectId={projectId} />
-              <h1>
-                <span className="num-id">{description.numberLabel}</span>
-                {description.title}
-              </h1>
-              <div className="tp-chips">
-                <span className={`chip ${statusMark.tone}`}>
-                  <span
-                    className={`shape s-${statusMark.tone}${statusMark.pulses ? ' pulse' : ''}`}
-                    aria-hidden="true"
-                  >
-                    {statusMark.shape}
-                  </span>
-                  {description.statusLabel}
-                </span>
-                {description.marker !== undefined && <RunMarkerChip marker={description.marker} />}
-                <a className="ext" href={description.url} target="_blank" rel="noopener">
-                  Open on GitHub
-                </a>
-                {parent !== undefined && (
-                  <>
-                    <span className="dot" aria-hidden="true">
-                      ·
+        <DescriptionSwapState roundUp={slots.lowerPanel !== undefined}>
+          {(swap, onToggle) => (
+            <>
+              <header className="tp-bar">
+                <div className="tp-id">
+                  <BackLink projectId={projectId} />
+                  <h1>
+                    <span className="num-id">{description.numberLabel}</span>
+                    {description.title}
+                  </h1>
+                  <div className="tp-chips">
+                    <span className={`chip ${statusMark.tone}`}>
+                      <span
+                        className={`shape s-${statusMark.tone}${statusMark.pulses ? ' pulse' : ''}`}
+                        aria-hidden="true"
+                      >
+                        {statusMark.shape}
+                      </span>
+                      {description.statusLabel}
                     </span>
-                    <span>
-                      <span className="label">Parent</span>
-                      <a href={parent.href}>
-                        <span className="num-id">{parent.numberLabel}</span> {parent.title}
-                      </a>
-                    </span>
-                  </>
-                )}
+                    {description.marker !== undefined && (
+                      <RunMarkerChip marker={description.marker} />
+                    )}
+                    <a className="ext" href={description.url} target="_blank" rel="noopener">
+                      Open on GitHub
+                    </a>
+                    {parent !== undefined && (
+                      <>
+                        <span className="dot" aria-hidden="true">
+                          ·
+                        </span>
+                        <span>
+                          <span className="label">Parent</span>
+                          <a href={parent.href}>
+                            <span className="num-id">{parent.numberLabel}</span> {parent.title}
+                          </a>
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="tp-actions">
+                  <DescriptionToggle toggle={swap.toggle} onToggle={onToggle} />
+                  {slots.runBar}
+                </div>
+              </header>
+              <div className="tp-cols">
+                <div className="tp-left">
+                  {description.reviewPanel !== undefined && (
+                    <ReviewPanel description={description.reviewPanel} />
+                  )}
+                  {slots.stack}
+                  <MoveToPlanAction
+                    description={describeMoveToPlanAction(description.status, moveToPlan, number)}
+                    onMove={() => void moveToPlanNow()}
+                  />
+                  {slots.reset}
+                  {description.reviewPanel === undefined && (
+                    <PullRequestsRow pullRequests={pullRequests} />
+                  )}
+                  <KnownBugs
+                    liveUpdates={liveUpdates}
+                    projectId={projectId}
+                    ticketNumber={number}
+                  />
+                  {slots.lowerPanel !== undefined && (
+                    <div className="tp-lower" hidden={swap.panel !== 'round'}>
+                      {slots.lowerPanel}
+                    </div>
+                  )}
+                  {swap.panel === 'description' && <TicketBodySection body={description.body} />}
+                </div>
+                {slots.session}
               </div>
-            </div>
-            <div className="tp-actions">{slots.runBar}</div>
-          </header>
-          <div className="tp-cols">
-            <div className="tp-left">
-              {description.reviewPanel !== undefined && (
-                <ReviewPanel description={description.reviewPanel} />
-              )}
-              {slots.stack}
-              <MoveToPlanAction
-                description={describeMoveToPlanAction(description.status, moveToPlan, number)}
-                onMove={() => void moveToPlanNow()}
-              />
-              {slots.reset}
-              {description.reviewPanel === undefined && (
-                <PullRequestsRow pullRequests={pullRequests} />
-              )}
-              <KnownBugs liveUpdates={liveUpdates} projectId={projectId} ticketNumber={number} />
-              {slots.lowerPanel ?? <TicketBodySection body={description.body} />}
-            </div>
-            {slots.session}
-          </div>
-        </>
+            </>
+          )}
+        </DescriptionSwapState>
       )}
     </RunSection>
   );
+}
+
+type DescriptionSwapStateProps = {
+  readonly roundUp: boolean;
+  readonly children: (swap: DescriptionSwap, onToggle: () => void) => ReactNode;
+};
+
+function DescriptionSwapState({ roundUp, children }: DescriptionSwapStateProps) {
+  const [open, setOpen] = useState(false);
+  const settled = settleDescriptionOpen(open, roundUp);
+  if (settled !== open) {
+    setOpen(settled);
+  }
+  return children(describeDescriptionSwap(roundUp, settled), () => {
+    setOpen(!settled);
+  });
 }
 
 function BackLink({ projectId }: { readonly projectId: string }) {

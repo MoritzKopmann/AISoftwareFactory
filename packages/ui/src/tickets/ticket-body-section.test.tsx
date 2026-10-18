@@ -3,14 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { TicketBodySection } from './ticket-body-section.js';
 
 describe('TicketBodySection', () => {
-  it('should render a collapsed details with the Description label and toggle texts when rendered', () => {
+  it('should render a Description panel with a lead and a body when rendered', () => {
     const markup = renderToStaticMarkup(<TicketBodySection body="Hello" />);
-    expect(markup).toMatch(/^<details class="row ticket-body">/);
-    expect(markup).not.toContain(' open');
-    expect(markup).toContain('>Description<');
-    expect(markup).toContain('Show description');
-    expect(markup).toContain('Hide description');
-    expect(markup).not.toContain('class="n"');
+    expect(markup).toMatch(
+      /^<section class="ticket-body" id="ticket-description" aria-label="Description"><div class="head"><h2 class="lead">Description<\/h2><\/div><div class="body">.*<\/div><\/section>$/,
+    );
+    expect(markup).not.toContain('<details');
+    expect(markup).not.toContain('Show description');
   });
 
   it('should render the markdown body as elements when the body has text', () => {

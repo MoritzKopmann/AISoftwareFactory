@@ -8,24 +8,17 @@ type TicketBodySectionProps = {
 export function TicketBodySection({ body }: TicketBodySectionProps) {
   const description = describeTicketBody(body);
   return (
-    <details className="row ticket-body">
-      <summary className="row-h">
-        <span className="chev" aria-hidden="true">
-          ›
-        </span>
-        <span className="label">Description</span>
-        <span className="toggle-text">
-          <span className="t-show">Show description</span>
-          <span className="t-hide">Hide description</span>
-        </span>
-      </summary>
-      <div className="ticket-body-box">
+    <section className="ticket-body" id="ticket-description" aria-label="Description">
+      <div className="head">
+        <h2 className="lead">Description</h2>
+      </div>
+      <div className="body">
         {description.kind === 'empty' ? (
           <p className="ticket-body-empty">No description</p>
         ) : (
           <TicketBodyMarkdown source={description.source} />
         )}
       </div>
-    </details>
+    </section>
   );
 }
