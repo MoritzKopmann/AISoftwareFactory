@@ -258,6 +258,7 @@ export function RunSection({
         description={describeSessionPanel(shownPanel, session.view, ticketRun.response?.lastRun)}
         onRetry={retryRun}
         onStop={stopActiveRun}
+        runStartedAt={(ticketRun.response?.activeRun ?? ticketRun.response?.lastRun)?.startedAt}
       >
         <SessionViewBody view={session.view} opened={session.opened} onToggle={session.toggle} />
       </SessionPanel>

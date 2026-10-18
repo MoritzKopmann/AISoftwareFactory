@@ -1,16 +1,26 @@
 import type { ReactNode } from 'react';
 import type { SessionPanelDescription } from './describe-session-panel.js';
 import { StopButton } from './stop-button.js';
+import { useStickToBottom } from './use-stick-to-bottom.js';
 
 type SessionPanelProps = {
   readonly description: SessionPanelDescription;
   readonly onStop: () => void;
   readonly onRetry: () => void;
+  /** Identifies the run shown; a new value starts the chat pinned to the bottom again. */
+  readonly runStartedAt?: string | undefined;
   readonly children: ReactNode;
 };
 
-export function SessionPanel({ description, onStop, onRetry, children }: SessionPanelProps) {
+export function SessionPanel({
+  description,
+  onStop,
+  onRetry,
+  runStartedAt,
+  children,
+}: SessionPanelProps) {
   const { head, connectionBanner } = description;
+  const chatRef = useStickToBottom<HTMLDivElement>(runStartedAt);
   return (
     <section className={`session-panel rail-${description.rail}`} aria-label={description.label}>
       <div className="head">
@@ -60,7 +70,7 @@ export function SessionPanel({ description, onStop, onRetry, children }: Session
           </p>
         </div>
       )}
-      <div className="chat" role="log" aria-label="Session">
+      <div ref={chatRef} className="chat" role="log" aria-label="Session">
         {children}
       </div>
     </section>
