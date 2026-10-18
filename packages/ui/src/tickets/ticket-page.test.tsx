@@ -46,9 +46,15 @@ describe('TicketPageView', () => {
     expect(markup).not.toContain('runlog');
     expect(markup).not.toContain('class="steps"');
     expect(markup).toMatch(
-      /<main class="page ticket-page">.*<\/header><div class="tp-cols"><div class="tp-left">.*<details class="row ticket-body"><summary.*<\/summary>.*<\/details><\/div><section class="session-panel rail-border-strong" aria-label="Session">.*role="log" aria-label="Session".*<\/section><\/div><\/main>$/,
+      /<main class="page ticket-page">.*<\/header><div class="tp-cols"><div class="tp-left">.*<section class="ticket-body" id="ticket-description" aria-label="Description">.*<\/section><\/div><section class="session-panel rail-border-strong" aria-label="Session">.*role="log" aria-label="Session".*<\/section><\/div><\/main>$/,
     );
     expect(markup.match(/aria-label="Session"/g)).toHaveLength(2);
+  });
+
+  it('should show no description toggle when no round is up', () => {
+    const markup = render(loaded());
+
+    expect(markup).not.toContain('class="tp-toggle"');
   });
 
   it('should show the back link, the title, the status chip, Open on GitHub and the parent in that order in the top bar when the ticket has a parent', () => {
