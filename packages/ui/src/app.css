@@ -824,7 +824,7 @@ details:not([open]) .t-hide {
 }
 
 .tp-cols > .session-panel {
-  flex: 1 1 400px;
+  flex: 1 1 800px;
   height: 100%;
 }
 
