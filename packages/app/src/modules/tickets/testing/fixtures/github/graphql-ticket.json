@@ -30,6 +30,8 @@
               "mergeable": "UNKNOWN",
               "canBeRebased": false,
               "headRefOid": "0c4d5e6f7a8b",
+              "reviews": { "nodes": [] },
+              "comments": { "nodes": [] },
               "commits": { "nodes": [{ "commit": { "statusCheckRollup": null } }] }
             }
           ]
