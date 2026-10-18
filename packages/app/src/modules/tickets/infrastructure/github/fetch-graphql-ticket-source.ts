@@ -32,6 +32,8 @@ const ticketFields = `
       mergeable
       canBeRebased
       headRefOid
+      reviews(last: 20) { nodes { state body submittedAt } }
+      comments(last: 20) { nodes { createdAt } }
       commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
     }
   }
@@ -76,6 +78,12 @@ const ticketQuery = `
   }
 `;
 
+type ReviewNode = {
+  readonly state: string;
+  readonly body: string;
+  readonly submittedAt: string | null;
+};
+
 type IssueNode = {
   readonly number: number;
   readonly title: string;
@@ -101,6 +109,8 @@ type IssueNode = {
       readonly mergeable: string;
       readonly canBeRebased: boolean;
       readonly headRefOid: string;
+      readonly reviews: { readonly nodes: ReadonlyArray<ReviewNode> };
+      readonly comments: { readonly nodes: ReadonlyArray<{ readonly createdAt: string }> };
       readonly commits: {
         readonly nodes: ReadonlyArray<{
           readonly commit: { readonly statusCheckRollup: { readonly state: string } | null };
@@ -250,9 +260,31 @@ function toTicket(node: IssueNode, state: 'open' | 'closed'): Ticket {
       mergeable: toMergeable(pullRequest.mergeable),
       canBeRebased: pullRequest.canBeRebased,
       headCommit: pullRequest.headRefOid,
+      ...toLastReviewActivity(pullRequest),
     })),
     updatedAt: node.updatedAt,
   };
+}
+
+function toLastReviewActivity(pullRequest: {
+  readonly reviews: { readonly nodes: ReadonlyArray<ReviewNode> };
+  readonly comments: { readonly nodes: ReadonlyArray<{ readonly createdAt: string }> };
+}): { lastReviewActivityAt?: string } {
+  const times = [
+    ...pullRequest.reviews.nodes.flatMap((review) =>
+      review.submittedAt !== null && countsAsFeedback(review) ? [review.submittedAt] : [],
+    ),
+    ...pullRequest.comments.nodes.map((comment) => comment.createdAt),
+  ];
+  const latest = times.reduce<string | undefined>(
+    (best, time) => (best === undefined || Date.parse(time) > Date.parse(best) ? time : best),
+    undefined,
+  );
+  return latest === undefined ? {} : { lastReviewActivityAt: latest };
+}
+
+function countsAsFeedback(review: ReviewNode): boolean {
+  return review.state === 'COMMENTED' || review.state === 'CHANGES_REQUESTED' || review.body !== '';
 }
 
 function toChecks(rollupState: string | undefined): ClosingPullRequest['checks'] {

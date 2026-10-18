@@ -39,6 +39,8 @@
               "mergeable": "CONFLICTING",
               "canBeRebased": false,
               "headRefOid": "1a2b3c4d5e6f",
+              "reviews": { "nodes": [] },
+              "comments": { "nodes": [] },
               "commits": {
                 "nodes": [
                   {
@@ -59,6 +61,8 @@
               "mergeable": "MERGEABLE",
               "canBeRebased": false,
               "headRefOid": "6f5e4d3c2b1a",
+              "reviews": { "nodes": [] },
+              "comments": { "nodes": [] },
               "commits": {
                 "nodes": [
                   {

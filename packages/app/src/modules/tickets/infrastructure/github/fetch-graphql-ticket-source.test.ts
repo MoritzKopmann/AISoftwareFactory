@@ -32,6 +32,33 @@ function readRequestBody(
   return JSON.parse(body ?? '{}') as { query: string; variables: unknown };
 }
 
+type ReviewNode = { state: string; body: string; submittedAt: string | null };
+
+async function readLastReviewActivityAt(activity: {
+  reviews?: ReviewNode[];
+  comments?: Array<{ createdAt: string }>;
+}): Promise<{ hasKey: boolean; value: unknown }> {
+  const payload = JSON.parse(readFixture('graphql-ticket.json')) as {
+    data: {
+      repository: { issueOrPullRequest: { closedByPullRequestsReferences: { nodes: object[] } } };
+    };
+  };
+  const node = payload.data.repository.issueOrPullRequest.closedByPullRequestsReferences.nodes[0];
+  Object.assign(node ?? {}, {
+    reviews: { nodes: activity.reviews ?? [] },
+    comments: { nodes: activity.comments ?? [] },
+  });
+  const scriptedFetch = new ScriptedFetch([new Response(JSON.stringify(payload), { status: 200 })]);
+
+  const ticket = await createSource(scriptedFetch).ticket(repository, 8);
+
+  const pullRequest = ticket?.closingPullRequests[0];
+  return {
+    hasKey: pullRequest !== undefined && 'lastReviewActivityAt' in pullRequest,
+    value: pullRequest?.lastReviewActivityAt,
+  };
+}
+
 describe('FetchGraphQLTicketSource', () => {
   describe('snapshot', () => {
     it('should return every open issue once with its mapped fields when two pages are read', async () => {
@@ -88,6 +115,7 @@ describe('FetchGraphQLTicketSource', () => {
             mergeable: 'mergeable',
             canBeRebased: true,
             headCommit: '9f2c1e7a4b8d',
+            lastReviewActivityAt: '2026-10-18T10:00:00Z',
           },
         ],
         updatedAt: '2026-09-28T08:15:02Z',
@@ -277,6 +305,90 @@ describe('FetchGraphQLTicketSource', () => {
 
       await expect(failure).rejects.toBeInstanceOf(GitHubRequestError);
       await expect(failure).rejects.toThrow('Could not resolve to a Repository');
+    });
+  });
+
+  describe('lastReviewActivityAt', () => {
+    it('should take the latest of reviews and comments when both exist', async () => {
+      const result = await readLastReviewActivityAt({
+        reviews: [{ state: 'COMMENTED', body: '', submittedAt: '2026-10-18T09:00:00Z' }],
+        comments: [{ createdAt: '2026-10-18T10:00:00Z' }],
+      });
+
+      expect(result.value).toBe('2026-10-18T10:00:00Z');
+    });
+
+    it('should compare times as instants when the offsets differ', async () => {
+      const result = await readLastReviewActivityAt({
+        reviews: [{ state: 'COMMENTED', body: '', submittedAt: '2026-10-18T09:30:00Z' }],
+        comments: [{ createdAt: '2026-10-18T10:00:00+02:00' }],
+      });
+
+      expect(result.value).toBe('2026-10-18T09:30:00Z');
+    });
+
+    it('should count a changes-requested review when it is the only activity', async () => {
+      const result = await readLastReviewActivityAt({
+        reviews: [{ state: 'CHANGES_REQUESTED', body: '', submittedAt: '2026-10-18T09:00:00Z' }],
+      });
+
+      expect(result.value).toBe('2026-10-18T09:00:00Z');
+    });
+
+    it('should leave the key out when the only review is an approval with an empty body', async () => {
+      const result = await readLastReviewActivityAt({
+        reviews: [{ state: 'APPROVED', body: '', submittedAt: '2026-10-18T09:00:00Z' }],
+      });
+
+      expect(result.hasKey).toBe(false);
+    });
+
+    it('should count an approval when it has body text', async () => {
+      const result = await readLastReviewActivityAt({
+        reviews: [
+          { state: 'APPROVED', body: 'nit: rename x', submittedAt: '2026-10-18T09:00:00Z' },
+        ],
+      });
+
+      expect(result.value).toBe('2026-10-18T09:00:00Z');
+    });
+
+    it('should leave the key out when the only review is pending', async () => {
+      const result = await readLastReviewActivityAt({
+        reviews: [{ state: 'COMMENTED', body: 'draft', submittedAt: null }],
+      });
+
+      expect(result.hasKey).toBe(false);
+    });
+
+    it('should leave the key out when there are no reviews and no comments', async () => {
+      const result = await readLastReviewActivityAt({});
+
+      expect(result.hasKey).toBe(false);
+    });
+
+    it('should ask for reviews and comments of the last 20 and no threads in all three queries', async () => {
+      const first = new ScriptedFetch([
+        answer('graphql-open-page-2.json'),
+        answer('graphql-closed.json'),
+      ]);
+      await createSource(first).snapshot(repository);
+      const second = new ScriptedFetch([answer('graphql-ticket.json')]);
+      await createSource(second).ticket(repository, 8);
+
+      const queries = [
+        readRequestBody(first, 0).query,
+        readRequestBody(first, 1).query,
+        readRequestBody(second, 0).query,
+      ];
+
+      for (const query of queries) {
+        const fromPullRequests = query.slice(query.indexOf('closedByPullRequestsReferences'));
+        expect(fromPullRequests).toContain('reviews(last: 20)');
+        expect(fromPullRequests).toContain('comments(last: 20)');
+        expect(query).not.toContain('reviewThreads');
+        expect(query).not.toContain('reviewDecision');
+      }
     });
   });
 
