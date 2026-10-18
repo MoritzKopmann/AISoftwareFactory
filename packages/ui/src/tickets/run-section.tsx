@@ -1,6 +1,6 @@
 import type { TicketResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
 import type { TicketArtifactsResponse } from '@aisf/app/api-schemas/artifacts-schemas.js';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { LiveUpdates } from '../live/live-updates.js';
 import { useLiveRead } from '../live/use-live-read.js';
 import { ArtifactLinks } from './artifact-links.js';
@@ -52,6 +52,15 @@ type RunSectionProps = {
   readonly number: number;
   readonly ticketState: Pick<TicketResponse, 'status' | 'waiting' | 'stuck'>;
   readonly runSkill: RunSkill;
+  readonly children: (slots: RunSlots) => ReactNode;
+};
+
+export type RunSlots = {
+  readonly runBar: ReactNode;
+  readonly stack: ReactNode;
+  readonly reset: ReactNode;
+  readonly lowerPanel: ReactNode | undefined;
+  readonly session: ReactNode;
 };
 
 export function RunSection({
@@ -60,6 +69,7 @@ export function RunSection({
   number,
   ticketState,
   runSkill,
+  children,
 }: RunSectionProps) {
   const { status: ticketStatus, stuck: ticketStuck } = ticketState;
   const { ticketRun, retry: retryRun } = useTicketRun(liveUpdates, projectId, number);
@@ -184,47 +194,66 @@ export function RunSection({
     if (activeRunId !== undefined) void stop(activeRunId);
   };
 
-  return (
-    <>
+  // A round that is up fills the lower panel. Once it has ended its note joins the stack.
+  const roundPanelElement = <RoundPanel description={roundPanel} onStop={stopActiveRun} />;
+  const roundEnded = roundPanel.kind === 'ended';
+
+  return children({
+    runBar: (
       <RunBar
         description={describeRunBar(ticketRun.response, ticketState, start, number, runSkill)}
         onRun={() => void run()}
       />
-      <PermissionPrompt
-        description={prompt}
-        onAnswer={(decision) => {
-          if (prompt.kind === 'shown') {
-            void answer(
-              {
-                runId: prompt.runId,
-                ...(prompt.waitingSince === undefined ? {} : { waitingSince: prompt.waitingSince }),
-              },
-              decision,
-            );
-          }
-        }}
+    ),
+    stack: (
+      <>
+        <PermissionPrompt
+          description={prompt}
+          onAnswer={(decision) => {
+            if (prompt.kind === 'shown') {
+              void answer(
+                {
+                  runId: prompt.runId,
+                  ...(prompt.waitingSince === undefined
+                    ? {}
+                    : { waitingSince: prompt.waitingSince }),
+                },
+                decision,
+              );
+            }
+          }}
+        />
+        {roundEnded && roundPanelElement}
+        <CheckpointPrompt
+          description={checkpointPrompt}
+          onDraftChange={(draft) => {
+            if (checkpointPrompt.kind === 'shown') {
+              setCheckpointAnswer((current) =>
+                editCheckpointDraft(current, checkpointPrompt.runId, draft),
+              );
+            }
+          }}
+          onSend={() => {
+            if (checkpointPrompt.kind === 'shown') {
+              void sendCheckpointAnswer(checkpointPrompt.runId, checkpointPrompt.draft);
+            }
+          }}
+        />
+        <ArtifactLinks
+          description={describeArtifactLinks(artifacts, artifactsFailure)}
+          onRetry={retryArtifacts}
+        />
+        <RunPanel description={shownPanel} />
+      </>
+    ),
+    reset: (
+      <ResetAction
+        description={describeResetAction(ticketRun.response, ticketState, reset, number)}
+        onReset={() => void resetToReady()}
       />
-      <RoundPanel description={roundPanel} onStop={stopActiveRun} />
-      <CheckpointPrompt
-        description={checkpointPrompt}
-        onDraftChange={(draft) => {
-          if (checkpointPrompt.kind === 'shown') {
-            setCheckpointAnswer((current) =>
-              editCheckpointDraft(current, checkpointPrompt.runId, draft),
-            );
-          }
-        }}
-        onSend={() => {
-          if (checkpointPrompt.kind === 'shown') {
-            void sendCheckpointAnswer(checkpointPrompt.runId, checkpointPrompt.draft);
-          }
-        }}
-      />
-      <ArtifactLinks
-        description={describeArtifactLinks(artifacts, artifactsFailure)}
-        onRetry={retryArtifacts}
-      />
-      <RunPanel description={shownPanel} />
+    ),
+    lowerPanel: roundPanel.kind === 'shown' ? roundPanelElement : undefined,
+    session: (
       <SessionPanel
         description={describeSessionPanel(shownPanel, session.view, ticketRun.response?.lastRun)}
         onRetry={retryRun}
@@ -232,10 +261,6 @@ export function RunSection({
       >
         <SessionViewBody view={session.view} opened={session.opened} onToggle={session.toggle} />
       </SessionPanel>
-      <ResetAction
-        description={describeResetAction(ticketRun.response, ticketState, reset, number)}
-        onReset={() => void resetToReady()}
-      />
-    </>
-  );
+    ),
+  });
 }

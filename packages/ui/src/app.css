@@ -276,7 +276,6 @@ a.ext::after {
 .reset {
   display: grid;
   gap: 6px;
-  max-width: 720px;
   justify-items: start;
 }
 
@@ -711,7 +710,8 @@ details:not([open]) .t-hide {
   gap: 8px;
 }
 
-.ticket-head h1 {
+.tp-id h1 {
+  margin: 0;
   text-transform: none;
   letter-spacing: 0;
   font-family: var(--font-ui);
@@ -719,12 +719,12 @@ details:not([open]) .t-hide {
   line-height: 1.3;
 }
 
-.ticket-head h1 .num-id {
+.tp-id h1 .num-id {
   font-size: 20px;
   margin-right: 8px;
 }
 
-.ticket-head .inline {
+.tp-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 12px;
@@ -732,14 +732,103 @@ details:not([open]) .t-hide {
   font-size: var(--text-size-sm);
 }
 
+.tp-chips .dot {
+  color: var(--muted);
+}
+
+.tp-chips .label {
+  margin-right: 6px;
+}
+
+.ticket-page {
+  flex: 1;
+  min-height: 640px;
+  padding: 0;
+  gap: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.main:has(> .ticket-page) {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.tp-bar {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding: 14px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.tp-id {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tp-id .back {
+  text-decoration: none;
+}
+
+.tp-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tp-cols {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px 24px 24px;
+}
+
+.tp-left {
+  flex: 999 1 520px;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.tp-left > * {
+  flex: none;
+}
+
+.tp-left > .round-panel:not(.ended) {
+  flex: 1;
+}
+
+.tp-cols > .session-panel {
+  flex: 1 1 400px;
+  height: 100%;
+}
+
 .facts {
   display: grid;
   grid-template-columns: 112px minmax(0, 1fr);
   gap: 10px 16px;
   align-items: baseline;
-  max-width: 720px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
+}
+
+.tp-left > .facts {
+  padding-top: 0;
+  border-top: 0;
 }
 
 .facts,
@@ -839,7 +928,6 @@ details:not([open]) .t-hide {
 
 .runpanel,
 .review-panel {
-  max-width: 720px;
   background: var(--surface);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
@@ -913,6 +1001,9 @@ details:not([open]) .t-hide {
 }
 
 .round-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   background: var(--surface);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
@@ -944,6 +1035,8 @@ details:not([open]) .t-hide {
 }
 
 .round-panel > .body {
+  flex: 1;
+  min-height: 0;
   background: var(--bg);
   border-top: 1px solid var(--border);
 }
@@ -951,7 +1044,7 @@ details:not([open]) .t-hide {
 .round-panel iframe {
   vertical-align: top;
   width: 100%;
-  height: 70vh;
+  height: 100%;
   border: 0;
 }
 
@@ -1011,7 +1104,6 @@ details:not([open]) .t-hide {
 .perm {
   display: grid;
   gap: 12px;
-  max-width: 720px;
   padding: 14px 16px 14px 20px;
   background: var(--surface);
   border: 1px solid var(--border-strong);
@@ -1069,7 +1161,6 @@ details:not([open]) .t-hide {
 .ckpt {
   display: grid;
   gap: 12px;
-  max-width: 720px;
   padding: 14px 16px 14px 20px;
   background: var(--surface);
   border: 1px solid var(--border-strong);
@@ -1157,7 +1248,6 @@ details:not([open]) .t-hide {
 }
 
 .ticket-body {
-  max-width: 720px;
   min-width: 0;
 }
 
@@ -1176,7 +1266,6 @@ details:not([open]) .t-hide {
 }
 
 .findings {
-  max-width: 720px;
   min-width: 0;
 }
 
@@ -1621,7 +1710,6 @@ details:not([open]) .t-hide {
   --rail: var(--border-strong);
   display: flex;
   flex-direction: column;
-  max-width: 720px;
   min-width: 0;
   overflow: hidden;
   background: var(--surface);
@@ -1662,6 +1750,9 @@ details:not([open]) .t-hide {
 }
 
 .session-panel > .chat {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;

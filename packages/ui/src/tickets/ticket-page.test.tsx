@@ -1,41 +1,98 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { LiveUpdates } from '../live/live-updates.js';
+import type { TicketPageDescription } from './describe-ticket-page.js';
 import { TicketPageView } from './ticket-page.js';
 
 const ignore = () => undefined;
 const liveUpdates: LiveUpdates = { listen: () => ignore, connection: () => 'open' };
 
+type LoadedDescription = Extract<TicketPageDescription, { kind: 'loaded' }>;
+
+function loaded(overrides: Partial<LoadedDescription> = {}): LoadedDescription {
+  return {
+    kind: 'loaded',
+    numberLabel: '#56',
+    title: 'Retry a failed upload',
+    status: 'ready',
+    waiting: false,
+    stuck: false,
+    statusLabel: 'Ready',
+    statusMark: { shape: '○', tone: 'neutral', pulses: false },
+    url: 'https://github.com/o/n/issues/56',
+    body: 'Some body',
+    runSkill: 'implement-ticket',
+    pullRequests: [],
+    ...overrides,
+  };
+}
+
+function render(description: TicketPageDescription, number = 56): string {
+  return renderToStaticMarkup(
+    <TicketPageView
+      liveUpdates={liveUpdates}
+      projectId="o/n"
+      number={number}
+      description={description}
+      onRetry={ignore}
+    />,
+  );
+}
+
 describe('TicketPageView', () => {
-  it('should hold the session in one framed panel before the facts and end with the collapsed description when the ticket is loaded', () => {
-    const markup = renderToStaticMarkup(
-      <TicketPageView
-        liveUpdates={liveUpdates}
-        projectId="o/n"
-        number={56}
-        description={{
-          kind: 'loaded',
-          numberLabel: '#56',
-          title: 'Retry a failed upload',
-          status: 'ready',
-          waiting: false,
-          stuck: false,
-          statusLabel: 'Ready',
-          statusMark: { shape: '○', tone: 'neutral', pulses: false },
-          url: 'https://github.com/o/n/issues/56',
-          body: 'Some body',
-          runSkill: 'implement-ticket',
-          pullRequests: [],
-        }}
-        onRetry={ignore}
-      />,
-    );
+  it('should hold the session in the right column and the description at the bottom of the left column when the ticket is loaded', () => {
+    const markup = render(loaded());
+
     expect(markup).not.toContain('runlog');
     expect(markup).not.toContain('class="steps"');
     expect(markup).toMatch(
-      /<section class="session-panel rail-border-strong" aria-label="Session">.*role="log" aria-label="Session".*<\/section><dl class="facts">.*<details class="row ticket-body"><summary.*<\/summary>.*<\/details><\/main>$/,
+      /<main class="page ticket-page">.*<\/header><div class="tp-cols"><div class="tp-left">.*<details class="row ticket-body"><summary.*<\/summary>.*<\/details><\/div><section class="session-panel rail-border-strong" aria-label="Session">.*role="log" aria-label="Session".*<\/section><\/div><\/main>$/,
     );
     expect(markup.match(/aria-label="Session"/g)).toHaveLength(2);
+  });
+
+  it('should show the back link, the title, the status chip, Open on GitHub and the parent in that order in the top bar when the ticket has a parent', () => {
+    const markup = render(
+      loaded({
+        parent: { href: '#/projects/o%2Fn/tickets/20', numberLabel: '#20', title: 'Upload polish' },
+      }),
+    );
+
+    expect(markup).toMatch(
+      /<header class="tp-bar"><div class="tp-id"><a class="back"[^>]*>.*Back to the board<\/a><h1>.*#56.*Retry a failed upload<\/h1><div class="tp-chips"><span class="chip neutral">.*Ready<\/span><a class="ext"[^>]*>Open on GitHub<\/a><span class="dot" aria-hidden="true">·<\/span><span><span class="label">Parent<\/span><a href="#\/projects\/o%2Fn\/tickets\/20">.*#20.* Upload polish<\/a><\/span><\/div><\/div>/,
+    );
+  });
+
+  it('should leave out the dot and the parent when the ticket has no parent', () => {
+    const markup = render(loaded());
+
+    expect(markup).not.toContain('Parent');
+    expect(markup).not.toContain('class="dot"');
+  });
+
+  it('should show the status chip, then the Waiting chip, then Open on GitHub when the ticket is marked waiting', () => {
+    const markup = render(
+      loaded({
+        numberLabel: '#407',
+        title: 'Add a dark mode switch to the rail',
+        status: 'in-progress',
+        waiting: true,
+        marker: 'waiting',
+        statusLabel: 'In progress',
+        statusMark: { shape: '●', tone: 'flow', pulses: false },
+      }),
+      407,
+    );
+
+    expect(markup).toMatch(
+      /<div class="tp-chips"><span class="chip flow">.*?In progress<\/span><span class="chip hitl">.*?Waiting<\/span><a class="ext"[^>]*>Open on GitHub<\/a>/,
+    );
+  });
+
+  it('should end the top bar with the run actions slot when the ticket is loaded', () => {
+    const markup = render(loaded());
+
+    expect(markup).toMatch(/<\/div><div class="tp-actions"><\/div><\/header><div class="tp-cols">/);
   });
 
   it.each([
@@ -43,82 +100,65 @@ describe('TicketPageView', () => {
     { status: 'plan', shown: false },
     { status: 'ready', shown: false },
   ] as const)(
-    'should show Move to plan between the head and the session only when the status is backlog ($status)',
+    'should show Move to plan in the left column only when the status is backlog ($status)',
     ({ status, shown }) => {
-      const markup = renderToStaticMarkup(
-        <TicketPageView
-          liveUpdates={liveUpdates}
-          projectId="o/n"
-          number={212}
-          description={{
-            kind: 'loaded',
-            numberLabel: '#212',
-            title: 'Export a trip',
-            status,
-            waiting: false,
-            stuck: false,
-            statusLabel: 'Backlog',
-            statusMark: { shape: '○', tone: 'neutral', pulses: false },
-            url: 'https://github.com/o/n/issues/212',
-            body: '',
-            runSkill: 'create-ticket',
-            pullRequests: [],
-          }}
-          onRetry={ignore}
-        />,
+      const markup = render(
+        loaded({ status, statusLabel: 'Backlog', runSkill: 'create-ticket' }),
+        212,
       );
+
       expect(markup.includes('aria-label="Move to plan"')).toBe(shown);
       if (shown) {
         expect(markup).toMatch(
-          /<\/div><section class="move-to-plan" aria-label="Move to plan">.*<\/section><section[^>]*aria-label="(Run|Session)/,
+          /<div class="tp-left"><section class="move-to-plan" aria-label="Move to plan">/,
         );
       }
     },
   );
 
-  it('should show the status chip, then the Waiting chip, then Open on GitHub when the ticket is marked waiting', () => {
-    const markup = renderToStaticMarkup(
-      <TicketPageView
-        liveUpdates={liveUpdates}
-        projectId="o/n"
-        number={407}
-        description={{
-          kind: 'loaded',
-          numberLabel: '#407',
-          title: 'Add a dark mode switch to the rail',
-          status: 'in-progress',
-          waiting: true,
-          stuck: false,
-          marker: 'waiting',
-          statusLabel: 'In progress',
-          statusMark: { shape: '●', tone: 'flow', pulses: false },
-          url: 'https://github.com/o/n/issues/407',
-          body: '',
-          runSkill: 'implement-ticket',
-          pullRequests: [],
-        }}
-        onRetry={ignore}
-      />,
+  it('should show a Pull requests row with the links when the ticket has a pull request and no review panel', () => {
+    const markup = render(
+      loaded({
+        pullRequests: [{ label: 'PR #9', url: 'https://github.com/o/n/pull/9', state: 'open' }],
+      }),
     );
+
     expect(markup).toMatch(
-      /<div class="inline"><span class="chip flow">.*?In progress<\/span><span class="chip hitl">.*?Waiting<\/span><a class="ext"[^>]*>Open on GitHub<\/a><\/div>/,
+      /<dl class="facts"><dt class="label">Pull requests<\/dt><dd><ul><li><a class="ext" href="https:\/\/github.com\/o\/n\/pull\/9"[^>]*>PR #9<\/a><span class="pr-state">open<\/span><\/li><\/ul><\/dd><\/dl>/,
     );
   });
 
-  it('should show the message, the reload hint, Retry and the detail in that order when the ticket read failed', () => {
-    const markup = renderToStaticMarkup(
-      <TicketPageView
-        liveUpdates={liveUpdates}
-        projectId="o/n"
-        number={56}
-        description={{
-          kind: 'failed',
-          message: "Couldn't load #56. Can't reach aisf.",
-          detail: 'Failed to fetch',
-        }}
-        onRetry={ignore}
-      />,
+  it('should show None in the Pull requests row when the ticket has no pull request and no review panel', () => {
+    const markup = render(loaded());
+
+    expect(markup).toContain('<dt class="label">Pull requests</dt><dd class="sm">None</dd>');
+  });
+
+  it('should leave out the Pull requests row when the review panel shows', () => {
+    const markup = render(
+      loaded({
+        status: 'in-review',
+        pullRequests: [{ label: 'PR #9', url: 'https://github.com/o/n/pull/9', state: 'open' }],
+        reviewPanel: {
+          kind: 'shown',
+          state: 'open',
+          heading: { tone: 'hitl', glyph: '●', text: 'Review the PR' },
+          pullRequests: [{ label: 'PR #9', url: 'https://github.com/o/n/pull/9', chips: [] }],
+        },
+      }),
     );
+
+    expect(markup).toContain('Review the PR');
+    expect(markup).not.toContain('Pull requests');
+  });
+
+  it('should show the message, the reload hint, Retry and the detail in that order when the ticket read failed', () => {
+    const markup = render({
+      kind: 'failed',
+      message: "Couldn't load #56. Can't reach aisf.",
+      detail: 'Failed to fetch',
+    });
+
     expect(markup).toMatch(
       /Couldn&#x27;t load #56.*<p class="sm">Loads again on the next change, or on Retry\.<\/p><button[^>]*>Retry<\/button><p class="sm mono">Failed to fetch<\/p>/,
     );

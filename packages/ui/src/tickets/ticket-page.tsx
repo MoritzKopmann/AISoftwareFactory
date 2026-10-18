@@ -19,6 +19,8 @@ import { TicketBodySection } from './ticket-body-section.js';
 import { ticketLiveView } from './ticket-live-view.js';
 import { isRequestFailure } from '../shared/is-request-failure.js';
 
+type LoadedDescription = Extract<TicketPageDescription, { kind: 'loaded' }>;
+
 type TicketPageProps = {
   readonly liveUpdates: LiveUpdates;
   readonly id: string;
@@ -76,18 +78,16 @@ export function TicketPageView({
   onRetry,
 }: TicketPageViewProps) {
   return (
-    <main className="page" aria-busy={description.kind === 'loading' ? 'true' : undefined}>
+    <main
+      className={description.kind === 'loaded' ? 'page ticket-page' : 'page'}
+      aria-busy={description.kind === 'loading' ? 'true' : undefined}
+    >
       {description.kind === 'loading' && (
         <span className="vh" role="status">
           {description.loadingLabel}
         </span>
       )}
-      <a className="back" href={`#/projects/${projectId}`}>
-        <span className="arrow" aria-hidden="true">
-          ←
-        </span>
-        Back to the board
-      </a>
+      {description.kind !== 'loaded' && <BackLink projectId={projectId} />}
       {description.kind === 'loading' && <TicketSkeleton />}
       {description.kind === 'not-found' && (
         <div className="err" role="alert">
@@ -156,7 +156,7 @@ function LoadedTicket({
   readonly liveUpdates: LiveUpdates;
   readonly projectId: string;
   readonly number: number;
-  readonly description: Extract<TicketPageDescription, { kind: 'loaded' }>;
+  readonly description: LoadedDescription;
 }) {
   const { statusMark, parent, pullRequests } = description;
   const [moveToPlan, setMoveToPlan] = useState<MoveToPlanState>({ kind: 'idle' });
@@ -168,73 +168,113 @@ function LoadedTicket({
     setMoveToPlan(outcome.kind === 'moved' ? { kind: 'done' } : outcome);
   };
   return (
-    <>
-      <div className="ticket-head">
-        <h1>
-          <span className="num-id">{description.numberLabel}</span>
-          {description.title}
-        </h1>
-        <div className="inline">
-          <span className={`chip ${statusMark.tone}`}>
-            <span
-              className={`shape s-${statusMark.tone}${statusMark.pulses ? ' pulse' : ''}`}
-              aria-hidden="true"
-            >
-              {statusMark.shape}
-            </span>
-            {description.statusLabel}
-          </span>
-          {description.marker !== undefined && <RunMarkerChip marker={description.marker} />}
-          <a className="ext" href={description.url} target="_blank" rel="noopener">
-            Open on GitHub
-          </a>
-        </div>
-      </div>
-      <MoveToPlanAction
-        description={describeMoveToPlanAction(description.status, moveToPlan, number)}
-        onMove={() => void moveToPlanNow()}
-      />
-      <RunSection
-        liveUpdates={liveUpdates}
-        projectId={projectId}
-        number={number}
-        ticketState={description}
-        runSkill={description.runSkill}
-      />
-      {description.reviewPanel !== undefined && (
-        <ReviewPanel description={description.reviewPanel} />
+    <RunSection
+      liveUpdates={liveUpdates}
+      projectId={projectId}
+      number={number}
+      ticketState={description}
+      runSkill={description.runSkill}
+    >
+      {(slots) => (
+        <>
+          <header className="tp-bar">
+            <div className="tp-id">
+              <BackLink projectId={projectId} />
+              <h1>
+                <span className="num-id">{description.numberLabel}</span>
+                {description.title}
+              </h1>
+              <div className="tp-chips">
+                <span className={`chip ${statusMark.tone}`}>
+                  <span
+                    className={`shape s-${statusMark.tone}${statusMark.pulses ? ' pulse' : ''}`}
+                    aria-hidden="true"
+                  >
+                    {statusMark.shape}
+                  </span>
+                  {description.statusLabel}
+                </span>
+                {description.marker !== undefined && <RunMarkerChip marker={description.marker} />}
+                <a className="ext" href={description.url} target="_blank" rel="noopener">
+                  Open on GitHub
+                </a>
+                {parent !== undefined && (
+                  <>
+                    <span className="dot" aria-hidden="true">
+                      ·
+                    </span>
+                    <span>
+                      <span className="label">Parent</span>
+                      <a href={parent.href}>
+                        <span className="num-id">{parent.numberLabel}</span> {parent.title}
+                      </a>
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="tp-actions">{slots.runBar}</div>
+          </header>
+          <div className="tp-cols">
+            <div className="tp-left">
+              {description.reviewPanel !== undefined && (
+                <ReviewPanel description={description.reviewPanel} />
+              )}
+              {slots.stack}
+              <MoveToPlanAction
+                description={describeMoveToPlanAction(description.status, moveToPlan, number)}
+                onMove={() => void moveToPlanNow()}
+              />
+              {slots.reset}
+              {description.reviewPanel === undefined && (
+                <PullRequestsRow pullRequests={pullRequests} />
+              )}
+              <KnownBugs liveUpdates={liveUpdates} projectId={projectId} ticketNumber={number} />
+              {slots.lowerPanel ?? <TicketBodySection body={description.body} />}
+            </div>
+            {slots.session}
+          </div>
+        </>
       )}
-      <dl className="facts">
-        {parent !== undefined && (
-          <>
-            <dt className="label">Parent</dt>
-            <dd>
-              <a href={parent.href}>
-                <span className="num-id">{parent.numberLabel}</span> {parent.title}
-              </a>
-            </dd>
-          </>
-        )}
-        <dt className="label">Pull requests</dt>
-        {pullRequests.length === 0 ? (
-          <dd className="sm">None</dd>
-        ) : (
-          <dd>
-            <ul>
-              {pullRequests.map((pullRequest) => (
-                <li key={pullRequest.url}>
-                  <a className="ext" href={pullRequest.url} target="_blank" rel="noopener">
-                    {pullRequest.label}
-                  </a>
-                  <span className="pr-state">{pullRequest.state}</span>
-                </li>
-              ))}
-            </ul>
-          </dd>
-        )}
-      </dl>
-      <KnownBugs liveUpdates={liveUpdates} projectId={projectId} ticketNumber={number} />
-      <TicketBodySection body={description.body} />
-    </>
+    </RunSection>
+  );
+}
+
+function BackLink({ projectId }: { readonly projectId: string }) {
+  return (
+    <a className="back" href={`#/projects/${projectId}`}>
+      <span className="arrow" aria-hidden="true">
+        ←
+      </span>
+      Back to the board
+    </a>
+  );
+}
+
+function PullRequestsRow({
+  pullRequests,
+}: {
+  readonly pullRequests: LoadedDescription['pullRequests'];
+}) {
+  return (
+    <dl className="facts">
+      <dt className="label">Pull requests</dt>
+      {pullRequests.length === 0 ? (
+        <dd className="sm">None</dd>
+      ) : (
+        <dd>
+          <ul>
+            {pullRequests.map((pullRequest) => (
+              <li key={pullRequest.url}>
+                <a className="ext" href={pullRequest.url} target="_blank" rel="noopener">
+                  {pullRequest.label}
+                </a>
+                <span className="pr-state">{pullRequest.state}</span>
+              </li>
+            ))}
+          </ul>
+        </dd>
+      )}
+    </dl>
   );
 }
