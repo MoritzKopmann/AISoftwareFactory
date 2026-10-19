@@ -3,6 +3,7 @@ import type {
   PermissionDecision,
   PermissionPromptDescription,
 } from './describe-permission-prompt.js';
+import { HeldStatus } from './held-status.js';
 
 type PermissionPromptProps = {
   readonly description: PermissionPromptDescription;
@@ -50,6 +51,21 @@ export function PermissionPrompt({ description, onAnswer }: PermissionPromptProp
   const headingId = useId();
   if (description.kind === 'hidden') {
     return null;
+  }
+  if (description.kind === 'held') {
+    return (
+      <section className="perm held" aria-labelledby={headingId}>
+        <h2 id={headingId}>Answer held</h2>
+        <div className="call">
+          <div className="callhead">
+            <span className="label">Tool</span>
+            <span className="chip">{description.toolName}</span>
+          </div>
+          <ToolInput text={description.inputText} />
+        </div>
+        <HeldStatus heldUntilLabel={description.heldUntilLabel} />
+      </section>
+    );
   }
   const { toolName, inputText, reason, guidance, pressable, resuming, announcement, error } =
     description;

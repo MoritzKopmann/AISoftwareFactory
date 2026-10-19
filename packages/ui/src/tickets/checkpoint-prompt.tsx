@@ -1,6 +1,7 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { checkpointAnswerCharacterLimit } from './checkpoint-answer-character-limit.js';
 import type { CheckpointPromptDescription } from './describe-checkpoint-prompt.js';
+import { HeldStatus } from './held-status.js';
 
 type CheckpointPromptProps = {
   readonly description: CheckpointPromptDescription;
@@ -45,6 +46,18 @@ export function CheckpointPrompt({ description, onDraftChange, onSend }: Checkpo
   const answerId = useId();
   if (description.kind === 'hidden') {
     return null;
+  }
+  if (description.kind === 'held') {
+    return (
+      <section className="ckpt held" aria-labelledby={headingId}>
+        <h2 id={headingId}>Answer held</h2>
+        <div className="field">
+          <span className="label">Request</span>
+          <CheckpointRequest text={description.request} />
+        </div>
+        <HeldStatus heldUntilLabel={description.heldUntilLabel} />
+      </section>
+    );
   }
   const {
     request,

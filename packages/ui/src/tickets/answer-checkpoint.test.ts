@@ -34,6 +34,15 @@ describe('answerCheckpoint', () => {
     expect(outcome).toEqual({ kind: 'answered' });
   });
 
+  it('should return held with the resume time when the route holds the answer during a pause', async () => {
+    const outcome = await answerCheckpoint(
+      'run-1',
+      'B.',
+      answerWith(202, { held: true, pausedUntil: '2026-10-19T14:00:00Z' }),
+    );
+    expect(outcome).toEqual({ kind: 'held', pausedUntil: '2026-10-19T14:00:00Z' });
+  });
+
   it("should return failed with the server's message and the status when the route answers 409", async () => {
     const outcome = await answerCheckpoint(
       'run-1',

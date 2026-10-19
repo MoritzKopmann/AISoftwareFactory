@@ -262,6 +262,95 @@ describe('describeCheckpointPrompt for a live wait', () => {
       request: 'Pick A or B',
     });
   });
+
+  const now = new Date(2026, 9, 18, 10, 0);
+  const pausedUntilTwoPm = new Date(2026, 9, 18, 14, 0).toISOString();
+  const pausedUntilThreePm = new Date(2026, 9, 18, 15, 0).toISOString();
+
+  it('should describe a held prompt when the active run has its answer held', () => {
+    const response: TicketRunResponse = {
+      ...idle,
+      activeRun: {
+        id: 'run-2',
+        startedAt: '2026-10-04T09:11:00Z',
+        answerHeld: true,
+        waitingFor: { kind: 'checkpoint', request: 'Should the export include archived runs?' },
+      },
+    };
+
+    expect(describeCheckpointPrompt(response, true, undefined, pausedUntilTwoPm, now)).toEqual({
+      kind: 'held',
+      runId: 'run-2',
+      request: 'Should the export include archived runs?',
+      heldUntilLabel: '14:00',
+    });
+  });
+
+  it('should describe a held prompt when the last run ended at a checkpoint with its answer held', () => {
+    const response: TicketRunResponse = {
+      ...idle,
+      lastRun: {
+        id: 'run-1',
+        startedAt: '2026-10-04T09:00:00Z',
+        answerHeld: true,
+        endedAt: '2026-10-04T09:10:00Z',
+        ending: checkpoint,
+      },
+    };
+
+    expect(
+      describeCheckpointPrompt(response, true, undefined, pausedUntilTwoPm, now),
+    ).toMatchObject({
+      kind: 'held',
+      runId: 'run-1',
+      heldUntilLabel: '14:00',
+    });
+  });
+
+  it('should describe a held prompt from the local held answer when the poll shows no held run', () => {
+    const response = endedWith(checkpoint, 'run-2');
+    const held: CheckpointAnswer = {
+      runId: 'run-2',
+      draft: 'B.',
+      send: { kind: 'held', pausedUntil: pausedUntilTwoPm },
+    };
+
+    expect(describeCheckpointPrompt(response, true, held, undefined, now)).toMatchObject({
+      kind: 'held',
+      runId: 'run-2',
+      heldUntilLabel: '14:00',
+    });
+  });
+
+  it('should describe a held prompt without a time when no reset time is known yet', () => {
+    const response: TicketRunResponse = {
+      ...idle,
+      activeRun: {
+        id: 'run-2',
+        startedAt: '2026-10-04T09:11:00Z',
+        answerHeld: true,
+        waitingFor: { kind: 'checkpoint', request: 'Pick A or B' },
+      },
+    };
+
+    const description = describeCheckpointPrompt(response, true, undefined, undefined, now);
+    expect(description).toMatchObject({ kind: 'held', runId: 'run-2', request: 'Pick A or B' });
+    expect(description).not.toHaveProperty('heldUntilLabel');
+  });
+
+  it('should show the usage reset time over the held answer time when both are known', () => {
+    const response = endedWith(checkpoint, 'run-2');
+    const held: CheckpointAnswer = {
+      runId: 'run-2',
+      draft: 'B.',
+      send: { kind: 'held', pausedUntil: pausedUntilTwoPm },
+    };
+
+    expect(describeCheckpointPrompt(response, true, held, pausedUntilThreePm, now)).toMatchObject({
+      kind: 'held',
+      heldUntilLabel: '15:00',
+    });
+  });
 });
 
 describe('settleCheckpointAnswer', () => {
@@ -281,6 +370,42 @@ describe('settleCheckpointAnswer', () => {
       activeRun: { id: 'run-7', startedAt: '2026-10-04T09:11:00Z', answerHeld: false },
     };
     expect(settleCheckpointAnswer(sent, working)).toBeUndefined();
+  });
+
+  it('should clear a held answer when its run waits again without a hold', () => {
+    const held: CheckpointAnswer = {
+      runId: 'run-7',
+      draft: 'A',
+      send: { kind: 'held', pausedUntil: '2026-10-04T14:00:00Z' },
+    };
+    const next: TicketRunResponse = {
+      ...idle,
+      activeRun: {
+        id: 'run-7',
+        startedAt: '2026-10-04T09:11:00Z',
+        answerHeld: false,
+        waitingFor: { kind: 'checkpoint', request: 'A second question' },
+      },
+    };
+    expect(settleCheckpointAnswer(held, next)).toBeUndefined();
+  });
+
+  it('should keep a held answer while its run still holds it', () => {
+    const held: CheckpointAnswer = {
+      runId: 'run-7',
+      draft: 'A',
+      send: { kind: 'held', pausedUntil: '2026-10-04T14:00:00Z' },
+    };
+    const holding: TicketRunResponse = {
+      ...idle,
+      activeRun: {
+        id: 'run-7',
+        startedAt: '2026-10-04T09:11:00Z',
+        answerHeld: true,
+        waitingFor: { kind: 'checkpoint', request: 'Pick A or B' },
+      },
+    };
+    expect(settleCheckpointAnswer(held, holding)).toBe(held);
   });
 
   it('should return undefined when there is no answer', () => {

@@ -2,6 +2,7 @@ import type {
   PermissionAnswerRequest,
   TicketRunResponse,
 } from '@aisf/app/api-schemas/runs-schemas.js';
+import { formatResetTime } from '../usage/format-reset-time.js';
 
 export type PermissionDecision = PermissionAnswerRequest['decision'];
 
@@ -15,6 +16,7 @@ export type PermissionAnswer =
       readonly wait: PermissionWait;
       readonly decision: PermissionDecision;
     }
+  | { readonly kind: 'held'; readonly wait: PermissionWait; readonly pausedUntil: string }
   | {
       readonly kind: 'failed';
       readonly wait: PermissionWait;
@@ -24,8 +26,17 @@ export type PermissionAnswer =
 
 type PermissionPromptError = { readonly message: string; readonly detail?: string };
 
+type HeldAnswer = Extract<PermissionAnswer, { kind: 'held' }>;
+
 export type PermissionPromptDescription =
   | { readonly kind: 'hidden' }
+  | {
+      readonly kind: 'held';
+      readonly runId: string;
+      readonly toolName: string;
+      readonly inputText: string;
+      readonly heldUntilLabel?: string;
+    }
   | {
       readonly kind: 'shown';
       readonly runId: string;
@@ -52,6 +63,7 @@ type ShownWait = PermissionWait & {
   readonly toolName: string;
   readonly toolInput: Readonly<Record<string, unknown>>;
   readonly reason?: string;
+  readonly answerHeld: boolean;
 };
 
 function findShownWait(response: TicketRunResponse | undefined): ShownWait | undefined {
@@ -66,6 +78,7 @@ function findShownWait(response: TicketRunResponse | undefined): ShownWait | und
           toolName: waitingFor.toolName,
           toolInput: waitingFor.toolInput,
           ...(waitingFor.reason === undefined ? {} : { reason: waitingFor.reason }),
+          answerHeld: activeRun.answerHeld,
         };
   }
   const lastRun = response?.lastRun;
@@ -75,6 +88,7 @@ function findShownWait(response: TicketRunResponse | undefined): ShownWait | und
         toolName: lastRun.ending.toolName,
         toolInput: lastRun.ending.toolInput,
         ...(lastRun.ending.reason === undefined ? {} : { reason: lastRun.ending.reason }),
+        answerHeld: lastRun.answerHeld,
       }
     : undefined;
 }
@@ -97,9 +111,20 @@ export function describePermissionPrompt(
   response: TicketRunResponse | undefined,
   ticketWaiting: boolean,
   answer: PermissionAnswer,
+  pausedUntil?: string,
+  now: Date = new Date(),
 ): PermissionPromptDescription {
   const wait = findShownWait(response);
-  if (wait === undefined || !ticketWaiting) {
+  if (wait === undefined) {
+    return { kind: 'hidden' };
+  }
+  const heldAnswer = heldAnswerFor(answer, wait);
+  // A held answer stays on screen after the app drops the waiting label.
+  if (isAnswerHeld(wait, heldAnswer)) {
+    // The usage reset time wins; the held answer's own time is the fallback.
+    return describeHeldPrompt(wait, pausedUntil ?? heldAnswer?.pausedUntil, now);
+  }
+  if (!ticketWaiting) {
     return { kind: 'hidden' };
   }
   const { toolName, toolInput } = wait;
@@ -111,7 +136,7 @@ export function describePermissionPrompt(
     inputText: describeToolInput(toolName, toolInput),
     ...(wait.reason === undefined ? {} : { reason: wait.reason }),
   } as const;
-  if (answer.kind === 'idle' || !isSameWait(answer.wait, wait)) {
+  if (answer.kind === 'idle' || answer.kind === 'held' || !isSameWait(answer.wait, wait)) {
     return { ...prompt, guidance: true, pressable: true };
   }
   if (answer.kind === 'answering') {
@@ -131,5 +156,27 @@ export function describePermissionPrompt(
       message: `Couldn't send your answer. ${answer.message}`.trimEnd(),
       ...(answer.status === undefined ? {} : { detail: String(answer.status) }),
     },
+  };
+}
+
+function heldAnswerFor(answer: PermissionAnswer, wait: ShownWait): HeldAnswer | undefined {
+  return answer.kind === 'held' && isSameWait(answer.wait, wait) ? answer : undefined;
+}
+
+function isAnswerHeld(wait: ShownWait, heldAnswer: HeldAnswer | undefined): boolean {
+  return wait.answerHeld || heldAnswer !== undefined;
+}
+
+function describeHeldPrompt(
+  wait: ShownWait,
+  heldUntil: string | undefined,
+  now: Date,
+): PermissionPromptDescription {
+  return {
+    kind: 'held',
+    runId: wait.runId,
+    toolName: wait.toolName,
+    inputText: describeToolInput(wait.toolName, wait.toolInput),
+    ...(heldUntil === undefined ? {} : { heldUntilLabel: formatResetTime(heldUntil, now) }),
   };
 }

@@ -28,6 +28,27 @@ describe('CheckpointPrompt', () => {
     expect(render({ kind: 'hidden' })).toBe('');
   });
 
+  it('should show the held answer with its request and resume time and no answer form when held', () => {
+    const markup = render({
+      kind: 'held',
+      runId: 'run-1',
+      request: 'Include archived runs?',
+      heldUntilLabel: '14:00',
+    });
+    expect(markup).toContain('>Answer held</h2>');
+    expect(markup).toContain('>Include archived runs?</pre>');
+    expect(markup).toContain('It goes out at <strong');
+    expect(markup).toContain('14:00</strong>');
+    expect(markup).not.toContain('<textarea');
+    expect(markup).not.toContain('<button');
+  });
+
+  it('should show the held answer without a time when no reset time is known', () => {
+    const markup = render({ kind: 'held', runId: 'run-1', request: 'Pick A or B' });
+    expect(markup).toContain('Your answer is held.');
+    expect(markup).not.toContain('It goes out at');
+  });
+
   it('should label the section by its heading and show the request as plain text and the answer field when ready', () => {
     const markup = render(prompt);
     const labelledBy = /<section[^>]*aria-labelledby="([^"]+)"/.exec(markup)?.[1];

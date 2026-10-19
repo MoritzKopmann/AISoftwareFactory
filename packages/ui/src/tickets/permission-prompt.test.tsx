@@ -25,6 +25,22 @@ describe('PermissionPrompt', () => {
     expect(render({ kind: 'hidden' })).toBe('');
   });
 
+  it('should show the held answer with its tool call and resume time and no buttons when held', () => {
+    const markup = render({
+      kind: 'held',
+      runId: 'run-1',
+      toolName: 'Bash',
+      inputText: 'pnpm add zod',
+      heldUntilLabel: '14:00',
+    });
+    expect(markup).toContain('>Answer held</h2>');
+    expect(markup).toContain('>Bash</span>');
+    expect(markup).toContain('>pnpm add zod</pre>');
+    expect(markup).toContain('It goes out at <strong');
+    expect(markup).toContain('14:00</strong>');
+    expect(markup).not.toContain('<button');
+  });
+
   it('should label the section by its heading and show the tool, input and guidance when waiting', () => {
     const markup = render(prompt);
     const labelledBy = /<section[^>]*aria-labelledby="([^"]+)"/.exec(markup)?.[1];
