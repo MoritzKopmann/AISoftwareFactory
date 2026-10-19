@@ -4,14 +4,15 @@ description: >
   Drive a ready GitHub leaf ticket to a PR, building only from the spec on the ticket: branch,
   TDD, green checks, architecture review by aisf:review-code, acceptance criteria, simplicity
   review, commit, PR. Also resumes an in-progress ticket and reworks an in-review one whose PR
-  has changes requested. Given a planned parent, lists its ready children and stops. Not for
-  spike or UI tickets. Use when the user wants to implement/build/work on a ticket or issue.
+  has new review activity or conflicts with main. Given a planned parent, lists its ready
+  children and stops. Not for spike or UI tickets. Use when the user wants to implement/build/work on a ticket or issue.
   Triggers: "implement #N", "work on ticket N", "build issue N", "start on #N".
 ---
 
 # implement-ticket
 
-Drive a ready leaf to a PR. Argument: ticket number. If none, ask.
+Drive a ready leaf to a PR. Argument: `<n> [--since <ISO time>]`. `<n>` is the ticket number;
+if none, ask. `--since` is when the app's last run ended; only rework uses it.
 
 ## Guard rails
 
@@ -77,8 +78,14 @@ ticket page, and the app resumes the run.
 - **Parent** (`planned`): list its open children that are `ready` and unblocked, one line each
   (`#<child>` title, `hitl` if set). Don't pick one. Stop.
 - **Blocked**: an open `blockedBy` → stop and name it.
-- **In review**: find the PR (`closedByPullRequestsReferences`). Changes requested, failing
-  checks or conflicts → **rework**: read `rework.md` now. Otherwise stop: it waits on review.
+- **In review**: find the PR (`closedByPullRequestsReferences`). **Rework** when exactly one
+  open PR exists, it has no `approved` label unless it conflicts, and either:
+  - it conflicts with `origin/main`, or
+  - it has review activity after `--since` (a review with text or comments, or a PR
+    conversation comment), or
+  - it has unresolved review threads.
+
+  Rework → read `rework.md` now. Otherwise stop, write nothing: it waits on review.
 
 Say `<n>` and the mode (new / resume / rework, AFK / hand-run).
 
