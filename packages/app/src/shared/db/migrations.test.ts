@@ -118,4 +118,20 @@ describe('migrations', () => {
     });
     older.close();
   });
+
+  it('should create the usage_window table when migration 11 runs', () => {
+    const columns = database
+      .prepare('PRAGMA table_info(usage_window)')
+      .all() as unknown as ReadonlyArray<{ name: string }>;
+
+    expect(columns.map(({ name }) => name)).toEqual([
+      'id',
+      'five_hour_utilization',
+      'five_hour_resets_at',
+      'seven_day_utilization',
+      'seven_day_resets_at',
+      'observed_at',
+      'paused_until',
+    ]);
+  });
 });
