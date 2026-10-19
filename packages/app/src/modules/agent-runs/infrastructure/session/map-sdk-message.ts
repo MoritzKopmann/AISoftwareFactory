@@ -71,6 +71,11 @@ function handbackOrigin(origin: unknown): Record<string, unknown> | null {
     : null;
 }
 
+/** The SDK's notice that a background agent finished. Noise, so it is never an entry. */
+function isTaskNotificationOrigin(origin: unknown): boolean {
+  return isRecord(origin) && origin['kind'] === 'task-notification';
+}
+
 function handbackText(origin: Record<string, unknown>): string {
   const { handbackReportText, body } = origin;
   if (typeof handbackReportText === 'string') {
@@ -147,6 +152,7 @@ function promptText(content: string): string {
 /**
  * The entries of one message's content blocks. Live and transcript share it, so a block gets the
  * same id on both paths. Prompts only come from the transcript; the live stream never carries them.
+ * A task notification yields no entries.
  */
 export function entriesFromContent(
   uuid: string,
@@ -155,6 +161,9 @@ export function entriesFromContent(
   includePrompts: boolean,
   origin?: unknown,
 ): ReadonlyArray<SessionEntry> {
+  if (role === 'user' && isTaskNotificationOrigin(origin)) {
+    return [];
+  }
   const handback = role === 'user' ? handbackOrigin(origin) : null;
   if (handback !== null) {
     return [handbackEntry(uuid, handback)];

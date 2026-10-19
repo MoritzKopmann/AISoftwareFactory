@@ -117,6 +117,14 @@ describe('ClaudeAgentSdkRunTranscripts', () => {
       expect(promptIds.filter((id) => handbackIds.includes(id))).toEqual([]);
     });
 
+    it('should return no task-notification text when the transcript holds task notifications', async () => {
+      await recordChainedTranscript(handbacksFixturePath);
+
+      const entries = await new ClaudeAgentSdkRunTranscripts().readEntries(sessionId, worktreePath);
+
+      expect(JSON.stringify(entries)).not.toContain('<task-notification>');
+    });
+
     it('should throw transcript not found when Claude Code has no transcript for the session', async () => {
       await expect(
         new ClaudeAgentSdkRunTranscripts().readEntries(sessionId, worktreePath),
