@@ -567,6 +567,117 @@ a.ext::after {
   --c: var(--info);
 }
 
+.usage-meter {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px 24px;
+  min-height: 40px;
+  padding: 0 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-strong);
+  color: var(--text);
+  font: 12px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+
+.usage-meter:hover {
+  background: var(--surface-2);
+}
+
+.usage-meter:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.usage-meter-failed {
+  gap: 8px;
+}
+
+.usage-meter-failed-mark {
+  color: var(--danger);
+  width: 1em;
+  text-align: center;
+}
+
+.usage-meter-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  --c: var(--info);
+}
+
+.usage-meter-group.warn {
+  --c: var(--warn);
+}
+
+.usage-meter-group.danger {
+  --c: var(--danger);
+}
+
+.usage-meter-track {
+  position: relative;
+  width: 72px;
+  height: 6px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+
+.usage-meter-track-empty {
+  background: transparent;
+  border-style: dashed;
+}
+
+.usage-meter-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--c);
+}
+
+.usage-meter-tick {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 80%;
+  width: 1px;
+  background: var(--text);
+}
+
+.usage-meter-value {
+  font-weight: 700;
+}
+
+.usage-meter-group.warn .usage-meter-value,
+.usage-meter-group.danger .usage-meter-value {
+  color: var(--c);
+}
+
+.usage-meter-muted {
+  color: var(--muted);
+}
+
+.usage-meter-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+}
+
+.usage-meter-group.resetting .usage-meter-fill {
+  opacity: 0.4;
+}
+
+.usage-meter-group.resetting .usage-meter-value {
+  color: var(--muted);
+}
+
+.usage-meter-skeleton {
+  height: 8px;
+  background: var(--surface-2);
+}
+
 .offline-hint {
   display: flex;
   flex-wrap: wrap;

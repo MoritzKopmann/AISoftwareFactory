@@ -7,11 +7,13 @@ export type LiveView =
   | { kind: 'artifacts'; projectId: string; ticketNumber: number }
   | { kind: 'findings'; projectId: string; ticketNumber?: number }
   | { kind: 'needs-you'; projectId: string }
-  | { kind: 'skills' };
+  | { kind: 'skills' }
+  | { kind: 'usage' };
 
 export function noticeConcernsView(notice: LiveNotice, view: LiveView): boolean {
   if (notice.event === 'skills.status-changed')
     return view.kind === 'skills' || view.kind === 'run';
+  if (view.kind === 'usage') return notice.event === 'usage.changed';
   if (view.kind === 'skills' || notice.projectId !== view.projectId) return false;
 
   switch (notice.event) {
