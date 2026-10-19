@@ -5,7 +5,7 @@ description: >
   TDD, green checks, architecture review by aisf:review-code, acceptance criteria, simplicity
   review, commit, PR. Also resumes an in-progress ticket and reworks an in-review one whose PR
   has new review activity or conflicts with main. Given a planned parent, lists its ready
-  children and stops. Not for spike or UI tickets. Use when the user wants to implement/build/work on a ticket or issue.
+  children and stops. Not for spike, UI or onboard tickets. Use when the user wants to implement/build/work on a ticket or issue.
   Triggers: "implement #N", "work on ticket N", "build issue N", "start on #N".
 ---
 
@@ -65,9 +65,9 @@ gh issue view <n> --json title,body,labels,state,parent,subIssues,blockedBy
 ```
 
 Go on only for a leaf that is `status: ready` (new), `in-progress` (resume) or `in-review`
-(rework, §1), not `type: spike` or `type: ui`, with Scope, Landing zone and Acceptance criteria
+(rework, §1), not `type: spike`, `type: ui` or `type: onboard`, with Scope, Landing zone and Acceptance criteria
 in its body (under `## Spec` on a one-PR ticket). `planned` → §1. Anything else → stop, name
-the next step (`aisf:spike`, `aisf:ui-ticket`, `aisf:plan-ticket`, `aisf:create-ticket`, or the
+the next step (`aisf:spike`, `aisf:ui-ticket`, `aisf:onboard-project`, `aisf:plan-ticket`, `aisf:create-ticket`, or the
 human for a ticket with the `stuck` label). A stop here writes nothing.
 
 The `waiting` label → stop. The run waits at its human checkpoint. The human answers on the

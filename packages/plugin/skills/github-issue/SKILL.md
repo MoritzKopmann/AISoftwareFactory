@@ -62,7 +62,7 @@ onboarded.
 
 | Dimension | Values                                                                                                                                                  |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Type      | `type: bug` · `type: enhancement` · `type: task` · `type: spike` · `type: ui`                                                                           |
+| Type      | `type: bug` · `type: enhancement` · `type: task` · `type: spike` · `type: ui` · `type: onboard`                                                         |
 | Priority  | `priority: critical` · `priority: high` · `priority: medium` · `priority: low`                                                                          |
 | Status    | `status: backlog` · `status: plan` · `status: planned` · `status: ready` · `status: in-progress` · `status: in-review`                                  |
 | Flag      | `hitl`: orthogonal to status. The leaf has one human checkpoint, named by its spec. The run works alone up to it, then waits.                           |
