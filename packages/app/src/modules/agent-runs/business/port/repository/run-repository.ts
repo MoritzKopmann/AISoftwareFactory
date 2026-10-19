@@ -1,4 +1,5 @@
 import type { Run } from '../../domain/types/run.js';
+import type { RunAnswer } from '../../domain/types/run-answer.js';
 import type { RunEnding } from '../../domain/types/run-ending.js';
 import type { RunWait } from '../../domain/types/run-wait.js';
 
@@ -15,5 +16,8 @@ export interface RunRepository {
   ): Promise<'recorded' | 'already-ended'>;
   recordWait(runId: string, wait: RunWait, waitingSince: string): Promise<'recorded' | 'refused'>;
   clearWait(runId: string): Promise<void>;
+  recordHeldAnswer(runId: string, answer: RunAnswer): Promise<void>;
+  clearHeldAnswer(runId: string): Promise<void>;
+  listPaused(projectId: string): Promise<ReadonlyArray<Run>>;
   markSettled(runId: string, settledAt: string): Promise<void>;
 }

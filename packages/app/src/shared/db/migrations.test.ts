@@ -134,4 +134,24 @@ describe('migrations', () => {
       'paused_until',
     ]);
   });
+
+  it('should add a nullable held_answer column that is null for existing runs when migration 12 runs', () => {
+    const older = openDatabase(':memory:');
+    runMigrations(
+      older,
+      migrations.filter(({ version }) => version <= 11),
+    );
+    older
+      .prepare(
+        `INSERT INTO runs (id, project_id, ticket_number, stage, mode, session_id, worktree_path, branch_name, state, started_at) VALUES ('r1', 'o/n', 1, 'implement', 'afk', 's', '/w', 'b', 'running', '2026-10-06T10:00:00.000Z')`,
+      )
+      .run();
+
+    runMigrations(older, migrations);
+
+    expect(older.prepare('SELECT held_answer FROM runs WHERE id = ?').get('r1')).toEqual({
+      held_answer: null,
+    });
+    older.close();
+  });
 });

@@ -1,3 +1,4 @@
+import type { RunAnswer } from './run-answer.js';
 import type { RunEnding } from './run-ending.js';
 import type { RunMode } from './run-mode.js';
 import type { RunStage } from './run-stage.js';
@@ -16,6 +17,7 @@ export type Run = {
   readonly waitingFor?: RunWait;
   readonly waitingSince?: string;
   readonly ending?: RunEnding;
+  readonly heldAnswer?: RunAnswer;
   readonly startedAt: string;
   readonly endedAt?: string;
 };

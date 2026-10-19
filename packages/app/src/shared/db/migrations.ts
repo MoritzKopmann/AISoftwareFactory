@@ -157,4 +157,11 @@ export const migrations: ReadonlyArray<Migration> = [
       );
     `,
   },
+  {
+    version: 12,
+    name: 'runs-held-answer',
+    sql: `
+      ALTER TABLE runs ADD COLUMN held_answer TEXT;
+    `,
+  },
 ];
