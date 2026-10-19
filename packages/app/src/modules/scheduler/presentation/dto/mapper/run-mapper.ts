@@ -59,6 +59,7 @@ export function toTicketRunResponse({
           activeRun: {
             id: activeRun.id,
             startedAt: activeRun.startedAt,
+            answerHeld: activeRun.answerHeld,
             ...(activeRun.waitingFor === undefined
               ? {}
               : {
@@ -91,6 +92,7 @@ export function toTicketRunResponse({
           lastRun: {
             id: lastRun.id,
             startedAt: lastRun.startedAt,
+            answerHeld: lastRun.answerHeld,
             endedAt: lastRun.endedAt,
             ending: toRunEndingResponse(lastRun.ending),
           },

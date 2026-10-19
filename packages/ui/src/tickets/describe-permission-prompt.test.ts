@@ -14,6 +14,7 @@ function endedWith(ending: RunEndingResponse, runId = 'run-1'): TicketRunRespons
     lastRun: {
       id: runId,
       startedAt: '2026-09-30T09:00:00Z',
+      answerHeld: false,
       endedAt: '2026-09-30T09:10:00Z',
       ending,
     },
@@ -43,6 +44,7 @@ function liveWait(
     activeRun: {
       id: runId,
       startedAt: '2026-10-07T09:00:00Z',
+      answerHeld: false,
       waitingFor,
       waitingSince,
     },
@@ -84,7 +86,7 @@ describe('describePermissionPrompt', () => {
   it('should hide the prompt when the active run has no wait', () => {
     const working: TicketRunResponse = {
       ...endedWith(bashPrompt),
-      activeRun: { id: 'run-2', startedAt: '2026-09-30T09:11:00Z' },
+      activeRun: { id: 'run-2', startedAt: '2026-09-30T09:11:00Z', answerHeld: false },
     };
     expect(describePermissionPrompt(working, true, noAnswer)).toEqual({ kind: 'hidden' });
   });
@@ -211,7 +213,7 @@ describe('settlePermissionAnswer', () => {
   it('should return idle when the run shows no wait any more', () => {
     const working: TicketRunResponse = {
       ...idle,
-      activeRun: { id: 'run-1', startedAt: '2026-10-07T09:00:00Z' },
+      activeRun: { id: 'run-1', startedAt: '2026-10-07T09:00:00Z', answerHeld: false },
     };
     expect(settlePermissionAnswer(sent, working)).toEqual({ kind: 'idle' });
   });
@@ -229,7 +231,7 @@ describe('settlePermissionAnswer', () => {
     };
     const resumed: TicketRunResponse = {
       ...endedWith(bashPrompt),
-      activeRun: { id: 'run-2', startedAt: '2026-10-07T10:10:00Z' },
+      activeRun: { id: 'run-2', startedAt: '2026-10-07T10:10:00Z', answerHeld: false },
     };
     expect(settlePermissionAnswer(fallbackAnswer, resumed)).toEqual({ kind: 'idle' });
   });

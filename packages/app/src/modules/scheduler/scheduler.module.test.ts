@@ -74,7 +74,7 @@ describe('createSchedulerModule', () => {
 
     expect(await response.json()).toEqual({
       availability: { kind: 'disabled', reason: '#138 is running' },
-      activeRun: { id: 'run-1', startedAt: '2026-09-29T09:00:00.000Z' },
+      activeRun: { id: 'run-1', startedAt: '2026-09-29T09:00:00.000Z', answerHeld: false },
     });
   });
 

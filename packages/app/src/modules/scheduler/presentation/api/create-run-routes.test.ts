@@ -67,7 +67,7 @@ describe('createRunRoutes', () => {
       });
     });
 
-    it('should answer the active run without a steps field when the ticket run has one', async () => {
+    it('should answer answerHeld false on the active run when no answer is held', async () => {
       const ticketRuns = new FakeTicketRuns();
       ticketRuns.ticketRun = {
         availability: { kind: 'disabled', reason: '#139 is running' },
@@ -79,7 +79,7 @@ describe('createRunRoutes', () => {
       );
 
       const body = (await response.json()) as { activeRun: unknown };
-      expect(body.activeRun).toEqual({ id: 'run-1', startedAt });
+      expect(body.activeRun).toEqual({ id: 'run-1', startedAt, answerHeld: false });
     });
 
     it('should expose waitingFor without artifactId when the active run waits', async () => {
@@ -296,9 +296,31 @@ describe('createRunRoutes', () => {
       expect(ticketRunResponseSchema.parse(await response.json()).lastRun).toEqual({
         id: 'run-1',
         startedAt,
+        answerHeld: false,
         endedAt,
         ending: { kind: 'escalated', escalation: 'spec', reason: 'AC 2 is unclear' },
       });
+    });
+
+    it('should answer answerHeld true on the last run when an answer is held', async () => {
+      const ticketRuns = new FakeTicketRuns();
+      ticketRuns.ticketRun = {
+        availability: { kind: 'available' },
+        lastRun: {
+          id: 'run-1',
+          startedAt,
+          answerHeld: true,
+          endedAt,
+          ending: { kind: 'finished' },
+        },
+      };
+
+      const response = await createTestApp(ticketRuns).request(
+        '/projects/owner/name/tickets/139/run',
+      );
+
+      const body = (await response.json()) as { lastRun?: { answerHeld: unknown } };
+      expect(body.lastRun?.answerHeld).toBe(true);
     });
 
     it('should expose the page and not the artifact id when the last run ended at a checkpoint', async () => {

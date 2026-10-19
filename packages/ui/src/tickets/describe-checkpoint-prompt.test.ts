@@ -15,6 +15,7 @@ function endedWith(ending: RunEndingResponse, runId = 'run-1'): TicketRunRespons
     lastRun: {
       id: runId,
       startedAt: '2026-10-04T09:00:00Z',
+      answerHeld: false,
       endedAt: '2026-10-04T09:10:00Z',
       ending,
     },
@@ -33,6 +34,7 @@ describe('describeCheckpointPrompt', () => {
       activeRun: {
         id: 'run-2',
         startedAt: '2026-10-04T09:11:00Z',
+        answerHeld: false,
         waitingFor: { kind: 'permission-needed', toolName: 'Bash', toolInput: { command: 'ls' } },
       },
     };
@@ -61,7 +63,7 @@ describe('describeCheckpointPrompt', () => {
       'the poll shows an active run',
       {
         ...endedWith(checkpoint),
-        activeRun: { id: 'run-2', startedAt: '2026-10-04T09:11:00Z' },
+        activeRun: { id: 'run-2', startedAt: '2026-10-04T09:11:00Z', answerHeld: false },
       },
     ],
   ])('should hide the prompt when %s', (_condition, response) => {
@@ -223,6 +225,7 @@ const waiting: TicketRunResponse = {
   activeRun: {
     id: 'run-7',
     startedAt: '2026-10-04T09:11:00Z',
+    answerHeld: false,
     waitingFor: { kind: 'checkpoint', request: 'Pick A or B' },
   },
 };
@@ -275,7 +278,7 @@ describe('settleCheckpointAnswer', () => {
   it('should clear the answer when its run works on without a wait', () => {
     const working: TicketRunResponse = {
       ...idle,
-      activeRun: { id: 'run-7', startedAt: '2026-10-04T09:11:00Z' },
+      activeRun: { id: 'run-7', startedAt: '2026-10-04T09:11:00Z', answerHeld: false },
     };
     expect(settleCheckpointAnswer(sent, working)).toBeUndefined();
   });
