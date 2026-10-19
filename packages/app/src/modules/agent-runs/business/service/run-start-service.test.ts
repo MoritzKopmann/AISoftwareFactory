@@ -187,6 +187,50 @@ describe('RunStartService', () => {
       });
     });
 
+    it('should pass the latest run end as --since when an implement run starts on an in-review ticket', async () => {
+      const { service, agentSessions, runRepository } = buildStartSubject();
+      runRepository.runs.set(
+        'earlier',
+        buildRun({
+          id: 'earlier',
+          state: 'settled',
+          startedAt: '2026-10-18T08:00:00.000Z',
+          endedAt: '2026-10-18T09:00:00.000Z',
+        }),
+      );
+
+      await service.start({ ...startRequest, status: 'in-review' });
+
+      expect(agentSessions.startedSpecs[0]?.prompt).toBe(
+        '/aisf:implement-ticket 137 --since 2026-10-18T09:00:00.000Z',
+      );
+    });
+
+    it('should leave out --since when the in-review ticket has no earlier run', async () => {
+      const { service, agentSessions } = buildStartSubject();
+
+      await service.start({ ...startRequest, status: 'in-review' });
+
+      expect(agentSessions.startedSpecs[0]?.prompt).toBe('/aisf:implement-ticket 137');
+    });
+
+    it('should leave out --since when the ready ticket has an earlier run that ended', async () => {
+      const { service, agentSessions, runRepository } = buildStartSubject();
+      runRepository.runs.set(
+        'earlier',
+        buildRun({
+          id: 'earlier',
+          state: 'settled',
+          startedAt: '2026-10-18T08:00:00.000Z',
+          endedAt: '2026-10-18T09:00:00.000Z',
+        }),
+      );
+
+      await service.start(startRequest);
+
+      expect(agentSessions.startedSpecs[0]?.prompt).toBe('/aisf:implement-ticket 137');
+    });
+
     it.each<[string, ReadonlyArray<TicketType>, 'spike' | 'implement', string, string]>([
       ['a spike', ['spike'], 'spike', '/aisf:spike 137', 'opus'],
       ['both ui and spike', ['ui', 'spike'], 'spike', '/aisf:spike 137', 'opus'],

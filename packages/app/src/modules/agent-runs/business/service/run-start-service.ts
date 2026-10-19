@@ -9,6 +9,7 @@ import { authoringWorktreePathFor } from '../domain/functions/authoring-worktree
 import { branchNameFor } from '../domain/functions/branch-name-for.js';
 import { buildCheckpointResumePrompt } from '../domain/functions/build-checkpoint-resume-prompt.js';
 import { buildResumePrompt } from '../domain/functions/build-resume-prompt.js';
+import { buildStartPrompt } from '../domain/functions/build-start-prompt.js';
 import { commandToLabel } from '../domain/functions/command-to-label.js';
 import { describeError } from '../domain/functions/describe-error.js';
 import { runStageFor } from '../domain/functions/run-stage-for.js';
@@ -103,6 +104,7 @@ export class RunStartService {
       state: 'running',
       startedAt: clock.now(),
     };
+    const latestRun = await runRepository.findLatest(request.projectId, request.ticketNumber);
     await runRepository.insert(run);
     events.emit('run.started', {
       runId: run.id,
@@ -135,7 +137,12 @@ export class RunStartService {
 
     this.launchSession(run, {
       kind: 'start',
-      prompt: `/${stageSkills[run.stage]} ${run.ticketNumber}`,
+      prompt: buildStartPrompt({
+        stage,
+        status: request.status,
+        ticketNumber: run.ticketNumber,
+        latestRunEndedAt: latestRun?.endedAt,
+      }),
     });
 
     return run;
