@@ -20,6 +20,7 @@ export type ClosingPullRequestDto = {
   readonly mergeable: 'mergeable' | 'conflicting' | 'unknown';
   readonly canBeRebased: boolean;
   readonly headCommit: string;
+  readonly lastReviewActivityAt?: string;
 };
 
 export type TicketDto = {

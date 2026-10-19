@@ -40,6 +40,7 @@ export const ticketResponseSchema = z.object({
       mergeable: z.enum(['mergeable', 'conflicting', 'unknown']),
       canBeRebased: z.boolean(),
       headCommit: z.string(),
+      lastReviewActivityAt: z.string().optional(),
     }),
   ),
   updatedAt: z.string(),
