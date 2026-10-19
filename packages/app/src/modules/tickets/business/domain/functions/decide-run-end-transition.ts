@@ -5,7 +5,7 @@ import type { TicketLiveState } from '../types/ticket-live-state.js';
 import type { TicketStatus } from '../../../../../shared/ticket-status/ticket-status.js';
 
 const runningStatuses: Readonly<Record<RunStage, ReadonlyArray<TicketStatus>>> = {
-  implement: ['ready', 'in-progress'],
+  implement: ['ready', 'in-progress', 'in-review'],
   spike: ['ready', 'in-progress'],
   create: ['idea'],
   plan: ['plan'],
@@ -34,6 +34,9 @@ export function decideRunEndTransition(
   if (!runningStatuses[stage].includes(live.status) || live.stuck) {
     return { kind: 'none' };
   }
+  if (isFinishedRework(ending, live, stage)) {
+    return { kind: 'none' };
+  }
   // An authoring run that ends `finished` is normal: the ticket moved on by itself.
   // A plan run left at `plan` with no open spike would be started again every poll.
   if (authoring && ending.kind === 'finished') {
@@ -52,6 +55,11 @@ export function decideRunEndTransition(
     return { kind: 'flag', state: 'waiting', comment: describeEnding(ending) };
   }
   return { kind: 'flag', state: 'stuck', comment: describeEnding(ending) };
+}
+
+// A rework run that finishes has completed, or found nothing to do.
+function isFinishedRework(ending: RunEnding, live: TicketLiveState, stage: RunStage): boolean {
+  return stage === 'implement' && live.status === 'in-review' && ending.kind === 'finished';
 }
 
 function describeEnding(ending: Exclude<RunEnding, { kind: 'parked' }>): string {

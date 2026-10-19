@@ -105,20 +105,14 @@ describe('decideRunEndTransition', () => {
     },
   );
 
-  it.each<RunEnding>([
-    { kind: 'finished' },
-    { kind: 'stopped' },
-    { kind: 'crashed', reason: 'boom' },
-    { kind: 'usage-limit', reason: 'limit' },
-    { kind: 'app-restarted' },
-    { kind: 'escalated', escalation: 'spec', reason: 'why' },
-    { kind: 'permission-needed', toolName: 'Bash', toolInput: {} },
-    { kind: 'parked', blockerNumber: 3 },
-  ])('should write nothing when the ticket is in-review (%o)', (ending) => {
-    expect(decideRunEndTransition(ending, live('in-review'), 'implement')).toEqual({
-      kind: 'none',
-    });
-  });
+  it.each<RunEnding>([{ kind: 'finished' }, { kind: 'parked', blockerNumber: 3 }])(
+    'should write nothing when the ticket is in-review (%o)',
+    (ending) => {
+      expect(decideRunEndTransition(ending, live('in-review'), 'implement')).toEqual({
+        kind: 'none',
+      });
+    },
+  );
 
   it.each<TicketStatus>(['closed', 'idea', 'conflict'])(
     'should write nothing when the ticket is %s',
@@ -162,7 +156,7 @@ describe('decideRunEndTransition', () => {
       },
     );
 
-    it.each<TicketStatus>(['in-review', 'conflict', 'closed'])(
+    it.each<TicketStatus>(['conflict', 'closed'])(
       'should write nothing when the checkpoint run finds the ticket %s',
       (status) => {
         expect(decideRunEndTransition(ending, live(status), 'implement')).toEqual({ kind: 'none' });
@@ -205,6 +199,76 @@ describe('decideRunEndTransition', () => {
       ).toEqual({
         kind: 'return-to-ready',
       });
+    });
+  });
+});
+
+describe('decideRunEndTransition for a rework run', () => {
+  const inReview = live('in-review');
+
+  it('should write nothing when the rework finished', () => {
+    expect(decideRunEndTransition({ kind: 'finished' }, inReview, 'implement')).toEqual({
+      kind: 'none',
+    });
+  });
+
+  it('should mark the ticket stuck when the rework crashed before its claim', () => {
+    expect(
+      decideRunEndTransition({ kind: 'crashed', reason: 'boom' }, inReview, 'implement'),
+    ).toEqual({ kind: 'flag', state: 'stuck', comment: 'The run crashed: boom' });
+  });
+
+  it('should mark the ticket stuck with the escalation when the rework escalated', () => {
+    expect(
+      decideRunEndTransition(
+        { kind: 'escalated', escalation: 'red', reason: 'tests fail' },
+        inReview,
+        'implement',
+      ),
+    ).toEqual({
+      kind: 'flag',
+      state: 'stuck',
+      comment: 'The run escalated (red): tests fail',
+    });
+  });
+
+  it('should mark the ticket waiting when the rework reached its checkpoint', () => {
+    expect(
+      decideRunEndTransition({ kind: 'checkpoint', request: 'Look' }, inReview, 'implement'),
+    ).toMatchObject({ kind: 'flag', state: 'waiting' });
+  });
+
+  it('should write nothing when the rework checkpoint finds the ticket already waiting', () => {
+    expect(
+      decideRunEndTransition(
+        { kind: 'checkpoint', request: 'Look' },
+        live('in-review', { waiting: true }),
+        'implement',
+      ),
+    ).toEqual({ kind: 'none' });
+  });
+
+  it('should write nothing when the rework crashed and the ticket is already stuck', () => {
+    expect(
+      decideRunEndTransition(
+        { kind: 'crashed', reason: 'x' },
+        live('in-review', { stuck: true }),
+        'implement',
+      ),
+    ).toEqual({ kind: 'none' });
+  });
+
+  it('should mark the ticket stuck when a run finished while the ticket is in-progress', () => {
+    expect(decideRunEndTransition({ kind: 'finished' }, live('in-progress'), 'implement')).toEqual({
+      kind: 'flag',
+      state: 'stuck',
+      comment: 'The run finished without completing the ticket',
+    });
+  });
+
+  it('should write nothing when a spike run crashed and the ticket is in-review', () => {
+    expect(decideRunEndTransition({ kind: 'crashed', reason: 'x' }, inReview, 'spike')).toEqual({
+      kind: 'none',
     });
   });
 });
