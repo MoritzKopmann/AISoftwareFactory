@@ -3,6 +3,7 @@ import type { ProjectResponse } from '@aisf/app/api-schemas/projects-schemas.js'
 import { createLiveUpdates } from './live/create-live-updates.js';
 import { OfflineHint } from './live/offline-hint.js';
 import { SkillsStatusPanel } from './skills/skills-status-panel.js';
+import { PausedBanner } from './usage/paused-banner.js';
 import { UsageMeter } from './usage/usage-meter.js';
 import { useUsage } from './usage/use-usage.js';
 import { parseAppRoute, type AppRoute } from './app-route.js';
@@ -116,6 +117,7 @@ export function AppShell() {
       <ProjectSidebar projects={projects} route={route} />
       <div className="main">
         <UsageMeter usage={usage} />
+        <PausedBanner usage={usage} />
         <OfflineHint liveUpdates={liveUpdates} />
         <SkillsStatusPanel liveUpdates={liveUpdates} />
         {renderPage()}

@@ -1,10 +1,11 @@
+import type { ReactNode } from 'react';
 import { CommandBlock } from './command-block.js';
 
 export type BannerTone = 'info' | 'warn' | 'danger';
 
 type BannerProps = {
   readonly tone: BannerTone;
-  readonly message: string;
+  readonly message: ReactNode;
   readonly command?: string;
   readonly hint?: string;
   readonly detail?: string;
