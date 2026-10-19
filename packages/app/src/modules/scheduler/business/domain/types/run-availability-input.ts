@@ -10,4 +10,6 @@ export type RunAvailabilityInput = {
   readonly trigger: 'manual' | 'auto';
   readonly projectPaused: boolean;
   readonly lastRunEndedAt?: string;
+  /** Set while a usage limit pauses all work: the time it resets. */
+  readonly usagePausedUntil?: string;
 };

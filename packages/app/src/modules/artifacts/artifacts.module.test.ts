@@ -42,7 +42,12 @@ describe('createArtifactsModule', () => {
         kitDirectory: '/kit',
         agentTools,
         agentRuns: { latestRun: async () => latestRun },
-        scheduler: { answer: async () => ({ id: 'r1', startedAt: '2026-10-06T10:00:00.000Z' }) },
+        scheduler: {
+          answer: async () => ({
+            kind: 'answered',
+            run: { id: 'r1', startedAt: '2026-10-06T10:00:00.000Z' },
+          }),
+        },
         events: new FakeEventPublisher(),
         identifiers: { next: () => 'T' },
         clock: new FakeClock('2026-10-06T10:00:00.000Z'),

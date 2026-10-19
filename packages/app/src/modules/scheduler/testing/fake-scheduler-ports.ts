@@ -62,6 +62,7 @@ export class FakeRunPort implements RunPort {
   startGate: Promise<void> = Promise.resolve();
   answerFailure: Error | undefined;
   paused: ReadonlyArray<PausedRun> = [];
+  resumeFailureRunId: string | undefined;
 
   readonly startRequests: Array<Parameters<RunPort['start']>[0]> = [];
 
@@ -101,6 +102,9 @@ export class FakeRunPort implements RunPort {
 
   async resumePaused(runId: string): Promise<StartedRun> {
     this.calls.push(`resumePaused ${runId}`);
+    if (this.resumeFailureRunId === runId) {
+      throw new Error(`cannot resume ${runId}`);
+    }
     return { id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' };
   }
 

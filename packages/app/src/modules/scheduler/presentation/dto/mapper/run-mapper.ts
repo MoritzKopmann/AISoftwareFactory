@@ -1,5 +1,6 @@
 import type { RunEnding } from '../../../business/domain/types/run-ending.js';
 import type { RunAnswer } from '../../../business/domain/types/run-answer.js';
+import type { RunAnswerOutcome } from '../../../business/domain/types/run-answer-outcome.js';
 import type { StartedRun } from '../../../business/domain/types/started-run.js';
 import type { TicketRun } from '../../../business/domain/types/ticket-run.js';
 import type {
@@ -10,6 +11,7 @@ import type {
   TicketRunResponse,
 } from '../api/runs-schemas.js';
 import type { RunAnswerDto } from '../internal/run-answer-dto.js';
+import type { RunAnswerResultDto } from '../internal/run-answer-result-dto.js';
 import type { StartedRunDto } from '../internal/started-run-dto.js';
 
 function toRunEndingResponse(ending: RunEnding): RunEndingResponse {
@@ -116,4 +118,10 @@ export function toRunAnswer(dto: RunAnswerDto): RunAnswer {
 
 export function toStartedRunDto(run: StartedRun): StartedRunDto {
   return { id: run.id, startedAt: run.startedAt };
+}
+
+export function toRunAnswerResultDto(outcome: RunAnswerOutcome): RunAnswerResultDto {
+  return outcome.kind === 'held'
+    ? { kind: 'held', pausedUntil: outcome.pausedUntil }
+    : { kind: 'answered', run: toStartedRunDto(outcome.run) };
 }

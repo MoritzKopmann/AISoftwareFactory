@@ -10,12 +10,20 @@ const watchUpdated: DomainEvents['watch.updated'] = {
   polledAt: '2026-10-17T10:00:00.000Z',
 };
 
-function buildSubject(startDue: TicketRunService['startDue'] = async () => []) {
+function buildSubject(
+  startDue: TicketRunService['startDue'] = async () => [],
+  continuePaused: TicketRunService['continuePaused'] = async () => undefined,
+) {
   const bus = new InMemoryEventBus<DomainEvents>();
   const startDueSpy = vi.fn(startDue);
+  const continuePausedSpy = vi.fn(continuePaused);
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
-  const unsubscribe = subscribeToWatchUpdated(bus, { startDue: startDueSpy }, logger);
-  return { bus, startDueSpy, logger, unsubscribe };
+  const unsubscribe = subscribeToWatchUpdated(
+    bus,
+    { startDue: startDueSpy, continuePaused: continuePausedSpy },
+    logger,
+  );
+  return { bus, startDueSpy, continuePausedSpy, logger, unsubscribe };
 }
 
 describe('subscribeToWatchUpdated', () => {
@@ -37,6 +45,35 @@ describe('subscribeToWatchUpdated', () => {
     await vi.waitFor(() =>
       expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('boom')),
     );
+  });
+
+  it('should continue the paused runs before it starts the due tickets when watch.updated is emitted', async () => {
+    const order: string[] = [];
+    const { bus, startDueSpy } = buildSubject(
+      async () => {
+        order.push('startDue');
+        return [];
+      },
+      async () => {
+        order.push('continuePaused');
+      },
+    );
+
+    bus.emit('watch.updated', watchUpdated);
+
+    await vi.waitFor(() => expect(startDueSpy).toHaveBeenCalled());
+    expect(order).toEqual(['continuePaused', 'startDue']);
+  });
+
+  it('should log the failure and still start the due tickets when continuePaused rejects', async () => {
+    const { bus, startDueSpy, logger } = buildSubject(undefined, async () => {
+      throw new Error('stuck-boom');
+    });
+
+    bus.emit('watch.updated', watchUpdated);
+
+    await vi.waitFor(() => expect(startDueSpy).toHaveBeenCalledWith('owner/name'));
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('stuck-boom'));
   });
 
   it('should stop starting tickets when the returned unsubscribe is called', async () => {

@@ -71,7 +71,7 @@ describe('createRunRoutes', () => {
       const ticketRuns = new FakeTicketRuns();
       ticketRuns.ticketRun = {
         availability: { kind: 'disabled', reason: '#139 is running' },
-        activeRun: { id: 'run-1', startedAt },
+        activeRun: { id: 'run-1', startedAt, answerHeld: false },
       };
 
       const response = await createTestApp(ticketRuns).request(
@@ -89,6 +89,7 @@ describe('createRunRoutes', () => {
         activeRun: {
           id: 'run-1',
           startedAt,
+          answerHeld: false,
           waitingFor: {
             kind: 'checkpoint',
             request: 'Answer on the page Plan',
@@ -116,6 +117,7 @@ describe('createRunRoutes', () => {
         activeRun: {
           id: 'run-1',
           startedAt,
+          answerHeld: false,
           waitingFor: {
             kind: 'checkpoint',
             request: 'Answer on the page Plan 12',
@@ -145,6 +147,7 @@ describe('createRunRoutes', () => {
         activeRun: {
           id: 'run-1',
           startedAt,
+          answerHeld: false,
           waitingFor: { kind: 'permission-needed', toolName: 'Bash', toolInput: { command: 'ls' } },
           waitingSince,
         },
@@ -168,6 +171,7 @@ describe('createRunRoutes', () => {
       const run = {
         id: 'run-1',
         startedAt,
+        answerHeld: false,
         waitingSince: '2026-10-07T10:00:00.000Z',
       };
       ticketRuns.ticketRun = {
@@ -214,6 +218,7 @@ describe('createRunRoutes', () => {
         lastRun: {
           id: 'run-1',
           startedAt,
+          answerHeld: false,
           endedAt,
           ending: {
             kind: 'permission-needed',
@@ -240,6 +245,7 @@ describe('createRunRoutes', () => {
         activeRun: {
           id: 'run-1',
           startedAt,
+          answerHeld: false,
           waitingFor: { kind: 'checkpoint', request: 'Pick one', artifactId: 'page-1' },
           waitingSince: '2026-10-07T10:00:00.000Z',
         },
@@ -258,7 +264,7 @@ describe('createRunRoutes', () => {
       const ticketRuns = new FakeTicketRuns();
       ticketRuns.ticketRun = {
         availability: { kind: 'disabled', reason: '#7 is running' },
-        activeRun: { id: 'run-1', startedAt },
+        activeRun: { id: 'run-1', startedAt, answerHeld: false },
       };
 
       const response = await createTestApp(ticketRuns).request(
@@ -277,6 +283,7 @@ describe('createRunRoutes', () => {
         lastRun: {
           id: 'run-1',
           startedAt,
+          answerHeld: false,
           endedAt,
           ending: { kind: 'escalated', escalation: 'spec', reason: 'AC 2 is unclear' },
         },
@@ -301,6 +308,7 @@ describe('createRunRoutes', () => {
         lastRun: {
           id: 'run-1',
           startedAt,
+          answerHeld: false,
           endedAt,
           ending: {
             kind: 'checkpoint',
@@ -332,6 +340,7 @@ describe('createRunRoutes', () => {
         lastRun: {
           id: 'run-1',
           startedAt,
+          answerHeld: false,
           endedAt,
           ending: { kind: 'permission-needed', toolName: 'Bash', toolInput },
         },

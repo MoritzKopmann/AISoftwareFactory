@@ -12,6 +12,7 @@ export function determineRunAvailability(input: RunAvailabilityInput): RunAvaila
     lastRunEndedAt,
     trigger,
     projectPaused,
+    usagePausedUntil,
   } = input;
   if (ticket === undefined || ticket.hasOpenBlocker || !isRunnableTicket(ticket, lastRunEndedAt)) {
     return { kind: 'absent' };
@@ -33,6 +34,9 @@ export function determineRunAvailability(input: RunAvailabilityInput): RunAvaila
   );
   if (ticket.status === 'plan' && openSpike !== undefined) {
     return { kind: 'disabled', reason: `Waiting for spike #${openSpike.number}` };
+  }
+  if (usagePausedUntil !== undefined) {
+    return { kind: 'disabled', reason: `Usage limit reached, resets at ${usagePausedUntil}` };
   }
   if (runsBlocked.blocked) {
     return { kind: 'disabled', reason: runsBlocked.reason };

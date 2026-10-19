@@ -9,13 +9,24 @@ describe('SchedulerAdapter', () => {
     const answers = new SchedulerAdapter({
       answer: async (runId, answer) => {
         calls.push({ runId, answer });
-        return { id: runId, startedAt: '2026-10-06T10:00:00.000Z' };
+        return {
+          kind: 'answered',
+          run: { id: runId, startedAt: '2026-10-06T10:00:00.000Z' },
+        };
       },
     });
 
     await answers.answer('r1', 'tagged');
 
     expect(calls).toEqual([{ runId: 'r1', answer: { kind: 'checkpoint', text: 'tagged' } }]);
+  });
+
+  it('should resolve without error when the scheduler holds the answer', async () => {
+    const answers = new SchedulerAdapter({
+      answer: async () => ({ kind: 'held', pausedUntil: '2026-10-18T15:00:00.000Z' }),
+    });
+
+    await expect(answers.answer('r1', 'tagged')).resolves.toBeUndefined();
   });
 
   it('should throw PageBusyError when the scheduler refuses with a conflict', async () => {
