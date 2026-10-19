@@ -31,9 +31,10 @@ type TicketPageProps = {
   readonly liveUpdates: LiveUpdates;
   readonly id: string;
   readonly number: number;
+  readonly pausedUntil: string | undefined;
 };
 
-export function TicketPage({ liveUpdates, id, number }: TicketPageProps) {
+export function TicketPage({ liveUpdates, id, number, pausedUntil }: TicketPageProps) {
   const [outcome, setOutcome] = useState<TicketPageOutcome>({ kind: 'loading' });
 
   const { retry } = useLiveRead(
@@ -59,6 +60,7 @@ export function TicketPage({ liveUpdates, id, number }: TicketPageProps) {
       liveUpdates={liveUpdates}
       projectId={id}
       number={number}
+      pausedUntil={pausedUntil}
       description={describeTicketPage(outcome, id, number)}
       onRetry={() => {
         setOutcome({ kind: 'loading' });
@@ -72,6 +74,7 @@ type TicketPageViewProps = {
   readonly liveUpdates: LiveUpdates;
   readonly projectId: string;
   readonly number: number;
+  readonly pausedUntil: string | undefined;
   readonly description: TicketPageDescription;
   readonly onRetry: () => void;
 };
@@ -80,6 +83,7 @@ export function TicketPageView({
   liveUpdates,
   projectId,
   number,
+  pausedUntil,
   description,
   onRetry,
 }: TicketPageViewProps) {
@@ -128,6 +132,7 @@ export function TicketPageView({
         <LoadedTicket
           projectId={projectId}
           number={number}
+          pausedUntil={pausedUntil}
           description={description}
           liveUpdates={liveUpdates}
         />
@@ -157,11 +162,13 @@ function LoadedTicket({
   liveUpdates,
   projectId,
   number,
+  pausedUntil,
   description,
 }: {
   readonly liveUpdates: LiveUpdates;
   readonly projectId: string;
   readonly number: number;
+  readonly pausedUntil: string | undefined;
   readonly description: LoadedDescription;
 }) {
   const { statusMark, parent, pullRequests } = description;
@@ -180,6 +187,7 @@ function LoadedTicket({
       number={number}
       ticketState={description}
       runSkill={description.runSkill}
+      pausedUntil={pausedUntil}
     >
       {(slots) => (
         <DescriptionSwapState roundUp={slots.lowerPanel !== undefined}>

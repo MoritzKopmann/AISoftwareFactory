@@ -21,6 +21,7 @@ function input(overrides: Partial<RunPanelInput>): RunPanelInput {
     lastPollFailed: false,
     ticketStuck: false,
     stopping: false,
+    pausedUntil: undefined,
     runSkill: 'implement-ticket',
     ...overrides,
   };
@@ -32,6 +33,7 @@ describe('describeRunPanel', () => {
       lastPollFailed: false,
       ticketStuck: false,
       stopping: false,
+      pausedUntil: undefined,
       runSkill: 'implement-ticket',
     };
     expect(describeRunPanel(unanswered, now)).toEqual({ kind: 'hidden' });
@@ -107,11 +109,6 @@ describe('describeRunPanel', () => {
       { kind: 'crashed', reason: 'Exit code 1.' },
       'Run ended: the session crashed. Exit code 1.',
     ],
-    [
-      'usage-limit',
-      { kind: 'usage-limit', reason: 'The 5-hour usage limit was reached' },
-      'Run ended: the usage limit was reached.',
-    ],
     ['app-restarted', { kind: 'app-restarted' }, 'Run ended: aisf restarted during the run.'],
     [
       'escalated',
@@ -152,6 +149,49 @@ describe('describeRunPanel', () => {
     expect(describeRunPanel(input({ response, ticketStuck: false }), now)).toEqual({
       kind: 'hidden',
     });
+  });
+});
+
+describe('describeRunPanel for a run stopped by the usage limit', () => {
+  const usageLimit = ended({ kind: 'usage-limit', reason: 'The 5-hour usage limit was reached' });
+
+  it('should show the paused panel with the reset time and the run length when the usage pause is known', () => {
+    expect(
+      describeRunPanel(input({ response: usageLimit, pausedUntil: localTime(14, 0) }), now),
+    ).toEqual({
+      kind: 'paused',
+      pausedLabel: 'Paused until 14:00',
+      endedLabel: 'Ended 09:47 · ran 6 min',
+    });
+  });
+
+  it('should show the paused panel even when the ticket is not stuck', () => {
+    expect(
+      describeRunPanel(
+        input({ response: usageLimit, pausedUntil: localTime(14, 0), ticketStuck: false }),
+        now,
+      ),
+    ).toMatchObject({ kind: 'paused' });
+  });
+
+  it('should hide the panel when the usage-limit run has no pause end', () => {
+    expect(
+      describeRunPanel(
+        input({ response: usageLimit, pausedUntil: undefined, ticketStuck: true }),
+        now,
+      ),
+    ).toEqual({ kind: 'hidden' });
+  });
+
+  it('should show the live panel instead of the paused panel when a new run is active', () => {
+    const response: TicketRunResponse = {
+      ...usageLimit,
+      activeRun: { id: 'run-2', startedAt: localTime(9, 44), answerHeld: false },
+    };
+
+    expect(describeRunPanel(input({ response, pausedUntil: localTime(14, 0) }), now)).toMatchObject(
+      { kind: 'live' },
+    );
   });
 });
 
