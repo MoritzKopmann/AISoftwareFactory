@@ -58,6 +58,7 @@ export type RunStartServiceDependencies = {
 };
 
 const refusalFallbackMilliseconds = 3_600_000;
+const usageLimitContinuePrompt = 'continue';
 
 const refusalMessage = 'A human refused this tool call. Do not retry it; carry on without it.';
 
@@ -149,9 +150,7 @@ export class RunStartService {
   }
 
   async resume(runId: string, answer: RunAnswer): Promise<Run> {
-    const { runRepository, identifiers, clock, events } = this.dependencies;
-
-    const previousRun = await runRepository.findById(runId);
+    const previousRun = await this.dependencies.runRepository.findById(runId);
     const ending = previousRun?.ending;
     if (previousRun === undefined || ending === undefined) {
       throw new RunNotResumableError(`Run ${runId} has no ending to answer`);
@@ -178,13 +177,28 @@ export class RunStartService {
     } else {
       throw new RunNotResumableError(`Run ${runId} cannot take a ${answer.kind} answer`);
     }
+    return this.continueRun(previousRun, launch);
+  }
+
+  /** Continues a run that ended at a usage limit, in its own session and worktree. */
+  async resumePaused(runId: string): Promise<Run> {
+    const previousRun = await this.dependencies.runRepository.findById(runId);
+    if (previousRun?.ending?.kind !== 'usage-limit') {
+      throw new RunNotResumableError(`Run ${runId} did not end at a usage limit`);
+    }
+    return this.continueRun(previousRun, { kind: 'resume', prompt: usageLimitContinuePrompt });
+  }
+
+  private async continueRun(previousRun: Run, launch: SessionLaunch): Promise<Run> {
+    const { runRepository, identifiers, clock, events } = this.dependencies;
+
     const latestRun = await runRepository.findLatest(
       previousRun.projectId,
       previousRun.ticketNumber,
     );
     if (latestRun?.id !== previousRun.id) {
       throw new RunNotResumableError(
-        `Run ${runId} is not the latest run of #${previousRun.ticketNumber}`,
+        `Run ${previousRun.id} is not the latest run of #${previousRun.ticketNumber}`,
       );
     }
 

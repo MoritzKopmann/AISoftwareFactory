@@ -29,6 +29,34 @@ function query(
 }
 
 describe('RunQueryService', () => {
+  describe('pausedRuns', () => {
+    it('should return the latest usage-limit run and the latest run holding an answer when the project has them', async () => {
+      const runRepository = new FakeRunRepository();
+      const paused = buildRun({
+        id: 'r7',
+        ticketNumber: 7,
+        state: 'ended',
+        ending: { kind: 'usage-limit', reason: 'limit' },
+      });
+      const holding = buildRun({
+        id: 'r8',
+        ticketNumber: 8,
+        state: 'ended',
+        ending: { kind: 'checkpoint', request: 'Check' },
+        heldAnswer: { kind: 'checkpoint', text: 'yes' },
+      });
+      await runRepository.insert(paused);
+      await runRepository.insert(holding);
+      await runRepository.insert(
+        buildRun({ id: 'r9', ticketNumber: 9, state: 'ended', ending: { kind: 'finished' } }),
+      );
+
+      const runs = await query(runRepository).pausedRuns('moritz/aisf');
+
+      expect(runs).toEqual([paused, holding]);
+    });
+  });
+
   describe('readActive', () => {
     it('should return each running run when the project has active runs', async () => {
       const runRepository = new FakeRunRepository();
