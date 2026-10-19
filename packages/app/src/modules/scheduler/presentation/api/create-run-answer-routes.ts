@@ -16,8 +16,11 @@ import { readJsonBody } from './read-json-body.js';
 export function createRunAnswerRoutes(ticketRunService: Pick<TicketRunService, 'answer'>): Hono {
   async function resume(context: Context, answer: RunAnswer) {
     try {
-      const run = await ticketRunService.answer(context.req.param('runId') ?? '', answer);
-      return context.json(toStartedRunResponse(run), 201);
+      const outcome = await ticketRunService.answer(context.req.param('runId') ?? '', answer);
+      if (outcome.kind === 'held') {
+        return context.json({ held: true as const, pausedUntil: outcome.pausedUntil }, 202);
+      }
+      return context.json(toStartedRunResponse(outcome.run), 201);
     } catch (error) {
       const status = statusForDomainError(error);
       if (status === undefined || !(error instanceof Error)) {

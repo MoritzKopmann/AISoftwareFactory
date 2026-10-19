@@ -36,6 +36,7 @@ describe('createSchedulerModule', () => {
   let pullRequestMerges: FakePullRequestMerges;
   let agentRuns: FakeAgentRunsApi;
   let tickets: FakeTicketsApi;
+  let usage: FakeUsageApi;
   let scheduler: SchedulerModule;
 
   beforeEach(() => {
@@ -43,6 +44,7 @@ describe('createSchedulerModule', () => {
     pullRequestMerges = new FakePullRequestMerges();
     agentRuns = new FakeAgentRunsApi();
     tickets = new FakeTicketsApi();
+    usage = new FakeUsageApi();
     tickets.openTicketDtos = [approvedTicket];
     scheduler = createSchedulerModule(
       {
@@ -52,7 +54,7 @@ describe('createSchedulerModule', () => {
         skills: fakeSkillsApi(),
         tickets,
         agentRuns,
-        usage: new FakeUsageApi(),
+        usage,
       },
       { pullRequestMerges },
     );
@@ -158,11 +160,48 @@ describe('createSchedulerModule', () => {
 
     const started = await scheduler.internal.answer('r1', { kind: 'checkpoint', text: 'A' });
 
-    expect(started).toEqual({ id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' });
+    expect(started).toEqual({
+      kind: 'answered',
+      run: { id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' },
+    });
     expect(tickets.calls).toEqual(['begin moritz/aisf #7']);
     expect(agentRuns.calls).toContain(
       `answer r1 ${JSON.stringify({ kind: 'checkpoint', text: 'A' })}`,
     );
+  });
+
+  it('should hold the answer through internal.answer when usage is paused', async () => {
+    usage.pausedUntil = '2026-10-18T15:00:00.000Z';
+    agentRuns.record = buildRunDto({
+      id: 'r1',
+      ticketNumber: 7,
+      waitingFor: { kind: 'checkpoint', request: 'Pick A or B' },
+    });
+    agentRuns.latest = agentRuns.record;
+
+    const result = await scheduler.internal.answer('r1', { kind: 'checkpoint', text: 'A' });
+
+    expect(result).toEqual({ kind: 'held', pausedUntil: '2026-10-18T15:00:00.000Z' });
+    expect(tickets.calls).toEqual([]);
+  });
+
+  it('should deliver the held answer when watch.updated is emitted after the reset', async () => {
+    agentRuns.paused = [
+      { runId: 'r1', ticketNumber: 7, heldAnswer: { kind: 'checkpoint', text: 'A' } },
+    ];
+
+    bus.emit('watch.updated', {
+      projectId: 'moritz/aisf',
+      changed: false,
+      polledAt: '2026-10-17T10:00:00.000Z',
+    });
+
+    await vi.waitFor(() =>
+      expect(agentRuns.calls).toContain(
+        `answer r1 ${JSON.stringify({ kind: 'checkpoint', text: 'A' })}`,
+      ),
+    );
+    expect(tickets.calls).toEqual(['begin moritz/aisf #7']);
   });
 
   it('should throw a plain ConflictError from internal.answer when the run is unknown', async () => {

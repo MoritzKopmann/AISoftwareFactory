@@ -4,6 +4,7 @@ import { TicketRunService } from './business/service/ticket-run-service.js';
 import { GhCliPullRequestMerges } from './infrastructure/github/gh-cli-pull-request-merges.js';
 import { AgentRunsAdapter } from './infrastructure/internal/agent-runs-adapter.js';
 import { ProjectsAdapter } from './infrastructure/internal/projects-adapter.js';
+import { UsageAdapter } from './infrastructure/internal/usage-adapter.js';
 import { SkillsAdapter } from './infrastructure/internal/skills-adapter.js';
 import { TicketsAdapter } from './infrastructure/internal/tickets-adapter.js';
 import { createSchedulerRoutes } from './presentation/api/scheduler-routes.js';
@@ -26,6 +27,7 @@ export type {
   SchedulerModuleDependencies,
 } from './presentation/internal/scheduler-module.js';
 export type { RunAnswerDto } from './presentation/dto/internal/run-answer-dto.js';
+export type { RunAnswerResultDto } from './presentation/dto/internal/run-answer-result-dto.js';
 export type { StartedRunDto } from './presentation/dto/internal/started-run-dto.js';
 
 type SchedulerInfrastructure = {
@@ -55,7 +57,7 @@ export function createSchedulerModule(
   },
   overrides: Partial<SchedulerInfrastructure> = {},
 ): SchedulerModule {
-  const { events, logger, projects, skills, tickets, agentRuns } = dependencies;
+  const { events, logger, projects, skills, tickets, agentRuns, usage } = dependencies;
   const infrastructure: SchedulerInfrastructure = {
     pullRequestMerges: new GhCliPullRequestMerges(),
     ...overrides,
@@ -69,6 +71,7 @@ export function createSchedulerModule(
     runPort,
     skillPort: new SkillsAdapter(skills),
     projectPort,
+    usagePort: new UsageAdapter(usage),
     logger,
   });
   const mergeService = new MergeService({

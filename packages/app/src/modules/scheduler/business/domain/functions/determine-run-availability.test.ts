@@ -31,6 +31,18 @@ function buildInput(overrides: Partial<RunAvailabilityInput> = {}): RunAvailabil
 }
 
 describe('determineRunAvailability', () => {
+  it.each(['manual', 'auto'] as const)(
+    'should be disabled with the reset time when usage is paused and the trigger is %s',
+    (trigger) => {
+      const input = buildInput({ trigger, usagePausedUntil: '2026-10-18T15:00:00.000Z' });
+
+      expect(determineRunAvailability(input)).toEqual({
+        kind: 'disabled',
+        reason: 'Usage limit reached, resets at 2026-10-18T15:00:00.000Z',
+      });
+    },
+  );
+
   it('should be available when the ticket is an unblocked ready leaf and nothing prevents a run', () => {
     expect(determineRunAvailability(buildInput())).toEqual({ kind: 'available' });
   });

@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import type { TicketRunService } from '../../business/service/ticket-run-service.js';
 import { createRunAnswerRoutes } from './create-run-answer-routes.js';
-import { startedRunResponseSchema } from '../dto/api/runs-schemas.js';
+import { heldAnswerResponseSchema, startedRunResponseSchema } from '../dto/api/runs-schemas.js';
+import type { RunAnswerOutcome } from '../../business/domain/types/run-answer-outcome.js';
 import type { RunAnswer } from '../../business/domain/types/run-answer.js';
 import { RunNotAnswerableError } from '../../business/errors/run-not-answerable-error.js';
 import { RunAlreadyActiveError } from '../../business/errors/run-already-active-error.js';
@@ -11,14 +12,18 @@ type RunAnswers = Pick<TicketRunService, 'answer'>;
 
 class FakeRunAnswers implements RunAnswers {
   failure: Error | undefined;
+  held = false;
   readonly calls: string[] = [];
 
-  async answer(runId: string, answer: RunAnswer) {
+  async answer(runId: string, answer: RunAnswer): Promise<RunAnswerOutcome> {
     this.calls.push(`${runId} ${JSON.stringify(answer)}`);
     if (this.failure !== undefined) {
       throw this.failure;
     }
-    return { id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' };
+    if (this.held) {
+      return { kind: 'held', pausedUntil: '2026-10-18T15:00:00.000Z' };
+    }
+    return { kind: 'answered', run: { id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' } };
   }
 }
 
@@ -33,6 +38,22 @@ function post(runAnswers: RunAnswers, body: unknown, path = 'permission'): Promi
 }
 
 describe('createRunAnswerRoutes', () => {
+  it.each([
+    ['permission', { decision: 'allow' }],
+    ['checkpoint', { answer: 'yes' }],
+  ])('should answer 202 with the reset time when the %s answer is held', async (path, body) => {
+    const runAnswers = new FakeRunAnswers();
+    runAnswers.held = true;
+
+    const response = await post(runAnswers, body, path);
+
+    expect(response.status).toBe(202);
+    expect(heldAnswerResponseSchema.parse(await response.json())).toEqual({
+      held: true,
+      pausedUntil: '2026-10-18T15:00:00.000Z',
+    });
+  });
+
   describe('POST /runs/:runId/permission', () => {
     it.each(['allow', 'deny'] as const)(
       'should answer 201 with the resumed run when the decision is %s',

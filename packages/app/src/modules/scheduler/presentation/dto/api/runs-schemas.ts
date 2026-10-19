@@ -39,6 +39,12 @@ export const startedRunResponseSchema = z.object({
 });
 export type StartedRunResponse = z.infer<typeof startedRunResponseSchema>;
 
+export const heldAnswerResponseSchema = z.object({
+  held: z.literal(true),
+  pausedUntil: z.string(),
+});
+export type HeldAnswerResponse = z.infer<typeof heldAnswerResponseSchema>;
+
 export const permissionAnswerRequestSchema = z.object({
   decision: z.enum(['allow', 'deny']),
 });

@@ -4,15 +4,33 @@ import type { TicketRunService } from '../../business/service/ticket-run-service
 
 export function subscribeToWatchUpdated(
   subscriber: EventSubscriber,
-  ticketRunService: Pick<TicketRunService, 'startDue'>,
+  ticketRunService: Pick<TicketRunService, 'continuePaused' | 'startDue'>,
   logger: Logger,
 ): () => void {
   return subscriber.on('watch.updated', ({ projectId }) => {
-    // A bus handler must never reject: an unhandled rejection would end the process. Due work
-    // left unstarted is retried on the next poll.
-    ticketRunService.startDue(projectId).catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : String(error);
-      logger.error(`Starting due tickets of ${projectId} failed: ${message}`);
-    });
+    // A bus handler must never reject: an unhandled rejection would end the process. Work left
+    // undone is retried on the next poll.
+    void continueThenStart(ticketRunService, logger, projectId);
   });
+}
+
+async function continueThenStart(
+  ticketRunService: Pick<TicketRunService, 'continuePaused' | 'startDue'>,
+  logger: Logger,
+  projectId: string,
+): Promise<void> {
+  try {
+    await ticketRunService.continuePaused(projectId);
+  } catch (error) {
+    logger.error(`Continuing paused runs of ${projectId} failed: ${describeError(error)}`);
+  }
+  try {
+    await ticketRunService.startDue(projectId);
+  } catch (error) {
+    logger.error(`Starting due tickets of ${projectId} failed: ${describeError(error)}`);
+  }
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

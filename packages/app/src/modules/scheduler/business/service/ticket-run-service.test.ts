@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { PausedRun } from '../domain/types/paused-run.js';
 import type { RunAnswer } from '../domain/types/run-answer.js';
 import type { RunRecord } from '../domain/types/run-record.js';
 import type { RunsBlocked } from '../domain/types/runs-blocked.js';
@@ -12,6 +13,7 @@ import {
   FakeRunPort,
   FakeSkillPort,
   FakeTicketPort,
+  FakeUsagePort,
   readyLeaf,
   repository,
 } from '../../testing/fake-scheduler-ports.js';
@@ -26,10 +28,12 @@ function buildSubject(
     ticketPort?: FakeTicketPort;
     skillPort?: FakeSkillPort;
     projectPort?: ProjectPort;
+    usagePort?: FakeUsagePort;
   } = {},
 ) {
   const runPort = options.runPort ?? new FakeRunPort();
   const ticketPort = options.ticketPort ?? new FakeTicketPort(readyLeaf);
+  const usagePort = options.usagePort ?? new FakeUsagePort();
   const errors: string[] = [];
   const error = (message: string) => {
     errors.push(message);
@@ -39,9 +43,10 @@ function buildSubject(
     runPort,
     skillPort: options.skillPort ?? new FakeSkillPort(),
     projectPort: options.projectPort ?? new FakeProjectPort(),
+    usagePort,
     logger: { info: () => undefined, warn: () => undefined, error },
   });
-  return { service, runPort, ticketPort, errors };
+  return { service, runPort, ticketPort, usagePort, errors };
 }
 
 const ideaTicket = { ...readyLeaf, number: 501, status: 'idea' as const };
@@ -90,7 +95,9 @@ const liveRun: RunRecord = {
 const allowAnswer: RunAnswer = { kind: 'permission', decision: 'allow' };
 const checkpointAnswer: RunAnswer = { kind: 'checkpoint', text: 'Looks good' };
 
-function buildAnswerSubject(run: RunRecord = permissionRun) {
+function buildAnswerSubject(run: RunRecord = permissionRun, pausedUntil?: string) {
+  const usagePort = new FakeUsagePort();
+  usagePort.pausedUntilValue = pausedUntil;
   const runPort = new FakeRunPort();
   runPort.record = run;
   runPort.latest = {
@@ -100,7 +107,7 @@ function buildAnswerSubject(run: RunRecord = permissionRun) {
     ...(run.endedAt === undefined ? {} : { endedAt: run.endedAt }),
     ...(run.ending === undefined ? {} : { ending: run.ending }),
   };
-  const { service, ticketPort } = buildSubject({ runPort });
+  const { service, ticketPort } = buildSubject({ runPort, usagePort });
   return { service, ticketPort, runPort };
 }
 
@@ -208,7 +215,7 @@ describe('TicketRunService', () => {
 
       expect(await buildSubject({ runPort }).service.readTicketRun('moritz/aisf', 138)).toEqual({
         availability: { kind: 'disabled', reason: '#138 is running' },
-        activeRun: { id: 'run-1', startedAt },
+        activeRun: { id: 'run-1', startedAt, answerHeld: false },
       });
     });
 
@@ -303,6 +310,7 @@ describe('TicketRunService', () => {
       expect(ticketRun.lastRun).toEqual({
         id: 'run-0',
         startedAt,
+        answerHeld: false,
         endedAt,
         ending: { kind: 'escalated', escalation: 'spec', reason: 'AC 2 is unclear' },
       });
@@ -638,7 +646,10 @@ describe('TicketRunService', () => {
 
         const resumedRun = await service.answer('run-1', answer);
 
-        expect(resumedRun).toEqual({ id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' });
+        expect(resumedRun).toEqual({
+          kind: 'answered',
+          run: { id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' },
+        });
         expect(ticketPort.calls).toEqual(['begin moritz/aisf #147', 'answer reached']);
         expect(answersOf(runPort)).toEqual([`answer run-1 ${JSON.stringify(answer)}`]);
       },
@@ -722,6 +733,187 @@ describe('TicketRunService', () => {
 
       expect(subject.ticketPort.calls).toEqual([]);
       expect(answersOf(subject.runPort)).toEqual([]);
+    });
+  });
+
+  describe('usage pause', () => {
+    const pausedUntil = '2026-10-18T15:00:00.000Z';
+    const pausedReason = `Usage limit reached, resets at ${pausedUntil}`;
+
+    function buildPausedSubject() {
+      const usagePort = new FakeUsagePort();
+      usagePort.pausedUntilValue = pausedUntil;
+      return { ...buildSubject({ usagePort }), usagePort };
+    }
+
+    it('should throw RunNotAvailableError and start nothing when a manual start comes while paused', async () => {
+      const { service, runPort } = buildPausedSubject();
+
+      await expect(service.start('moritz/aisf', 138)).rejects.toThrow(
+        new RunNotAvailableError(pausedReason),
+      );
+
+      expect(runPort.calls).toEqual([]);
+    });
+
+    it('should show the ticket run disabled with the reset time when usage is paused', async () => {
+      const ticketRun = await buildPausedSubject().service.readTicketRun('moritz/aisf', 138);
+
+      expect(ticketRun.availability).toEqual({ kind: 'disabled', reason: pausedReason });
+    });
+
+    it('should start nothing and log no error when a due ticket comes while paused', async () => {
+      const usagePort = new FakeUsagePort();
+      usagePort.pausedUntilValue = pausedUntil;
+      const { service, runPort, errors } = buildSubject({
+        usagePort,
+        ticketPort: new FakeTicketPort(
+          readyLeaf,
+          [readyLeaf],
+          [{ number: readyLeaf.number, status: 'ready', closingPullRequests: [] }],
+        ),
+      });
+
+      await service.startDue('moritz/aisf');
+
+      expect(runPort.calls).toEqual([]);
+      expect(errors).toEqual([]);
+    });
+
+    it('should show the ticket run available when usage is not paused', async () => {
+      const ticketRun = await buildSubject().service.readTicketRun('moritz/aisf', 138);
+
+      expect(ticketRun.availability).toEqual({ kind: 'available' });
+    });
+
+    it('should show answerHeld on the last run when the latest run holds an answer', async () => {
+      const runPort = new FakeRunPort();
+      runPort.latest = {
+        answerHeld: true,
+        id: 'run-0',
+        startedAt,
+        endedAt,
+        ending: { kind: 'stopped' },
+      };
+
+      const ticketRun = await buildSubject({ runPort }).service.readTicketRun('moritz/aisf', 138);
+
+      expect(ticketRun.lastRun?.answerHeld).toBe(true);
+    });
+
+    it('should show answerHeld on the active run when the active run holds an answer', async () => {
+      const runPort = new FakeRunPort();
+      runPort.activeTicketNumbers = [138];
+
+      const ticketRun = await buildSubject({ runPort }).service.readTicketRun('moritz/aisf', 138);
+
+      expect(ticketRun.activeRun?.answerHeld).toBe(false);
+    });
+
+    it('should hold the answer and not begin the gate when the answer comes while paused', async () => {
+      const { service, runPort, ticketPort } = buildAnswerSubject(checkpointRun, pausedUntil);
+
+      const outcome = await service.answer('run-1', checkpointAnswer);
+
+      expect(outcome).toEqual({ kind: 'held', pausedUntil });
+      expect(runPort.calls).toContain(`holdAnswer run-1 ${JSON.stringify(checkpointAnswer)}`);
+      expect(answersOf(runPort)).toEqual([]);
+      expect(ticketPort.calls).toEqual([]);
+    });
+
+    it('should refuse and hold nothing when the wrong answer comes while paused', async () => {
+      const { service, runPort } = buildAnswerSubject(checkpointRun, pausedUntil);
+
+      await expect(service.answer('run-1', allowAnswer)).rejects.toThrow(RunNotAnswerableError);
+
+      expect(runPort.calls.filter((call) => call.startsWith('holdAnswer'))).toEqual([]);
+    });
+  });
+
+  describe('continuePaused', () => {
+    const project = 'moritz/aisf';
+
+    function buildContinueSubject(paused: ReadonlyArray<PausedRun>, stuckTickets: number[] = []) {
+      const runPort = new FakeRunPort();
+      runPort.paused = paused;
+      const ticketPort = new FakeTicketPort(readyLeaf);
+      const find = ticketPort.find.bind(ticketPort);
+      ticketPort.find = async (projectId, number) => {
+        const ticket = await find(projectId, number);
+        return ticket === undefined
+          ? undefined
+          : { ...ticket, number, stuck: stuckTickets.includes(number) };
+      };
+      return { ...buildSubject({ runPort, ticketPort }), runPort, ticketPort };
+    }
+
+    it('should begin the gate then deliver the held answer when the run holds one', async () => {
+      const { service, runPort, ticketPort } = buildContinueSubject([
+        { runId: 'run-1', ticketNumber: 7, heldAnswer: checkpointAnswer },
+      ]);
+
+      await service.continuePaused(project);
+
+      expect(ticketPort.calls).toEqual([`begin ${project} #7`]);
+      expect(runPort.calls).toEqual([`answer run-1 ${JSON.stringify(checkpointAnswer)}`]);
+    });
+
+    it('should resume the run without beginning the gate when the run holds no answer', async () => {
+      const { service, runPort, ticketPort } = buildContinueSubject([
+        { runId: 'run-1', ticketNumber: 7 },
+      ]);
+
+      await service.continuePaused(project);
+
+      expect(runPort.calls).toEqual(['resumePaused run-1']);
+      expect(ticketPort.calls).toEqual([]);
+    });
+
+    it('should neither answer nor resume the run when its ticket is stuck', async () => {
+      const { service, runPort } = buildContinueSubject(
+        [{ runId: 'run-1', ticketNumber: 7, heldAnswer: checkpointAnswer }],
+        [7],
+      );
+
+      await service.continuePaused(project);
+
+      expect(runPort.calls).toEqual([]);
+    });
+
+    it('should neither answer nor resume any run when usage is still paused', async () => {
+      const { service, runPort, usagePort } = buildContinueSubject([
+        { runId: 'run-1', ticketNumber: 7 },
+      ]);
+      usagePort.pausedUntilValue = '2026-10-18T15:00:00.000Z';
+
+      await service.continuePaused(project);
+
+      expect(runPort.calls).toEqual([]);
+    });
+
+    it('should revert the gate and log the error when the held answer fails', async () => {
+      const { service, runPort, ticketPort, errors } = buildContinueSubject([
+        { runId: 'run-1', ticketNumber: 7, heldAnswer: checkpointAnswer },
+      ]);
+      runPort.answerFailure = new Error('worktree is gone');
+
+      await service.continuePaused(project);
+
+      expect(ticketPort.calls).toEqual([`begin ${project} #7`, `revert ${project} #7`]);
+      expect(errors).toEqual([expect.stringContaining('worktree is gone')]);
+    });
+
+    it('should resume the next run and log when resuming one run fails', async () => {
+      const { service, runPort, errors } = buildContinueSubject([
+        { runId: 'run-1', ticketNumber: 7 },
+        { runId: 'run-2', ticketNumber: 8 },
+      ]);
+      runPort.resumeFailureRunId = 'run-1';
+
+      await service.continuePaused(project);
+
+      expect(runPort.calls).toEqual(['resumePaused run-1', 'resumePaused run-2']);
+      expect(errors).toEqual([expect.stringContaining('run-1')]);
     });
   });
 });
