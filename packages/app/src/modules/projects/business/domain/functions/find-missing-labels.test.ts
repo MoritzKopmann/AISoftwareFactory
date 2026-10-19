@@ -45,4 +45,14 @@ describe('findMissingLabels', () => {
       'stuck',
     ]);
   });
+
+  it('should return only type: onboard when a repository has every other aisf label', () => {
+    const existing = aisfLabels
+      .map((label) => label.name)
+      .filter((name) => name !== 'type: onboard');
+
+    expect(findMissingLabels(aisfLabels, existing).map((label) => label.name)).toEqual([
+      'type: onboard',
+    ]);
+  });
 });
