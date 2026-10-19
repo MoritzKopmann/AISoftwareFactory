@@ -2,8 +2,15 @@ import { useEffect, useState } from 'react';
 import type { UsageResponse } from '@aisf/app/api-schemas/usage-schemas.js';
 import { describeUsageWindow, type UsageWindowDescription } from './describe-usage-window.js';
 import type { UsageState } from './use-usage.js';
+import { windowsOf } from './usage-windows.js';
 
-export function UsageMeter({ usage }: { readonly usage: UsageState }) {
+export function UsageMeter({
+  usage,
+  current,
+}: {
+  readonly usage: UsageState;
+  readonly current: boolean;
+}) {
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -14,9 +21,11 @@ export function UsageMeter({ usage }: { readonly usage: UsageState }) {
     return () => window.clearTimeout(timer);
   }, [usage, tick]);
 
+  const ariaCurrent = current ? 'page' : undefined;
+
   if (usage.kind === 'failed') {
     return (
-      <a className="usage-meter usage-meter-failed" href="#/usage">
+      <a className="usage-meter usage-meter-failed" href="#/usage" aria-current={ariaCurrent}>
         <span aria-hidden="true" className="usage-meter-failed-mark">
           ■
         </span>
@@ -31,6 +40,7 @@ export function UsageMeter({ usage }: { readonly usage: UsageState }) {
         className="usage-meter"
         href="#/usage"
         aria-busy="true"
+        aria-current={ariaCurrent}
         aria-label="Usage loading. Open the usage page."
       >
         <SkeletonGroup label="5-hour" valueWidth={120} />
@@ -48,6 +58,7 @@ export function UsageMeter({ usage }: { readonly usage: UsageState }) {
     <a
       className="usage-meter"
       href="#/usage"
+      aria-current={ariaCurrent}
       aria-label={`Usage: ${windowSummary('5-hour', fiveHour)}. ${windowSummary('Weekly', sevenDay)}. Open the usage page.`}
     >
       <WindowGroup label="5-hour" description={fiveHour} />
@@ -130,11 +141,6 @@ function windowSummary(label: string, description: UsageWindowDescription): stri
   if (description.noData) return `${label} no data yet`;
   if (description.resetting) return `${label} ${description.valueLabel}, resetting`;
   return `${label} ${description.valueLabel}, resets ${description.resetLabel}`;
-}
-
-function windowsOf(usage: UsageResponse) {
-  if (usage.observedAt === null) return { fiveHour: null, sevenDay: null };
-  return { fiveHour: usage.fiveHour, sevenDay: usage.sevenDay };
 }
 
 function msUntilNextReset(usage: UsageResponse, nowMs: number): number | undefined {
