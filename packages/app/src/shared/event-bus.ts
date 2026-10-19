@@ -88,6 +88,12 @@ export type DomainEvents = {
     readonly changed: boolean;
     readonly polledAt: string;
   };
+  readonly 'usage.window-observed': {
+    readonly observedAt: string;
+    readonly fiveHour: { readonly utilizationPercent: number; readonly resetsAt: string } | null;
+    readonly sevenDay: { readonly utilizationPercent: number; readonly resetsAt: string } | null;
+    readonly refusedUntil: string | null;
+  };
   readonly 'skills.status-changed': Readonly<Record<never, never>>;
 };
 
@@ -120,6 +126,7 @@ export const domainEventNames = listEveryName([
   'finding.changed',
   'artifact.published',
   'watch.updated',
+  'usage.window-observed',
   'skills.status-changed',
 ]);
 

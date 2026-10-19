@@ -3,7 +3,11 @@ import type {
   SessionEntry,
   SessionToolResultPart,
 } from '../../business/domain/types/session-entry.js';
-import type { SessionEvent } from '../../business/domain/types/session-event.js';
+import type {
+  ObservedWindow,
+  SessionEvent,
+  WindowRefusal,
+} from '../../business/domain/types/session-event.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -222,6 +226,54 @@ function mapStreamEvent(
   return [];
 }
 
+type RateLimitInfo = Extract<SDKMessage, { type: 'rate_limit_event' }>['rate_limit_info'] & {
+  /** `unifiedWindows` is undocumented CLI output: it is not on `SDKRateLimitInfo`. */
+  readonly unifiedWindows?: Readonly<
+    Record<string, { readonly utilization?: number; readonly resetsAt?: number } | undefined>
+  >;
+};
+
+function toIso(unixSeconds: number): string {
+  return new Date(unixSeconds * 1000).toISOString();
+}
+
+function observedWindow(info: RateLimitInfo, name: string): ObservedWindow | null {
+  const window = info.unifiedWindows?.[name];
+  return window?.utilization === undefined || window.resetsAt === undefined
+    ? null
+    : {
+        utilizationPercent: Math.round(window.utilization * 100),
+        resetsAt: toIso(window.resetsAt),
+      };
+}
+
+// Overage in use means calls still go through.
+function isRefusal(info: RateLimitInfo): boolean {
+  return (
+    info.status === 'rejected' &&
+    info.overageStatus !== 'allowed' &&
+    info.overageStatus !== 'allowed_warning'
+  );
+}
+
+function refusalOf(info: RateLimitInfo): WindowRefusal | null {
+  if (!isRefusal(info)) {
+    return null;
+  }
+  const window = info.rateLimitType ?? 'usage';
+  const resetsAt = info.resetsAt ?? info.unifiedWindows?.[window]?.resetsAt;
+  return { window, resetsAt: resetsAt === undefined ? null : toIso(resetsAt) };
+}
+
+function mapRateLimitInfo(info: RateLimitInfo): SessionEvent {
+  return {
+    kind: 'window-observed',
+    fiveHour: observedWindow(info, 'five_hour'),
+    sevenDay: observedWindow(info, 'seven_day'),
+    refusal: refusalOf(info),
+  };
+}
+
 export function mapSdkMessage(
   message: SDKMessage,
   streamState: StreamState = createStreamState(),
@@ -255,14 +307,7 @@ export function mapSdkMessage(
   }
 
   if (message.type === 'rate_limit_event') {
-    const { status, rateLimitType, resetsAt } = message.rate_limit_info;
-    if (status !== 'rejected') {
-      return [];
-    }
-    const window = rateLimitType ?? 'usage';
-    const reset =
-      resetsAt === undefined ? '' : ` (resets at ${new Date(resetsAt * 1000).toISOString()})`;
-    return [{ kind: 'usage-limit', reason: `The ${window} usage limit was reached${reset}` }];
+    return [mapRateLimitInfo(message.rate_limit_info)];
   }
 
   if (message.type === 'result') {

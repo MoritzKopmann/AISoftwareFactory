@@ -111,7 +111,10 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
       for await (const message of sdkQuery) {
         for (const event of mapSdkMessage(message, streamState)) {
           yield event;
-          if (event.kind === 'crashed' || event.kind === 'usage-limit') {
+          if (
+            event.kind === 'crashed' ||
+            (event.kind === 'window-observed' && event.refusal !== null)
+          ) {
             return;
           }
         }

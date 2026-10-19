@@ -387,8 +387,8 @@ describe('RepositoryWatchService', () => {
         const watchStore = new InMemoryWatchStore();
         const seen: Seen[] = [];
         const events = {
-          emit: (name: string, payload: { projectId?: string }) => {
-            if (name === 'watch.updated' && payload.projectId !== undefined) {
+          emit: (name: string, payload: Readonly<Record<string, unknown>>) => {
+            if (name === 'watch.updated' && typeof payload.projectId === 'string') {
               seen.push({
                 projectId: payload.projectId,
                 watch: watchStore.watch(payload.projectId),
