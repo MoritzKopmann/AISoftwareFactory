@@ -72,8 +72,19 @@ function buildProjectsModule(
   return createProjectsModule({ database, clock: new SystemClock(), events, logger, skills });
 }
 
-function buildUsageModule(database: DatabaseSync, events: EventBus, logger: Logger): UsageModule {
-  return createUsageModule({ database, clock: new SystemClock(), events, logger });
+function buildUsageModule(
+  database: DatabaseSync,
+  events: EventBus,
+  claudeExecutablePath: string,
+  logger: Logger,
+): UsageModule {
+  return createUsageModule({
+    database,
+    clock: new SystemClock(),
+    events,
+    claudeExecutablePath,
+    logger,
+  });
 }
 
 function buildSkillsModule(
@@ -188,7 +199,7 @@ export function composeApplication(options: ApplicationOptions): Application {
 
   const skills = buildSkillsModule(config, pluginDirectory, eventBus, logger);
   const live = createLiveModule({ events: eventBus });
-  const usage = buildUsageModule(database, eventBus, logger);
+  const usage = buildUsageModule(database, eventBus, claudeExecutablePath, logger);
   const projects = buildProjectsModule(database, eventBus, skills.internal, logger);
   const agentRuns = buildAgentRunsModule(
     config,

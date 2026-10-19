@@ -4,6 +4,8 @@ import { domainEventNames } from '../../shared/event-bus.js';
 import { InMemoryEventBus } from '../../shared/in-memory-event-bus.js';
 import { FakeClock } from '../../shared/testing/fake-clock.js';
 import { usageResponseSchema } from './presentation/dto/api/usage-schemas.js';
+import { UsageReadFailedError } from './business/errors/usage-read-failed-error.js';
+import { FakeUsageReader } from './testing/fake-usage-reader.js';
 import { InMemoryUsageRepository } from './testing/in-memory-usage-repository.js';
 import { createUsageModule } from './index.js';
 
@@ -26,20 +28,26 @@ function createSubject(now = '2026-10-18T12:00:00.000Z') {
   const changed: unknown[] = [];
   events.on('usage.changed', (payload) => changed.push(payload));
   const usageRepository = new InMemoryUsageRepository();
+  const usageReader = new FakeUsageReader();
   const usage = createUsageModule(
     {
       database: undefined as never,
+      claudeExecutablePath: '/usr/bin/claude',
       clock,
       events,
       logger: { info: () => {}, warn: () => {}, error: (message) => loggedErrors.push(message) },
     },
-    { usageRepository },
+    { usageRepository, usageReader },
   );
-  return { usage, events, clock, changed, loggedErrors, usageRepository };
+  return { usage, events, clock, changed, loggedErrors, usageRepository, usageReader };
 }
 
 async function settle(): Promise<void> {
   await new Promise((resolve) => setImmediate(resolve));
+}
+
+function tick(projectId = 'p1'): DomainEvents['watch.updated'] {
+  return { projectId, changed: false, polledAt: '2026-10-18T12:00:00.000Z' };
 }
 
 describe('usage module', () => {
@@ -138,5 +146,49 @@ describe('usage module', () => {
 
   it('should list usage.changed in domainEventNames', () => {
     expect(domainEventNames).toContain('usage.changed');
+  });
+
+  it('should show the read value and publish usage.changed once when watch.updated refreshes stale usage', async () => {
+    const { usage, events, changed, clock, usageReader } = createSubject(
+      '2026-10-18T10:30:00.000Z',
+    );
+    events.emit('usage.window-observed', observation());
+    await settle();
+    changed.length = 0;
+    clock.setNow('2026-10-18T12:00:00.000Z');
+    usageReader.returns({
+      fiveHour: { utilizationPercent: 55, resetsAt: '2026-10-18T14:00:00.000Z' },
+      sevenDay: null,
+    });
+
+    events.emit('watch.updated', tick());
+    await settle();
+
+    expect((await usage.internal.status()).fiveHour?.utilizationPercent).toBe(55);
+    expect(changed).toHaveLength(1);
+  });
+
+  it('should read once when watch.updated comes for two projects while a read runs', async () => {
+    const { events, usageReader } = createSubject();
+    const release = usageReader.hangs();
+
+    events.emit('watch.updated', tick('p1'));
+    events.emit('watch.updated', tick('p2'));
+    await settle();
+    release({ fiveHour: null, sevenDay: null });
+    await settle();
+
+    expect(usageReader.reads).toBe(1);
+  });
+
+  it('should log the error and publish nothing when the read fails', async () => {
+    const { events, changed, loggedErrors, usageReader } = createSubject();
+    usageReader.fails(new UsageReadFailedError('sdk gone'));
+
+    events.emit('watch.updated', tick());
+    await settle();
+
+    expect(loggedErrors).toEqual([expect.stringContaining('sdk gone')]);
+    expect(changed).toHaveLength(0);
   });
 });
