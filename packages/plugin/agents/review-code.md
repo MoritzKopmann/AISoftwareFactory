@@ -29,7 +29,7 @@ rule. Hold every changed line, new file and new name against every rule. Not the
 come to mind: all of them. Read the
 surrounding code where a rule depends on it.
 
-Only what the diff introduces or changes. A breach that was there before stays.
+Only what the diff introduces or changes.
 
 ## 3. Fix
 
