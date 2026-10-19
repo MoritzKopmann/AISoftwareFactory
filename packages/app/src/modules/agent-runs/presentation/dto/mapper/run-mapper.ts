@@ -5,12 +5,22 @@ import type { Run } from '../../../business/domain/types/run.js';
 import type { StartRunRequest } from '../../../business/domain/types/start-run-request.js';
 import type { ActiveRunDto } from '../internal/active-run-dto.js';
 import type { ActiveWaitDto } from '../internal/active-wait-dto.js';
+import type { PausedRunDto } from '../internal/paused-run-dto.js';
 import type { RunAnswerDto } from '../internal/run-answer-dto.js';
 import type { RunDto } from '../internal/run-dto.js';
 import type { StartRunRequestDto } from '../internal/start-run-request-dto.js';
 
 export function toRunDto(run: Run): RunDto {
-  return { ...run };
+  const { heldAnswer, ...rest } = run;
+  return { ...rest, answerHeld: heldAnswer !== undefined };
+}
+
+export function toPausedRunDto(run: Run): PausedRunDto {
+  return {
+    runId: run.id,
+    ticketNumber: run.ticketNumber,
+    heldAnswer: run.heldAnswer === undefined ? null : { ...run.heldAnswer },
+  };
 }
 
 export function toActiveRunDto(activeRun: ActiveRun): ActiveRunDto {

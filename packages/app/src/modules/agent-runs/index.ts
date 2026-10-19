@@ -44,6 +44,7 @@ export type {
 export type { ActiveRunDto } from './presentation/dto/internal/active-run-dto.js';
 export type { ActiveWaitDto } from './presentation/dto/internal/active-wait-dto.js';
 export type { AnswerRunResultDto } from './presentation/dto/internal/answer-run-result-dto.js';
+export type { PausedRunDto } from './presentation/dto/internal/paused-run-dto.js';
 export type { RunAnswerDto } from './presentation/dto/internal/run-answer-dto.js';
 export type { RunDto } from './presentation/dto/internal/run-dto.js';
 export type { RunEndingDto, RunWaitDto } from './presentation/dto/internal/run-ending-dto.js';

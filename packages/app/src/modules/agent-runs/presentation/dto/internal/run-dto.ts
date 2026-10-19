@@ -13,6 +13,7 @@ export type RunDto = {
   readonly waitingFor?: RunWaitDto;
   readonly waitingSince?: string;
   readonly ending?: RunEndingDto;
+  readonly answerHeld: boolean;
   readonly startedAt: string;
   readonly endedAt?: string;
 };

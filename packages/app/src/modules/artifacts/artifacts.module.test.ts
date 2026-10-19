@@ -20,6 +20,7 @@ const runningRun: RunDto = {
   worktreePath: '/w',
   branchName: 'aisf/7-x',
   state: 'running',
+  answerHeld: false,
   startedAt: '2026-10-06T10:00:00.000Z',
 };
 

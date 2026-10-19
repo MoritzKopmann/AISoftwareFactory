@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { createAgentRunsModule, type AgentRunsModule } from './index.js';
+import { RunNotResumableError } from './business/errors/run-not-resumable-error.js';
 import type { ProjectsApi } from '../projects/index.js';
 import type { AgentTool } from '../../shared/agent-tools.js';
 import { InMemoryAgentToolRegistry } from '../../shared/in-memory-agent-tool-registry.js';
@@ -382,6 +383,122 @@ describe('createAgentRunsModule', () => {
 
     expect((await agentRuns.internal.findRun('known-run'))?.id).toBe('known-run');
     expect(await agentRuns.internal.findRun('unknown-run')).toBeUndefined();
+  });
+
+  it('should list the latest paused run of each ticket with its held answer when pausedRuns is asked', async () => {
+    await runRepository.insert(
+      buildRun({
+        id: 'r1',
+        ticketNumber: 7,
+        state: 'ended',
+        ending: { kind: 'usage-limit', reason: 'limit' },
+      }),
+    );
+    await runRepository.insert(
+      buildRun({
+        id: 'r2',
+        ticketNumber: 8,
+        state: 'ended',
+        ending: { kind: 'checkpoint', request: 'Check' },
+        heldAnswer: { kind: 'checkpoint', text: 'yes' },
+      }),
+    );
+
+    expect(await agentRuns.internal.pausedRuns('moritz/aisf')).toEqual([
+      { runId: 'r1', ticketNumber: 7, heldAnswer: null },
+      { runId: 'r2', ticketNumber: 8, heldAnswer: { kind: 'checkpoint', text: 'yes' } },
+    ]);
+  });
+
+  it('should keep the answer on the run when holdAnswer is called on a run that needs permission', async () => {
+    await runRepository.insert(
+      buildRun({
+        id: 'r1',
+        state: 'ended',
+        ending: { kind: 'permission-needed', toolName: 'Bash', toolInput: { command: 'ls' } },
+      }),
+    );
+
+    await agentRuns.internal.holdAnswer('r1', { kind: 'permission', decision: 'deny' });
+
+    expect(runRepository.runs.get('r1')?.heldAnswer).toEqual({
+      kind: 'permission',
+      decision: 'deny',
+    });
+  });
+
+  it('should throw RunNotResumableError when holdAnswer is called with an answer that does not fit', async () => {
+    await runRepository.insert(
+      buildRun({
+        id: 'r1',
+        state: 'ended',
+        ending: { kind: 'checkpoint', request: 'Check' },
+      }),
+    );
+
+    await expect(
+      agentRuns.internal.holdAnswer('r1', { kind: 'permission', decision: 'deny' }),
+    ).rejects.toThrow(RunNotResumableError);
+  });
+
+  it('should return answered with the running run when resumePaused is called on a usage-limit run', async () => {
+    await runRepository.insert(
+      buildRun({
+        id: 'r1',
+        state: 'ended',
+        ending: { kind: 'usage-limit', reason: 'limit' },
+      }),
+    );
+
+    const result = await agentRuns.internal.resumePaused('r1');
+
+    expect(result).toMatchObject({ kind: 'answered', run: { state: 'running' } });
+  });
+
+  it('should return not-resumable when resumePaused is called on a finished run', async () => {
+    await runRepository.insert(
+      buildRun({ id: 'r1', state: 'settled', ending: { kind: 'finished' } }),
+    );
+
+    expect(await agentRuns.internal.resumePaused('r1')).toMatchObject({ kind: 'not-resumable' });
+  });
+
+  it('should return already-active when resumePaused is called while the ticket has a running run', async () => {
+    await runRepository.insert(
+      buildRun({
+        id: 'r1',
+        state: 'ended',
+        ending: { kind: 'usage-limit', reason: 'limit' },
+        startedAt: '2026-09-29T11:00:00.000Z',
+      }),
+    );
+    await runRepository.insert(
+      buildRun({ id: 'r2', startedAt: '2026-09-29T10:00:00.000Z', sessionId: 'session-2' }),
+    );
+
+    expect(await agentRuns.internal.resumePaused('r1')).toMatchObject({ kind: 'already-active' });
+  });
+
+  it('should show answerHeld true and no held answer field when findRun is asked for a run holding an answer', async () => {
+    await runRepository.insert(
+      buildRun({
+        id: 'r1',
+        state: 'ended',
+        ending: { kind: 'checkpoint', request: 'Check' },
+        heldAnswer: { kind: 'checkpoint', text: 'yes' },
+      }),
+    );
+
+    const run = await agentRuns.internal.findRun('r1');
+
+    expect(run?.answerHeld).toBe(true);
+    expect(run).not.toHaveProperty('heldAnswer');
+  });
+
+  it('should show answerHeld false when latestRun returns a run holding no answer', async () => {
+    await runRepository.insert(buildRun({ id: 'r1' }));
+
+    expect((await agentRuns.internal.latestRun('moritz/aisf', 137))?.answerHeld).toBe(false);
   });
 
   it('should settle an ended run when settle is called', async () => {

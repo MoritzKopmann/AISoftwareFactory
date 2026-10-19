@@ -29,7 +29,7 @@ describe('run mapper', () => {
         endedAt: '2026-09-29T10:06:00.000Z',
       });
 
-      expect(toRunDto(run)).toEqual(run);
+      expect(toRunDto(run)).toEqual({ ...run, answerHeld: false });
     });
   });
 
@@ -37,7 +37,7 @@ describe('run mapper', () => {
     it('should carry only the run when the run is active', () => {
       const run = buildRun();
 
-      expect(toActiveRunDto({ run })).toEqual({ run });
+      expect(toActiveRunDto({ run })).toEqual({ run: { ...run, answerHeld: false } });
     });
   });
 
