@@ -432,6 +432,24 @@ describe('entriesFromContent', () => {
     const text = 'before <command-name>/x</command-name> after';
     expect(promptText(text)).toEqual(asPrompt(text));
   });
+
+  it('should yield no entries when a user message has the task-notification origin', () => {
+    const entries = entriesFromContent(
+      'u1',
+      'user',
+      '<task-notification>\n<task-id>a1</task-id>',
+      true,
+      {
+        kind: 'task-notification',
+      },
+    );
+
+    expect(entries).toEqual([]);
+  });
+
+  it('should yield a prompt entry when a user message has no origin', () => {
+    expect(promptText('hello')).toEqual(asPrompt('hello'));
+  });
 });
 
 function readFixture(name: string): Array<Record<string, unknown>> {
