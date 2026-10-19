@@ -197,6 +197,73 @@ describe('describePermissionPrompt', () => {
     });
     expect(description).not.toHaveProperty('error.detail');
   });
+
+  const now = new Date(2026, 9, 18, 10, 0);
+  const pausedUntilTwoPm = new Date(2026, 9, 18, 14, 0).toISOString();
+  const pausedUntilThreePm = new Date(2026, 9, 18, 15, 0).toISOString();
+  const heldRun: TicketRunResponse = {
+    ...idle,
+    activeRun: {
+      id: 'run-1',
+      startedAt: '2026-10-07T09:00:00Z',
+      waitingSince: T1,
+      answerHeld: true,
+      waitingFor: { kind: 'permission-needed', toolName: 'Bash', toolInput: { command: 'ls' } },
+    },
+  };
+
+  it('should describe a held prompt when the active run has its answer held', () => {
+    expect(describePermissionPrompt(heldRun, true, noAnswer, pausedUntilTwoPm, now)).toEqual({
+      kind: 'held',
+      runId: 'run-1',
+      toolName: 'Bash',
+      inputText: 'ls',
+      heldUntilLabel: '14:00',
+    });
+  });
+
+  it('should describe a held prompt from the local held answer for the same wait', () => {
+    const held: PermissionAnswer = {
+      kind: 'held',
+      wait: liveWaitId,
+      pausedUntil: pausedUntilTwoPm,
+    };
+    const response = liveWait(T1);
+
+    expect(describePermissionPrompt(response, true, held, undefined, now)).toMatchObject({
+      kind: 'held',
+      heldUntilLabel: '14:00',
+    });
+  });
+
+  it('should show the usage reset time over the held answer time when both are known', () => {
+    const held: PermissionAnswer = {
+      kind: 'held',
+      wait: liveWaitId,
+      pausedUntil: pausedUntilTwoPm,
+    };
+    const response = liveWait(T1);
+
+    expect(describePermissionPrompt(response, true, held, pausedUntilThreePm, now)).toMatchObject({
+      kind: 'held',
+      heldUntilLabel: '15:00',
+    });
+  });
+
+  it('should describe a held prompt when the ticket is no longer marked waiting', () => {
+    expect(describePermissionPrompt(heldRun, false, noAnswer, pausedUntilTwoPm, now)).toMatchObject(
+      {
+        kind: 'held',
+        runId: 'run-1',
+      },
+    );
+  });
+
+  it('should describe a held prompt without a time when no reset time is known yet', () => {
+    const description = describePermissionPrompt(heldRun, true, noAnswer, undefined, now);
+    expect(description).toMatchObject({ kind: 'held', runId: 'run-1' });
+    expect(description).not.toHaveProperty('heldUntilLabel');
+  });
 });
 
 describe('settlePermissionAnswer', () => {

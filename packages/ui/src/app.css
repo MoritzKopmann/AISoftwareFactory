@@ -1534,6 +1534,36 @@ details:not([open]) .t-hide {
   gap: 8px 12px;
 }
 
+.ckpt.held,
+.perm.held {
+  box-shadow: inset 4px 0 0 var(--warn);
+}
+
+.ckpt.held h2,
+.perm.held h2 {
+  font-size: 17px;
+}
+
+.ckpt.held .request {
+  font: 13px / 1.5 var(--font-mono);
+}
+
+.held-status {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.held-status .held-mark {
+  color: var(--warn);
+  font-family: var(--font-mono);
+}
+
+.held-status strong {
+  font-variant-numeric: tabular-nums;
+}
+
 .ticket-body {
   flex: 1;
   min-width: 0;

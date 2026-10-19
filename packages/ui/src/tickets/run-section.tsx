@@ -145,6 +145,9 @@ export function RunSection({
       fetch(url, requestInit),
     );
     if (outcome.kind === 'failed') setPermissionAnswer({ ...outcome, wait });
+    if (outcome.kind === 'held') {
+      setPermissionAnswer({ kind: 'held', wait, pausedUntil: outcome.pausedUntil });
+    }
   };
 
   const sendCheckpointAnswer = async (runId: string, draft: string) => {
@@ -153,6 +156,13 @@ export function RunSection({
       fetch(url, requestInit),
     );
     if (outcome.kind === 'failed') setCheckpointAnswer({ runId, draft, send: outcome });
+    if (outcome.kind === 'held') {
+      setCheckpointAnswer({
+        runId,
+        draft,
+        send: { kind: 'held', pausedUntil: outcome.pausedUntil },
+      });
+    }
   };
 
   const resetToReady = async () => {
@@ -163,23 +173,29 @@ export function RunSection({
     if (outcome.kind === 'failed') setReset(outcome);
   };
 
+  const now = new Date();
+
   const prompt = describePermissionPrompt(
     ticketRun.response,
     ticketState.waiting,
     permissionAnswer,
+    pausedUntil,
+    now,
   );
 
   const checkpointPrompt = describeCheckpointPrompt(
     ticketRun.response,
     ticketState.waiting,
     checkpointAnswer,
+    pausedUntil,
+    now,
   );
 
   const stopping = activeRunId !== undefined && activeRunId === stoppingRunId;
 
   const panel = describeRunPanel(
     { ...ticketRun, ticketStuck: ticketState.stuck, pausedUntil, runSkill, stopping },
-    new Date(),
+    now,
   );
 
   const roundPanel = describeRoundPanel(ticketRun.response, {

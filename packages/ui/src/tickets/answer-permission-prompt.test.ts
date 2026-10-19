@@ -25,6 +25,15 @@ describe('answerPermissionPrompt', () => {
     ]);
   });
 
+  it('should return held with the resume time when the route holds the decision during a pause', async () => {
+    const outcome = await answerPermissionPrompt(
+      'run-1',
+      'allow',
+      answerWith(202, { held: true, pausedUntil: '2026-10-19T14:00:00Z' }),
+    );
+    expect(outcome).toEqual({ kind: 'held', pausedUntil: '2026-10-19T14:00:00Z' });
+  });
+
   it('should return answered when the route answers 201', async () => {
     const outcome = await answerPermissionPrompt('run-1', 'allow', answerWith(201, resumedRun));
     expect(outcome).toEqual({ kind: 'answered' });

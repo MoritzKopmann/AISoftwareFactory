@@ -2,10 +2,15 @@ import type { TicketRunResponse } from '@aisf/app/api-schemas/runs-schemas.js';
 import type { AnswerCheckpointOutcome } from './answer-checkpoint.js';
 import { checkpointAnswerCharacterLimit } from './checkpoint-answer-character-limit.js';
 import { waitingPage } from './waiting-page.js';
+import { formatResetTime } from '../usage/format-reset-time.js';
 
 type FailedSend = Extract<AnswerCheckpointOutcome, { kind: 'failed' }>;
 
-export type CheckpointSend = { readonly kind: 'idle' } | { readonly kind: 'sending' } | FailedSend;
+export type CheckpointSend =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'sending' }
+  | { readonly kind: 'held'; readonly pausedUntil: string }
+  | FailedSend;
 
 export type CheckpointAnswer = {
   readonly runId: string;
@@ -17,6 +22,12 @@ type CheckpointPromptError = { readonly message: string; readonly detail?: strin
 
 export type CheckpointPromptDescription =
   | { readonly kind: 'hidden' }
+  | {
+      readonly kind: 'held';
+      readonly runId: string;
+      readonly request: string;
+      readonly heldUntilLabel?: string;
+    }
   | {
       readonly kind: 'shown';
       readonly runId: string;
@@ -53,7 +64,7 @@ function describeHeldSend(ticketWaiting: boolean, draft: string): string | undef
   return undefined;
 }
 
-type ShownWait = { readonly runId: string; readonly request: string };
+type ShownWait = { readonly runId: string; readonly request: string; readonly answerHeld: boolean };
 
 function findShownWait(response: TicketRunResponse | undefined): ShownWait | undefined {
   // A wait with a page is answered in the round panel, not here.
@@ -64,11 +75,15 @@ function findShownWait(response: TicketRunResponse | undefined): ShownWait | und
   if (activeRun !== undefined) {
     return activeRun.waitingFor?.kind !== 'checkpoint'
       ? undefined
-      : { runId: activeRun.id, request: activeRun.waitingFor.request };
+      : {
+          runId: activeRun.id,
+          request: activeRun.waitingFor.request,
+          answerHeld: activeRun.answerHeld,
+        };
   }
   const lastRun = response?.lastRun;
   return lastRun?.ending.kind === 'checkpoint'
-    ? { runId: lastRun.id, request: lastRun.ending.request }
+    ? { runId: lastRun.id, request: lastRun.ending.request, answerHeld: lastRun.answerHeld }
     : undefined;
 }
 
@@ -78,19 +93,31 @@ export function settleCheckpointAnswer(
   response: TicketRunResponse | undefined,
 ): CheckpointAnswer | undefined {
   if (answer === undefined || response === undefined) return answer;
-  return findShownWait(response)?.runId === answer.runId ? answer : undefined;
+  const wait = findShownWait(response);
+  if (wait?.runId !== answer.runId) return undefined;
+  // A held answer lives while its run holds it. Once the hold has ended, the answer went out.
+  const holdEnded = answer.send.kind === 'held' && !wait.answerHeld;
+  return holdEnded ? undefined : answer;
 }
 
 export function describeCheckpointPrompt(
   response: TicketRunResponse | undefined,
   ticketWaiting: boolean,
   answer: CheckpointAnswer | undefined,
+  pausedUntil?: string,
+  now: Date = new Date(),
 ): CheckpointPromptDescription {
   const wait = findShownWait(response);
   if (wait === undefined) {
     return { kind: 'hidden' };
   }
   const runAnswer = answer?.runId === wait.runId ? answer : undefined;
+  const send = runAnswer?.send;
+  if (isAnswerHeld(wait, send)) {
+    // The usage reset time wins; the held answer's own time is the fallback.
+    const heldUntil = pausedUntil ?? (send?.kind === 'held' ? send.pausedUntil : undefined);
+    return describeHeldPrompt(wait, heldUntil, now);
+  }
   const draft = runAnswer?.draft ?? '';
   const atLimit = draft.length >= checkpointAnswerCharacterLimit;
   const limitText = groupThousands(checkpointAnswerCharacterLimit);
@@ -105,7 +132,6 @@ export function describeCheckpointPrompt(
       : `Plain text. Up to ${limitText} characters.`,
     atLimit,
   } as const;
-  const send = runAnswer?.send;
   if (send?.kind === 'sending') {
     return { ...prompt, sending: true, pressable: false, announcement: 'Sending your answer' };
   }
@@ -116,5 +142,22 @@ export function describeCheckpointPrompt(
     pressable: reason === undefined,
     ...(reason === undefined ? {} : { reason }),
     ...(send?.kind === 'failed' ? { error: describeFailedSend(send) } : {}),
+  };
+}
+
+function isAnswerHeld(wait: ShownWait, send: CheckpointSend | undefined): boolean {
+  return wait.answerHeld || send?.kind === 'held';
+}
+
+function describeHeldPrompt(
+  wait: ShownWait,
+  heldUntil: string | undefined,
+  now: Date,
+): CheckpointPromptDescription {
+  return {
+    kind: 'held',
+    runId: wait.runId,
+    request: wait.request,
+    ...(heldUntil === undefined ? {} : { heldUntilLabel: formatResetTime(heldUntil, now) }),
   };
 }
