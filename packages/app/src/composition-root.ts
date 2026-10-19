@@ -33,6 +33,7 @@ import type {
   EventPublisher,
   EventSubscriber,
 } from './shared/event-bus.js';
+import { createUsageModule, type UsageModule } from './modules/usage/index.js';
 import { createLiveModule } from './modules/live/index.js';
 import { InMemoryEventBus } from './shared/in-memory-event-bus.js';
 import type { Config } from './shared/config/load-config.js';
@@ -69,6 +70,10 @@ function buildProjectsModule(
   logger: Logger,
 ): ProjectsModule {
   return createProjectsModule({ database, clock: new SystemClock(), events, logger, skills });
+}
+
+function buildUsageModule(database: DatabaseSync, events: EventBus, logger: Logger): UsageModule {
+  return createUsageModule({ database, clock: new SystemClock(), events, logger });
 }
 
 function buildSkillsModule(
@@ -183,6 +188,7 @@ export function composeApplication(options: ApplicationOptions): Application {
 
   const skills = buildSkillsModule(config, pluginDirectory, eventBus, logger);
   const live = createLiveModule({ events: eventBus });
+  const usage = buildUsageModule(database, eventBus, logger);
   const projects = buildProjectsModule(database, eventBus, skills.internal, logger);
   const agentRuns = buildAgentRunsModule(
     config,
@@ -227,6 +233,7 @@ export function composeApplication(options: ApplicationOptions): Application {
   // Until a module migrates, its routes are mounted under today's prefixes.
   const routes = [
     skills.routes,
+    usage.routes,
     projects.routes,
     agentRuns.routes,
     artifacts.routes,
@@ -238,6 +245,7 @@ export function composeApplication(options: ApplicationOptions): Application {
 
   const jobs: Jobs = {
     ...skills.jobs,
+    ...usage.jobs,
     ...scheduler.jobs,
     ...tickets.jobs,
     ...agentRuns.jobs,
