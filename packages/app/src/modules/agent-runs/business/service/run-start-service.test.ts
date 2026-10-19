@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import type { AgentTool } from '../../../../shared/agent-tools.js';
@@ -23,11 +25,13 @@ import type { RunAnswer } from '../domain/types/run-answer.js';
 import type { RunEnding } from '../domain/types/run-ending.js';
 import type { RunWait } from '../domain/types/run-wait.js';
 import type { Run } from '../domain/types/run.js';
+import type { SessionEvent } from '../domain/types/session-event.js';
 import type { StartRunRequest } from '../domain/types/start-run-request.js';
 import { RunAlreadyActiveError } from '../errors/run-already-active-error.js';
 import { RunNotResumableError } from '../errors/run-not-resumable-error.js';
 import { RunTargetNotFoundError } from '../errors/run-target-not-found-error.js';
 import { WorktreeSetupFailedError } from '../errors/worktree-setup-failed-error.js';
+import { mapSdkMessage } from '../../infrastructure/session/map-sdk-message.js';
 import { CommandLabelService } from './command-label-service.js';
 import { RunStartService } from './run-start-service.js';
 
@@ -404,16 +408,124 @@ describe('RunStartService', () => {
       expect(finishCalls).toEqual([{ runId: 'id-1', ending: { kind: 'finished' } }]);
     });
 
-    it('should end the run as usage-limit with the reason when the session reports the limit', async () => {
-      const { service, agentSessions, finishCalls } = buildStartSubject();
-      await service.start(startRequest);
+    describe('usage windows', () => {
+      const refusedAt = '2026-10-19T10:00:00.000Z';
 
-      agentSessions.push('id-2', { kind: 'usage-limit', reason: 'five_hour limit rejected' });
+      function observed(events: FakeEventPublisher) {
+        return events.emittedEvents
+          .filter(({ name }) => name === 'usage.window-observed')
+          .map(({ payload }) => payload);
+      }
 
-      await vi.waitFor(() => expect(finishCalls).toHaveLength(1));
-      expect(finishCalls[0]).toEqual({
-        runId: 'id-1',
-        ending: { kind: 'usage-limit', reason: 'five_hour limit rejected' },
+      function fixtureEvents(name: string) {
+        return readFileSync(
+          new URL(`../../testing/fixtures/sessions/${name}`, import.meta.url),
+          'utf8',
+        )
+          .trim()
+          .split('\n')
+          .flatMap((line) => mapSdkMessage(JSON.parse(line) as SDKMessage));
+      }
+
+      function refusal(window: { resetsAt?: number; windowResetsAt?: number }): SessionEvent {
+        return mapSdkMessage({
+          type: 'rate_limit_event',
+          rate_limit_info: {
+            status: 'rejected',
+            overageStatus: 'rejected',
+            rateLimitType: 'five_hour',
+            ...(window.resetsAt === undefined ? {} : { resetsAt: window.resetsAt }),
+            ...(window.windowResetsAt === undefined
+              ? {}
+              : {
+                  unifiedWindows: {
+                    five_hour: { utilization: 1, resetsAt: window.windowResetsAt },
+                  },
+                }),
+          },
+        } as unknown as SDKMessage)[0] as SessionEvent;
+      }
+
+      it('should publish the window reading and keep the run running when the window is allowed', async () => {
+        const { service, agentSessions, events, finishCalls } = buildService({ now: refusedAt });
+        await service.start(startRequest);
+
+        agentSessions.push('id-2', fixtureEvents('handbacks-live.jsonl')[0] as SessionEvent);
+
+        await vi.waitFor(() => expect(observed(events)).toHaveLength(1));
+        expect(observed(events)).toEqual([
+          {
+            observedAt: refusedAt,
+            fiveHour: { utilizationPercent: 6, resetsAt: '2026-10-17T16:00:00.000Z' },
+            sevenDay: { utilizationPercent: 35, resetsAt: '2026-10-18T09:00:00.000Z' },
+            refusedUntil: null,
+          },
+        ]);
+        expect(finishCalls).toEqual([]);
+      });
+
+      it('should end the run as usage-limit naming the window and time when calls are refused', async () => {
+        const { service, agentSessions, events, finishCalls } = buildService({ now: refusedAt });
+        await service.start(startRequest);
+
+        for (const event of fixtureEvents('limit-hit-live.jsonl')) {
+          agentSessions.push('id-2', event);
+        }
+
+        await vi.waitFor(() => expect(finishCalls).toHaveLength(1));
+        expect(observed(events)).toMatchObject([{ refusedUntil: '2026-10-17T16:00:00.000Z' }]);
+        expect(finishCalls).toEqual([
+          {
+            runId: 'id-1',
+            ending: {
+              kind: 'usage-limit',
+              reason: 'The five_hour usage limit was reached (resets at 2026-10-17T16:00:00.000Z)',
+            },
+          },
+        ]);
+      });
+
+      it('should refuse until the window reset when the refusal has no resetsAt', async () => {
+        const { service, agentSessions, events, finishCalls } = buildService({ now: refusedAt });
+        await service.start(startRequest);
+
+        agentSessions.push('id-2', refusal({ windowResetsAt: 1792252800 }));
+
+        await vi.waitFor(() => expect(finishCalls).toHaveLength(1));
+        expect(observed(events)).toMatchObject([{ refusedUntil: '2026-10-17T16:00:00.000Z' }]);
+        expect(finishCalls[0]?.ending.kind).toBe('usage-limit');
+      });
+
+      it('should refuse for one hour when no reset time is known', async () => {
+        const { service, agentSessions, events, finishCalls } = buildService({ now: refusedAt });
+        await service.start(startRequest);
+
+        agentSessions.push('id-2', refusal({}));
+
+        await vi.waitFor(() => expect(finishCalls).toHaveLength(1));
+        expect(observed(events)).toMatchObject([{ refusedUntil: '2026-10-19T11:00:00.000Z' }]);
+        expect(finishCalls[0]?.ending).toEqual({
+          kind: 'usage-limit',
+          reason: 'The five_hour usage limit was reached (resets at 2026-10-19T11:00:00.000Z)',
+        });
+      });
+
+      it('should end the run as finished when overage is allowed after a rejected event', async () => {
+        const { service, agentSessions, events, finishCalls } = buildService({ now: refusedAt });
+        await service.start(startRequest);
+
+        agentSessions.push(
+          'id-2',
+          mapSdkMessage({
+            type: 'rate_limit_event',
+            rate_limit_info: { status: 'rejected', overageStatus: 'allowed' },
+          } as unknown as SDKMessage)[0] as SessionEvent,
+        );
+        agentSessions.push('id-2', { kind: 'completed' });
+
+        await vi.waitFor(() => expect(finishCalls).toHaveLength(1));
+        expect(observed(events)).toMatchObject([{ refusedUntil: null }]);
+        expect(finishCalls[0]?.ending).toEqual({ kind: 'finished' });
       });
     });
 

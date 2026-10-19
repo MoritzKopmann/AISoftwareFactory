@@ -31,31 +31,110 @@ describe('mapSdkMessage', () => {
     expect(events.map(({ kind }) => kind)).toEqual(['entry']);
   });
 
-  it('should map a rejected rate limit to a usage-limit event naming the window', () => {
+  function rateLimitMessage(info: Record<string, unknown>): SDKMessage {
+    return message({ type: 'rate_limit_event', rate_limit_info: info });
+  }
+
+  it('should map the windows to a window observation with percent and ISO reset when allowed', () => {
+    const events = mapSdkMessage(liveFixture.map(message)[2] as SDKMessage);
+
+    expect(events).toEqual([
+      {
+        kind: 'window-observed',
+        fiveHour: { utilizationPercent: 6, resetsAt: '2026-10-17T16:00:00.000Z' },
+        sevenDay: { utilizationPercent: 35, resetsAt: '2026-10-18T09:00:00.000Z' },
+        refusal: null,
+      },
+    ]);
+  });
+
+  it('should map a missing window to null when unifiedWindows has no seven_day', () => {
     const events = mapSdkMessage(
-      message({
-        type: 'rate_limit_event',
-        rate_limit_info: { status: 'rejected', rateLimitType: 'five_hour', resetsAt: 1790628600 },
+      rateLimitMessage({
+        status: 'allowed',
+        unifiedWindows: { five_hour: { utilization: 0.5, resetsAt: 1792252800 } },
       }),
     );
 
     expect(events).toEqual([
       {
-        kind: 'usage-limit',
-        reason: 'The five_hour usage limit was reached (resets at 2026-09-28T20:50:00.000Z)',
+        kind: 'window-observed',
+        fiveHour: { utilizationPercent: 50, resetsAt: '2026-10-17T16:00:00.000Z' },
+        sevenDay: null,
+        refusal: null,
       },
     ]);
   });
 
-  it('should map nothing when the rate limit only warns', () => {
+  it('should map a refusal with the window and rate_limit_info resetsAt when overage is rejected', () => {
     const events = mapSdkMessage(
-      message({
-        type: 'rate_limit_event',
-        rate_limit_info: { status: 'allowed_warning', rateLimitType: 'five_hour' },
+      rateLimitMessage({
+        status: 'rejected',
+        overageStatus: 'rejected',
+        rateLimitType: 'five_hour',
+        resetsAt: 1790628600,
       }),
     );
 
-    expect(events).toEqual([]);
+    expect(events).toEqual([
+      {
+        kind: 'window-observed',
+        fiveHour: null,
+        sevenDay: null,
+        refusal: { window: 'five_hour', resetsAt: '2026-09-28T20:50:00.000Z' },
+      },
+    ]);
+  });
+
+  it('should use the reset of the rateLimitType window when a refusal has no resetsAt', () => {
+    const events = mapSdkMessage(
+      rateLimitMessage({
+        status: 'rejected',
+        overageStatus: 'rejected',
+        rateLimitType: 'five_hour',
+        unifiedWindows: { five_hour: { utilization: 1, resetsAt: 1792252800 } },
+      }),
+    );
+
+    expect(events[0]).toMatchObject({
+      refusal: { window: 'five_hour', resetsAt: '2026-10-17T16:00:00.000Z' },
+    });
+  });
+
+  it('should map a refusal reset to null when no reset time is known', () => {
+    const events = mapSdkMessage(
+      rateLimitMessage({
+        status: 'rejected',
+        overageStatus: 'rejected',
+        rateLimitType: 'five_hour',
+      }),
+    );
+
+    expect(events[0]).toMatchObject({ refusal: { window: 'five_hour', resetsAt: null } });
+  });
+
+  it('should map no refusal when overage is allowed', () => {
+    const events = mapSdkMessage(
+      rateLimitMessage({
+        status: 'rejected',
+        overageStatus: 'allowed',
+        rateLimitType: 'five_hour',
+      }),
+    );
+
+    expect(events[0]).toMatchObject({ refusal: null });
+  });
+
+  it('should map no refusal when overage only warns', () => {
+    const events = mapSdkMessage(
+      rateLimitMessage({
+        status: 'rejected',
+        overageStatus: 'allowed_warning',
+        rateLimitType: 'five_hour',
+      }),
+    );
+
+    expect(events[0]).toMatchObject({ refusal: null });
   });
 
   it('should map an error result to a crashed event with its errors', () => {

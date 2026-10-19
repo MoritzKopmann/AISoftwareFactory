@@ -6,7 +6,7 @@ export function toLiveNotice<Name extends keyof DomainEvents>(
   eventName: Name,
   payload: DomainEvents[Name],
 ): LiveNotice {
-  const ids: { projectId?: unknown; ticketNumber?: unknown } = payload;
+  const ids: Readonly<Record<string, unknown>> = payload;
   const poll: Readonly<Record<string, unknown>> = payload;
   return {
     event: eventName,

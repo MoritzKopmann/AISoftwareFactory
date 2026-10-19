@@ -20,7 +20,7 @@ import type { RunWaitOutcome } from '../domain/types/run-wait-outcome.js';
 import type { RunWait } from '../domain/types/run-wait.js';
 import type { Run } from '../domain/types/run.js';
 import type { SessionEntry } from '../domain/types/session-entry.js';
-import type { SessionEvent } from '../domain/types/session-event.js';
+import type { SessionEvent, WindowRefusal } from '../domain/types/session-event.js';
 import type { SessionLaunch } from '../domain/types/session-launch.js';
 import type { SessionSpec } from '../domain/types/session-spec.js';
 import type { SessionTool } from '../domain/types/session-tool.js';
@@ -55,6 +55,8 @@ export type RunStartServiceDependencies = {
   readonly worktreesDirectory: string;
   readonly windowMilliseconds: number;
 };
+
+const refusalFallbackMilliseconds = 3_600_000;
 
 const refusalMessage = 'A human refused this tool call. Do not retry it; carry on without it.';
 
@@ -323,7 +325,7 @@ export class RunStartService {
   }
 
   private async consume(run: Run, sessionEvents: AsyncIterable<SessionEvent>): Promise<void> {
-    const { runEndService, sessionFeed } = this.dependencies;
+    const { runEndService, sessionFeed, events, clock } = this.dependencies;
     let promptPulled = false;
     try {
       for await (const event of sessionEvents) {
@@ -343,9 +345,23 @@ export class RunStartService {
           case 'completed':
             await runEndService.finish(run.id, { kind: 'finished' });
             break;
-          case 'usage-limit':
-            await runEndService.finish(run.id, { kind: 'usage-limit', reason: event.reason });
+          case 'window-observed': {
+            const refusedUntil = this.refusedUntil(event.refusal);
+            events.emit('usage.window-observed', {
+              observedAt: clock.now(),
+              fiveHour: event.fiveHour,
+              sevenDay: event.sevenDay,
+              refusedUntil,
+            });
+            if (event.refusal !== null && refusedUntil !== null) {
+              await runEndService.finish(run.id, {
+                kind: 'usage-limit',
+                reason: `The ${event.refusal.window} usage limit was reached (resets at ${refusedUntil})`,
+              });
+              return;
+            }
             break;
+          }
           case 'crashed':
             await runEndService.finish(run.id, { kind: 'crashed', reason: event.reason });
             break;
@@ -358,6 +374,19 @@ export class RunStartService {
     } finally {
       sessionFeed.end(run.id);
     }
+  }
+
+  /** A refusal without a reset time is retried in an hour. No refusal: null. */
+  private refusedUntil(refusal: WindowRefusal | null): string | null {
+    if (refusal === null) {
+      return null;
+    }
+    return (
+      refusal.resetsAt ??
+      new Date(
+        Date.parse(this.dependencies.clock.now()) + refusalFallbackMilliseconds,
+      ).toISOString()
+    );
   }
 
   /** Labels the entry's command without waiting. A failure is logged and never ends the run. */
