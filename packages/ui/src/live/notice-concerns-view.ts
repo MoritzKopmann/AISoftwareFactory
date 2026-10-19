@@ -45,6 +45,7 @@ export function noticeConcernsView(notice: LiveNotice, view: LiveView): boolean 
     case 'ticket.closed':
     case 'project.added':
     case 'usage.window-observed':
+    case 'usage.changed':
       return false;
   }
 }

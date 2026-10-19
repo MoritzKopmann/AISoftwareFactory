@@ -94,6 +94,7 @@ export type DomainEvents = {
     readonly sevenDay: { readonly utilizationPercent: number; readonly resetsAt: string } | null;
     readonly refusedUntil: string | null;
   };
+  readonly 'usage.changed': Readonly<Record<never, never>>;
   readonly 'skills.status-changed': Readonly<Record<never, never>>;
 };
 
@@ -127,6 +128,7 @@ export const domainEventNames = listEveryName([
   'artifact.published',
   'watch.updated',
   'usage.window-observed',
+  'usage.changed',
   'skills.status-changed',
 ]);
 
