@@ -22,6 +22,7 @@ export function buildRunDto(overrides: Partial<RunDto> = {}): RunDto {
     worktreePath: '/worktree',
     branchName: 'aisf/138-add-login',
     state: 'running',
+    answerHeld: false,
     startedAt: '2026-09-29T09:00:00.000Z',
     ...overrides,
   };
