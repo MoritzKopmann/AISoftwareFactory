@@ -35,6 +35,20 @@ describe('Banner', () => {
     expect(positions).toEqual([...positions].sort((first, second) => first - second));
   });
 
+  it('should render markup inside the message when the message is a node', () => {
+    const markup = renderToStaticMarkup(
+      <Banner
+        tone="warn"
+        message={
+          <>
+            paused until <strong>14:00</strong>
+          </>
+        }
+      />,
+    );
+    expect(markup).toContain('<strong>14:00</strong>');
+  });
+
   it('should use role status when the tone is info or warn', () => {
     for (const tone of ['info', 'warn'] as const) {
       const markup = renderToStaticMarkup(<Banner tone={tone} message="Checking" />);
