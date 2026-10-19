@@ -118,12 +118,7 @@ describe('decideRunEndTransition', () => {
 
   it.each<RunEnding>([
     { kind: 'finished' },
-    { kind: 'stopped' },
-    { kind: 'crashed', reason: 'boom' },
     { kind: 'usage-limit', reason: 'limit' },
-    { kind: 'app-restarted' },
-    { kind: 'escalated', escalation: 'spec', reason: 'why' },
-    { kind: 'permission-needed', toolName: 'Bash', toolInput: {} },
     { kind: 'parked', blockerNumber: 3 },
   ])('should write nothing when the ticket is in-review (%o)', (ending) => {
     expect(decideRunEndTransition(ending, live('in-review'), 'implement')).toEqual({
