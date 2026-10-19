@@ -1,6 +1,7 @@
 export type AppRoute =
   | { readonly kind: 'home' }
   | { readonly kind: 'add-project' }
+  | { readonly kind: 'usage' }
   | { readonly kind: 'project'; readonly id: string }
   | { readonly kind: 'settings'; readonly id: string }
   | { readonly kind: 'ticket'; readonly id: string; readonly number: number };
@@ -12,6 +13,9 @@ const ticketRoutePattern = /^#\/projects\/([^/]+\/[^/]+)\/tickets\/([1-9]\d*)$/;
 export function parseAppRoute(hash: string): AppRoute {
   if (hash === '#/projects/new') {
     return { kind: 'add-project' };
+  }
+  if (hash === '#/usage') {
+    return { kind: 'usage' };
   }
   const ticketMatch = ticketRoutePattern.exec(hash);
   const ticketProjectId = ticketMatch?.[1];

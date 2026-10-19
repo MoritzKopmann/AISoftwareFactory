@@ -37,6 +37,10 @@ describe('parseAppRoute', () => {
     expect(parseAppRoute('#/projects/o/n/tickets/abc')).toEqual({ kind: 'home' });
   });
 
+  it('should return the usage route when the hash is #/usage', () => {
+    expect(parseAppRoute('#/usage')).toEqual({ kind: 'usage' });
+  });
+
   it('should return home when the hash is an unrelated route', () => {
     expect(parseAppRoute('#/tickets/5')).toEqual({ kind: 'home' });
   });

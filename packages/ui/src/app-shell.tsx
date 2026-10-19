@@ -6,6 +6,7 @@ import { SkillsStatusPanel } from './skills/skills-status-panel.js';
 import { PausedBanner } from './usage/paused-banner.js';
 import { UsageMeter } from './usage/usage-meter.js';
 import { useUsage, type UsageState } from './usage/use-usage.js';
+import { UsagePage } from './usage/usage-page.js';
 import { parseAppRoute, type AppRoute } from './app-route.js';
 import { ProjectSidebar } from './projects/project-sidebar.js';
 import { AddProjectForm } from './projects/add-project-form.js';
@@ -89,6 +90,8 @@ export function AppShell() {
             <AddProjectForm onAdded={handleAdded} />
           </main>
         );
+      case 'usage':
+        return <UsagePage usage={usage} />;
       case 'project':
         return (
           <ProjectPage
@@ -117,7 +120,7 @@ export function AppShell() {
     <div className="shell">
       <ProjectSidebar projects={projects} route={route} />
       <div className="main">
-        <UsageMeter usage={usage} />
+        <UsageMeter usage={usage} current={route.kind === 'usage'} />
         <PausedBanner usage={usage} />
         <OfflineHint liveUpdates={liveUpdates} />
         <SkillsStatusPanel liveUpdates={liveUpdates} />
