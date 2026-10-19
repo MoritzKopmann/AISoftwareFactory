@@ -783,6 +783,7 @@ a.ext::after {
 
 .usage-card-scale-warn {
   position: absolute;
+  white-space: nowrap;
   left: 80%;
   transform: translateX(-50%);
   color: var(--warn);
@@ -791,6 +792,11 @@ a.ext::after {
 .usage-card-scale-pause {
   position: absolute;
   right: 0;
+}
+
+.usage-card-scale-above {
+  margin-top: 0;
+  margin-bottom: 10px;
 }
 
 .usage-card-skeleton {

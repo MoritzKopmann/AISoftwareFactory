@@ -18,11 +18,12 @@ export function UsageWindowCard({
         </div>
         <div className="usage-card-nodata">No data yet</div>
         <div>
+          <UsageCardWarnLabel />
           <div aria-hidden="true" className="usage-card-track usage-card-track-empty">
             <span className="usage-card-mark-warn" />
             <span className="usage-card-mark-pause" />
           </div>
-          <UsageCardScale />
+          <UsageCardPauseLabel />
         </div>
       </section>
     );
@@ -36,6 +37,7 @@ export function UsageWindowCard({
       </div>
       <div className="usage-card-value">{description.valueLabel}</div>
       <div>
+        <UsageCardWarnLabel />
         <div
           role="meter"
           aria-label={`${name} usage`}
@@ -51,7 +53,7 @@ export function UsageWindowCard({
           <span className="usage-card-mark-warn" />
           <span className="usage-card-mark-pause" />
         </div>
-        <UsageCardScale />
+        <UsageCardPauseLabel />
       </div>
     </section>
   );
@@ -83,10 +85,17 @@ export function UsageWindowSkeleton({
   );
 }
 
-function UsageCardScale() {
+function UsageCardWarnLabel() {
+  return (
+    <div aria-hidden="true" className="usage-card-scale usage-card-scale-above">
+      <span className="usage-card-scale-warn">80 % warning</span>
+    </div>
+  );
+}
+
+function UsageCardPauseLabel() {
   return (
     <div aria-hidden="true" className="usage-card-scale">
-      <span className="usage-card-scale-warn">80 % warning</span>
       <span className="usage-card-scale-pause">100 % pause</span>
     </div>
   );
