@@ -94,6 +94,7 @@ function buildAnswerSubject(run: RunRecord = permissionRun) {
   const runPort = new FakeRunPort();
   runPort.record = run;
   runPort.latest = {
+    answerHeld: false,
     id: run.id,
     startedAt: run.startedAt,
     ...(run.endedAt === undefined ? {} : { endedAt: run.endedAt }),
@@ -165,6 +166,7 @@ describe('TicketRunService', () => {
     it("should be disabled when the snapshot predates the ticket's last run end", async () => {
       const runPort = new FakeRunPort();
       runPort.latest = {
+        answerHeld: false,
         id: 'run-0',
         startedAt: '2026-09-29T10:00:00.000Z',
         endedAt: '2026-09-29T10:05:00.000Z',
@@ -289,6 +291,7 @@ describe('TicketRunService', () => {
     it('should return the last run when the latest run has an ending and an end time', async () => {
       const runPort = new FakeRunPort();
       runPort.latest = {
+        answerHeld: false,
         id: 'run-0',
         startedAt,
         endedAt,
@@ -307,7 +310,7 @@ describe('TicketRunService', () => {
 
     it('should leave out the last run when the latest run has not ended', async () => {
       const runPort = new FakeRunPort();
-      runPort.latest = { id: 'run-0', startedAt };
+      runPort.latest = { id: 'run-0', answerHeld: false, startedAt };
 
       const ticketRun = await buildSubject({ runPort }).service.readTicketRun('moritz/aisf', 138);
 
@@ -316,7 +319,7 @@ describe('TicketRunService', () => {
 
     it('should leave out the last run when the latest run has an end time but no ending', async () => {
       const runPort = new FakeRunPort();
-      runPort.latest = { id: 'run-0', startedAt, endedAt };
+      runPort.latest = { id: 'run-0', answerHeld: false, startedAt, endedAt };
 
       const ticketRun = await buildSubject({ runPort }).service.readTicketRun('moritz/aisf', 138);
 
@@ -678,7 +681,11 @@ describe('TicketRunService', () => {
       [
         'a newer run exists for the ticket',
         (subject: ReturnType<typeof buildAnswerSubject>) => {
-          subject.runPort.latest = { id: 'run-9', startedAt: '2026-09-29T10:00:00.000Z' };
+          subject.runPort.latest = {
+            id: 'run-9',
+            answerHeld: false,
+            startedAt: '2026-09-29T10:00:00.000Z',
+          };
         },
       ],
       [

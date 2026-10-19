@@ -2,12 +2,14 @@ import type { ProjectsApi } from '../../projects/index.js';
 import type {
   ActiveRunDto,
   AnswerRunResultDto,
+  PausedRunDto,
   RunAnswerDto,
   RunDto,
   AgentRunsApi,
   StartRunRequestDto,
   StartRunResultDto,
 } from '../../agent-runs/index.js';
+import type { UsageApi, UsageStatusDto } from '../../usage/index.js';
 import type { SkillsApi } from '../../skills/index.js';
 import type { ClosingPullRequestDto, TicketDto, TicketsApi } from '../../tickets/index.js';
 
@@ -79,6 +81,14 @@ export function fakeProjectsApi(paused = false): Pick<ProjectsApi, 'list'> {
   };
 }
 
+export class FakeUsageApi implements Pick<UsageApi, 'status'> {
+  pausedUntil: string | null = null;
+
+  async status(): Promise<UsageStatusDto> {
+    return { pausedUntil: this.pausedUntil, observedAt: null, fiveHour: null, sevenDay: null };
+  }
+}
+
 export function fakeSkillsApi(): Pick<SkillsApi, 'runsBlocked'> {
   return { runsBlocked: () => ({ blocked: false }) };
 }
@@ -142,10 +152,23 @@ export class FakeTicketsApi implements Pick<
 
 export class FakeAgentRunsApi implements Pick<
   AgentRunsApi,
-  'start' | 'answer' | 'findRun' | 'activeRuns' | 'latestRun'
+  | 'start'
+  | 'answer'
+  | 'findRun'
+  | 'activeRuns'
+  | 'latestRun'
+  | 'pausedRuns'
+  | 'holdAnswer'
+  | 'resumePaused'
 > {
   readonly calls: string[] = [];
+  paused: ReadonlyArray<PausedRunDto> = [];
+  resumeResult: AnswerRunResultDto = {
+    kind: 'answered',
+    run: buildRunDto({ id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' }),
+  };
   activeTicketNumbers: ReadonlyArray<number> = [];
+  activeRunDtos: ReadonlyArray<RunDto> = [];
   record: RunDto | undefined;
   latest: RunDto | undefined;
   startResult: StartRunResultDto = { kind: 'started', run: buildRunDto() };
@@ -164,14 +187,28 @@ export class FakeAgentRunsApi implements Pick<
     return this.answerResult;
   }
 
+  async pausedRuns(): Promise<ReadonlyArray<PausedRunDto>> {
+    return this.paused;
+  }
+
+  async holdAnswer(runId: string, answer: RunAnswerDto): Promise<void> {
+    this.calls.push(`holdAnswer ${runId} ${JSON.stringify(answer)}`);
+  }
+
+  async resumePaused(runId: string): Promise<AnswerRunResultDto> {
+    this.calls.push(`resumePaused ${runId}`);
+    return this.resumeResult;
+  }
+
   async findRun(): Promise<RunDto | undefined> {
     return this.record;
   }
 
   async activeRuns(): Promise<ReadonlyArray<ActiveRunDto>> {
-    return this.activeTicketNumbers.map((ticketNumber) => ({
-      run: buildRunDto({ ticketNumber }),
-    }));
+    return [
+      ...this.activeTicketNumbers.map((ticketNumber) => ({ run: buildRunDto({ ticketNumber }) })),
+      ...this.activeRunDtos.map((run) => ({ run })),
+    ];
   }
 
   async latestRun(): Promise<RunDto | undefined> {

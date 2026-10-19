@@ -33,7 +33,7 @@ import type {
   EventPublisher,
   EventSubscriber,
 } from './shared/event-bus.js';
-import { createUsageModule, type UsageModule } from './modules/usage/index.js';
+import { createUsageModule, type UsageApi, type UsageModule } from './modules/usage/index.js';
 import { createLiveModule } from './modules/live/index.js';
 import { InMemoryEventBus } from './shared/in-memory-event-bus.js';
 import type { Config } from './shared/config/load-config.js';
@@ -169,9 +169,10 @@ function buildSchedulerModule(
   skills: SkillsApi,
   tickets: TicketsApi,
   agentRuns: AgentRunsApi,
+  usage: UsageApi,
   logger: Logger,
 ): SchedulerModule {
-  return createSchedulerModule({ events, projects, skills, tickets, agentRuns, logger });
+  return createSchedulerModule({ events, projects, skills, tickets, agentRuns, usage, logger });
 }
 
 export type ApplicationOptions = {
@@ -230,6 +231,7 @@ export function composeApplication(options: ApplicationOptions): Application {
     skills.internal,
     tickets.internal,
     agentRuns.internal,
+    usage.internal,
     logger,
   );
   const artifacts = buildArtifactsModule(

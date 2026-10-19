@@ -5,6 +5,7 @@ import { InMemoryEventBus } from '../../shared/in-memory-event-bus.js';
 import { createSchedulerModule, type SchedulerModule } from './index.js';
 import {
   FakeAgentRunsApi,
+  FakeUsageApi,
   FakeTicketsApi,
   buildRunDto,
   buildTicketDto,
@@ -51,6 +52,7 @@ describe('createSchedulerModule', () => {
         skills: fakeSkillsApi(),
         tickets,
         agentRuns,
+        usage: new FakeUsageApi(),
       },
       { pullRequestMerges },
     );
@@ -93,6 +95,7 @@ describe('createSchedulerModule', () => {
       skills: fakeSkillsApi(),
       tickets,
       agentRuns,
+      usage: new FakeUsageApi(),
     });
 
     const response = await scheduler.routes.request('/api/projects/moritz/aisf/tickets/138/runs', {
@@ -203,6 +206,7 @@ describe('createSchedulerModule', () => {
       skills: fakeSkillsApi(),
       tickets,
       agentRuns,
+      usage: new FakeUsageApi(),
     });
 
     const response = await scheduler.routes.request('/api/projects/moritz/aisf/ideas', {
