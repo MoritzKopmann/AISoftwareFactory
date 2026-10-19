@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { GitHubCliError } from '../errors/github-cli-error.js';
 import { PluginInstallFailedError } from '../errors/plugin-install-failed-error.js';
 import { ProjectAlreadyAddedError } from '../errors/project-already-added-error.js';
 import { ProjectNotFoundError } from '../errors/project-not-found-error.js';
@@ -6,6 +7,7 @@ import { ProjectService } from './project-service.js';
 import { FakeClock } from '../../../../shared/testing/fake-clock.js';
 import { FakeEventPublisher } from '../../../../shared/testing/fake-event-publisher.js';
 import {
+  FakeCheckoutFetcher,
   FakeLabelSync,
   FakeSkillPort,
   FakeProjectRepository,
@@ -21,6 +23,7 @@ function createSubject() {
   const projectRepository = new FakeProjectRepository();
   const labelSync = new FakeLabelSync();
   const skillPort = new FakeSkillPort();
+  const checkoutFetcher = new FakeCheckoutFetcher();
   const clock = new FakeClock(addedAt);
   const events = new FakeEventPublisher();
   const service = new ProjectService({
@@ -28,6 +31,7 @@ function createSubject() {
     projectRepository,
     labelSync,
     skillPort,
+    checkoutFetcher,
     clock,
     events,
   });
@@ -37,6 +41,7 @@ function createSubject() {
     projectRepository,
     labelSync,
     skillPort,
+    checkoutFetcher,
     clock,
     events,
   };
@@ -44,6 +49,33 @@ function createSubject() {
 
 describe('ProjectService', () => {
   describe('add', () => {
+    it('should fetch the checkout before saving the project and announcing it', async () => {
+      const { service, checkoutFetcher, projectRepository, events } = createSubject();
+      let savedAtFetch: unknown = 'not fetched';
+      let announcedAtFetch: number = -1;
+      checkoutFetcher.fetch = async (path) => {
+        checkoutFetcher.fetchCalls.push(path);
+        savedAtFetch = await projectRepository.findById('moritz/aisf');
+        announcedAtFetch = events.emittedEvents.length;
+      };
+
+      await service.add(checkoutPath);
+
+      expect(checkoutFetcher.fetchCalls).toEqual([checkoutPath]);
+      expect(savedAtFetch).toBeUndefined();
+      expect(announcedAtFetch).toBe(0);
+    });
+
+    it('should save nothing and announce nothing when the fetch fails', async () => {
+      const { service, checkoutFetcher, projectRepository, events } = createSubject();
+      checkoutFetcher.failure = new GitHubCliError('fetch failed');
+
+      await expect(service.add(checkoutPath)).rejects.toBeInstanceOf(GitHubCliError);
+
+      expect(await projectRepository.list()).toEqual([]);
+      expect(events.emittedEvents).toEqual([]);
+    });
+
     it('should save the project with an id from the resolved repository', async () => {
       const { service, projectRepository } = createSubject();
 
@@ -261,6 +293,26 @@ describe('ProjectService', () => {
       const { service } = createSubject();
 
       await expect(service.setPaused('owner/missing', true)).rejects.toThrow(ProjectNotFoundError);
+    });
+  });
+
+  describe('refreshCheckout', () => {
+    it('should fetch the checkout of the project when it is registered', async () => {
+      const { service, checkoutFetcher } = createSubject();
+      await service.add(checkoutPath);
+      checkoutFetcher.fetchCalls = [];
+
+      await service.refreshCheckout('moritz/aisf');
+
+      expect(checkoutFetcher.fetchCalls).toEqual([checkoutPath]);
+    });
+
+    it('should fetch nothing when the project is unknown', async () => {
+      const { service, checkoutFetcher } = createSubject();
+
+      await service.refreshCheckout('x/y');
+
+      expect(checkoutFetcher.fetchCalls).toEqual([]);
     });
   });
 });
