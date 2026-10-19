@@ -9,7 +9,7 @@ import type {
   StartRunResultDto,
 } from '../../agent-runs/index.js';
 import type { SkillsApi } from '../../skills/index.js';
-import type { TicketDto, TicketsApi } from '../../tickets/index.js';
+import type { ClosingPullRequestDto, TicketDto, TicketsApi } from '../../tickets/index.js';
 
 export function buildRunDto(overrides: Partial<RunDto> = {}): RunDto {
   return {
@@ -43,6 +43,22 @@ export function buildTicketDto(overrides: Partial<TicketDto> = {}): TicketDto {
     blockedBy: [],
     closingPullRequests: [],
     updatedAt: '2026-09-29T08:00:00.000Z',
+    ...overrides,
+  };
+}
+
+export function buildClosingPullRequestDto(
+  overrides: Partial<ClosingPullRequestDto> = {},
+): ClosingPullRequestDto {
+  return {
+    number: 1,
+    url: 'https://github.com/moritz/aisf/pull/1',
+    state: 'OPEN',
+    approved: false,
+    checks: 'none',
+    mergeable: 'mergeable',
+    canBeRebased: true,
+    headCommit: 'abc123',
     ...overrides,
   };
 }
