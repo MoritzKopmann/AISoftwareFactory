@@ -406,4 +406,85 @@ describe('SqliteRunRepository', () => {
       ).toEqual({ checkpoint_page_title: null, checkpoint_page_url: null });
     });
   });
+
+  describe('held answer', () => {
+    it('should return the held answer when one is recorded', async () => {
+      await repository.insert(buildRun());
+
+      await repository.recordHeldAnswer('run-1', { kind: 'checkpoint', text: 'yes' });
+
+      expect((await repository.findById('run-1'))?.heldAnswer).toEqual({
+        kind: 'checkpoint',
+        text: 'yes',
+      });
+    });
+
+    it('should replace the held answer when a second one is recorded', async () => {
+      await repository.insert(buildRun());
+      await repository.recordHeldAnswer('run-1', { kind: 'checkpoint', text: 'yes' });
+
+      await repository.recordHeldAnswer('run-1', { kind: 'checkpoint', text: 'no' });
+
+      expect((await repository.findById('run-1'))?.heldAnswer).toEqual({
+        kind: 'checkpoint',
+        text: 'no',
+      });
+    });
+
+    it('should have no held answer when it is cleared', async () => {
+      await repository.insert(buildRun());
+      await repository.recordHeldAnswer('run-1', { kind: 'checkpoint', text: 'yes' });
+
+      await repository.clearHeldAnswer('run-1');
+
+      expect((await repository.findById('run-1'))?.heldAnswer).toBeUndefined();
+    });
+  });
+
+  describe('listPaused', () => {
+    async function insertEnded(
+      id: string,
+      ticketNumber: number,
+      startedAt: string,
+      ending: RunEnding,
+      projectId = 'moritz/project',
+    ): Promise<void> {
+      await repository.insert(buildRun({ id, ticketNumber, startedAt, projectId }));
+      await repository.recordEnding(id, ending, startedAt);
+    }
+
+    it('should list only the latest run of each ticket when it ended usage-limit or holds an answer', async () => {
+      await insertEnded('old-7', 7, '2026-10-01T10:00:00.000Z', {
+        kind: 'usage-limit',
+        reason: 'limit',
+      });
+      await insertEnded('new-7', 7, '2026-10-02T10:00:00.000Z', { kind: 'finished' });
+      await insertEnded('run-8', 8, '2026-10-01T10:00:00.000Z', {
+        kind: 'usage-limit',
+        reason: 'limit',
+      });
+      await insertEnded('run-9', 9, '2026-10-01T10:00:00.000Z', {
+        kind: 'permission-needed',
+        toolName: 'Bash',
+        toolInput: {},
+      });
+      await repository.recordHeldAnswer('run-9', { kind: 'checkpoint', text: 'yes' });
+
+      const paused = await repository.listPaused('moritz/project');
+
+      expect(paused.map((run) => run.id).sort()).toEqual(['run-8', 'run-9']);
+    });
+
+    it('should leave out runs of other projects', async () => {
+      await insertEnded(
+        'run-b',
+        7,
+        '2026-10-01T10:00:00.000Z',
+        { kind: 'usage-limit', reason: 'limit' },
+        'b/b',
+      );
+
+      expect(await repository.listPaused('a/a')).toEqual([]);
+    });
+  });
 });

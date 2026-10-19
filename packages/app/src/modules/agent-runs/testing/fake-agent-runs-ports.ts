@@ -103,6 +103,38 @@ export class FakeRunRepository implements RunRepository {
     }
   }
 
+  async recordHeldAnswer(runId: string, answer: RunAnswer): Promise<void> {
+    const run = this.runs.get(runId);
+    if (run !== undefined) {
+      this.runs.set(runId, { ...run, heldAnswer: answer });
+    }
+  }
+
+  async clearHeldAnswer(runId: string): Promise<void> {
+    const run = this.runs.get(runId);
+    if (run !== undefined) {
+      const copy: { -readonly [Key in keyof Run]: Run[Key] } = { ...run };
+      delete copy.heldAnswer;
+      this.runs.set(runId, copy);
+    }
+  }
+
+  async listPaused(projectId: string): Promise<ReadonlyArray<Run>> {
+    const latestByTicket = new Map<number, Run>();
+    for (const run of this.runs.values()) {
+      const latest = latestByTicket.get(run.ticketNumber);
+      if (
+        run.projectId === projectId &&
+        (latest === undefined || run.startedAt > latest.startedAt)
+      ) {
+        latestByTicket.set(run.ticketNumber, run);
+      }
+    }
+    return [...latestByTicket.values()].filter(
+      (run) => run.ending?.kind === 'usage-limit' || run.heldAnswer !== undefined,
+    );
+  }
+
   async markSettled(runId: string): Promise<void> {
     const run = this.runs.get(runId);
     if (run !== undefined) {

@@ -1,5 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import type { Run } from '../../business/domain/types/run.js';
+import type { RunAnswer } from '../../business/domain/types/run-answer.js';
 import type { RunEnding } from '../../business/domain/types/run-ending.js';
 import type { RunMode } from '../../business/domain/types/run-mode.js';
 import type { RunStage } from '../../business/domain/types/run-stage.js';
@@ -31,6 +32,7 @@ type RunRow = {
   readonly checkpoint_page_url: string | null;
   readonly started_at: string;
   readonly ended_at: string | null;
+  readonly held_answer: string | null;
 };
 
 const selectRunColumns = `
@@ -57,7 +59,8 @@ const selectRunColumns = `
     checkpoint_page_title,
     checkpoint_page_url,
     started_at,
-    ended_at
+    ended_at,
+    held_answer
   FROM runs
 `;
 
@@ -147,6 +150,7 @@ function toRun(row: RunRow): Run {
     ...(ending === undefined ? {} : { ending }),
     startedAt: row.started_at,
     ...(row.ended_at === null ? {} : { endedAt: row.ended_at }),
+    ...(row.held_answer === null ? {} : { heldAnswer: JSON.parse(row.held_answer) as RunAnswer }),
   };
 }
 
@@ -356,6 +360,53 @@ export class SqliteRunRepository implements RunRepository {
       `,
       )
       .run(runId);
+  }
+
+  async recordHeldAnswer(runId: string, answer: RunAnswer): Promise<void> {
+    this.database
+      .prepare(
+        `
+        UPDATE runs
+        SET held_answer = ?
+        WHERE id = ?
+      `,
+      )
+      .run(JSON.stringify(answer), runId);
+  }
+
+  async clearHeldAnswer(runId: string): Promise<void> {
+    this.database
+      .prepare(
+        `
+        UPDATE runs
+        SET held_answer = NULL
+        WHERE id = ?
+      `,
+      )
+      .run(runId);
+  }
+
+  async listPaused(projectId: string): Promise<ReadonlyArray<Run>> {
+    const rows = this.database
+      .prepare(
+        `
+        ${selectRunColumns}
+        WHERE project_id = ?
+          AND (ending_kind = 'usage-limit' OR held_answer IS NOT NULL)
+          AND id = (
+            SELECT latest.id
+            FROM runs AS latest
+            WHERE latest.project_id = runs.project_id
+              AND latest.ticket_number = runs.ticket_number
+            ORDER BY latest.started_at DESC
+            LIMIT 1
+          )
+        ORDER BY started_at
+      `,
+      )
+      .all(projectId) as unknown as ReadonlyArray<RunRow>;
+
+    return rows.map(toRun);
   }
 
   async markSettled(runId: string, settledAt: string): Promise<void> {
