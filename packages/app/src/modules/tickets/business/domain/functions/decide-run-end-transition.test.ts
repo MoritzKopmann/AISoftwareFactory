@@ -92,7 +92,6 @@ describe('decideRunEndTransition', () => {
     [{ kind: 'finished' }, 'The run finished without completing the ticket'],
     [{ kind: 'stopped' }, 'The run was stopped'],
     [{ kind: 'crashed', reason: 'boom' }, 'The run crashed: boom'],
-    [{ kind: 'usage-limit', reason: 'limit hit' }, 'The run hit the usage limit: limit hit'],
     [{ kind: 'app-restarted' }, 'The app restarted during the run'],
   ])(
     'should mark the ticket stuck with an exit reason when the run ended unplanned (%o)',
@@ -105,14 +104,32 @@ describe('decideRunEndTransition', () => {
     },
   );
 
-  it.each<RunEnding>([{ kind: 'finished' }, { kind: 'parked', blockerNumber: 3 }])(
-    'should write nothing when the ticket is in-review (%o)',
-    (ending) => {
-      expect(decideRunEndTransition(ending, live('in-review'), 'implement')).toEqual({
-        kind: 'none',
-      });
-    },
-  );
+  it.each<[RunStage, TicketStatus]>([
+    ['implement', 'in-progress'],
+    ['implement', 'ready'],
+    ['spike', 'in-progress'],
+    ['plan', 'plan'],
+    ['create', 'idea'],
+  ])('should write nothing when a %s run hit the usage limit at %s', (stage, status) => {
+    const ending: RunEnding = { kind: 'usage-limit', reason: 'limit hit' };
+
+    expect(decideRunEndTransition(ending, live(status), stage)).toEqual({ kind: 'none' });
+  });
+
+  it.each<RunEnding>([
+    { kind: 'finished' },
+    { kind: 'stopped' },
+    { kind: 'crashed', reason: 'boom' },
+    { kind: 'usage-limit', reason: 'limit' },
+    { kind: 'app-restarted' },
+    { kind: 'escalated', escalation: 'spec', reason: 'why' },
+    { kind: 'permission-needed', toolName: 'Bash', toolInput: {} },
+    { kind: 'parked', blockerNumber: 3 },
+  ])('should write nothing when the ticket is in-review (%o)', (ending) => {
+    expect(decideRunEndTransition(ending, live('in-review'), 'implement')).toEqual({
+      kind: 'none',
+    });
+  });
 
   it.each<TicketStatus>(['closed', 'idea', 'conflict'])(
     'should write nothing when the ticket is %s',

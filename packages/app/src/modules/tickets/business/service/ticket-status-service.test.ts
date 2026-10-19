@@ -436,6 +436,19 @@ describe('TicketStatusService', () => {
       expect(runPort.calls).toEqual(['settle run-1']);
     });
 
+    it('should write nothing, emit nothing and settle the run when the run hit the usage limit', async () => {
+      const { useCase, ticketStatusWrites, runPort, events } = buildSubject();
+
+      await useCase.settleFinishedRun({
+        ...escalatedRun,
+        ending: { kind: 'usage-limit', reason: 'limit hit' },
+      });
+
+      expect(ticketStatusWrites.calls).toEqual(['readState']);
+      expect(events.emittedEvents).toEqual([]);
+      expect(runPort.calls).toEqual(['settle run-1']);
+    });
+
     describe('a plan run that finished', () => {
       const planRun: FinishedRun = {
         ...escalatedRun,

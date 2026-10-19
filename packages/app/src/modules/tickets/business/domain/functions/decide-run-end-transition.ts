@@ -25,6 +25,10 @@ export function decideRunEndTransition(
   stage: RunStage,
   hasOpenSpike = true,
 ): RunEndTransition {
+  // A usage-limit run pauses and continues at the reset: the ticket stays as it is.
+  if (ending.kind === 'usage-limit') {
+    return { kind: 'none' };
+  }
   const authoring = stage === 'create' || stage === 'plan';
   if (ending.kind === 'parked') {
     return !authoring && live.status === 'in-progress'
@@ -62,7 +66,7 @@ function isFinishedRework(ending: RunEnding, live: TicketLiveState, stage: RunSt
   return stage === 'implement' && live.status === 'in-review' && ending.kind === 'finished';
 }
 
-function describeEnding(ending: Exclude<RunEnding, { kind: 'parked' }>): string {
+function describeEnding(ending: Exclude<RunEnding, { kind: 'parked' | 'usage-limit' }>): string {
   switch (ending.kind) {
     case 'checkpoint':
       return `The run reached its human checkpoint and waits for an answer on the ticket page:\n\n${ending.request}`;
@@ -76,8 +80,6 @@ function describeEnding(ending: Exclude<RunEnding, { kind: 'parked' }>): string 
       return 'The run was stopped';
     case 'crashed':
       return `The run crashed: ${ending.reason}`;
-    case 'usage-limit':
-      return `The run hit the usage limit: ${ending.reason}`;
     case 'app-restarted':
       return 'The app restarted during the run';
   }
