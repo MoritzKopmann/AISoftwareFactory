@@ -5,6 +5,7 @@ export type ActiveTicketRun = {
     readonly id: string;
     readonly ticketNumber: number;
     readonly startedAt: string;
+    readonly answerHeld: boolean;
     readonly waitingFor?: RunWait;
     readonly waitingSince?: string;
   };

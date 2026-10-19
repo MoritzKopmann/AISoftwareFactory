@@ -18,6 +18,7 @@ import type { ProjectsApi } from '../projects/index.js';
 import type { AgentRunsApi } from '../agent-runs/index.js';
 import type { SkillsApi } from '../skills/index.js';
 import type { TicketsApi } from '../tickets/index.js';
+import type { UsageApi } from '../usage/index.js';
 
 export type { SchedulerApi } from './presentation/internal/scheduler-api.js';
 export type {
@@ -41,8 +42,16 @@ export function createSchedulerModule(
     >;
     readonly agentRuns: Pick<
       AgentRunsApi,
-      'start' | 'answer' | 'findRun' | 'activeRuns' | 'latestRun'
+      | 'start'
+      | 'answer'
+      | 'findRun'
+      | 'activeRuns'
+      | 'latestRun'
+      | 'pausedRuns'
+      | 'holdAnswer'
+      | 'resumePaused'
     >;
+    readonly usage: Pick<UsageApi, 'status'>;
   },
   overrides: Partial<SchedulerInfrastructure> = {},
 ): SchedulerModule {
