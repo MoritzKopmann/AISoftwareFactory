@@ -20,4 +20,14 @@ describe('rankDueTickets', () => {
 
     expect(ranked.map(({ number }) => number)).toEqual([7]);
   });
+
+  it('should put in-review tickets before ready and plan tickets', () => {
+    const ranked = rankDueTickets([
+      { number: 11, status: 'plan', closingPullRequests: [] },
+      { number: 12, status: 'ready', closingPullRequests: [] },
+      { number: 13, status: 'in-review', closingPullRequests: [] },
+    ]);
+
+    expect(ranked.map(({ number }) => number)).toEqual([13, 12, 11]);
+  });
 });

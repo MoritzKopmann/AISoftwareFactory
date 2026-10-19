@@ -1,5 +1,5 @@
 import type { RunAvailability } from '../types/run-availability.js';
-import type { SchedulableTicket } from '../types/schedulable-ticket.js';
+import type { OpenPullRequest, SchedulableTicket } from '../types/schedulable-ticket.js';
 import type { RunAvailabilityInput } from '../types/run-availability-input.js';
 
 export function determineRunAvailability(input: RunAvailabilityInput): RunAvailability {
@@ -13,7 +13,7 @@ export function determineRunAvailability(input: RunAvailabilityInput): RunAvaila
     trigger,
     projectPaused,
   } = input;
-  if (ticket === undefined || ticket.hasOpenBlocker || !isRunnableTicket(ticket)) {
+  if (ticket === undefined || ticket.hasOpenBlocker || !isRunnableTicket(ticket, lastRunEndedAt)) {
     return { kind: 'absent' };
   }
   if (trigger === 'auto') {
@@ -65,13 +65,44 @@ function findAutoBlock(ticket: SchedulableTicket, projectPaused: boolean): strin
   return undefined;
 }
 
-function isRunnableTicket(ticket: SchedulableTicket): boolean {
+function isRunnableTicket(ticket: SchedulableTicket, lastRunEndedAt: string | undefined): boolean {
   if (ticket.status === 'idea' || ticket.status === 'plan') {
     return true;
   }
+  if (!ticket.isLeaf || isPureUiTicket(ticket)) {
+    return false;
+  }
+  if (ticket.status === 'in-review') {
+    return needsRework(ticket.openPullRequest, lastRunEndedAt);
+  }
+  return ticket.status === 'ready';
+}
+
+function isPureUiTicket(ticket: SchedulableTicket): boolean {
+  return ticket.types.includes('ui') && !ticket.types.includes('spike');
+}
+
+function needsRework(
+  pullRequest: OpenPullRequest | undefined,
+  lastRunEndedAt: string | undefined,
+): boolean {
+  if (pullRequest === undefined) {
+    return false;
+  }
   return (
-    ticket.status === 'ready' &&
-    ticket.isLeaf &&
-    !(ticket.types.includes('ui') && !ticket.types.includes('spike'))
+    pullRequest.mergeable === 'conflicting' || hasUnansweredReview(pullRequest, lastRunEndedAt)
+  );
+}
+
+function hasUnansweredReview(
+  pullRequest: OpenPullRequest,
+  lastRunEndedAt: string | undefined,
+): boolean {
+  const { approved, lastReviewActivityAt } = pullRequest;
+  if (approved || lastReviewActivityAt === undefined) {
+    return false;
+  }
+  return (
+    lastRunEndedAt === undefined || Date.parse(lastReviewActivityAt) > Date.parse(lastRunEndedAt)
   );
 }

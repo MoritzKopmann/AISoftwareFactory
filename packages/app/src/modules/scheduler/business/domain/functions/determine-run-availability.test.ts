@@ -229,4 +229,110 @@ describe('determineRunAvailability', () => {
       ).toBe('disabled');
     });
   });
+
+  describe('rework of an in-review ticket', () => {
+    const reviewedTicket: SchedulableTicket = {
+      ...readyLeaf,
+      number: 7,
+      status: 'in-review',
+      openPullRequest: {
+        approved: false,
+        mergeable: 'mergeable',
+        lastReviewActivityAt: '2026-10-18T10:00:00Z',
+      },
+      snapshotTakenAt: '2026-10-18T11:00:00.000Z',
+    };
+    const lastRunEndedAt = '2026-10-18T09:00:00.000Z';
+
+    function reworkInput(
+      ticketOverrides: Partial<SchedulableTicket> = {},
+      inputOverrides: Partial<RunAvailabilityInput> = {},
+    ): RunAvailabilityInput {
+      return buildInput({
+        ticket: { ...reviewedTicket, ...ticketOverrides },
+        lastRunEndedAt,
+        trigger: 'auto',
+        ...inputOverrides,
+      });
+    }
+
+    it('should be available when review activity came after the last run ended', () => {
+      expect(determineRunAvailability(reworkInput())).toEqual({ kind: 'available' });
+    });
+
+    it('should be absent when the review activity came before the last run ended', () => {
+      const openPullRequest = {
+        approved: false,
+        mergeable: 'mergeable' as const,
+        lastReviewActivityAt: '2026-10-18T08:59:59Z',
+      };
+
+      expect(determineRunAvailability(reworkInput({ openPullRequest }))).toEqual({
+        kind: 'absent',
+      });
+    });
+
+    it('should be absent when the activity is in the same second as the run end but earlier', () => {
+      const openPullRequest = {
+        approved: false,
+        mergeable: 'mergeable' as const,
+        lastReviewActivityAt: '2026-10-18T09:00:00Z',
+      };
+
+      expect(
+        determineRunAvailability(
+          reworkInput({ openPullRequest }, { lastRunEndedAt: '2026-10-18T09:00:00.500Z' }),
+        ),
+      ).toEqual({ kind: 'absent' });
+    });
+
+    it('should be available when review activity exists and no run ever ended', () => {
+      const input = buildInput({ ticket: reviewedTicket, trigger: 'auto' });
+
+      expect(determineRunAvailability(input)).toEqual({ kind: 'available' });
+    });
+
+    it('should be absent when the pull request is approved and has no conflict', () => {
+      const openPullRequest = {
+        approved: true,
+        mergeable: 'mergeable' as const,
+        lastReviewActivityAt: '2026-10-18T10:00:00Z',
+      };
+
+      expect(determineRunAvailability(reworkInput({ openPullRequest }))).toEqual({
+        kind: 'absent',
+      });
+    });
+
+    it('should be available when the pull request conflicts, also when approved', () => {
+      const openPullRequest = { approved: true, mergeable: 'conflicting' as const };
+
+      expect(determineRunAvailability(reworkInput({ openPullRequest }))).toEqual({
+        kind: 'available',
+      });
+    });
+
+    it('should be absent when the ticket has no open pull request', () => {
+      const ticket: SchedulableTicket = { ...readyLeaf, number: 7, status: 'in-review' };
+
+      expect(determineRunAvailability(reworkInput({}, { ticket }))).toEqual({
+        kind: 'absent',
+      });
+    });
+
+    it('should be disabled as stuck when a stuck ticket has a conflicting pull request', () => {
+      const openPullRequest = { approved: false, mergeable: 'conflicting' as const };
+
+      expect(determineRunAvailability(reworkInput({ openPullRequest, stuck: true }))).toEqual({
+        kind: 'disabled',
+        reason: '#7 is stuck',
+      });
+    });
+
+    it('should be available for a manual trigger by the same rule', () => {
+      expect(determineRunAvailability(reworkInput({}, { trigger: 'manual' }))).toEqual({
+        kind: 'available',
+      });
+    });
+  });
 });
