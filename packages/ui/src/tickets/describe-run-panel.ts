@@ -1,6 +1,7 @@
 import type { RunEndingResponse, TicketRunResponse } from '@aisf/app/api-schemas/runs-schemas.js';
 import { describeTimeAgo } from '../board/describe-time-ago.js';
 import { formatClockTime } from '../board/format-clock-time.js';
+import { formatResetTime } from '../usage/format-reset-time.js';
 import { isIdeaOrPlanSkill, type RunSkill } from './describe-run-bar.js';
 import { countRunMinutes } from './count-run-minutes.js';
 import { describeStopAction, type StopActionDescription } from './describe-stop-action.js';
@@ -12,6 +13,7 @@ type LastRun = NonNullable<TicketRunResponse['lastRun']>;
 export type RunPanelInput = TicketRunPoll & {
   readonly ticketStuck: boolean;
   readonly stopping: boolean;
+  readonly pausedUntil: string | undefined;
   readonly runSkill: RunSkill;
 };
 
@@ -34,8 +36,14 @@ type EndedRunDescription = {
   readonly note: string;
 };
 
+type PausedRunDescription = {
+  readonly kind: 'paused';
+  readonly pausedLabel: string;
+  readonly endedLabel: string;
+};
+
 export type RunPanelDescription =
-  { readonly kind: 'hidden' } | LiveRunDescription | EndedRunDescription;
+  { readonly kind: 'hidden' } | LiveRunDescription | EndedRunDescription | PausedRunDescription;
 
 function describeLiveRun(
   activeRun: ActiveRun,
@@ -59,13 +67,12 @@ function endingNote(ending: RunEndingResponse): string | undefined {
   switch (ending.kind) {
     case 'permission-needed':
     case 'checkpoint':
+    case 'usage-limit':
       return undefined;
     case 'stopped':
       return 'Run ended: you pressed Stop. The worktree and branch are left as they are.';
     case 'crashed':
       return `Run ended: the session crashed. ${ending.reason}`;
-    case 'usage-limit':
-      return 'Run ended: the usage limit was reached.';
     case 'app-restarted':
       return 'Run ended: aisf restarted during the run.';
     case 'escalated':
@@ -88,16 +95,33 @@ export function describeRunPanel(input: RunPanelInput, now: Date): RunPanelDescr
     return describeLiveRun(activeRun, input, now);
   }
   const lastRun = input.response?.lastRun;
-  if (lastRun === undefined || !input.ticketStuck) {
+  if (lastRun === undefined) {
+    return { kind: 'hidden' };
+  }
+  if (isPausedByUsageLimit(lastRun, input.pausedUntil)) {
+    return {
+      kind: 'paused',
+      pausedLabel: `Paused until ${formatResetTime(input.pausedUntil, now)}`,
+      endedLabel: describeEndedLabel(lastRun),
+    };
+  }
+  if (!input.ticketStuck) {
     return { kind: 'hidden' };
   }
   const note = endingNote(lastRun.ending);
   if (note === undefined) {
     return { kind: 'hidden' };
   }
-  return {
-    kind: 'ended',
-    endedLabel: `Ended ${formatClockTime(lastRun.endedAt, 'minutes')} · ${describeRunLength(lastRun)}`,
-    note,
-  };
+  return { kind: 'ended', endedLabel: describeEndedLabel(lastRun), note };
+}
+
+function describeEndedLabel(lastRun: LastRun): string {
+  return `Ended ${formatClockTime(lastRun.endedAt, 'minutes')} · ${describeRunLength(lastRun)}`;
+}
+
+function isPausedByUsageLimit(
+  lastRun: LastRun,
+  pausedUntil: string | undefined,
+): pausedUntil is string {
+  return lastRun.ending.kind === 'usage-limit' && pausedUntil !== undefined;
 }

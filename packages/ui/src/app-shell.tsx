@@ -4,7 +4,7 @@ import { createLiveUpdates } from './live/create-live-updates.js';
 import { OfflineHint } from './live/offline-hint.js';
 import { SkillsStatusPanel } from './skills/skills-status-panel.js';
 import { UsageMeter } from './usage/usage-meter.js';
-import { useUsage } from './usage/use-usage.js';
+import { useUsage, type UsageState } from './usage/use-usage.js';
 import { parseAppRoute, type AppRoute } from './app-route.js';
 import { ProjectSidebar } from './projects/project-sidebar.js';
 import { AddProjectForm } from './projects/add-project-form.js';
@@ -106,6 +106,7 @@ export function AppShell() {
             liveUpdates={liveUpdates}
             id={route.id}
             number={route.number}
+            pausedUntil={readPausedUntil(usage)}
           />
         );
     }
@@ -122,6 +123,10 @@ export function AppShell() {
       </div>
     </div>
   );
+}
+
+function readPausedUntil(usage: UsageState): string | undefined {
+  return usage.kind === 'loaded' ? (usage.usage.pausedUntil ?? undefined) : undefined;
 }
 
 function PageMessage({

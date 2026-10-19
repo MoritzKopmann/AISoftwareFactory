@@ -4,9 +4,11 @@ type RunPanelProps = {
   readonly description: RunPanelDescription;
 };
 
-/** The ended note only: the live head sits in the session panel. */
+type EndedOrPausedDescription = Extract<RunPanelDescription, { readonly kind: 'ended' | 'paused' }>;
+
+/** The ended note or the paused head: the live head sits in the session panel. */
 export function RunPanel({ description }: RunPanelProps) {
-  if (description.kind !== 'ended') {
+  if (!isEndedOrPaused(description)) {
     return null;
   }
   return (
@@ -16,13 +18,21 @@ export function RunPanel({ description }: RunPanelProps) {
           <span className="shape s-warn" aria-hidden="true">
             ▲
           </span>
-          Run ended
+          {description.kind === 'paused' ? description.pausedLabel : 'Run ended'}
         </span>
         <span className="sm">{description.endedLabel}</span>
       </div>
-      <p className="note" role="status">
-        {description.note}
-      </p>
+      {description.kind === 'ended' && (
+        <p className="note" role="status">
+          {description.note}
+        </p>
+      )}
     </section>
   );
+}
+
+function isEndedOrPaused(
+  description: RunPanelDescription,
+): description is EndedOrPausedDescription {
+  return description.kind === 'ended' || description.kind === 'paused';
 }

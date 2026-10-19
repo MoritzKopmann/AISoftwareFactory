@@ -52,6 +52,7 @@ type RunSectionProps = {
   readonly number: number;
   readonly ticketState: Pick<TicketResponse, 'status' | 'waiting' | 'stuck'>;
   readonly runSkill: RunSkill;
+  readonly pausedUntil: string | undefined;
   readonly children: (slots: RunSlots) => ReactNode;
 };
 
@@ -69,6 +70,7 @@ export function RunSection({
   number,
   ticketState,
   runSkill,
+  pausedUntil,
   children,
 }: RunSectionProps) {
   const { status: ticketStatus, stuck: ticketStuck } = ticketState;
@@ -176,7 +178,7 @@ export function RunSection({
   const stopping = activeRunId !== undefined && activeRunId === stoppingRunId;
 
   const panel = describeRunPanel(
-    { ...ticketRun, ticketStuck: ticketState.stuck, runSkill, stopping },
+    { ...ticketRun, ticketStuck: ticketState.stuck, pausedUntil, runSkill, stopping },
     new Date(),
   );
 

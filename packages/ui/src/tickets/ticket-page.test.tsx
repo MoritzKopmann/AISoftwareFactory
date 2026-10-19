@@ -33,6 +33,7 @@ function render(description: TicketPageDescription, number = 56): string {
       liveUpdates={liveUpdates}
       projectId="o/n"
       number={number}
+      pausedUntil={undefined}
       description={description}
       onRetry={ignore}
     />,
