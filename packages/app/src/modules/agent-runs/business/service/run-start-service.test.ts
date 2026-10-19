@@ -963,6 +963,113 @@ describe('RunStartService', () => {
     });
   });
 
+  describe('resumePaused', () => {
+    const usageLimit: RunEnding = { kind: 'usage-limit', reason: 'limit reached' };
+
+    async function buildPausedSubject(overrides: Partial<Run> = {}) {
+      const subject = buildService({ now: '2026-09-29T11:00:00.000Z' });
+      await subject.runRepository.insert(
+        buildRun({
+          id: 'run-1',
+          state: 'ended',
+          ending: usageLimit,
+          endedAt: '2026-09-29T10:05:00.000Z',
+          ...overrides,
+        }),
+      );
+      return subject;
+    }
+
+    it('should insert a running run with the same session, worktree and branch and emit run.started when the run ended usage-limit', async () => {
+      const { service, runRepository, events } = await buildPausedSubject();
+
+      const resumed = await service.resumePaused('run-1');
+
+      expect(resumed).toEqual({
+        id: 'id-1',
+        projectId: 'moritz/aisf',
+        ticketNumber: 137,
+        stage: 'implement',
+        mode: 'afk',
+        sessionId: 'session-1',
+        worktreePath: '/worktrees/aisf/137',
+        branchName: 'aisf/137-runner',
+        state: 'running',
+        startedAt: '2026-09-29T11:00:00.000Z',
+      });
+      expect(runRepository.runs.get('id-1')).toEqual(resumed);
+      expect(events.emittedEvents.map(({ name }) => name)).toEqual(['run.started']);
+    });
+
+    it('should resume the session with the prompt continue when the run ended usage-limit', async () => {
+      const { service, agentSessions } = await buildPausedSubject();
+
+      await service.resumePaused('run-1');
+
+      expect(agentSessions.startedSpecs).toEqual([]);
+      expect(agentSessions.resumedSpecs).toHaveLength(1);
+      expect(agentSessions.resumedSpecs[0]).toMatchObject({
+        sessionId: 'session-1',
+        worktreePath: '/worktrees/aisf/137',
+        prompt: 'continue',
+      });
+    });
+
+    it('should throw RunNotResumableError and insert nothing when the run did not end usage-limit', async () => {
+      const { service, runRepository } = await buildPausedSubject({ ending: { kind: 'finished' } });
+
+      await expect(service.resumePaused('run-1')).rejects.toThrow(RunNotResumableError);
+
+      expect(runRepository.runs.size).toBe(1);
+    });
+
+    it('should throw RunNotResumableError and insert nothing when the run is unknown', async () => {
+      const { service, runRepository } = buildService();
+
+      await expect(service.resumePaused('r9')).rejects.toThrow(RunNotResumableError);
+
+      expect(runRepository.runs.size).toBe(0);
+    });
+
+    it('should throw RunNotResumableError and insert nothing when the ticket has a newer run', async () => {
+      const { service, runRepository } = await buildPausedSubject();
+      await runRepository.insert(
+        buildRun({
+          id: 'run-2',
+          state: 'ended',
+          ending: { kind: 'finished' },
+          startedAt: '2026-09-29T10:30:00.000Z',
+        }),
+      );
+
+      await expect(service.resumePaused('run-1')).rejects.toThrow(RunNotResumableError);
+
+      expect(runRepository.runs.size).toBe(2);
+    });
+
+    it('should throw RunAlreadyActiveError when the ticket already has a running run', async () => {
+      const { service, runRepository } = await buildPausedSubject();
+      await runRepository.insert(
+        buildRun({ id: 'other-run', startedAt: '2026-09-29T10:00:00.000Z' }),
+      );
+
+      await expect(service.resumePaused('run-1')).rejects.toThrow(RunAlreadyActiveError);
+    });
+
+    it('should end the new run as crashed with the failure when the resumed session fails', async () => {
+      const { service, agentSessions, finishCalls } = await buildPausedSubject();
+      await service.resumePaused('run-1');
+
+      agentSessions.fail('session-1', new Error('resume failed'));
+
+      await vi.waitFor(() =>
+        expect(finishCalls).toEqual([
+          { runId: 'id-1', ending: { kind: 'crashed', reason: 'resume failed' } },
+        ]),
+      );
+    });
+  });
+
   describe('launchSession', () => {
     describe('session launch', () => {
       it('should start the session with the run session, worktree, prompt and stage model when the launch is a start', () => {

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { RunNotResumableError } from '../errors/run-not-resumable-error.js';
 import { RunAnswerService } from './run-answer-service.js';
 import type { RunAnswer } from '../domain/types/run-answer.js';
 import type { Run } from '../domain/types/run.js';
@@ -98,5 +99,91 @@ describe('RunAnswerService', () => {
 
     expect(run).toBe(resumedRun);
     expect(resumedAnswers).toEqual([{ runId: 'run-1', answer }]);
+  });
+  describe('holdAnswer', () => {
+    const permissionNeeded = {
+      kind: 'permission-needed',
+      toolName: 'Bash',
+      toolInput: { command: 'ls' },
+    } as const;
+    const allow = { kind: 'permission', decision: 'allow' } as const;
+    const yes = { kind: 'checkpoint', text: 'yes' } as const;
+
+    it('should hold the answer and start nothing when the run ended permission-needed', async () => {
+      await runRepository.insert(buildRun({ state: 'ended', ending: permissionNeeded }));
+
+      await runAnswerService.holdAnswer('run-1', allow);
+
+      expect(runRepository.runs.get('run-1')?.heldAnswer).toEqual(allow);
+      expect(runRepository.runs.size).toBe(1);
+      expect(resumedAnswers).toEqual([]);
+    });
+
+    it('should hold the answer and not deliver it when the run waits for it', async () => {
+      await runRepository.insert(
+        buildRun({ waitingFor: { kind: 'checkpoint', request: 'Check' } }),
+      );
+      runAnswerWaits.wait('run-1', 1000);
+
+      await runAnswerService.holdAnswer('run-1', yes);
+
+      expect(runRepository.runs.get('run-1')?.heldAnswer).toEqual(yes);
+      expect(runAnswerWaits.isWaiting('run-1')).toBe(true);
+    });
+
+    it('should throw RunNotResumableError when the run is unknown', async () => {
+      await expect(runAnswerService.holdAnswer('r9', yes)).rejects.toThrow(RunNotResumableError);
+    });
+
+    it('should throw RunNotResumableError and hold nothing when the answer does not fit the ending', async () => {
+      await runRepository.insert(
+        buildRun({ state: 'ended', ending: { kind: 'checkpoint', request: 'Check' } }),
+      );
+
+      await expect(runAnswerService.holdAnswer('run-1', allow)).rejects.toThrow(
+        RunNotResumableError,
+      );
+
+      expect(runRepository.runs.get('run-1')?.heldAnswer).toBeUndefined();
+    });
+
+    it('should throw RunNotResumableError when the run ended usage-limit', async () => {
+      await runRepository.insert(
+        buildRun({ state: 'ended', ending: { kind: 'usage-limit', reason: 'limit' } }),
+      );
+
+      await expect(runAnswerService.holdAnswer('run-1', yes)).rejects.toThrow(RunNotResumableError);
+    });
+
+    it('should replace the held answer when a second answer is held', async () => {
+      await runRepository.insert(
+        buildRun({
+          state: 'ended',
+          ending: { kind: 'checkpoint', request: 'Check' },
+          heldAnswer: yes,
+        }),
+      );
+
+      await runAnswerService.holdAnswer('run-1', { kind: 'checkpoint', text: 'no' });
+
+      expect(runRepository.runs.get('run-1')?.heldAnswer).toEqual({
+        kind: 'checkpoint',
+        text: 'no',
+      });
+    });
+
+    it('should clear the held answer when deliverAnswer resumes the run', async () => {
+      await runRepository.insert(
+        buildRun({
+          state: 'ended',
+          ending: { kind: 'checkpoint', request: 'Check' },
+          heldAnswer: yes,
+        }),
+      );
+
+      await runAnswerService.deliverAnswer('run-1', yes);
+
+      expect(runRepository.runs.get('run-1')?.heldAnswer).toBeUndefined();
+    });
   });
 });

@@ -47,6 +47,11 @@ export class RunQueryService {
     return runs.map((run) => ({ run }));
   }
 
+  /** The latest run of each ticket that ended usage-limit or holds an answer. */
+  pausedRuns(projectId: string): Promise<ReadonlyArray<Run>> {
+    return this.dependencies.runRepository.listPaused(projectId);
+  }
+
   async readActiveWaits(projectId: string): Promise<ReadonlyArray<ActiveWait>> {
     const runs = await this.dependencies.runRepository.listActive(projectId);
     return runs.flatMap((run) => {
