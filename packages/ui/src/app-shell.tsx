@@ -3,6 +3,8 @@ import type { ProjectResponse } from '@aisf/app/api-schemas/projects-schemas.js'
 import { createLiveUpdates } from './live/create-live-updates.js';
 import { OfflineHint } from './live/offline-hint.js';
 import { SkillsStatusPanel } from './skills/skills-status-panel.js';
+import { UsageMeter } from './usage/usage-meter.js';
+import { useUsage } from './usage/use-usage.js';
 import { parseAppRoute, type AppRoute } from './app-route.js';
 import { ProjectSidebar } from './projects/project-sidebar.js';
 import { AddProjectForm } from './projects/add-project-form.js';
@@ -23,6 +25,7 @@ export function AppShell() {
   const [liveUpdates] = useState(() =>
     createLiveUpdates({ openStream: (url) => new EventSource(url), visibility: document }),
   );
+  const usage = useUsage(liveUpdates);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -112,6 +115,7 @@ export function AppShell() {
     <div className="shell">
       <ProjectSidebar projects={projects} route={route} />
       <div className="main">
+        <UsageMeter usage={usage} />
         <OfflineHint liveUpdates={liveUpdates} />
         <SkillsStatusPanel liveUpdates={liveUpdates} />
         {renderPage()}

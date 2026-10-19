@@ -79,6 +79,24 @@ describe('noticeConcernsView', () => {
   });
 });
 
+describe('noticeConcernsView for usage', () => {
+  const usage: LiveView = { kind: 'usage' };
+  const usageChanged: LiveNotice = { event: 'usage.changed' };
+
+  it('should concern the meter when usage.changed arrives', () => {
+    expect(noticeConcernsView(usageChanged, usage)).toBe(true);
+  });
+
+  it.each<LiveNotice['event']>([
+    'watch.updated',
+    'run.started',
+    'usage.window-observed',
+    'skills.status-changed',
+  ])('should not concern the meter when %s arrives', (event) => {
+    expect(noticeConcernsView({ event, projectId: defaultProjectId }, usage)).toBe(false);
+  });
+});
+
 describe('noticeConcernsView for needs-you', () => {
   it.each<LiveNotice['event']>([
     'ticket.status-written',
