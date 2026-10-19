@@ -11,6 +11,7 @@ export type UsageModuleDependencies = {
   readonly clock: Clock;
   readonly events: EventBus;
   readonly logger: Logger;
+  readonly claudeExecutablePath: string;
 };
 
 export type UsageModule = {
