@@ -50,6 +50,29 @@ describe('ticket-mapper', () => {
       expect(toTicketDto(ticket)).toEqual(ticket);
     });
 
+    it('should carry the latest review activity when the closing pull request has it', () => {
+      const withPullRequest: Ticket = {
+        ...ticket,
+        closingPullRequests: [
+          {
+            number: 5,
+            url: 'https://github.com/owner/name/pull/5',
+            state: 'OPEN',
+            approved: false,
+            checks: 'passing',
+            mergeable: 'mergeable',
+            canBeRebased: true,
+            headCommit: 'a',
+            lastReviewActivityAt: '2026-10-18T10:00:00Z',
+          },
+        ],
+      };
+
+      expect(toTicketDto(withPullRequest).closingPullRequests[0]?.lastReviewActivityAt).toBe(
+        '2026-10-18T10:00:00Z',
+      );
+    });
+
     it('should leave the parent out when the ticket has none', () => {
       const withoutParent: Ticket = { ...ticket, types: [] };
       delete (withoutParent as { parent?: unknown }).parent;

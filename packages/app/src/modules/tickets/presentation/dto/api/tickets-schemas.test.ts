@@ -58,6 +58,30 @@ describe('ticketResponseSchema', () => {
     expect(ticketResponseSchema.parse(ticket).closingPullRequests[0]?.approved).toBe(true);
   });
 
+  it('should carry the latest review activity when the closing pull request has it', () => {
+    const ticket = {
+      ...buildTicket({ number: 1 }),
+      closingPullRequests: [
+        { ...closingPullRequest, approved: true, lastReviewActivityAt: '2026-10-18T10:00:00Z' },
+      ],
+    };
+
+    expect(ticketResponseSchema.parse(ticket).closingPullRequests[0]?.lastReviewActivityAt).toBe(
+      '2026-10-18T10:00:00Z',
+    );
+  });
+
+  it('should parse without a review activity key when the closing pull request has none', () => {
+    const ticket = {
+      ...buildTicket({ number: 1 }),
+      closingPullRequests: [{ ...closingPullRequest, approved: true }],
+    };
+
+    expect(ticketResponseSchema.parse(ticket).closingPullRequests[0]).not.toHaveProperty(
+      'lastReviewActivityAt',
+    );
+  });
+
   it('should fail to parse when the ticket has no body', () => {
     const ticket: Record<string, unknown> = { ...buildTicket({ number: 1 }) };
     delete ticket['body'];
