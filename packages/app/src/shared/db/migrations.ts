@@ -142,4 +142,19 @@ export const migrations: ReadonlyArray<Migration> = [
       );
     `,
   },
+  {
+    version: 11,
+    name: 'usage-window',
+    sql: `
+      CREATE TABLE usage_window (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        five_hour_utilization REAL,
+        five_hour_resets_at TEXT,
+        seven_day_utilization REAL,
+        seven_day_resets_at TEXT,
+        observed_at TEXT,
+        paused_until TEXT
+      );
+    `,
+  },
 ];
