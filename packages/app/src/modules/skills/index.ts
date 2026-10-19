@@ -7,7 +7,7 @@ import type { MarketplaceRegistry } from './business/port/plugin/marketplace-reg
 import type { PluginMirror } from './business/port/plugin/plugin-mirror.js';
 import type { SkillsStatusRepository } from './business/port/repository/skills-status-repository.js';
 import type { SmokeProbe } from './business/port/smoke/smoke-probe.js';
-import { FileSystemSlotReader } from './infrastructure/contract/file-system-slot-reader.js';
+import { GitRefSlotReader } from './infrastructure/contract/git-ref-slot-reader.js';
 import { EnvironmentCredentialSource } from './infrastructure/credential/environment-credential-source.js';
 import { ClaudeCliLocalPluginInstaller } from './infrastructure/plugin/claude-cli-local-plugin-installer.js';
 import { ClaudeCliMarketplaceRegistry } from './infrastructure/plugin/claude-cli-marketplace-registry.js';
@@ -55,7 +55,7 @@ export function createSkillsModule(
       probeDirectory: dependencies.probeDirectory,
       pluginDirectory: dependencies.mirrorDirectory,
     }),
-    slotReader: new FileSystemSlotReader(),
+    slotReader: new GitRefSlotReader(),
     localPluginInstaller: new ClaudeCliLocalPluginInstaller(),
     credentialSource: new EnvironmentCredentialSource({
       environment: dependencies.environment,
