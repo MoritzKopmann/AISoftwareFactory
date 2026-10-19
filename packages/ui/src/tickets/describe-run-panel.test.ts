@@ -11,7 +11,7 @@ const now = new Date(localTime(9, 45));
 const idle: TicketRunResponse = { availability: { kind: 'available' } };
 
 function live(startedAt: string): TicketRunResponse {
-  return { ...idle, activeRun: { id: 'run-1', startedAt } };
+  return { ...idle, activeRun: { id: 'run-1', startedAt, answerHeld: false } };
 }
 
 function input(overrides: Partial<RunPanelInput>): RunPanelInput {
@@ -170,7 +170,7 @@ function ended(
   startedAt = localTime(9, 41),
   endedAt = localTime(9, 47, 30),
 ): TicketRunResponse {
-  return { ...idle, lastRun: { id: 'run-1', startedAt, endedAt, ending } };
+  return { ...idle, lastRun: { id: 'run-1', startedAt, answerHeld: false, endedAt, ending } };
 }
 
 describe('describeRunPanel for a waiting run', () => {
@@ -179,6 +179,7 @@ describe('describeRunPanel for a waiting run', () => {
     activeRun: {
       id: 'run-1',
       startedAt: localTime(9, 41),
+      answerHeld: false,
       waitingFor: { kind: 'checkpoint', request: 'Pick A or B' },
     },
   };

@@ -5,11 +5,12 @@ import { describeResetAction, settleResetState } from './describe-reset-action.j
 const noRun: TicketRunResponse = { availability: { kind: 'absent' } };
 const live: TicketRunResponse = {
   availability: { kind: 'absent' },
-  activeRun: { id: 'run-2', startedAt: '2026-10-04T10:00:00Z' },
+  activeRun: { id: 'run-2', startedAt: '2026-10-04T10:00:00Z', answerHeld: false },
 };
 const lastRun: NonNullable<TicketRunResponse['lastRun']> = {
   id: 'run-1',
   startedAt: '2026-10-04T09:00:00Z',
+  answerHeld: false,
   endedAt: '2026-10-04T09:05:00Z',
   ending: { kind: 'stopped' },
 };

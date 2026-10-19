@@ -8,6 +8,7 @@ const withPage: TicketRunResponse = {
   activeRun: {
     id: 'run-1',
     startedAt: '2026-10-10T10:00:00Z',
+    answerHeld: false,
     waitingFor: {
       kind: 'checkpoint',
       request: 'Pick',
@@ -20,6 +21,7 @@ const withoutPage: TicketRunResponse = {
   activeRun: {
     id: 'run-1',
     startedAt: '2026-10-10T10:00:00Z',
+    answerHeld: false,
     waitingFor: { kind: 'checkpoint', request: 'Pick' },
   },
 };
@@ -31,7 +33,13 @@ function localTime(hours: number, minutes: number): string {
 function endedWith(ending: RunEndingResponse, runId = 'run-1'): TicketRunResponse {
   return {
     availability: { kind: 'available' },
-    lastRun: { id: runId, startedAt: localTime(14, 4), endedAt: localTime(14, 22), ending },
+    lastRun: {
+      id: runId,
+      startedAt: localTime(14, 4),
+      answerHeld: false,
+      endedAt: localTime(14, 22),
+      ending,
+    },
   };
 }
 

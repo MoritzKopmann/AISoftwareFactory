@@ -59,6 +59,7 @@ export const ticketRunResponseSchema = z.object({
   availability: runAvailabilityResponseSchema,
   activeRun: startedRunResponseSchema
     .extend({
+      answerHeld: z.boolean(),
       waitingFor: z
         .discriminatedUnion('kind', [
           z.object({
@@ -78,7 +79,7 @@ export const ticketRunResponseSchema = z.object({
     })
     .optional(),
   lastRun: startedRunResponseSchema
-    .extend({ endedAt: z.string(), ending: runEndingResponseSchema })
+    .extend({ answerHeld: z.boolean(), endedAt: z.string(), ending: runEndingResponseSchema })
     .optional(),
 });
 export type TicketRunResponse = z.infer<typeof ticketRunResponseSchema>;

@@ -9,6 +9,7 @@ describe('runs-schemas', () => {
         lastRun: {
           id: 'run-1',
           startedAt: '2026-01-01T00:00:00Z',
+          answerHeld: false,
           endedAt: '2026-01-01T00:01:00Z',
           ending: { kind: 'checkpoint', request: 'Check the waiting chip' },
         },

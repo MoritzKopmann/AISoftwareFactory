@@ -8,13 +8,14 @@ import {
 
 const firstResponse: TicketRunResponse = {
   availability: { kind: 'disabled', reason: '#56 is running.' },
-  activeRun: { id: 'run-1', startedAt: '2026-09-30T09:40:00Z' },
+  activeRun: { id: 'run-1', startedAt: '2026-09-30T09:40:00Z', answerHeld: false },
 };
 const secondResponse: TicketRunResponse = {
   ...firstResponse,
   activeRun: {
     id: 'run-2',
     startedAt: '2026-09-30T09:41:00Z',
+    answerHeld: false,
   },
 };
 const answered: TicketRunPoll = {
