@@ -1,3 +1,4 @@
+import type { CheckoutFetcher } from '../business/port/checkout/checkout-fetcher.js';
 import type { ContractPreflightReport } from '../business/domain/types/contract-preflight-report.js';
 import type { PluginInstallResult } from '../business/domain/types/plugin-install-result.js';
 import type { Project } from '../business/domain/types/project.js';
@@ -91,5 +92,17 @@ export class FakeSkillPort implements SkillPort {
   async install(checkoutPath: string): Promise<PluginInstallResult> {
     this.installCalls.push(checkoutPath);
     return this.result;
+  }
+}
+
+export class FakeCheckoutFetcher implements CheckoutFetcher {
+  fetchCalls: string[] = [];
+  failure: Error | undefined;
+
+  async fetch(checkoutPath: string): Promise<void> {
+    this.fetchCalls.push(checkoutPath);
+    if (this.failure !== undefined) {
+      throw this.failure;
+    }
   }
 }

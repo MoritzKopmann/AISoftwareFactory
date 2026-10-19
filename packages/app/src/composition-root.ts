@@ -65,7 +65,7 @@ function buildArtifactsModule(
 
 function buildProjectsModule(
   database: DatabaseSync,
-  events: EventPublisher,
+  events: EventBus,
   skills: SkillsApi,
   logger: Logger,
 ): ProjectsModule {

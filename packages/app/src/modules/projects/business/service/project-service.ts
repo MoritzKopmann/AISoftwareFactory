@@ -5,6 +5,7 @@ import type { ProjectWithContract } from '../domain/types/project-with-contract.
 import { PluginInstallFailedError } from '../errors/plugin-install-failed-error.js';
 import { ProjectAlreadyAddedError } from '../errors/project-already-added-error.js';
 import { ProjectNotFoundError } from '../errors/project-not-found-error.js';
+import type { CheckoutFetcher } from '../port/checkout/checkout-fetcher.js';
 import type { LabelSync } from '../port/github/label-sync.js';
 import type { RepositoryResolver } from '../port/github/repository-resolver.js';
 import type { SkillPort } from '../port/skill/skill-port.js';
@@ -15,6 +16,7 @@ export type ProjectServiceDependencies = {
   readonly projectRepository: ProjectRepository;
   readonly labelSync: LabelSync;
   readonly skillPort: SkillPort;
+  readonly checkoutFetcher: CheckoutFetcher;
   readonly clock: Clock;
   readonly events: EventPublisher;
 };
@@ -23,8 +25,15 @@ export class ProjectService {
   constructor(private readonly dependencies: ProjectServiceDependencies) {}
 
   async add(checkoutPath: string): Promise<Project> {
-    const { repositoryResolver, projectRepository, labelSync, skillPort, clock, events } =
-      this.dependencies;
+    const {
+      repositoryResolver,
+      projectRepository,
+      labelSync,
+      skillPort,
+      checkoutFetcher,
+      clock,
+      events,
+    } = this.dependencies;
 
     const repository = await repositoryResolver.resolve(checkoutPath);
     const id = `${repository.owner}/${repository.name}`;
@@ -39,6 +48,8 @@ export class ProjectService {
     if (installResult.state === 'failed') {
       throw new PluginInstallFailedError(installResult.reason);
     }
+
+    await checkoutFetcher.fetch(checkoutPath);
 
     const project: Project = {
       id,
@@ -56,6 +67,16 @@ export class ProjectService {
     });
 
     return project;
+  }
+
+  async refreshCheckout(projectId: string): Promise<void> {
+    const { projectRepository, checkoutFetcher } = this.dependencies;
+    const project = await projectRepository.findById(projectId);
+    if (project === undefined) {
+      return;
+    }
+
+    await checkoutFetcher.fetch(project.checkoutPath);
   }
 
   async list(): Promise<ReadonlyArray<ProjectWithContract>> {

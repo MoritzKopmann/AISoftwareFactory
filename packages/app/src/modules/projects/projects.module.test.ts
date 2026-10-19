@@ -3,8 +3,10 @@ import { createProjectsModule } from './index.js';
 import type { SkillsApi } from '../skills/index.js';
 import { createLogger } from '../../shared/logger/create-logger.js';
 import { FakeClock } from '../../shared/testing/fake-clock.js';
-import { FakeEventPublisher } from '../../shared/testing/fake-event-publisher.js';
+import type { DomainEvents } from '../../shared/event-bus.js';
+import { InMemoryEventBus } from '../../shared/in-memory-event-bus.js';
 import {
+  FakeCheckoutFetcher,
   FakeLabelSync,
   FakeProjectRepository,
   FakeRepositoryResolver,
@@ -24,7 +26,7 @@ function createSubject(
     {
       database: undefined as never,
       clock: new FakeClock('2026-01-01T00:00:00.000Z'),
-      events: new FakeEventPublisher(),
+      events: new InMemoryEventBus<DomainEvents>(),
       logger: createLogger(() => undefined),
       skills: skills as SkillsApi,
     },
@@ -32,6 +34,7 @@ function createSubject(
       repositoryResolver: new FakeRepositoryResolver({ owner: 'owner', name: 'name' }),
       projectRepository: overrides.projectRepository ?? new FakeProjectRepository(),
       labelSync: overrides.labelSync ?? new FakeLabelSync(),
+      checkoutFetcher: new FakeCheckoutFetcher(),
     },
   );
 }

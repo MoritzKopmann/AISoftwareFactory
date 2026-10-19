@@ -7,6 +7,7 @@ import { ProjectService } from '../../business/service/project-service.js';
 import { FakeClock } from '../../../../shared/testing/fake-clock.js';
 import { FakeEventPublisher } from '../../../../shared/testing/fake-event-publisher.js';
 import {
+  FakeCheckoutFetcher,
   FakeLabelSync,
   FakeSkillPort,
   FakeProjectRepository,
@@ -30,6 +31,7 @@ function createSubject() {
       projectRepository,
       labelSync,
       skillPort,
+      checkoutFetcher: new FakeCheckoutFetcher(),
       clock: new FakeClock('2026-01-01T00:00:00.000Z'),
       events: new FakeEventPublisher(),
     }),
