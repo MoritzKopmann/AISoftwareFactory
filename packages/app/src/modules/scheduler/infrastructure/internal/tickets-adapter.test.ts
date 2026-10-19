@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { ConflictError } from '../../../../shared/errors.js';
 import { RunNotAnswerableError } from '../../business/errors/run-not-answerable-error.js';
-import { FakeTicketsApi, buildTicketDto } from '../../testing/fake-scheduler-apis.js';
+import {
+  FakeTicketsApi,
+  buildClosingPullRequestDto,
+  buildTicketDto,
+} from '../../testing/fake-scheduler-apis.js';
 import { TicketsAdapter } from './tickets-adapter.js';
 
 describe('TicketsAdapter', () => {
@@ -60,6 +64,78 @@ describe('TicketsAdapter', () => {
       const adapter = new TicketsAdapter(new FakeTicketsApi());
 
       expect(await adapter.find('moritz/aisf', 138)).toMatchObject({ syncFailed: false });
+    });
+
+    it('should map the open pull request when the ticket has one', async () => {
+      const ticket = buildTicketDto({
+        number: 7,
+        closingPullRequests: [
+          buildClosingPullRequestDto({
+            state: 'OPEN',
+            approved: false,
+            mergeable: 'conflicting',
+            lastReviewActivityAt: '2026-10-18T10:00:00Z',
+          }),
+        ],
+      });
+
+      const found = await new TicketsAdapter(new FakeTicketsApi(ticket)).find('moritz/aisf', 7);
+
+      expect(found?.openPullRequest).toEqual({
+        approved: false,
+        mergeable: 'conflicting',
+        lastReviewActivityAt: '2026-10-18T10:00:00Z',
+      });
+    });
+
+    it('should leave out lastReviewActivityAt when the open pull request has none', async () => {
+      const ticket = buildTicketDto({
+        number: 7,
+        closingPullRequests: [buildClosingPullRequestDto({ state: 'OPEN' })],
+      });
+
+      const found = await new TicketsAdapter(new FakeTicketsApi(ticket)).find('moritz/aisf', 7);
+
+      expect(found?.openPullRequest).toEqual({ approved: false, mergeable: 'mergeable' });
+    });
+
+    it('should take the open pull request when another one is merged', async () => {
+      const ticket = buildTicketDto({
+        number: 7,
+        closingPullRequests: [
+          buildClosingPullRequestDto({ number: 1, state: 'MERGED', approved: true }),
+          buildClosingPullRequestDto({ number: 2, state: 'OPEN', approved: false }),
+        ],
+      });
+
+      const found = await new TicketsAdapter(new FakeTicketsApi(ticket)).find('moritz/aisf', 7);
+
+      expect(found?.openPullRequest).toMatchObject({ approved: false });
+    });
+
+    it('should have no open pull request when none is open', async () => {
+      const ticket = buildTicketDto({
+        number: 7,
+        closingPullRequests: [buildClosingPullRequestDto({ state: 'MERGED' })],
+      });
+
+      const found = await new TicketsAdapter(new FakeTicketsApi(ticket)).find('moritz/aisf', 7);
+
+      expect(found).not.toHaveProperty('openPullRequest');
+    });
+
+    it('should have no open pull request when two are open', async () => {
+      const ticket = buildTicketDto({
+        number: 7,
+        closingPullRequests: [
+          buildClosingPullRequestDto({ number: 1, state: 'OPEN' }),
+          buildClosingPullRequestDto({ number: 2, state: 'OPEN' }),
+        ],
+      });
+
+      const found = await new TicketsAdapter(new FakeTicketsApi(ticket)).find('moritz/aisf', 7);
+
+      expect(found).not.toHaveProperty('openPullRequest');
     });
 
     it('should return undefined when the ticket is unknown', async () => {
