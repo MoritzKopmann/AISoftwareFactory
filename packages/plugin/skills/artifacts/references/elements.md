@@ -38,10 +38,11 @@ Submit stays disabled until every question is answered.
 
 ## `<aisf-question>`
 
-Attributes: `name`, `heading`, `assumes`
+Attributes: `name`, `heading`, `assumes`, `problem`
 
 One question. `name` is the key in the answer. `heading` is the question text. `assumes` names
-what the question rests on. Holds `<aisf-card>` and optional `<aisf-context>`. The kit adds an
+what the question rests on. `problem` is one short line shown under the heading: what is
+wrong today. Holds `<aisf-card>`, optional `<aisf-context>` and optional `<aisf-more>`. The kit adds an
 Other choice with a text field and a Discuss choice with a note.
 
 Sends no event itself. Its answer joins the round's Submit payload.
@@ -55,13 +56,27 @@ Sends no event itself. Its answer joins the round's Submit payload.
 
 ## `<aisf-card>`
 
-Attributes: `value`, `suggested`, `why`
+Attributes: `value`, `suggested`, `why`, `gain`, `cost`
 
 One choice. `value` is the answer sent. `suggested` marks the choice Accept all picks. `why`
-is one short line shown with the suggestion. The body is the label: keep it short.
+is one short line shown with the suggestion. `gain` and `cost` are one short phrase each, shown
+under the label. They never change the label or the answer. The body is the label: keep it short.
 
 ```html
-<aisf-card value="queue" suggested why="Keeps requests fast">Queue the work</aisf-card>
+<aisf-card value="queue" suggested why="Keeps requests fast" gain="fast replies" cost="more code"
+  >Queue the work</aisf-card
+>
+```
+
+## `<aisf-more>`
+
+Attributes: none
+
+Longer detail for a question. A child of `<aisf-question>`. Starts collapsed behind a More
+button. Its text is never part of the answer or the frozen summary.
+
+```html
+<aisf-more>The queue needs a worker. It retries three times.</aisf-more>
 ```
 
 ## `<aisf-context>`

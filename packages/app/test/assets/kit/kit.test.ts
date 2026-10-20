@@ -8,10 +8,11 @@ const { registry } = await import('../../../assets/kit/kit.js');
 
 const documented: Record<string, string[]> = {
   'aisf-round': ['number'],
-  'aisf-question': ['name', 'heading', 'assumes'],
-  'aisf-card': ['value', 'suggested', 'why'],
+  'aisf-question': ['name', 'heading', 'assumes', 'problem'],
+  'aisf-card': ['value', 'suggested', 'why', 'gain', 'cost'],
   'aisf-context': ['kind', 'path', 'line'],
   'aisf-confirm': [],
+  'aisf-more': [],
   'aisf-meta': ['label'],
   'aisf-figure': ['caption'],
   'aisf-tree-node': ['round', 'question', 'resolution', 'rejected', 'assumes', 'fact'],

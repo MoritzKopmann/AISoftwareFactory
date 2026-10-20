@@ -32,4 +32,22 @@ describe('AisfQuestionElement', () => {
     expect($<HTMLInputElement>('.aisf-other-radio').checked).toBe(true);
     expect($('aisf-question').hasAttribute('answered')).toBe(true);
   });
+
+  it('should show the problem after the heading when the question has one', async () => {
+    await mount(
+      '<aisf-question name="q" heading="H" problem="P"><aisf-card value="x">X</aisf-card></aisf-question>',
+    );
+
+    const parts = [...$('aisf-question').children].map((child) => child.className);
+    expect($('.aisf-question-problem').textContent).toBe('P');
+    expect(parts.indexOf('aisf-question-problem')).toBe(parts.indexOf('aisf-question-heading') + 1);
+  });
+
+  it('should show no problem when the attribute is absent', async () => {
+    await mount(
+      '<aisf-question name="q" heading="H"><aisf-card value="x">X</aisf-card></aisf-question>',
+    );
+
+    expect(document.querySelector('.aisf-question-problem')).toBeNull();
+  });
 });

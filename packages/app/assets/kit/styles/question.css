@@ -37,6 +37,11 @@ aisf-question[answered]::after {
   color: var(--ok);
 }
 
+.aisf-question-problem {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
 .aisf-question-assumes,
 .aisf-summary-assumes {
   color: var(--muted);
@@ -140,12 +145,71 @@ aisf-card[selected] {
 
 .aisf-card-why {
   grid-column: 1 / -1;
-  grid-row: 2;
+  grid-row: 4;
   margin-top: -6px;
   padding: 0 12px 11px 40px;
   color: var(--muted);
   font-size: var(--text-size-sm);
   line-height: var(--line-sm);
+}
+
+.aisf-card-gain,
+.aisf-card-cost {
+  grid-column: 1 / -1;
+  padding: 0 12px 4px 40px;
+  font-size: var(--text-size-sm);
+  line-height: var(--line-sm);
+  overflow-wrap: anywhere;
+}
+
+.aisf-card-gain {
+  grid-row: 2;
+  color: var(--ok);
+}
+
+.aisf-card-cost {
+  grid-row: 3;
+  color: var(--muted);
+}
+
+.aisf-card-gain::before,
+.aisf-card-cost::before {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: var(--label-spacing);
+}
+
+.aisf-card-gain::before {
+  content: '+ gain · ';
+}
+
+.aisf-card-cost::before {
+  content: '− cost · ';
+}
+
+.aisf-more-toggle {
+  justify-self: start;
+  min-height: 32px;
+  padding: 0 10px;
+  color: var(--accent);
+  font: 500 12px/1 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: var(--label-spacing);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.aisf-more-body {
+  margin-top: 8px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.aisf-more-body[hidden] {
+  display: none;
 }
 
 .aisf-card-why::before {

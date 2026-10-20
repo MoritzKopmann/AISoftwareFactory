@@ -184,6 +184,26 @@ describe('AisfRoundElement', () => {
     expect($('aisf-round').hasAttribute('saving')).toBe(false);
   });
 
+  it('should keep problem, gain, cost and More out of the payload and the summary when the round is submitted', async () => {
+    await mount(
+      round(
+        1,
+        `<aisf-question name="q" heading="H" problem="P" assumes="a">
+          <aisf-card value="a" gain="fast" cost="slow">A</aisf-card>
+          <aisf-card value="b">B</aisf-card>
+          <aisf-more>detail</aisf-more>
+        </aisf-question>`,
+      ),
+    );
+    await pick('q', 'a');
+
+    await click($('.aisf-submit'));
+
+    expect(aisf.sent[0]?.payload).toEqual({ answers: [{ question: 'q', choice: 'a' }] });
+    const summary = $$('aisf-question .aisf-frozen-summary span').map((part) => part.textContent);
+    expect(summary).toEqual(['H', 'A', 'assumes: a']);
+  });
+
   it('should freeze the round with a summary and record it as submitted when the send is acknowledged', async () => {
     await mount(round(1, questions(2)));
     await pick('q0', 'one');
