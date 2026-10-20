@@ -24,6 +24,20 @@ describe('specimens page', () => {
     expect(source).toContain('data-theme');
   });
 
+  it('should keep the chip rules in context.css and import figures.css when read', () => {
+    const styles = resolve(import.meta.dirname, '../../../assets/kit');
+    const context = readFileSync(resolve(styles, 'styles/context.css'), 'utf8');
+    const kitCss = readFileSync(resolve(styles, 'kit.css'), 'utf8');
+
+    for (const chip of ['lane', 'node', 'node-new', 'node-changed', 'node-untouched', 'arrow']) {
+      expect(context).toContain(`.aisf-${chip}`);
+    }
+    for (const chip of ['stop', 'switch', 'readout']) {
+      expect(context).toContain(`.aisf-${chip}`);
+    }
+    expect(kitCss).toContain("@import './styles/figures.css';");
+  });
+
   it('should show every element, figure class and state when mounted', async () => {
     await mount(
       source.slice(
@@ -47,6 +61,25 @@ describe('specimens page', () => {
       'aisf-readout',
     ]) {
       expect($$(`.${figureClass}`).length, figureClass).toBeGreaterThan(0);
+    }
+    for (const pieceClass of [
+      'aisf-compare',
+      'aisf-panel',
+      'aisf-panel-now',
+      'aisf-panel-suggested',
+      'aisf-diff',
+      'aisf-table',
+      'aisf-scope',
+      'aisf-scope-in',
+      'aisf-scope-out',
+      'aisf-shape',
+      'aisf-shape-new',
+      'aisf-shape-changed',
+      'aisf-shape-untouched',
+      'aisf-label',
+      'aisf-edge',
+    ]) {
+      expect($$(`.${pieceClass}`).length, pieceClass).toBeGreaterThan(0);
     }
     expect($$('.aisf-switch[aria-pressed="true"]')).toHaveLength(1);
     expect($$('.aisf-switch[aria-pressed="false"]')).toHaveLength(1);

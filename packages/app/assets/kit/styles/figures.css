@@ -1,0 +1,164 @@
+/* Layout pieces and free-SVG classes. Chips stay in context.css. */
+
+.aisf-compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--gap);
+  min-width: 0;
+}
+
+.aisf-panel {
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+
+.aisf-panel > :is(h1, h2, h3, h4):first-child {
+  margin-bottom: 6px;
+  font-size: var(--label-size);
+  color: var(--muted);
+}
+
+.aisf-panel-now {
+  border-style: dashed;
+  border-color: var(--border);
+}
+
+.aisf-panel-suggested {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.aisf-diff {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: var(--gap);
+  min-width: 0;
+}
+
+.aisf-diff > aisf-context:first-child {
+  --diff-mark: var(--danger);
+}
+
+.aisf-diff > aisf-context:last-child {
+  --diff-mark: var(--ok);
+}
+
+.aisf-diff .aisf-code {
+  border-left: 3px solid var(--diff-mark, var(--border));
+}
+
+.aisf-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font: var(--text-size-sm) / var(--line-sm) var(--font-ui);
+}
+
+.aisf-table :is(th, td) {
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+  border: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.aisf-table th {
+  background: var(--surface-2);
+  font: var(--label-weight) var(--label-size) / 1.4 var(--label-font);
+  text-transform: var(--label-transform);
+  letter-spacing: var(--label-spacing);
+}
+
+/* A cell reuses the chip names; the chip's own marker would not fit a cell. */
+.aisf-table :is(td, th).aisf-node-new,
+.aisf-table :is(td, th).aisf-node-changed,
+.aisf-table :is(td, th).aisf-node-untouched {
+  display: table-cell;
+  min-height: 0;
+  font: inherit;
+}
+
+.aisf-table :is(td, th).aisf-node-new::before,
+.aisf-table :is(td, th).aisf-node-changed::before {
+  margin-right: 4px;
+}
+
+.aisf-scope {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: var(--gap);
+  min-width: 0;
+}
+
+.aisf-scope :is(.aisf-scope-in, .aisf-scope-out) {
+  margin: 0;
+  padding: 10px 12px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+
+.aisf-scope-in {
+  border-color: var(--ok);
+}
+
+.aisf-scope-out {
+  border-style: dashed;
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+.aisf-scope li::before {
+  margin-right: 6px;
+  font: 700 12px/1 var(--font-mono);
+}
+
+.aisf-scope-in li::before {
+  content: '+';
+  color: var(--ok);
+}
+
+.aisf-scope-out li::before {
+  content: '−';
+}
+
+/* Free SVG: shapes, labels and edges, in the same look as the chips. */
+.aisf-shape {
+  fill: var(--surface);
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
+
+.aisf-shape-new {
+  fill: color-mix(in srgb, var(--ok) 12%, var(--surface));
+  stroke: var(--ok);
+}
+
+.aisf-shape-changed {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+}
+
+.aisf-shape-untouched {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-dasharray: 5 3;
+}
+
+.aisf-label {
+  fill: var(--text);
+  font: 600 var(--text-size-sm) var(--font-ui);
+}
+
+.aisf-edge {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  marker-end: url(#aisf-arrowhead);
+}
