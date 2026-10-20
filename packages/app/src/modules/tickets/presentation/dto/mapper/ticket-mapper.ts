@@ -1,3 +1,4 @@
+import type { IdeaDraft } from '../../../business/domain/types/idea-draft.js';
 import type { ProjectBoard } from '../../../business/domain/types/project-board.js';
 import type { ProjectTicket } from '../../../business/domain/types/project-ticket.js';
 import type { RepositoryReference } from '../../../business/domain/types/repository-reference.js';
@@ -9,6 +10,7 @@ import type {
   SyncStatusResponse,
   TicketResponse,
 } from '../api/tickets-schemas.js';
+import type { IdeaDto } from '../internal/idea-dto.js';
 import type { ProjectTicketDto } from '../internal/project-ticket-dto.js';
 import type { RepositoryReferenceDto } from '../internal/repository-reference-dto.js';
 import type { SyncStatusDto } from '../internal/sync-status-dto.js';
@@ -113,4 +115,14 @@ export function toProjectTicketDto(projectTicket: ProjectTicket): ProjectTicketD
 
 export function toRepositoryReference(repository: RepositoryReferenceDto): RepositoryReference {
   return { owner: repository.owner, name: repository.name };
+}
+
+export function toIdeaDraft(idea: IdeaDto): IdeaDraft {
+  return {
+    title: idea.title,
+    body: idea.body,
+    ...(idea.status === undefined ? {} : { status: idea.status }),
+    ...(idea.types === undefined ? {} : { types: idea.types }),
+    ...(idea.priority === undefined ? {} : { priority: idea.priority }),
+  };
 }

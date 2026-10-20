@@ -89,7 +89,7 @@ function createSubject(runningTicketNumbers: ReadonlyArray<number> = []) {
       module.internal.revertAnswer(projectId, ticketNumber),
     createIdea: (
       repository: { owner: string; name: string },
-      idea: { title: string; body: string },
+      idea: Parameters<typeof module.internal.createIdea>[1],
     ) => module.internal.createIdea(repository, idea),
   };
   return {
@@ -430,6 +430,24 @@ describe('createTicketsModule', () => {
 
       expect(number).toBe(12);
       expect(ideaCreation.created).toEqual([{ repository: registered.repository, idea }]);
+    });
+
+    it('should hand status, types and priority to idea creation when the idea is labelled', async () => {
+      const { tickets, ideaCreation } = createSubject();
+      await tickets.start();
+      const labelled = {
+        title: 'Onboard x/y',
+        body: 'B',
+        status: 'ready',
+        types: ['onboard'],
+        priority: 'high',
+      } as const;
+
+      const number = await tickets.createIdea(registered.repository, labelled);
+      tickets.stop();
+
+      expect(number).toBe(12);
+      expect(ideaCreation.created).toEqual([{ repository: registered.repository, idea: labelled }]);
     });
 
     it('should show the new idea at once when the last snapshot is fresh and the feeds are unchanged', async () => {
