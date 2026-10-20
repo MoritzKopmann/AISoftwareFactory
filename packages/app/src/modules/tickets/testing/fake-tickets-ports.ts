@@ -3,6 +3,7 @@ import type { Ticket } from '../business/domain/types/ticket.js';
 import type { TicketSnapshot } from '../business/domain/types/ticket-snapshot.js';
 import type { ProjectPort, RegisteredRepository } from '../business/port/project/project-port.js';
 import type { IdeaCreation } from '../business/port/github/idea-creation.js';
+import type { IdeaDraft } from '../business/domain/types/idea-draft.js';
 import type { IssueFeeds } from '../business/port/github/issue-feeds.js';
 import type { GitHubToken } from '../business/port/github/github-token.js';
 import type { TicketSource } from '../business/port/github/ticket-source.js';
@@ -118,16 +119,13 @@ export class ScriptedFetch {
 export class FakeIdeaCreation implements IdeaCreation {
   readonly created: Array<{
     readonly repository: RepositoryReference;
-    readonly idea: { readonly title: string; readonly body: string };
+    readonly idea: IdeaDraft;
   }> = [];
   createdNumber = 12;
   failure: Error | undefined;
   onCreate: () => void = () => undefined;
 
-  async create(
-    repository: RepositoryReference,
-    idea: { readonly title: string; readonly body: string },
-  ): Promise<number> {
+  async create(repository: RepositoryReference, idea: IdeaDraft): Promise<number> {
     if (this.failure !== undefined) {
       throw this.failure;
     }

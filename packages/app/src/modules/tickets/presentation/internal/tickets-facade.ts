@@ -6,6 +6,7 @@ import type { ProjectTicketDto } from '../dto/internal/project-ticket-dto.js';
 import type { RepositoryReferenceDto } from '../dto/internal/repository-reference-dto.js';
 import type { TicketDto } from '../dto/internal/ticket-dto.js';
 import {
+  toIdeaDraft,
   toProjectTicketDto,
   toRepositoryReference,
   toTicketDto,
@@ -39,9 +40,6 @@ export class TicketsFacade implements TicketsApi {
   }
 
   createIdea(repository: RepositoryReferenceDto, idea: IdeaDto): Promise<number> {
-    return this.services.ideaService.create(toRepositoryReference(repository), {
-      title: idea.title,
-      body: idea.body,
-    });
+    return this.services.ideaService.create(toRepositoryReference(repository), toIdeaDraft(idea));
   }
 }
