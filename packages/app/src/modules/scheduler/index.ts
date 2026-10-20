@@ -8,6 +8,7 @@ import { UsageAdapter } from './infrastructure/internal/usage-adapter.js';
 import { SkillsAdapter } from './infrastructure/internal/skills-adapter.js';
 import { TicketsAdapter } from './infrastructure/internal/tickets-adapter.js';
 import { createSchedulerRoutes } from './presentation/api/scheduler-routes.js';
+import { subscribeToProjectAdded } from './presentation/bus/subscribe-to-project-added.js';
 import { subscribeToSnapshotChanged } from './presentation/bus/subscribe-to-snapshot-changed.js';
 import { subscribeToWatchUpdated } from './presentation/bus/subscribe-to-watch-updated.js';
 import { SchedulerFacade } from './presentation/internal/scheduler-facade.js';
@@ -83,6 +84,7 @@ export function createSchedulerModule(
   });
 
   subscribeToSnapshotChanged(events, mergeService, logger);
+  subscribeToProjectAdded(events, ticketRunService, logger);
   subscribeToWatchUpdated(events, ticketRunService, logger);
 
   return {
