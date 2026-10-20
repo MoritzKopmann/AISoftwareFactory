@@ -7,6 +7,7 @@ import type { TicketStatus } from '../../../../../shared/ticket-status/ticket-st
 const runningStatuses: Readonly<Record<RunStage, ReadonlyArray<TicketStatus>>> = {
   implement: ['ready', 'in-progress', 'in-review'],
   spike: ['ready', 'in-progress'],
+  onboard: ['ready', 'in-progress', 'in-review'],
   create: ['idea'],
   plan: ['plan'],
 };
@@ -63,7 +64,11 @@ export function decideRunEndTransition(
 
 // A rework run that finishes has completed, or found nothing to do.
 function isFinishedRework(ending: RunEnding, live: TicketLiveState, stage: RunStage): boolean {
-  return stage === 'implement' && live.status === 'in-review' && ending.kind === 'finished';
+  return (
+    (stage === 'implement' || stage === 'onboard') &&
+    live.status === 'in-review' &&
+    ending.kind === 'finished'
+  );
 }
 
 function describeEnding(ending: Exclude<RunEnding, { kind: 'parked' | 'usage-limit' }>): string {

@@ -32,4 +32,10 @@ describe('buildStartPrompt', () => {
 
     expect(prompt).toBe('/aisf:plan-ticket 9');
   });
+
+  it('should leave out --since when an onboard run starts on an in-review ticket', () => {
+    const prompt = buildStartPrompt({ ...base, stage: 'onboard' });
+
+    expect(prompt).toBe('/aisf:onboard-project 7');
+  });
 });

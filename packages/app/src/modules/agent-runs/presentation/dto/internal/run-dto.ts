@@ -4,7 +4,7 @@ export type RunDto = {
   readonly id: string;
   readonly projectId: string;
   readonly ticketNumber: number;
-  readonly stage: 'implement' | 'spike' | 'create' | 'plan';
+  readonly stage: 'implement' | 'spike' | 'create' | 'plan' | 'onboard';
   readonly mode: 'afk';
   readonly sessionId: string;
   readonly worktreePath: string;

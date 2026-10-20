@@ -231,12 +231,15 @@ describe('RunStartService', () => {
       expect(agentSessions.startedSpecs[0]?.prompt).toBe('/aisf:implement-ticket 137');
     });
 
-    it.each<[string, ReadonlyArray<TicketType>, 'spike' | 'implement', string, string]>([
-      ['a spike', ['spike'], 'spike', '/aisf:spike 137', 'opus'],
-      ['both ui and spike', ['ui', 'spike'], 'spike', '/aisf:spike 137', 'opus'],
-      ['another type', ['enhancement'], 'implement', '/aisf:implement-ticket 137', 'sonnet'],
-      ['no type', [], 'implement', '/aisf:implement-ticket 137', 'sonnet'],
-    ])(
+    it.each<[string, ReadonlyArray<TicketType>, 'spike' | 'implement' | 'onboard', string, string]>(
+      [
+        ['an onboard ticket', ['onboard'], 'onboard', '/aisf:onboard-project 137', 'opus'],
+        ['a spike', ['spike'], 'spike', '/aisf:spike 137', 'opus'],
+        ['both ui and spike', ['ui', 'spike'], 'spike', '/aisf:spike 137', 'opus'],
+        ['another type', ['enhancement'], 'implement', '/aisf:implement-ticket 137', 'sonnet'],
+        ['no type', [], 'implement', '/aisf:implement-ticket 137', 'sonnet'],
+      ],
+    )(
       'should save the stage, prompt and model of the matching skill when the ticket is %s',
       async (_name, types, stage, prompt, model) => {
         const { service, agentSessions } = buildStartSubject();
@@ -262,6 +265,15 @@ describe('RunStartService', () => {
         expect(agentSessions.startedSpecs[0]).toMatchObject({ prompt, model });
       },
     );
+
+    it('should run an onboard ticket on a branch worktree when it starts', async () => {
+      const { service } = buildStartSubject();
+
+      const run = await service.start({ ...startRequest, types: ['onboard'] });
+
+      expect(run.branchName).toMatch(/^aisf\/137-/);
+      expect(run.worktreePath).toBe('/worktrees/aisf/137');
+    });
 
     it('should ensure a detached worktree without a branch in its own directory when an authoring run starts', async () => {
       const { service, worktrees } = buildStartSubject();

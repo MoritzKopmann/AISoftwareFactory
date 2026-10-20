@@ -13,7 +13,7 @@ export const ticketStatusSchema = z.enum([
 ]);
 export type TicketStatusResponse = z.infer<typeof ticketStatusSchema>;
 
-export const ticketTypeSchema = z.enum(['bug', 'enhancement', 'task', 'spike', 'ui']);
+export const ticketTypeSchema = z.enum(['bug', 'enhancement', 'task', 'spike', 'ui', 'onboard']);
 export type TicketTypeResponse = z.infer<typeof ticketTypeSchema>;
 
 export const ticketResponseSchema = z.object({
