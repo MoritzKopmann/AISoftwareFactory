@@ -10,6 +10,12 @@ function live(status: TicketStatus, flags: Partial<TicketLiveState> = {}): Ticke
 }
 
 describe('decideRunEndTransition', () => {
+  it('should write nothing when an onboard run finished and the ticket is in-review', () => {
+    const ending: RunEnding = { kind: 'finished' };
+
+    expect(decideRunEndTransition(ending, live('in-review'), 'onboard')).toEqual({ kind: 'none' });
+  });
+
   it.each<TicketStatus>(['ready', 'in-progress'])(
     'should mark the ticket stuck with the reason when the run escalated while it is %s',
     (status) => {

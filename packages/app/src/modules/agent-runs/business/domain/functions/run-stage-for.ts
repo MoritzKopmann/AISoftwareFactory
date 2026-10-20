@@ -12,5 +12,8 @@ export function runStageFor(ticket: {
   if (ticket.status === 'plan') {
     return 'plan';
   }
+  if (ticket.types.includes('onboard')) {
+    return 'onboard';
+  }
   return ticket.types.includes('spike') ? 'spike' : 'implement';
 }

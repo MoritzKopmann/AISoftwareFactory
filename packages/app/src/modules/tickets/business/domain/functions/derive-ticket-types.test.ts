@@ -8,6 +8,10 @@ describe('deriveTicketTypes', () => {
     ]);
   });
 
+  it('should return onboard when the type: onboard label exists', () => {
+    expect(deriveTicketTypes(['type: onboard'])).toEqual(['onboard']);
+  });
+
   it('should drop an unknown type label when a known one is present', () => {
     expect(deriveTicketTypes(['type: chore', 'type: bug'])).toEqual(['bug']);
   });

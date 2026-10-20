@@ -1,1 +1,1 @@
-export type TicketType = 'bug' | 'enhancement' | 'task' | 'spike' | 'ui';
+export type TicketType = 'bug' | 'enhancement' | 'task' | 'spike' | 'ui' | 'onboard';

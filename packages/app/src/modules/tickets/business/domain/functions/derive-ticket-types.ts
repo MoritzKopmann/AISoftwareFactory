@@ -2,7 +2,14 @@ import type { TicketType } from '../../../../../shared/ticket-type/ticket-type.j
 
 const typeLabelPrefix = 'type: ';
 
-const ticketTypes: ReadonlyArray<TicketType> = ['bug', 'enhancement', 'task', 'spike', 'ui'];
+const ticketTypes: ReadonlyArray<TicketType> = [
+  'bug',
+  'enhancement',
+  'task',
+  'spike',
+  'ui',
+  'onboard',
+];
 
 export function deriveTicketTypes(labelNames: ReadonlyArray<string>): ReadonlyArray<TicketType> {
   const types = labelNames
