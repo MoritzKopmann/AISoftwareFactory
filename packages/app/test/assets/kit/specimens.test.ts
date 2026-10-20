@@ -81,6 +81,8 @@ describe('specimens page', () => {
     ]) {
       expect($$(`.${pieceClass}`).length, pieceClass).toBeGreaterThan(0);
     }
+    expect($$('svg.aisf-computed[role="img"]').length).toBeGreaterThanOrEqual(3);
+    expect($$('.aisf-shape-flagged').length).toBeGreaterThan(0);
     expect($$('.aisf-switch[aria-pressed="true"]')).toHaveLength(1);
     expect($$('.aisf-switch[aria-pressed="false"]')).toHaveLength(1);
     expect($$('aisf-card[gain][cost]').length).toBeGreaterThan(0);

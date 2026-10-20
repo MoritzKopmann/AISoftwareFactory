@@ -160,6 +160,29 @@
       >
     </section>
     <section class="specimen">
+      <h2>Computed pieces</h2>
+      <aisf-sequence>
+        <aisf-actor name="scheduler"></aisf-actor>
+        <aisf-actor name="runner"></aisf-actor>
+        <aisf-step from="scheduler" to="runner" mark="new">start(run)</aisf-step>
+        <aisf-step from="runner" to="scheduler" mark="changed">done(run)</aisf-step>
+        <aisf-step from="runner" to="runner" mark="untouched">retry</aisf-step>
+        <aisf-step from="scheduler" to="runer">typo actor</aisf-step>
+      </aisf-sequence>
+      <aisf-state>
+        <aisf-step from="ready" to="in-progress">claim</aisf-step>
+        <aisf-step from="in-progress" to="ready">reset</aisf-step>
+        <aisf-step from="in-progress" to="in-review" mark="new">open PR</aisf-step>
+        <aisf-step from="in-review" to="in-review">retry</aisf-step>
+      </aisf-state>
+      <aisf-modmap layers="presentation business">
+        <aisf-unit module="runs" layer="presentation">RunRoutes</aisf-unit>
+        <aisf-unit module="runs" layer="business" mark="changed">RunService</aisf-unit>
+        <aisf-unit module="tickets" layer="business" mark="new">TicketService</aisf-unit>
+        <aisf-unit module="tickets" layer="infra" mark="untouched">TicketRepo</aisf-unit>
+      </aisf-modmap>
+    </section>
+    <section class="specimen">
       <h2>Confirm, empty</h2>
       <aisf-round number="7"
         ><aisf-confirm

@@ -162,3 +162,49 @@
   stroke-width: 1.5;
   marker-end: url(#aisf-arrowhead);
 }
+
+.aisf-edge-new {
+  stroke: var(--ok);
+}
+
+.aisf-edge-changed {
+  stroke: var(--accent);
+}
+
+.aisf-edge-untouched {
+  stroke-dasharray: 5 3;
+}
+
+/* Computed pieces: children only carry data; the svg is drawn from them. */
+:is(aisf-sequence, aisf-state, aisf-modmap) > :is(aisf-actor, aisf-step, aisf-unit) {
+  display: none;
+}
+
+.aisf-computed {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.aisf-lifeline,
+.aisf-gridline {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.aisf-module-head,
+.aisf-layer-head {
+  fill: var(--muted);
+}
+
+/* Bad markup is drawn, with a warning outline. */
+.aisf-shape-flagged {
+  stroke: var(--danger);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.aisf-layer-head.aisf-flagged {
+  fill: var(--danger);
+}
