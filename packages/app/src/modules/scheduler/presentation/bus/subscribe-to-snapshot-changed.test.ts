@@ -14,6 +14,7 @@ import {
 const approvedTicket: ReviewedTicket = {
   number: 140,
   status: 'in-review',
+  types: [],
   closingPullRequests: [
     {
       number: 201,

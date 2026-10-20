@@ -105,6 +105,23 @@ describe('determineRunAvailability', () => {
     });
   });
 
+  it('should be available when the project is not onboarded and the ticket is an onboard leaf', () => {
+    const ticket: SchedulableTicket = { ...readyLeaf, types: ['onboard'] };
+
+    expect(determineRunAvailability(buildInput({ ticket, projectOnboarded: false }))).toEqual({
+      kind: 'available',
+    });
+  });
+
+  it('should be disabled when the project is not onboarded and the ticket is a task', () => {
+    const ticket: SchedulableTicket = { ...readyLeaf, types: ['task'] };
+
+    expect(determineRunAvailability(buildInput({ ticket, projectOnboarded: false }))).toEqual({
+      kind: 'disabled',
+      reason: 'The project is not onboarded',
+    });
+  });
+
   it("should be disabled when the snapshot is older than the ticket's last run end", () => {
     const input = buildInput({ lastRunEndedAt: '2026-09-29T10:00:01.000Z' });
 
@@ -270,6 +287,12 @@ describe('determineRunAvailability', () => {
 
     it('should be available when review activity came after the last run ended', () => {
       expect(determineRunAvailability(reworkInput())).toEqual({ kind: 'available' });
+    });
+
+    it('should be absent when the ticket is an onboard ticket with review activity', () => {
+      expect(determineRunAvailability(reworkInput({ types: ['onboard'] }))).toEqual({
+        kind: 'absent',
+      });
     });
 
     it('should be absent when the review activity came before the last run ended', () => {

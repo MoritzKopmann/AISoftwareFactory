@@ -24,6 +24,7 @@ const approvedPullRequest: ClosingPullRequest = {
 const approvedTicket: ReviewedTicket = {
   number: 140,
   status: 'in-review',
+  types: [],
   closingPullRequests: [approvedPullRequest],
 };
 

@@ -41,7 +41,7 @@ export function determineRunAvailability(input: RunAvailabilityInput): RunAvaila
   if (runsBlocked.blocked) {
     return { kind: 'disabled', reason: runsBlocked.reason };
   }
-  if (!projectOnboarded) {
+  if (!projectOnboarded && !isOnboardTicket(ticket)) {
     return { kind: 'disabled', reason: 'The project is not onboarded' };
   }
   if (
@@ -77,9 +77,13 @@ function isRunnableTicket(ticket: SchedulableTicket, lastRunEndedAt: string | un
     return false;
   }
   if (ticket.status === 'in-review') {
-    return needsRework(ticket.openPullRequest, lastRunEndedAt);
+    return !isOnboardTicket(ticket) && needsRework(ticket.openPullRequest, lastRunEndedAt);
   }
   return ticket.status === 'ready';
+}
+
+function isOnboardTicket(ticket: SchedulableTicket): boolean {
+  return ticket.types.includes('onboard');
 }
 
 function isPureUiTicket(ticket: SchedulableTicket): boolean {

@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { PausedRun } from '../domain/types/paused-run.js';
 import type { RunAnswer } from '../domain/types/run-answer.js';
+import type { ReviewedTicket } from '../domain/types/reviewed-ticket.js';
 import type { RunRecord } from '../domain/types/run-record.js';
 import type { RunsBlocked } from '../domain/types/runs-blocked.js';
 import { IdeaRunNotStartedError } from '../errors/idea-run-not-started-error.js';
+import { OnboardingNotNeededError } from '../errors/onboarding-not-needed-error.js';
 import { ProjectNotFoundError } from '../errors/project-not-found-error.js';
 import { RunNotAnswerableError } from '../errors/run-not-answerable-error.js';
 import { RunNotAvailableError } from '../errors/run-not-available-error.js';
@@ -403,7 +405,12 @@ describe('TicketRunService', () => {
     const leaf8 = { ...readyLeaf, number: 8 };
     const plan11 = { ...readyLeaf, number: 11, status: 'plan' as const };
     const reviewedOf = (...tickets: ReadonlyArray<typeof readyLeaf>) =>
-      tickets.map(({ number, status }) => ({ number, status, closingPullRequests: [] }));
+      tickets.map(({ number, status, types }) => ({
+        number,
+        status,
+        types,
+        closingPullRequests: [],
+      }));
 
     function buildDueSubject(
       tickets: ReadonlyArray<typeof readyLeaf>,
@@ -770,7 +777,7 @@ describe('TicketRunService', () => {
         ticketPort: new FakeTicketPort(
           readyLeaf,
           [readyLeaf],
-          [{ number: readyLeaf.number, status: 'ready', closingPullRequests: [] }],
+          [{ number: readyLeaf.number, status: 'ready', types: [], closingPullRequests: [] }],
         ),
       });
 
@@ -914,6 +921,98 @@ describe('TicketRunService', () => {
 
       expect(runPort.calls).toEqual(['resumePaused run-1', 'resumePaused run-2']);
       expect(errors).toEqual([expect.stringContaining('run-1')]);
+    });
+  });
+
+  describe('startOnboarding', () => {
+    const onboardTicket = { ...readyLeaf, number: 501, types: ['onboard' as const] };
+    const notOnboarded: SchedulerProject = { repository, onboarded: false, paused: false };
+
+    function buildOnboardingSubject(
+      options: { project?: SchedulerProject; open?: ReadonlyArray<ReviewedTicket> } = {},
+    ) {
+      const runPort = new FakeRunPort();
+      const ticketPort = new FakeTicketPort(onboardTicket, [], options.open ?? []);
+      const { service } = buildSubject({
+        runPort,
+        ticketPort,
+        projectPort: new FakeProjectPort(options.project ?? notOnboarded),
+      });
+      return { service, runPort, ticketPort };
+    }
+
+    it('should create the onboarding issue and start a run on it when the project is not onboarded', async () => {
+      const { service, runPort, ticketPort } = buildOnboardingSubject();
+
+      const ticketNumber = await service.startOnboarding('moritz/aisf', 'manual');
+
+      expect(ticketNumber).toBe(501);
+      expect(ticketPort.calls).toEqual([
+        expect.stringMatching(
+          /^create \{"title":"Onboard moritz\/aisf","body":".*aisf:onboard-project.*","status":"ready","types":\["onboard"\],"priority":"high"\}$/,
+        ),
+      ]);
+      expect(runPort.calls).toEqual(['start moritz/aisf #501']);
+    });
+
+    it('should create nothing and start no run when the project is onboarded and the trigger is project-added', async () => {
+      const { service, runPort, ticketPort } = buildOnboardingSubject({
+        project: { repository, onboarded: true, paused: false },
+      });
+
+      await service.startOnboarding('moritz/aisf', 'project-added');
+
+      expect(ticketPort.calls).toEqual([]);
+      expect(runPort.calls).toEqual([]);
+    });
+
+    it('should throw a ConflictError and create nothing when the project is onboarded and the trigger is manual', async () => {
+      const { service, runPort, ticketPort } = buildOnboardingSubject({
+        project: { repository, onboarded: true, paused: false },
+      });
+
+      await expect(service.startOnboarding('moritz/aisf', 'manual')).rejects.toThrow(
+        OnboardingNotNeededError,
+      );
+      expect(ticketPort.calls).toEqual([]);
+      expect(runPort.calls).toEqual([]);
+    });
+
+    it('should throw a ConflictError and create nothing when an onboard ticket is open and the trigger is manual', async () => {
+      const open: ReviewedTicket = {
+        number: 9,
+        status: 'ready',
+        types: ['onboard'],
+        closingPullRequests: [],
+      };
+      const { service, ticketPort } = buildOnboardingSubject({ open: [open] });
+
+      await expect(service.startOnboarding('moritz/aisf', 'manual')).rejects.toThrow(
+        OnboardingNotNeededError,
+      );
+      expect(ticketPort.calls).toEqual([]);
+    });
+
+    it('should create the issue when an onboard ticket is open and the trigger is project-added', async () => {
+      const open: ReviewedTicket = {
+        number: 9,
+        status: 'ready',
+        types: ['onboard'],
+        closingPullRequests: [],
+      };
+      const { service, ticketPort } = buildOnboardingSubject({ open: [open] });
+
+      await service.startOnboarding('moritz/aisf', 'project-added');
+
+      expect(ticketPort.calls).toHaveLength(1);
+    });
+
+    it('should throw ProjectNotFoundError when the project is unknown', async () => {
+      const { service } = buildSubject({ projectPort: { find: async () => undefined } });
+
+      await expect(service.startOnboarding('moritz/aisf', 'manual')).rejects.toThrow(
+        ProjectNotFoundError,
+      );
     });
   });
 });
