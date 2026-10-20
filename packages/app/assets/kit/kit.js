@@ -1,19 +1,25 @@
 // The kit's one entry, served at /aisf/kit.js. Registers every element.
+import { AisfActorElement } from './elements/aisf-actor-element.js';
 import { AisfCardElement } from './elements/aisf-card-element.js';
 import { AisfConfirmElement } from './elements/aisf-confirm-element.js';
 import { AisfContextElement } from './elements/aisf-context-element.js';
 import { AisfFigureElement } from './elements/aisf-figure-element.js';
 import { AisfMetaElement } from './elements/aisf-meta-element.js';
 import { AisfMoreElement } from './elements/aisf-more-element.js';
+import { AisfModmapElement } from './elements/aisf-modmap-element.js';
 import { AisfPrecedentElement } from './elements/aisf-precedent-element.js';
 import { AisfQuestionElement } from './elements/aisf-question-element.js';
 import { AisfRoundElement } from './elements/aisf-round-element.js';
+import { AisfSequenceElement } from './elements/aisf-sequence-element.js';
+import { AisfStateElement } from './elements/aisf-state-element.js';
+import { AisfStepElement } from './elements/aisf-step-element.js';
 import { AisfTaskElement } from './elements/aisf-task-element.js';
 import { AisfTreeNodeElement } from './elements/aisf-tree-node-element.js';
+import { AisfUnitElement } from './elements/aisf-unit-element.js';
 
 /**
  * Tag name to element class. A card comes before its question: the question renders its cards
- * on upgrade.
+ * on upgrade. Actors, steps and units come before the pieces that draw them.
  */
 export const registry = {
   'aisf-round': AisfRoundElement,
@@ -27,6 +33,12 @@ export const registry = {
   'aisf-tree-node': AisfTreeNodeElement,
   'aisf-task': AisfTaskElement,
   'aisf-precedent': AisfPrecedentElement,
+  'aisf-actor': AisfActorElement,
+  'aisf-step': AisfStepElement,
+  'aisf-unit': AisfUnitElement,
+  'aisf-sequence': AisfSequenceElement,
+  'aisf-state': AisfStateElement,
+  'aisf-modmap': AisfModmapElement,
 };
 
 const ARROWHEAD_ID = 'aisf-arrowhead';

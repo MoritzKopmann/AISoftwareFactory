@@ -18,6 +18,12 @@ const documented: Record<string, string[]> = {
   'aisf-tree-node': ['round', 'question', 'resolution', 'rejected', 'assumes', 'fact'],
   'aisf-task': ['number', 'heading', 'blocked-by', 'files', 'risk', 'hitl'],
   'aisf-precedent': [],
+  'aisf-actor': ['name'],
+  'aisf-step': ['from', 'to', 'mark'],
+  'aisf-unit': ['module', 'layer', 'mark'],
+  'aisf-sequence': [],
+  'aisf-state': [],
+  'aisf-modmap': ['layers'],
 };
 
 describe('kit', () => {
