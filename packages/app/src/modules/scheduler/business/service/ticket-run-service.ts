@@ -9,6 +9,7 @@ import type { RunAvailability } from '../domain/types/run-availability.js';
 import type { StartedRun } from '../domain/types/started-run.js';
 import type { TicketRun } from '../domain/types/ticket-run.js';
 import { IdeaRunNotStartedError } from '../errors/idea-run-not-started-error.js';
+import { OnboardingNotNeededError } from '../errors/onboarding-not-needed-error.js';
 import { ProjectNotFoundError } from '../errors/project-not-found-error.js';
 import { RunAlreadyActiveError } from '../errors/run-already-active-error.js';
 import { RunNotAnswerableError } from '../errors/run-not-answerable-error.js';
@@ -27,6 +28,9 @@ export type TicketRunServiceDependencies = {
   readonly usagePort: UsagePort;
   readonly logger: Logger;
 };
+
+const onboardingBody =
+  'Onboard this project with the `aisf:onboard-project` skill: draft its architecture, code rules, testing and toolchain slots with the owner and deliver them as one PR.';
 
 function isRepeatingRefusal(error: unknown): boolean {
   return error instanceof RunNotAvailableError || error instanceof RunAlreadyActiveError;
@@ -183,14 +187,39 @@ export class TicketRunService {
     }
 
     const ticketNumber = await ticketPort.create(project.repository, ideaFromText(text));
-    try {
-      await this.start(projectId, ticketNumber);
-    } catch (error) {
-      if (error instanceof RunNotAvailableError || error instanceof RunAlreadyActiveError) {
-        throw new IdeaRunNotStartedError(ticketNumber, error.message);
-      }
-      throw error;
+    await this.startCreated(projectId, ticketNumber);
+    return ticketNumber;
+  }
+
+  async startOnboarding(
+    projectId: string,
+    trigger: 'project-added' | 'manual',
+  ): Promise<number | undefined> {
+    const { projectPort, ticketPort } = this.dependencies;
+
+    const project = await projectPort.find(projectId);
+    if (project === undefined) {
+      throw new ProjectNotFoundError(`Project ${projectId} is not registered`);
     }
+    if (project.onboarded) {
+      if (trigger === 'project-added') {
+        return undefined;
+      }
+      throw new OnboardingNotNeededError(`Project ${projectId} is already onboarded`);
+    }
+    if (trigger === 'manual' && (await this.hasOpenOnboarding(projectId))) {
+      throw new OnboardingNotNeededError(`Project ${projectId} already has an open onboarding`);
+    }
+
+    const { owner, name } = project.repository;
+    const ticketNumber = await ticketPort.create(project.repository, {
+      title: `Onboard ${owner}/${name}`,
+      body: onboardingBody,
+      status: 'ready',
+      types: ['onboard'],
+      priority: 'high',
+    });
+    await this.startCreated(projectId, ticketNumber);
     return ticketNumber;
   }
 
@@ -252,6 +281,22 @@ export class TicketRunService {
       } finally {
         this.ticketsBeingStarted.delete(key);
       }
+    }
+  }
+
+  private async hasOpenOnboarding(projectId: string): Promise<boolean> {
+    const openTickets = await this.dependencies.ticketPort.list(projectId);
+    return openTickets.some(({ types }) => types.includes('onboard'));
+  }
+
+  private async startCreated(projectId: string, ticketNumber: number): Promise<void> {
+    try {
+      await this.start(projectId, ticketNumber);
+    } catch (error) {
+      if (error instanceof RunNotAvailableError || error instanceof RunAlreadyActiveError) {
+        throw new IdeaRunNotStartedError(ticketNumber, error.message);
+      }
+      throw error;
     }
   }
 

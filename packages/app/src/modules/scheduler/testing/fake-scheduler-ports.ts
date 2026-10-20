@@ -1,3 +1,4 @@
+import type { IdeaDraft } from '../business/domain/types/idea-draft.js';
 import type { RepositoryReference } from '../business/domain/types/repository-reference.js';
 import type { RunsBlocked } from '../business/domain/types/runs-blocked.js';
 import type { SchedulableTicket } from '../business/domain/types/schedulable-ticket.js';
@@ -175,10 +176,7 @@ export class FakeTicketPort implements TicketPort {
     return this.reviewed;
   }
 
-  async create(
-    _repository: RepositoryReference,
-    idea: { readonly title: string; readonly body: string },
-  ): Promise<number> {
+  async create(_repository: RepositoryReference, idea: IdeaDraft): Promise<number> {
     this.calls.push(`create ${JSON.stringify(idea)}`);
     return this.createdNumber;
   }

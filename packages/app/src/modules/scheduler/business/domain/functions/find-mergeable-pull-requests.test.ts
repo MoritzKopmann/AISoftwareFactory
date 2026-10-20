@@ -14,7 +14,7 @@ const mergeablePullRequest: ClosingPullRequest = {
 };
 
 function inReviewTicket(...closingPullRequests: ClosingPullRequest[]): ReviewedTicket {
-  return { number: 140, status: 'in-review', closingPullRequests };
+  return { number: 140, status: 'in-review', types: [], closingPullRequests };
 }
 
 describe('findMergeablePullRequests', () => {
