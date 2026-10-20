@@ -105,45 +105,77 @@
       <div class="aisf-compare">
         <div class="aisf-panel aisf-panel-now">
           <h3>Now</h3>
-          <p>Plain text chips.</p>
+          <p>Runs live in a Map in the scheduler. A restart drops them.</p>
         </div>
         <div class="aisf-panel aisf-panel-suggested">
-          <h3>Suggested</h3>
-          <p>Real graphics.</p>
+          <h3>SQLite table</h3>
+          <p>One row per run, written on every stage change.</p>
+          <ul>
+            <li>survives restarts</li>
+            <li>needs a migration</li>
+          </ul>
+        </div>
+        <div class="aisf-panel">
+          <h3>JSON per run</h3>
+          <p>One file under the run's folder.</p>
+          <ul>
+            <li>no schema</li>
+            <li>half-written after a crash</li>
+          </ul>
+        </div>
+        <div class="aisf-panel">
+          <h3>Issue labels</h3>
+          <p>GitHub holds the state as labels.</p>
+          <ul>
+            <li>visible on GitHub</li>
+            <li>one API call per read</li>
+          </ul>
         </div>
       </div>
       <div class="aisf-diff">
-        <aisf-context kind="code" path="src/a.ts" line="1">const a = 1;</aisf-context>
-        <aisf-context kind="code" path="src/a.ts" line="1">const a = 2;</aisf-context>
+        <!-- prettier-ignore -->
+        <aisf-context kind="code" path="src/runs/run-service.ts" line="2">const runs = new Map();
+runs.set(run.id, run);
+return run;</aisf-context>
+        <!-- prettier-ignore -->
+        <aisf-context kind="code" path="src/runs/run-service.ts" line="2">const runs = this.repository;
+await runs.save(run);
+return run;</aisf-context>
       </div>
       <table class="aisf-table">
         <thead>
           <tr>
             <th>Piece</th>
-            <th>State</th>
+            <th>Today</th>
+            <th>After</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Compare</td>
-            <td class="aisf-node-new">new</td>
+            <td>RunService</td>
+            <td>holds runs in memory</td>
+            <td class="aisf-node-changed">saves through the repository</td>
           </tr>
           <tr>
-            <td>Table</td>
-            <td class="aisf-node-changed">changed</td>
+            <td>RunRepository</td>
+            <td>—</td>
+            <td class="aisf-node-new">new, SQLite</td>
           </tr>
           <tr>
-            <td>Chips</td>
-            <td class="aisf-node-untouched">untouched</td>
+            <td>RunRoutes</td>
+            <td>lists runs</td>
+            <td class="aisf-node-untouched">unchanged</td>
           </tr>
         </tbody>
       </table>
       <div class="aisf-scope">
         <ul class="aisf-scope-in">
-          <li>Layout pieces</li>
+          <li>Store runs in SQLite</li>
+          <li>Load live runs at start</li>
         </ul>
         <ul class="aisf-scope-out">
-          <li>Computed pieces</li>
+          <li>Run history page</li>
+          <li>Moving old runs out of memory</li>
         </ul>
       </div>
       <aisf-figure caption="Free SVG"
@@ -158,6 +190,56 @@
           <text class="aisf-label" x="309" y="45" text-anchor="middle">Untouched</text>
         </svg></aisf-figure
       >
+    </section>
+    <section class="specimen">
+      <h2>Long labels</h2>
+      <div class="aisf-compare">
+        <div class="aisf-panel aisf-panel-now">
+          <h3>Now</h3>
+          <p>Env vars RUN_SCHEDULER_MAX_PARALLEL_RUNS_PER_PROJECT.</p>
+        </div>
+        <div class="aisf-panel aisf-panel-suggested">
+          <h3>Project settings repository</h3>
+          <p>loadSchedulerConfiguration() per project.</p>
+        </div>
+        <div class="aisf-panel">
+          <h3>Config file</h3>
+          <p>.aisf/scheduler-configuration.json in the repo.</p>
+        </div>
+      </div>
+      <div class="aisf-diff">
+        <!-- prettier-ignore -->
+        <aisf-context kind="code" path="src/runs/run-scheduler-configuration.ts">const max = Number(process.env.RUN_SCHEDULER_MAX_PARALLEL_RUNS_PER_PROJECT);</aisf-context>
+        <aisf-context kind="code" path="src/runs/run-scheduler-configuration.ts"
+          >const max = settings.maxParallelRuns;</aisf-context
+        >
+      </div>
+      <table class="aisf-table">
+        <thead>
+          <tr>
+            <th>Piece</th>
+            <th>After</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>RunSchedulerConfiguration</td>
+            <td class="aisf-node-changed">reads ProjectSettingsRepository</td>
+          </tr>
+          <tr>
+            <td>ProjectSettingsRepository</td>
+            <td class="aisf-node-new">loadSchedulerConfiguration()</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="aisf-scope">
+        <ul class="aisf-scope-in">
+          <li>ProjectSettingsRepository.loadSchedulerConfiguration()</li>
+        </ul>
+        <ul class="aisf-scope-out">
+          <li>RUN_SCHEDULER_MAX_PARALLEL_RUNS_PER_PROJECT stays as a fallback</li>
+        </ul>
+      </div>
     </section>
     <section class="specimen">
       <h2>Computed pieces</h2>
