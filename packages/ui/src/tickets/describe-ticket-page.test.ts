@@ -130,6 +130,14 @@ describe('describeTicketPage', () => {
     ).toMatchObject({ runSkill: skill });
   });
 
+  it('should run onboard-project when the ticket types include onboard', () => {
+    const ticket = buildTicketResponse({ status: 'ready', types: ['onboard'] });
+
+    expect(describeTicketPage(answered(ticket), projectId, 1)).toMatchObject({
+      runSkill: 'onboard-project',
+    });
+  });
+
   it('should carry the review panel when the ticket is in review with a PR', () => {
     const ticket = buildTicketResponse({
       status: 'in-review',
