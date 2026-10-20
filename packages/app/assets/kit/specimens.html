@@ -183,6 +183,51 @@
       </aisf-modmap>
     </section>
     <section class="specimen">
+      <h2>5-actor sequence</h2>
+      <aisf-sequence>
+        <aisf-actor name="browser"></aisf-actor>
+        <aisf-actor name="bridge"></aisf-actor>
+        <aisf-actor name="scheduler"></aisf-actor>
+        <aisf-actor name="runner"></aisf-actor>
+        <aisf-actor name="github"></aisf-actor>
+        <aisf-step from="browser" to="bridge" mark="new">submit(answers)</aisf-step>
+        <aisf-step from="bridge" to="scheduler" mark="changed">resume(run)</aisf-step>
+        <aisf-step from="scheduler" to="runner">start(run)</aisf-step>
+        <aisf-step from="runner" to="github" mark="untouched">push branch</aisf-step>
+        <aisf-step from="github" to="browser" mark="new">notify human</aisf-step>
+      </aisf-sequence>
+    </section>
+    <section class="specimen">
+      <h2>7 modules × 3 layers</h2>
+      <aisf-modmap layers="presentation business infrastructure">
+        <aisf-unit module="runs" layer="presentation" mark="new">RunsRoutes</aisf-unit>
+        <aisf-unit module="tickets" layer="presentation" mark="changed">TicketsRoutes</aisf-unit>
+        <aisf-unit module="projects" layer="presentation" mark="untouched"
+          >ProjectsRoutes</aisf-unit
+        >
+        <aisf-unit module="bridge" layer="presentation">BridgeRoutes</aisf-unit>
+        <aisf-unit module="agents" layer="presentation" mark="new">AgentsRoutes</aisf-unit>
+        <aisf-unit module="github" layer="presentation" mark="changed">GithubRoutes</aisf-unit>
+        <aisf-unit module="settings" layer="presentation" mark="untouched"
+          >SettingsRoutes</aisf-unit
+        >
+        <aisf-unit module="runs" layer="business" mark="changed">RunsService</aisf-unit>
+        <aisf-unit module="tickets" layer="business" mark="untouched">TicketsService</aisf-unit>
+        <aisf-unit module="projects" layer="business">ProjectsService</aisf-unit>
+        <aisf-unit module="bridge" layer="business" mark="new">BridgeService</aisf-unit>
+        <aisf-unit module="agents" layer="business" mark="changed">AgentsService</aisf-unit>
+        <aisf-unit module="github" layer="business" mark="untouched">GithubService</aisf-unit>
+        <aisf-unit module="settings" layer="business">SettingsService</aisf-unit>
+        <aisf-unit module="runs" layer="infrastructure" mark="untouched">RunsRepo</aisf-unit>
+        <aisf-unit module="tickets" layer="infrastructure">TicketsRepo</aisf-unit>
+        <aisf-unit module="projects" layer="infrastructure" mark="new">ProjectsRepo</aisf-unit>
+        <aisf-unit module="bridge" layer="infrastructure" mark="changed">BridgeRepo</aisf-unit>
+        <aisf-unit module="agents" layer="infrastructure" mark="untouched">AgentsRepo</aisf-unit>
+        <aisf-unit module="github" layer="infrastructure">GithubRepo</aisf-unit>
+        <aisf-unit module="settings" layer="infrastructure" mark="new">SettingsRepo</aisf-unit>
+      </aisf-modmap>
+    </section>
+    <section class="specimen">
       <h2>Confirm, empty</h2>
       <aisf-round number="7"
         ><aisf-confirm
