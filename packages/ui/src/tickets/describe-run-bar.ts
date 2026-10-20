@@ -7,7 +7,8 @@ export type StartState =
   | { readonly kind: 'starting' }
   | Extract<StartRunOutcome, { kind: 'failed' }>;
 
-export type RunSkill = 'spike' | 'implement-ticket' | 'create-ticket' | 'plan-ticket';
+export type RunSkill =
+  'spike' | 'implement-ticket' | 'create-ticket' | 'plan-ticket' | 'onboard-project';
 
 const ticketSkillLabels: Partial<Record<RunSkill, string>> = {
   'create-ticket': 'Start',
