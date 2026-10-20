@@ -128,7 +128,7 @@
   content: '−';
 }
 
-/* Free SVG: shapes, labels and edges, in the same look as the chips. */
+/* Free SVG and computed pieces: shapes, labels and edges, in the same look as the chips. */
 .aisf-shape {
   fill: var(--surface);
   stroke: var(--border-strong);
@@ -136,24 +136,50 @@
 }
 
 .aisf-shape-new {
-  fill: color-mix(in srgb, var(--ok) 12%, var(--surface));
+  fill: color-mix(in srgb, var(--ok) 14%, var(--surface));
   stroke: var(--ok);
+  stroke-width: 2;
 }
 
 .aisf-shape-changed {
   fill: var(--accent-soft);
   stroke: var(--accent);
+  stroke-width: 2;
 }
 
+/* Untouched is ghosted: the grid shows through, the label greys. */
 .aisf-shape-untouched {
-  fill: var(--surface);
-  stroke: var(--border);
+  fill: color-mix(in srgb, var(--surface) 55%, transparent);
+  stroke: var(--border-strong);
   stroke-dasharray: 5 3;
 }
 
 .aisf-label {
   fill: var(--text);
   font: 600 var(--text-size-sm) var(--font-ui);
+}
+
+.aisf-shape-untouched + .aisf-label {
+  fill: var(--muted);
+  font-weight: 400;
+}
+
+/* Names of things are identifiers: mono, like paths and code. */
+:is(.aisf-actor-box, .aisf-state-box) .aisf-label {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+:is(.aisf-actor-box, .aisf-state-box) .aisf-shape {
+  fill: var(--surface-2);
+}
+
+.aisf-module-head,
+.aisf-layer-head {
+  fill: var(--muted);
+  font: 500 var(--label-size) var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .aisf-edge {
@@ -165,25 +191,40 @@
 
 .aisf-edge-new {
   stroke: var(--ok);
+  stroke-width: 2;
 }
 
 .aisf-edge-changed {
   stroke: var(--accent);
+  stroke-width: 2;
 }
 
 .aisf-edge-untouched {
+  stroke: var(--border-strong);
   stroke-dasharray: 5 3;
 }
 
-/* Computed pieces: children only carry data; the svg is drawn from them. */
-:is(aisf-sequence, aisf-state, aisf-modmap) > :is(aisf-actor, aisf-step, aisf-unit) {
-  display: none;
+/* Edge labels sit on lines and lifelines: a halo in the frame colour keeps them legible. */
+.aisf-link .aisf-label {
+  font-weight: 500;
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 5px;
+  stroke-linejoin: round;
 }
 
-.aisf-computed {
-  display: block;
-  max-width: 100%;
-  height: auto;
+.aisf-edge-new + .aisf-label {
+  fill: var(--ok);
+  font-weight: 600;
+}
+
+.aisf-edge-changed + .aisf-label {
+  fill: var(--accent);
+  font-weight: 600;
+}
+
+.aisf-edge-untouched + .aisf-label {
+  fill: var(--muted);
 }
 
 .aisf-lifeline,
@@ -193,18 +234,59 @@
   stroke-dasharray: 4 4;
 }
 
-.aisf-module-head,
-.aisf-layer-head {
-  fill: var(--muted);
-}
-
-/* Bad markup is drawn, with a warning outline. */
+/* Bad markup is drawn, outlined and named in danger. */
 .aisf-shape-flagged {
   stroke: var(--danger);
   stroke-width: 2;
   stroke-dasharray: 4 3;
 }
 
+.aisf-shape-flagged:not(.aisf-shape-new, .aisf-shape-changed, .aisf-shape-untouched) {
+  fill: color-mix(in srgb, var(--danger) 10%, var(--surface));
+}
+
+.aisf-shape-flagged + .aisf-label,
 .aisf-layer-head.aisf-flagged {
   fill: var(--danger);
+}
+
+[data-flagged] .aisf-lifeline {
+  stroke: var(--danger);
+}
+
+/* Computed pieces: children only carry data; the svg is drawn from them. */
+:is(aisf-sequence, aisf-state, aisf-modmap) > :is(aisf-actor, aisf-step, aisf-unit) {
+  display: none;
+}
+
+/* A computed piece is its own figure frame: grid paper, and the only thing that scrolls on x.
+   The svg never shrinks, so its text stays 13px. */
+aisf-sequence,
+aisf-state,
+aisf-modmap {
+  display: block;
+  min-width: 0;
+  padding: 4px;
+  overflow-x: auto;
+  scrollbar-color: var(--border-strong) transparent;
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(var(--figure-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--figure-grid) 1px, transparent 1px);
+  background-size: 16px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+/* Inside aisf-figure, the figure is the frame. */
+aisf-figure > :is(aisf-sequence, aisf-state, aisf-modmap) {
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.aisf-computed {
+  display: block;
+  max-width: none;
+  height: auto;
 }
