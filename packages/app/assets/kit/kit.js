@@ -27,6 +27,43 @@ export const registry = {
   'aisf-precedent': AisfPrecedentElement,
 };
 
+const ARROWHEAD_ID = 'aisf-arrowhead';
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+
 for (const [tag, elementClass] of Object.entries(registry)) {
   if (customElements.get(tag) === undefined) customElements.define(tag, elementClass);
+}
+
+appendArrowheadMarker();
+
+// One hidden arrowhead for every `aisf-edge` line, drawn in the edge's own colour.
+function appendArrowheadMarker() {
+  if (document.getElementById(ARROWHEAD_ID) !== null) return;
+  const holder = createSvgElement('svg', { 'aria-hidden': 'true', width: '0', height: '0' });
+  holder.style.position = 'absolute';
+  const head = createSvgElement('path', { d: 'M0 0 L10 5 L0 10 z', fill: 'context-stroke' });
+  const marker = createSvgElement('marker', {
+    id: ARROWHEAD_ID,
+    viewBox: '0 0 10 10',
+    refX: '9',
+    refY: '5',
+    markerWidth: '8',
+    markerHeight: '8',
+    orient: 'auto-start-reverse',
+  });
+  marker.append(head);
+  const defs = createSvgElement('defs', {});
+  defs.append(marker);
+  holder.append(defs);
+  document.body.append(holder);
+}
+
+/**
+ * @param {string} tagName
+ * @param {Record<string, string>} attributes
+ */
+function createSvgElement(tagName, attributes) {
+  const element = document.createElementNS(SVG_NAMESPACE, tagName);
+  for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, value);
+  return element;
 }

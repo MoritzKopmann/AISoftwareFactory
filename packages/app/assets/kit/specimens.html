@@ -95,6 +95,65 @@
       >
     </section>
     <section class="specimen">
+      <h2>Layout pieces and free SVG</h2>
+      <div class="aisf-compare">
+        <div class="aisf-panel aisf-panel-now">
+          <h3>Now</h3>
+          <p>Plain text chips.</p>
+        </div>
+        <div class="aisf-panel aisf-panel-suggested">
+          <h3>Suggested</h3>
+          <p>Real graphics.</p>
+        </div>
+      </div>
+      <div class="aisf-diff">
+        <aisf-context kind="code" path="src/a.ts" line="1">const a = 1;</aisf-context>
+        <aisf-context kind="code" path="src/a.ts" line="1">const a = 2;</aisf-context>
+      </div>
+      <table class="aisf-table">
+        <thead>
+          <tr>
+            <th>Piece</th>
+            <th>State</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Compare</td>
+            <td class="aisf-node-new">new</td>
+          </tr>
+          <tr>
+            <td>Table</td>
+            <td class="aisf-node-changed">changed</td>
+          </tr>
+          <tr>
+            <td>Chips</td>
+            <td class="aisf-node-untouched">untouched</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="aisf-scope">
+        <ul class="aisf-scope-in">
+          <li>Layout pieces</li>
+        </ul>
+        <ul class="aisf-scope-out">
+          <li>Computed pieces</li>
+        </ul>
+      </div>
+      <aisf-figure caption="Free SVG"
+        ><svg viewBox="0 0 360 80" width="360" height="80" role="img" aria-label="Three shapes">
+          <rect class="aisf-shape aisf-shape-new" x="4" y="20" width="90" height="40" />
+          <text class="aisf-label" x="49" y="45" text-anchor="middle">New</text>
+          <path class="aisf-edge" d="M94 40 H130" />
+          <rect class="aisf-shape aisf-shape-changed" x="134" y="20" width="90" height="40" />
+          <text class="aisf-label" x="179" y="45" text-anchor="middle">Changed</text>
+          <path class="aisf-edge" d="M224 40 H260" />
+          <rect class="aisf-shape aisf-shape-untouched" x="264" y="20" width="90" height="40" />
+          <text class="aisf-label" x="309" y="45" text-anchor="middle">Untouched</text>
+        </svg></aisf-figure
+      >
+    </section>
+    <section class="specimen">
       <h2>Confirm, empty</h2>
       <aisf-round number="7"
         ><aisf-confirm

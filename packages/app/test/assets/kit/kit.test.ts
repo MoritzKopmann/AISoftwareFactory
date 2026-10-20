@@ -34,4 +34,11 @@ describe('kit', () => {
   it("should keep the cards in a question's choices when the markup is parsed before the kit loads", () => {
     expect(document.querySelector('aisf-question .aisf-choices aisf-card')).not.toBeNull();
   });
+
+  it('should hold exactly one arrowhead marker in a hidden svg when the kit loads', () => {
+    const markers = document.querySelectorAll('#aisf-arrowhead');
+
+    expect(markers).toHaveLength(1);
+    expect(markers[0]?.closest('svg')?.getAttribute('aria-hidden')).toBe('true');
+  });
 });

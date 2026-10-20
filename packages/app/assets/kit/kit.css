@@ -5,6 +5,7 @@
 @import './styles/confirm.css';
 @import './styles/task.css';
 @import './styles/precedent.css';
+@import './styles/figures.css';
 
 @font-face {
   font-family: 'Atkinson Hyperlegible Next';
