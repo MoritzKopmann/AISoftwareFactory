@@ -4,6 +4,7 @@ import { AisfConfirmElement } from './elements/aisf-confirm-element.js';
 import { AisfContextElement } from './elements/aisf-context-element.js';
 import { AisfFigureElement } from './elements/aisf-figure-element.js';
 import { AisfMetaElement } from './elements/aisf-meta-element.js';
+import { AisfMoreElement } from './elements/aisf-more-element.js';
 import { AisfPrecedentElement } from './elements/aisf-precedent-element.js';
 import { AisfQuestionElement } from './elements/aisf-question-element.js';
 import { AisfRoundElement } from './elements/aisf-round-element.js';
@@ -21,6 +22,7 @@ export const registry = {
   'aisf-context': AisfContextElement,
   'aisf-confirm': AisfConfirmElement,
   'aisf-meta': AisfMetaElement,
+  'aisf-more': AisfMoreElement,
   'aisf-figure': AisfFigureElement,
   'aisf-tree-node': AisfTreeNodeElement,
   'aisf-task': AisfTaskElement,

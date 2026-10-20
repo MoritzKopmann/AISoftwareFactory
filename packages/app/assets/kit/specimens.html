@@ -16,15 +16,21 @@
     <section class="specimen">
       <h2>Empty</h2>
       <aisf-round number="1"
-        ><aisf-question name="window" heading="Which window?" assumes="a1"
+        ><aisf-question
+          name="window"
+          heading="Which window?"
+          assumes="a1"
+          problem="The window is too narrow to read."
           ><aisf-context kind="code" path="src/a.ts" line="3"
             >const a = 1; const b = 2; const c = a + b; console.log(c); export { c };</aisf-context
           ><aisf-context kind="mockup"><button>Mockup button</button></aisf-context
           ><aisf-context kind="diagram"
             ><svg width="120" height="40">
               <rect width="120" height="40" fill="none" stroke="currentColor" /></svg></aisf-context
-          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
-          ><aisf-card value="two">Option two</aisf-card></aisf-question
+          ><aisf-card value="one" suggested why="Smallest change" gain="fast" cost="more code"
+            >Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card
+          ><aisf-more>Longer detail, hidden until the human opens More.</aisf-more></aisf-question
         ><aisf-question name="w2" heading="Second question"
           ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
           ><aisf-card value="two">Option two</aisf-card></aisf-question

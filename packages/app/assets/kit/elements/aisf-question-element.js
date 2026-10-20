@@ -5,7 +5,7 @@ let nextQuestionId = 0;
 /** @typedef {{ question: string, choice: string, text?: string, note?: string }} Answer */
 
 export class AisfQuestionElement extends HTMLElement {
-  static observedAttributes = ['name', 'heading', 'assumes'];
+  static observedAttributes = ['name', 'heading', 'assumes', 'problem'];
 
   connectedCallback() {
     this.render();
@@ -140,6 +140,12 @@ export class AisfQuestionElement extends HTMLElement {
       heading === null ? undefined : buildElement('h3', 'aisf-question-heading', heading),
       'start',
     );
+    const problem = this.getAttribute('problem');
+    const headingPart = this.querySelector('.aisf-question-heading');
+    const problemPart =
+      problem === null ? undefined : buildElement('p', 'aisf-question-problem', problem);
+    setPart(this, 'aisf-question-problem', problemPart, 'start');
+    if (problemPart !== undefined) headingPart?.after(problemPart);
     const assumes = this.getAttribute('assumes');
     setPart(
       this,

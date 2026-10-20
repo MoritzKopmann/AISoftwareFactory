@@ -30,4 +30,19 @@ describe('AisfCardElement', () => {
     expect(document.querySelector('.aisf-suggested-tag')).toBeNull();
     expect(document.querySelector('.aisf-card-why')).toBeNull();
   });
+
+  it('should show gain and cost parts and keep the label when the card has both', async () => {
+    await mount('<aisf-card value="a" gain="fast" cost="more code">A</aisf-card>');
+
+    expect($('.aisf-card-gain').textContent).toBe('fast');
+    expect($('.aisf-card-cost').textContent).toBe('more code');
+    expect($<HTMLElement & { label: string }>('aisf-card').label).toBe('A');
+  });
+
+  it('should show neither gain nor cost when the card has neither', async () => {
+    await mount('<aisf-card value="a">A</aisf-card>');
+
+    expect(document.querySelector('.aisf-card-gain')).toBeNull();
+    expect(document.querySelector('.aisf-card-cost')).toBeNull();
+  });
 });
