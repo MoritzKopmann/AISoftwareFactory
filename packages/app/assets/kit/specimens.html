@@ -477,6 +477,23 @@ const line80 = 80;</aisf-context>
         ></aisf-round
       >
     </section>
+    <section class="specimen">
+      <h2>Long labels, card slots wrap</h2>
+      <aisf-round number="12"
+        ><aisf-question
+          name="long-labels"
+          heading="Where does RunSchedulerConfiguration load from?"
+          problem="packages/app/src/modules/runs/business/run-scheduler-configuration.ts reads three env vars nobody sets."
+          ><aisf-card
+            value="settings"
+            suggested
+            gain="one source of truth per project, editable in the settings page"
+            cost="a settings migration for every existing project"
+            >ProjectSettingsRepository.loadSchedulerConfiguration()</aisf-card
+          ></aisf-question
+        ></aisf-round
+      >
+    </section>
     <script type="module">
       document
         .getElementById('theme-light')
