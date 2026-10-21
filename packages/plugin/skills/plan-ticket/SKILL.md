@@ -62,13 +62,22 @@ You plan. **Seat: senior developer in the project's stack.** You:
   change in its terms.
 - **Optimize for homogeneity.** A second way to do what the project already does is a defect.
   Argue from precedent, citing code by name.
-- **Prefer reduction to addition.** Hunt the existing type, port or use case that makes new code
-  unnecessary, and say what to delete.
-- **Name failure modes and their blast radius**, and mark where the cheap path is fine.
+- **Prefer reduction to addition** within the criteria. Hunt the existing type, port or use
+  case that makes the code a criterion needs unnecessary.
+- **Name the failure modes of what the criteria need**, with their blast radius, and mark where
+  the cheap path is fine.
 
-**Scope is the acceptance criteria, nothing else.** The decisions to settle: libraries, design
-patterns, data flow, where data is stored, which module does the work, which modules are called,
-reused or extended, and which APIs are new. What no criterion needs goes to Out of scope.
+## Scope
+
+**Scope is the acceptance criteria, nothing else.** One test decides every candidate: _would an
+acceptance criterion fail without this?_
+
+- **Yes** → in scope. Work a criterion forces beyond its literal text (a migration, a change to
+  shared code) is a necessary extension: its question carries an **Extends scope** badge and
+  the reason ("AC2 fails without it").
+- **No** → not asked. It goes to Out of scope under **Noticed, not planned**, one line each.
+
+Skip every module, layer and phase the criteria need no change in.
 
 ## 1. Research
 
@@ -79,6 +88,10 @@ before or between rounds, as many as the ticket needs. Sources: the codebase, th
 primary sources), and any project the human names. Each agent gets **one specific question**,
 and every prompt says: _"Do not edit files, commit, or open PRs — report findings only."_
 
+**Pattern research.** For each module with non-trivial business logic, one research agent asks
+which design pattern, if any, fits that logic. "None" is a valid and likely answer. Its finding
+goes to the findings log; it becomes a question only when a pattern is proposed.
+
 **Findings log.** `.aisf/artifacts/plan-<n>/findings.md`: question · finding · source. Read it before every
 dispatch; a question it already answers is never sent again.
 
@@ -87,13 +100,32 @@ becomes a question. A new dependency is never your call.
 
 ## 2. Decide
 
+The decisions in scope, in **phases**. Presentation and infrastructure are wiring; business
+holds the logic. Start from the UI, because criteria are usually written from the frontend's
+view.
+
+1. **UI.** Which UI area shows each criterion, what it shows in which states (empty, loading,
+   error, too much data), the user's actions, and which data it needs from the backend. The
+   frontend has no architecture rules: it shows the data the backend provides, and its internal
+   layering is not planned.
+2. **Modules.** Which backend module, existing or new, owns each feature.
+3. **Inbound contract.** What each module offers the frontend, other modules and services:
+   routes, facade methods, bus events, their data shapes, and the processes they trigger. It
+   must cover every UI data need from phase 1.
+4. **Business logic.** What exactly happens in the business layer, and the design pattern if
+   pattern research proposed one.
+5. **Outbound interfaces and data.** The ports to infrastructure, other modules and services.
+   For a repository: what data is stored, and which tables are created, extended or changed.
+   For anything else: what is sent, what comes back, and what it needs (an API key, an
+   account).
+
 Sort every decision in scope:
 
 - **Question**: expensive to change, or open to real opinion. It carries **Problem** (what is
   decided, what goes wrong if decided badly) · **Now** (where it lives today, by path) ·
-  **Options**, each with one gain and one cost · **Suggestion** (one option plus one line of why,
-  never "it depends") · **Assumes** (what the suggestion rests on) · **Figure** (what to draw,
-  see `questionnaire.md`).
+  **Options**, each with one gain, one cost and one effect (see `questionnaire.md`) ·
+  **Suggestion** (one option plus one line of why, never "it depends") · **Assumes** (what the
+  suggestion rests on) · **Figure** (what to draw, see `questionnaire.md`).
 - **Settled by precedent**: the project already does it one way, and nobody would argue. One
   line: decision · source. The human sees it and may veto it.
 
@@ -102,17 +134,18 @@ result settles them, and whether the human has to judge that result.
 
 ## 3. Interview
 
-Load `aisf:grilling` and follow it. Specific to planning:
+Load `aisf:grilling` and follow it. Its design tree is the decisions in scope: "every branch"
+means every branch the criteria need. Specific to planning:
 
-- **Start with a playback.** Round 1 opens with each acceptance criterion drawn as a flow
-  through today's system, new and changed parts marked, for the human to confirm or correct.
-  Its first questions are the ones that picture raises.
-- **Pick the lens that fits the ticket** and name it on the page, with one line of why. It
-  decides which questions come first:
-  - **Precedent**: a feature that already does almost this exists.
-  - **Data**: new or changed data, its shape and its home, drive the work.
-  - **One-way doors**: a library, storage format or public API is hard to reverse.
-  - **Ownership**: it is unclear which module owns the work.
+- **Start with a playback.** Round 1 opens with the playback map (`questionnaire.md`): each
+  acceptance criterion as a path through the touched UI and modules, by layer, new and changed
+  parts marked. Under the map, one question per criterion: **Correct** (`suggested`) or **Wrong
+  path**. Its other first questions are the ones that picture raises.
+- **The map stays current.** It sits above every round. After each round, redraw it to match
+  the decisions made, before republishing. A changed path is not asked again: the answer that
+  changed it already decided it.
+- **Phases shape the rounds.** Early rounds hold the early phases. A question from a later
+  phase whose answer depends on nothing open may come early.
 - **Group the frontier.** Every question whose answer does not depend on another open one goes
   in the same round. Research for the questions downstream runs meanwhile.
 - **Rounds go on the bridge page.** With `aisf_show_artifact` present, read `questionnaire.md`
@@ -122,13 +155,27 @@ Load `aisf:grilling` and follow it. Specific to planning:
 - **Object immediately** to an answer breaking a hard ban or placement rule: one sentence, naming
   the rule and the legal alternative. If the human reaffirms, comply and record it under Risks
   as a knowing override.
-- **An answer contradicting a settled decision's `assumes:` reopens that decision.** Re-scan
-  once per round.
+- **Reopen what a later answer breaks.** An answer contradicting a settled decision's
+  `assumes:`, or changing a layer an earlier phase settled, reopens that decision: it returns as
+  a question in the next round, naming the answer that reopened it. Re-scan once per round.
 - **Ledger.** `.aisf/artifacts/plan-<n>/ledger.md`, appended each round:
   `decision · resolution · assumes: … · round N`, precedent decisions included.
 - **Files are the memory.** After each round, the ledger and the findings log hold everything
   later steps need. Later steps read them, not the scrollback, so a compacted context loses
   nothing.
+
+**Done** when no decision in scope is open: every criterion has its flow, its landing module and
+its data settled in the ledger.
+
+**Spike.** A decision that needs real experience first pauses planning:
+
+1. Post a sub-issue, `type: spike`, `status: ready`: the options, what result settles them, and
+   that its verdict goes into this ticket's `## Planning so far`. It gets `hitl` when the human
+   confirmed they judge the result; without it `aisf:spike` tests alone.
+2. Write the ledger into the ticket body as `## Planning so far`, ending with
+   `Waiting for the verdict of #<spike>`.
+3. The ticket stays `status: plan`. Report the spike's number, that `aisf:spike` runs it, and
+   stop.
 
 ## Too big: split the ticket
 
@@ -141,7 +188,8 @@ for two or more features, each enhancing the app and usable completely without t
 big feature is never split here. No token or count threshold. Rule does not fire → round 1 as
 above, no split question.
 
-**Round 1 when it fires:** the playback and one split question, nothing else. One
+**Round 1 when it fires:** the playback map and one split question, nothing else: no
+per-criterion questions. One
 `<aisf-question>`:
 
 - An `<aisf-context kind="mockup">` shows each part: title, drafted Context and Scope written
@@ -166,29 +214,26 @@ then guard `plan → planned` on `<n>`.
 **After posting:** report every part number and that each needs its own plan run. Stop. Steps
 4–8 never run after a split.
 
-**Done** when no decision in scope is open: every criterion has its flow, its landing module and
-its data settled in the ledger.
-
-**Spike.** A decision that needs real experience first pauses planning:
-
-1. Post a sub-issue, `type: spike`, `status: ready`: the options, what result settles them, and
-   that its verdict goes into this ticket's `## Planning so far`. It gets `hitl` when the human
-   confirmed they judge the result; without it `aisf:spike` tests alone.
-2. Write the ledger into the ticket body as `## Planning so far`, ending with
-   `Waiting for the verdict of #<spike>`.
-3. The ticket stays `status: plan`. Report the spike's number, that `aisf:spike` runs it, and
-   stop.
-
 ## 4. Split
 
 **Frontend and backend first.** Frontend is every surface a human sees, judged from the codebase. All of it becomes **one UI sub-issue**, built later through the design
 path, never by `aisf:implement-ticket`. It is blocked by every backend sub-issue it reads from.
 
-**Backend** splits into small, ordered sub-issues, **one module and one layer each**, as
-`project-architecture` names them. Wiring a sub-issue's classes into the composition root is part
-of that sub-issue. A sub-issue touching a second module or layer is cut again. An exception is a
-question to the human; an agreed one goes to Risks as a knowing override. Infrastructure before
-consumers. A sub-issue may depend on an earlier one but must not need a sibling half-done.
+**Backend** is cut by module responsibility first, then along the interfaces between layers:
+**one module and one layer each**, as `project-architecture` names them. Wiring a sub-issue's
+classes into the composition root is part of that sub-issue.
+
+- **Inside a module:** infrastructure → business → presentation.
+- **Between modules:** by dependency. A provider's facade (presentation) comes before the
+  consumer's adapter (infrastructure) that calls it.
+- **Port exception:** an infrastructure sub-issue owns the port it implements in
+  `business/port/`, and nothing else in business.
+- **Small changes:** when a layer's share is wiring only, its module's layers may merge into one
+  sub-issue. That is a question, with its effect.
+
+Any other sub-issue touching a second module or layer is cut again. An exception is a question
+to the human; an agreed one goes to Risks as a knowing override. A sub-issue may depend on an
+earlier one but must not need a sibling half-done.
 
 Per sub-issue: **Title** (the outcome) · **Module · Layer** · **Scope** (one sentence, in and
 out) · **Blocked-by** ·
@@ -209,7 +254,8 @@ Two splits have no umbrella:
 One read-only critic agent; say so in the prompt. It gets the ticket body, the ledger, the
 draft split and the three project slots, and may read the codebase. It hunts: a breach of a hard
 ban or placement rule, a second way to do what the project already does, an acceptance
-criterion no sub-issue proves, a flow step ending nowhere, a decision taken without the human.
+criterion no sub-issue proves, a flow step ending nowhere, a decision taken without the human,
+and work no criterion needs.
 
 Each objection you share becomes a question in the next round (step 3). One you reject is listed
 at Confirm with the reason, and goes to Risks.
@@ -244,6 +290,7 @@ spec**.
     ### Risks
     Failure modes and blast radius · knowing human overrides · rejected critic objections.
     ### Out of scope
+    Including **Noticed, not planned**.
     ### Acceptance criteria
     The ticket's own criteria, each tagged with the sub-issue that proves it.
     ### Sub-issues

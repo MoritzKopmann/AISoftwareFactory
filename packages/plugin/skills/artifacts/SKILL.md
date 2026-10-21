@@ -70,7 +70,8 @@ arrives later in the resume prompt. Read it the same way.
   are for figures only. They never call `aisf.send` or `aisf.userInputState`. They may listen with
   `aisf.on('status', …)`.
 - **No `localStorage`.**
-- **No header, no ticket identity.** The page starts at the current round.
+- **No header, no ticket identity.** The page starts at the current round. The one exception:
+  a figure the calling skill places above the rounds.
 - **Styling:** kit elements are styled by the kit alone. A page may add one `<style>` for its
   figures, using only kit tokens and the kit figure classes: no hex colours, no fonts, no URLs.
   Content inside `<aisf-context kind="mockup">` is exempt. It may use its own colours, system

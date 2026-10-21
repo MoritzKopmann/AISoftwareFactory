@@ -39,6 +39,23 @@ describe('AisfCardElement', () => {
     expect($<HTMLElement & { label: string }>('aisf-card').label).toBe('A');
   });
 
+  it('should show the effect part after gain and cost when the card has an effect', async () => {
+    await mount(
+      '<aisf-card value="a" gain="fast" cost="more code" effect="adds table notifications">A</aisf-card>',
+    );
+
+    expect($('.aisf-card-effect').textContent).toBe('adds table notifications');
+    expect($<HTMLElement & { label: string }>('aisf-card').label).toBe('A');
+  });
+
+  it('should drop the effect part when the effect attribute goes away', async () => {
+    await mount('<aisf-card value="a" effect="adds one sub-issue">A</aisf-card>');
+
+    $('aisf-card').removeAttribute('effect');
+
+    expect(document.querySelector('.aisf-card-effect')).toBeNull();
+  });
+
   it('should show neither gain nor cost when the card has neither', async () => {
     await mount('<aisf-card value="a">A</aisf-card>');
 

@@ -86,6 +86,7 @@ describe('specimens page', () => {
     expect($$('.aisf-switch[aria-pressed="true"]')).toHaveLength(1);
     expect($$('.aisf-switch[aria-pressed="false"]')).toHaveLength(1);
     expect($$('aisf-card[gain][cost]').length).toBeGreaterThan(0);
+    expect($$('aisf-card[effect] .aisf-card-effect').length).toBeGreaterThan(0);
     expect($$('aisf-question[problem]').length).toBeGreaterThan(0);
     expect($$('aisf-round[saving]').length).toBeGreaterThan(0);
     expect($$('[data-aisf-status="busy"] .aisf-notice-busy').length).toBeGreaterThan(0);
