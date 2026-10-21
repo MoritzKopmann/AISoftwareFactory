@@ -1,0 +1,1599 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Plan 214, round 1 playback (example)</title>
+    <!-- The page's one figure style: kit tokens and kit figure classes only. -->
+    <style>
+      /* The playback sits above the rounds, in the same centred column a round uses. */
+      .pb-playback {
+        display: grid;
+        gap: 12px;
+        min-width: 0;
+        max-width: 760px;
+        margin: 0 auto 32px;
+      }
+
+      .pb-intro {
+        display: grid;
+        gap: 6px;
+      }
+
+      .pb-end {
+        font-size: 17px;
+        line-height: 1.5;
+        max-width: 64ch;
+        text-wrap: pretty;
+      }
+
+      /* The figure is the page: on wide screens it leaves the 760px column. */
+      .pb-figure {
+        --pb-width: min(1200px, calc(100vw - 48px));
+        gap: 14px;
+      }
+
+      @media (min-width: 1100px) {
+        .pb-figure {
+          width: var(--pb-width);
+          margin-left: calc((100% - var(--pb-width)) / 2);
+        }
+      }
+
+      .pb-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px 16px;
+      }
+
+      .pb-pick {
+        display: grid;
+        gap: 10px;
+        flex: 1 1 320px;
+        min-width: 0;
+      }
+
+      /* The selected criterion, in full, right under the selector. */
+      .pb-criterion {
+        display: grid;
+        gap: 6px;
+        max-width: 72ch;
+        margin: 0;
+        padding: 8px 12px;
+        border-left: 3px solid var(--info);
+        background: var(--surface);
+      }
+
+      .pb-criterion-row {
+        display: grid;
+        grid-template-columns: 40px minmax(0, 1fr);
+        column-gap: 8px;
+        align-items: baseline;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .pb-criterion-key {
+        font: 700 var(--label-size) / 1.4 var(--font-mono);
+        letter-spacing: var(--label-spacing);
+        color: var(--info);
+      }
+
+      .pb-criterion-text {
+        min-width: 0;
+        font: 600 var(--text-size) / 1.4 var(--font-ui);
+        text-wrap: pretty;
+      }
+
+      .pb-criterion-list {
+        display: grid;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+      }
+
+      .pb-criterion-list .pb-criterion-text {
+        font-weight: 400;
+        font-size: var(--text-size-sm);
+      }
+
+      .pb-switches {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .pb-switches .aisf-switch {
+        min-width: 52px;
+        min-height: 36px;
+      }
+
+      @media (pointer: coarse) {
+        .pb-switches .aisf-switch {
+          min-height: 44px;
+        }
+      }
+
+      .pb-key {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        font-size: var(--text-size-sm);
+      }
+
+      .pb-key .aisf-node {
+        min-height: 24px;
+        padding: 2px 8px;
+        font-size: 12px;
+      }
+
+      .pb-key-path {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: 4px;
+        color: var(--muted);
+      }
+
+      .pb-key-path svg {
+        width: 34px;
+        height: 12px;
+      }
+
+      /* ---- The map: modules × layers, plus the event bus between two modules. ---- */
+      /* Own stacking context: boxes never rise above the kit's sticky action bar. */
+      .pb-map {
+        position: relative;
+        isolation: isolate;
+        display: grid;
+        gap: 14px;
+        min-width: 0;
+      }
+
+      .pb-wires {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+        pointer-events: none;
+      }
+
+      .pb-axis {
+        display: none;
+      }
+
+      .pb-module {
+        display: grid;
+        align-content: start;
+        min-width: 0;
+        padding: 0 10px 10px 44px;
+        background: color-mix(in srgb, var(--surface) 70%, transparent);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius);
+      }
+
+      .pb-module[data-mark='new'] {
+        border-color: var(--ok);
+        box-shadow: inset 0 3px 0 var(--ok);
+      }
+
+      .pb-module[data-mark='changed'] {
+        border-color: var(--accent);
+        box-shadow: inset 0 3px 0 var(--accent);
+      }
+
+      /* Greyed: drawn because a path reads it, never changed. */
+      .pb-module[data-mark='untouched'] {
+        background: transparent;
+        border-style: dashed;
+        border-color: var(--border-strong);
+      }
+
+      .pb-module[data-mark='untouched'] .pb-module-name {
+        color: var(--muted);
+      }
+
+      .pb-module-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 2px 8px;
+        margin-left: -34px;
+        padding: 10px 0 8px;
+      }
+
+      .pb-module-name {
+        font: 700 15px/1.3 var(--font-mono);
+        color: var(--text);
+      }
+
+      .pb-module-tag {
+        font: 500 var(--label-size) / 18px var(--font-mono);
+        text-transform: var(--label-transform);
+        letter-spacing: var(--label-spacing);
+        white-space: nowrap;
+      }
+
+      .pb-module[data-mark='new'] .pb-module-tag {
+        color: var(--ok);
+      }
+
+      .pb-module[data-mark='changed'] .pb-module-tag {
+        color: var(--accent);
+      }
+
+      .pb-module[data-mark='untouched'] .pb-module-tag,
+      .pb-bus .pb-module-tag {
+        color: var(--muted);
+      }
+
+      .pb-module-note {
+        flex: 1 1 100%;
+        font-size: var(--text-size-sm);
+        line-height: var(--line-sm);
+        color: var(--muted);
+      }
+
+      /* Frontend: no layers. Screens are frames; the touched parts sit inside them. */
+      .pb-module.pb-frontend {
+        padding: 0 8px 12px;
+      }
+
+      .pb-frontend .pb-module-head {
+        margin-left: 0;
+      }
+
+      .pb-screen {
+        display: grid;
+        gap: 22px;
+        min-width: 0;
+        padding: 8px 10px 14px 36px;
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius);
+        transition: opacity 0.2s;
+      }
+
+      .pb-screen[data-mark='changed'] {
+        border-color: var(--accent);
+      }
+
+      .pb-screen[data-mark='new'] {
+        border-color: var(--ok);
+      }
+
+      .pb-screen[data-off] {
+        opacity: 0.32;
+      }
+
+      .pb-screen-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 2px 8px;
+        margin-left: -26px;
+      }
+
+      .pb-screen-head .pb-name {
+        font-weight: 700;
+      }
+
+      .pb-screen[data-mark='changed'] .pb-module-tag {
+        color: var(--accent);
+      }
+
+      .pb-screen[data-mark='new'] .pb-module-tag {
+        color: var(--ok);
+      }
+
+      .pb-screen-head .pb-role {
+        flex: 1 1 100%;
+      }
+
+      /* The bus is shared code, not a module: a lighter frame. */
+      .pb-bus {
+        padding-top: 0;
+        background: transparent;
+        border: 1px dashed var(--border);
+      }
+
+      .pb-layer {
+        display: grid;
+        align-content: start;
+        gap: 22px;
+        min-width: 0;
+        padding: 8px 0 24px;
+        border-top: 1px dashed var(--border);
+      }
+
+      /* In line with the boxes: the gutter to the left is for the wires. */
+      .pb-layer-name {
+        font: var(--label-weight) var(--label-size) / 1.4 var(--label-font);
+        text-transform: var(--label-transform);
+        letter-spacing: var(--label-spacing);
+        color: var(--muted);
+      }
+
+      .pb-layer-empty {
+        min-height: 0;
+      }
+
+      /* One component: a kit node, stacked name over role. */
+      .pb-box.aisf-node {
+        position: relative;
+        z-index: 2;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: baseline;
+        column-gap: 6px;
+        width: 100%;
+        max-width: 420px;
+        padding: 7px 10px 8px;
+        font-weight: 400;
+        transition: opacity 0.2s;
+      }
+
+      .pb-box.aisf-node-untouched {
+        background: var(--surface);
+      }
+
+      .pb-box::before {
+        grid-row: 1;
+      }
+
+      /* Untouched has no marker in the kit; keep the column so names line up. */
+      .pb-box.aisf-node-untouched::before {
+        content: '';
+      }
+
+      .pb-name {
+        grid-column: 2;
+        min-width: 0;
+        font: 600 13px/1.3 var(--font-mono);
+        overflow-wrap: anywhere;
+      }
+
+      .pb-box.aisf-node-untouched .pb-name {
+        font-weight: 500;
+      }
+
+      .pb-role {
+        grid-column: 2;
+        min-width: 0;
+        margin-top: 2px;
+        font: 400 12px/1.35 var(--font-ui);
+        color: var(--muted);
+        overflow-wrap: anywhere;
+      }
+
+      .pb-badges {
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        display: flex;
+        gap: 3px;
+      }
+
+      .pb-badge {
+        display: grid;
+        place-content: center;
+        min-width: 21px;
+        height: 21px;
+        padding: 0 5px;
+        font: 700 11px/1 var(--font-mono);
+        font-variant-numeric: tabular-nums;
+        color: var(--surface);
+        background: var(--info);
+        border-radius: 11px;
+      }
+
+      .pb-badges:has(.pb-badge-ac) {
+        left: auto;
+        right: 8px;
+      }
+
+      .pb-badge-ac {
+        color: var(--info);
+        background: var(--surface);
+        border: 1px solid var(--info);
+      }
+
+      .pb-box .aisf-stop {
+        grid-column: 2;
+        justify-self: start;
+        max-width: 100%;
+        white-space: normal;
+        margin-top: 6px;
+        background: var(--surface);
+      }
+
+      .pb-map[data-all] .pb-box.aisf-node {
+        padding-top: 16px;
+      }
+
+      .pb-box[data-off] {
+        opacity: 0.32;
+      }
+
+      /* Wires: the selected path in the ink colour, the rest faint. */
+      .pb-wire {
+        fill: none;
+        stroke: var(--border);
+        stroke-width: 1.25;
+        stroke-dasharray: 3 4;
+      }
+
+      .pb-wire[data-on] {
+        stroke: var(--info);
+        stroke-width: 2.25;
+        stroke-dasharray: none;
+        marker-end: url(#pb-head);
+      }
+
+      .pb-wire[data-kind='event'][data-on] {
+        stroke-dasharray: 7 4;
+      }
+
+      .pb-wire[data-hot] {
+        stroke: var(--accent);
+        stroke-width: 3.5;
+        marker-end: url(#pb-head-hot);
+      }
+
+      .pb-head {
+        fill: var(--info);
+      }
+
+      .pb-port {
+        stroke: var(--info);
+        stroke-width: 4;
+        stroke-linecap: round;
+      }
+
+      .pb-head-hot {
+        fill: var(--accent);
+      }
+
+      .pb-start {
+        fill: var(--surface);
+        stroke: var(--info);
+        stroke-width: 2;
+      }
+
+      .pb-start-label {
+        fill: var(--info);
+        font: 600 11px var(--font-mono);
+      }
+
+      .pb-wires[data-drawing] .pb-wire[data-on] {
+        stroke-dasharray: var(--len) var(--len);
+        stroke-dashoffset: var(--len);
+        animation: pb-draw 0.28s ease-out forwards;
+        animation-delay: calc(var(--i) * 55ms);
+      }
+
+      @keyframes pb-draw {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .pb-wires[data-drawing] .pb-wire[data-on] {
+          animation: none;
+          stroke-dasharray: none;
+          stroke-dashoffset: 0;
+        }
+      }
+
+      /* ---- Route sheet: the selected path as numbered rows. ---- */
+      .pb-route {
+        display: grid;
+        gap: 0;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border-top: 1px solid var(--border-strong);
+      }
+
+      .pb-step {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        column-gap: 10px;
+        row-gap: 2px;
+        align-items: baseline;
+        padding: 7px 4px;
+        border-bottom: 1px dashed var(--border);
+        cursor: default;
+      }
+
+      .pb-step:hover,
+      .pb-step:focus-visible {
+        background: var(--accent-soft);
+      }
+
+      .pb-step .pb-badge {
+        grid-row: 1 / span 2;
+        align-self: start;
+        justify-self: start;
+      }
+
+      .pb-step-hop {
+        min-width: 0;
+        font: 500 13px/1.4 var(--font-mono);
+        overflow-wrap: anywhere;
+      }
+
+      .pb-step-hop .pb-sep {
+        color: var(--muted);
+        font-weight: 400;
+      }
+
+      .pb-step-call {
+        min-width: 0;
+        font: 400 12.5px/1.4 var(--font-mono);
+        color: var(--muted);
+        overflow-wrap: anywhere;
+      }
+
+      .pb-via {
+        display: inline-block;
+        margin-left: 6px;
+        padding: 0 5px;
+        font: 500 10.5px/16px var(--font-mono);
+        text-transform: var(--label-transform);
+        letter-spacing: var(--label-spacing);
+        color: var(--info);
+        border: 1px solid var(--info);
+        vertical-align: 1px;
+      }
+
+      .pb-step-end {
+        grid-template-columns: 28px minmax(0, 1fr);
+      }
+
+      .pb-step-end .aisf-stop {
+        justify-self: start;
+      }
+
+      .pb-route-all {
+        padding: 10px 0 4px;
+        color: var(--muted);
+        font-size: var(--text-size-sm);
+      }
+
+      .pb-foot {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        padding-bottom: 12px;
+      }
+
+      @media (min-width: 640px) {
+        .pb-route {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          column-gap: 24px;
+        }
+      }
+
+      /* ---- Wide: a true module × layer grid. Rows line up across modules via subgrid. ---- */
+      @media (min-width: 1100px) {
+        .pb-figure {
+          --pb-width: min(1320px, calc(100vw - 32px));
+        }
+
+        .pb-map {
+          grid-template-columns: max-content minmax(0, 1fr) 170px repeat(3, minmax(0, 1fr));
+          grid-template-rows: auto auto auto auto;
+          column-gap: 12px;
+          row-gap: 0;
+        }
+
+        /* With a frontend column: it comes first and has no rows of its own. */
+        .pb-map[data-ui] {
+          grid-template-columns: 184px max-content minmax(0, 1fr) 128px repeat(3, minmax(0, 1fr));
+          column-gap: 10px;
+        }
+
+        /* Tighter frames so four layered modules keep readable boxes beside the frontend. */
+        .pb-map[data-ui] .pb-module:not(.pb-frontend) {
+          padding: 0 8px 4px 42px;
+        }
+
+        .pb-map[data-ui] .pb-module.pb-bus {
+          padding-left: 26px;
+        }
+
+        .pb-map[data-ui] .pb-bus .pb-module-head {
+          margin-left: -16px;
+        }
+
+        .pb-map[data-ui] .pb-box.aisf-node {
+          padding-right: 8px;
+          padding-left: 8px;
+        }
+
+        .pb-map[data-ui] .pb-frontend .pb-screen {
+          padding: 8px 8px 12px 22px;
+        }
+
+        .pb-map[data-ui] .pb-frontend .pb-screen-head {
+          margin-left: -12px;
+        }
+
+        .pb-axis,
+        .pb-module {
+          display: grid;
+          grid-row: 1 / span 4;
+          grid-template-rows: subgrid;
+        }
+
+        .pb-module.pb-frontend {
+          grid-template-rows: none;
+          align-content: start;
+          gap: 8px;
+        }
+
+        .pb-axis > * {
+          padding: 10px 0;
+          border-top: 1px dashed var(--border);
+          font: var(--label-weight) var(--label-size) / 1.4 var(--label-font);
+          text-transform: var(--label-transform);
+          letter-spacing: var(--label-spacing);
+          color: var(--muted);
+        }
+
+        .pb-axis > :first-child {
+          border-top: 0;
+        }
+
+        .pb-module {
+          padding: 0 10px 4px 44px;
+        }
+
+        .pb-module-head {
+          margin-left: -32px;
+        }
+
+        .pb-layer-name {
+          display: none;
+        }
+
+        .pb-layer {
+          padding: 12px 0 26px;
+        }
+
+        .pb-layer-empty {
+          display: none;
+        }
+
+        .pb-box.aisf-node {
+          max-width: none;
+        }
+
+        .pb-route {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- The playback map sits above every round and is redrawn after each round. -->
+    <div class="pb-playback">
+      <section class="pb-intro">
+        <span class="label">End state</span>
+        <p class="pb-end">
+          Merging a pull request that closes a ticket emails the ticket's owner once, with the
+          ticket title and a link to the PR. A redelivered webhook never sends a second email.
+          Owners can switch these emails off in their profile.
+        </p>
+      </section>
+
+      <aisf-figure
+        class="pb-figure"
+        caption="Only the modules this ticket touches, by layer. Pick a criterion to trace its path; numbers are call order."
+      >
+        <div class="pb-controls">
+          <div class="pb-pick">
+            <div class="pb-switches" role="group" aria-label="Path to show"></div>
+            <div class="pb-criterion" id="pb-criterion" aria-live="polite"></div>
+          </div>
+          <div class="pb-key" aria-label="Key">
+            <span class="aisf-node aisf-node-new">new</span>
+            <span class="aisf-node aisf-node-changed">changed</span>
+            <span class="aisf-node aisf-node-untouched">untouched</span>
+            <span class="pb-key-path">
+              <svg viewBox="0 0 34 12" aria-hidden="true">
+                <path class="pb-wire" data-on d="M2 6 H26" />
+              </svg>
+              call
+            </span>
+          </div>
+        </div>
+        <div class="pb-map" id="pb-map"></div>
+        <ol class="pb-route" id="pb-route"></ol>
+        <div class="pb-foot"><output class="aisf-readout" id="pb-readout"></output></div>
+      </aisf-figure>
+    </div>
+
+    <aisf-round number="1">
+      <aisf-question
+        name="ac1-path"
+        heading="AC1: the owner gets one email when the PR merges, unless they switched it off"
+        assumes="the PR body names its ticket (Closes #n)"
+      >
+        <aisf-card value="correct" suggested why="Each step is a call that exists or is planned"
+          >Correct</aisf-card
+        >
+        <aisf-card value="wrong-path" why="Names no step. To name one, use Other: “step 9 should …”"
+          >Wrong path</aisf-card
+        >
+      </aisf-question>
+
+      <aisf-question
+        name="ac2-path"
+        heading="AC2: a redelivered merge webhook sends no second email"
+        assumes="GitHub redelivers with the same PR id"
+      >
+        <aisf-card value="correct" suggested why="The claim row is the only guard needed"
+          >Correct</aisf-card
+        >
+        <aisf-card value="wrong-path" why="Names no step. To name one, use Other: “step 9 should …”"
+          >Wrong path</aisf-card
+        >
+      </aisf-question>
+
+      <aisf-question
+        name="ac3-path"
+        heading="AC3: an owner can switch merge emails off in their profile"
+        assumes="profile settings already live in users"
+      >
+        <aisf-card value="correct" suggested why="Reuses the existing settings endpoint"
+          >Correct</aisf-card
+        >
+        <aisf-card value="wrong-path" why="Names no step. To name one, use Other: “step 9 should …”"
+          >Wrong path</aisf-card
+        >
+      </aisf-question>
+    </aisf-round>
+
+    <script>
+      // Figure only: draws the module map and the paths from one plan object.
+      (() => {
+        const LAYERS = ['presentation', 'business', 'infrastructure'];
+
+        // Modules, left to right on desktop, top to bottom on phone.
+        // kind 'frontend' has NO layers: its boxes carry layer: null and group under a screen
+        // (a frame, not a box). The frontend column is drawn only when some criterion's path
+        // touches one of its boxes; otherwise it is left out entirely.
+        const MODULES = [
+          { id: 'web', kind: 'frontend', name: 'frontend', mark: 'changed', tag: 'changed' },
+          { id: 'pull-requests', mark: 'changed', tag: 'changed' },
+          { id: 'bus', bus: true, tag: 'shared', name: 'event bus' },
+          { id: 'notifications', mark: 'new', tag: 'new module' },
+          {
+            id: 'tickets',
+            mark: 'untouched',
+            tag: 'untouched',
+            note: 'Only read, through its facade. Drawn: what the path touches.',
+          },
+          { id: 'users', mark: 'changed', tag: 'changed' },
+        ];
+
+        // Frontend screens: a frame per touched screen, diff-coloured like a box.
+        const SCREENS = [
+          {
+            id: 'profileSettings',
+            module: 'web',
+            name: 'ProfileSettingsPage',
+            role: 'screen · /profile/settings',
+            mark: 'changed',
+          },
+        ];
+
+        // [id, module, layer, name, role, mark, screen]. Frontend boxes: layer null, screen set.
+        const BOXES = [
+          [
+            'mergeToggle',
+            'web',
+            null,
+            'EmailOnMergeToggle',
+            'new section “Notifications” · switch',
+            'new',
+            'profileSettings',
+          ],
+          [
+            'prCtrl',
+            'pull-requests',
+            'presentation',
+            'GithubWebhookController',
+            'controller',
+            'untouched',
+          ],
+          [
+            'prSvc',
+            'pull-requests',
+            'business',
+            'PullRequestService',
+            'service · markMerged() now publishes',
+            'changed',
+          ],
+          [
+            'prRepo',
+            'pull-requests',
+            'infrastructure',
+            'PullRequestRepository',
+            'repository',
+            'untouched',
+          ],
+          ['evt', 'bus', 'business', 'pullRequest.merged', 'event · added to DomainEvents', 'new'],
+          [
+            'handler',
+            'notifications',
+            'presentation',
+            'PullRequestMergedHandler',
+            'bus subscriber',
+            'new',
+          ],
+          ['useCase', 'notifications', 'business', 'NotifyOwnerOnMerge', 'use case', 'new'],
+          [
+            'logRepo',
+            'notifications',
+            'infrastructure',
+            'SqlNotificationLogRepository',
+            'implements NotificationLogRepository · new table notification_log',
+            'new',
+          ],
+          [
+            'ticketsAdapter',
+            'notifications',
+            'infrastructure',
+            'TicketsAdapter',
+            'implements TicketPort',
+            'new',
+          ],
+          [
+            'usersAdapter',
+            'notifications',
+            'infrastructure',
+            'UsersAdapter',
+            'implements UserPort',
+            'new',
+          ],
+          ['mailer', 'notifications', 'infrastructure', 'SmtpMailer', 'implements Mailer', 'new'],
+          [
+            'ticketsFacade',
+            'tickets',
+            'presentation',
+            'TicketsFacade',
+            'internal API',
+            'untouched',
+          ],
+          ['ticketSvc', 'tickets', 'business', 'TicketService', 'service', 'untouched'],
+          [
+            'ticketRepo',
+            'tickets',
+            'infrastructure',
+            'TicketRepository',
+            'repository',
+            'untouched',
+          ],
+          [
+            'settingsCtrl',
+            'users',
+            'presentation',
+            'UserSettingsController',
+            'controller · accepts emailOnMerge',
+            'changed',
+          ],
+          [
+            'usersFacade',
+            'users',
+            'presentation',
+            'UsersFacade',
+            'internal API · new getContact()',
+            'changed',
+          ],
+          [
+            'userSvc',
+            'users',
+            'business',
+            'UserService',
+            'service · settings gain emailOnMerge',
+            'changed',
+          ],
+          [
+            'userRepo',
+            'users',
+            'infrastructure',
+            'UserRepository',
+            'repository · new column email_on_merge',
+            'changed',
+          ],
+        ].map(([id, module, layer, name, role, mark, screen = null]) => ({
+          id,
+          module,
+          layer,
+          name,
+          role,
+          mark,
+          screen,
+        }));
+
+        // One path per criterion: [from, to, call, via]. `null` from is the entry, made by `actor`.
+        const PATHS = {
+          AC1: {
+            title: 'the owner gets one email when the PR merges, unless they switched it off',
+            actor: 'GitHub',
+            steps: [
+              [null, 'prCtrl', 'POST /webhooks/github · pull_request closed, merged', 'entry'],
+              ['prCtrl', 'prSvc', 'markMerged(prId)'],
+              ['prSvc', 'prRepo', 'save(pr)'],
+              ['prSvc', 'evt', 'publish({ prId, ticketId })', 'event'],
+              ['evt', 'handler', 'delivers pullRequest.merged', 'event'],
+              ['handler', 'useCase', 'execute(prId, ticketId)'],
+              ['useCase', 'logRepo', 'tryClaim(prId) → true'],
+              ['useCase', 'ticketsAdapter', 'getTicket(ticketId)'],
+              ['ticketsAdapter', 'ticketsFacade', 'getTicket(id)', 'facade'],
+              ['ticketsFacade', 'ticketSvc', 'get(id)'],
+              ['ticketSvc', 'ticketRepo', 'findById(id)'],
+              ['useCase', 'usersAdapter', 'getContact(ownerId)'],
+              ['usersAdapter', 'usersFacade', 'getContact(id)', 'facade'],
+              ['usersFacade', 'userSvc', 'get(id)'],
+              ['userSvc', 'userRepo', 'findById(id)'],
+              ['useCase', 'mailer', 'send(prMergedEmail) if emailOnMerge'],
+            ],
+            end: ['mailer', 'email sent'],
+          },
+          AC2: {
+            title: 'a redelivered merge webhook sends no second email',
+            actor: 'GitHub',
+            steps: [
+              [null, 'prCtrl', 'POST /webhooks/github · same delivery again', 'entry'],
+              ['prCtrl', 'prSvc', 'markMerged(prId)'],
+              ['prSvc', 'prRepo', 'save(pr)'],
+              ['prSvc', 'evt', 'publish({ prId, ticketId })', 'event'],
+              ['evt', 'handler', 'delivers pullRequest.merged', 'event'],
+              ['handler', 'useCase', 'execute(prId, ticketId)'],
+              ['useCase', 'logRepo', 'tryClaim(prId) → false, row exists'],
+            ],
+            end: ['useCase', 'stops, no email'],
+          },
+          AC3: {
+            title: 'an owner can switch merge emails off in their profile',
+            actor: 'owner',
+            steps: [
+              [null, 'mergeToggle', 'toggles “Email me when a PR merges” off', 'entry'],
+              [
+                'mergeToggle',
+                'settingsCtrl',
+                'PATCH /me/settings · { emailOnMerge: false }',
+                'http',
+              ],
+              ['settingsCtrl', 'userSvc', 'updateSettings(userId, settings)'],
+              ['userSvc', 'userRepo', 'save(user)'],
+            ],
+            end: ['userRepo', 'setting saved'],
+          },
+        };
+
+        const AC_KEYS = Object.keys(PATHS);
+        const moduleOf = new Map(MODULES.map((module) => [module.id, module]));
+        const isFrontend = (boxId) =>
+          boxId !== null &&
+          moduleOf.get(BOXES.find((box) => box.id === boxId).module).kind === 'frontend';
+        const UI_TOUCHED = AC_KEYS.some((ac) =>
+          PATHS[ac].steps.some(([from, to]) => isFrontend(from) || isFrontend(to)),
+        );
+        const SHOWN_MODULES = MODULES.filter((module) => module.kind !== 'frontend' || UI_TOUCHED);
+        const SVG_NS = 'http://www.w3.org/2000/svg';
+        const byId = new Map(BOXES.map((box) => [box.id, box]));
+        const map = document.getElementById('pb-map');
+        const route = document.getElementById('pb-route');
+        const criterion = document.getElementById('pb-criterion');
+        const readout = document.getElementById('pb-readout');
+        const switches = document.querySelector('.pb-switches');
+        /** @type {Map<string, HTMLElement>} */
+        const boxEls = new Map();
+        /** @type {Map<string, HTMLElement>} */
+        const screenEls = new Map();
+        let selected = 'AC1';
+        let hotKey = null;
+
+        // Unique wires across all paths: shared hops are drawn once.
+        const WIRES = new Map();
+        for (const ac of AC_KEYS) {
+          for (const [from, to, , via] of PATHS[ac].steps) {
+            const key = `${from ?? 'entry'}>${to}`;
+            if (!WIRES.has(key)) WIRES.set(key, { key, from, to, via, acs: new Set() });
+            WIRES.get(key).acs.add(ac);
+          }
+        }
+
+        function el(tag, className, text) {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (text !== undefined) node.textContent = text;
+          return node;
+        }
+
+        function svg(tag, attributes = {}) {
+          const node = document.createElementNS(SVG_NS, tag);
+          for (const [name, value] of Object.entries(attributes))
+            node.setAttribute(name, String(value));
+          return node;
+        }
+
+        // Identifiers break at word joins, never mid-word.
+        function identifier(text) {
+          const span = el('span', 'pb-name');
+          const parts = text.split(/(?<=[a-z.])(?=[A-Z])|(?<=\.)/);
+          parts.forEach((part, index) => {
+            if (index > 0) span.append(document.createElement('wbr'));
+            span.append(part);
+          });
+          return span;
+        }
+
+        function buildMap() {
+          const wires = svg('svg', { class: 'pb-wires', 'aria-hidden': 'true' });
+          const defs = svg('defs');
+          for (const [id, cls] of [
+            ['pb-head', 'pb-head'],
+            ['pb-head-hot', 'pb-head-hot'],
+          ]) {
+            const marker = svg('marker', {
+              id,
+              viewBox: '0 0 10 10',
+              refX: 9,
+              refY: 5,
+              markerWidth: 9,
+              markerHeight: 9,
+              markerUnits: 'userSpaceOnUse',
+              orient: 'auto',
+            });
+            marker.append(svg('path', { d: 'M0 0 L10 5 L0 10 z', class: cls }));
+            defs.append(marker);
+          }
+          wires.append(defs);
+          map.append(wires);
+
+          const axis = el('div', 'pb-axis');
+          axis.setAttribute('aria-hidden', 'true');
+          axis.append(el('span', '', ''), ...LAYERS.map((layer) => el('span', '', layer)));
+          map.append(axis);
+
+          map.toggleAttribute('data-ui', UI_TOUCHED);
+          for (const module of SHOWN_MODULES) {
+            const kindClass = module.bus
+              ? ' pb-bus'
+              : module.kind === 'frontend'
+                ? ' pb-frontend'
+                : '';
+            const card = el('section', `pb-module${kindClass}`);
+            if (module.mark) card.dataset.mark = module.mark;
+            card.setAttribute('aria-label', `${module.name ?? module.id}, ${module.tag}`);
+            const head = el('header', 'pb-module-head');
+            head.append(el('span', 'pb-module-name', module.name ?? module.id));
+            head.append(el('span', 'pb-module-tag', module.tag));
+            if (module.note) head.append(el('span', 'pb-module-note', module.note));
+            card.append(head);
+            if (module.kind === 'frontend') {
+              for (const screen of SCREENS.filter((item) => item.module === module.id))
+                card.append(buildScreen(screen));
+              // The frontend comes before the layer labels on desktop.
+              map.insertBefore(card, axis);
+              continue;
+            }
+            for (const layer of LAYERS) {
+              const boxes = BOXES.filter((box) => box.module === module.id && box.layer === layer);
+              const row = el('div', boxes.length === 0 ? 'pb-layer pb-layer-empty' : 'pb-layer');
+              if (boxes.length > 0 && !module.bus) row.append(el('span', 'pb-layer-name', layer));
+              for (const box of boxes) row.append(buildBox(box));
+              card.append(row);
+            }
+            map.append(card);
+          }
+        }
+
+        function buildBox(box) {
+          const node = el('div', `pb-box aisf-node aisf-node-${box.mark}`);
+          node.dataset.id = box.id;
+          const role = identifier(box.role);
+          role.className = 'pb-role';
+          node.append(identifier(box.name), role);
+          boxEls.set(box.id, node);
+          return node;
+        }
+
+        function buildScreen(screen) {
+          const frame = el('div', 'pb-screen');
+          frame.dataset.mark = screen.mark;
+          frame.setAttribute('aria-label', `${screen.name}, ${screen.mark}`);
+          const head = el('div', 'pb-screen-head');
+          const role = identifier(screen.role);
+          role.className = 'pb-role';
+          head.append(identifier(screen.name), el('span', 'pb-module-tag', screen.mark), role);
+          frame.append(head);
+          for (const box of BOXES.filter((item) => item.screen === screen.id))
+            frame.append(buildBox(box));
+          screenEls.set(screen.id, frame);
+          return frame;
+        }
+
+        function buildSwitches() {
+          for (const key of [...AC_KEYS, 'All']) {
+            const button = el('button', 'aisf-switch', key);
+            button.type = 'button';
+            button.dataset.ac = key;
+            button.addEventListener('click', () => select(key));
+            switches.append(button);
+          }
+        }
+
+        // Geometry is read from the laid-out boxes, so wires follow any width.
+        // Ports: every box takes calls in on its left edge and sends calls out of its bottom edge.
+        // Each wire gets its own exit, its own drop depth, its own lane and its own entry slot,
+        // so no two wires share a segment and every arrow ends in a straight stub.
+        const LANE_FIRST = 14;
+        const LANE_STEP = 5;
+        const EXIT_FIRST = 12;
+        const EXIT_STEP = 8;
+        const DROP_FIRST = 5;
+        const DROP_STEP = 5;
+        const SLOT_FIRST = 18;
+        const SLOT_STEP = 8;
+
+        function rectOf(id) {
+          return relativeRect(boxEls.get(id));
+        }
+
+        function relativeRect(node) {
+          const base = map.getBoundingClientRect();
+          const r = node.getBoundingClientRect();
+          return {
+            left: r.left - base.left,
+            right: r.right - base.left,
+            top: r.top - base.top,
+            bottom: r.bottom - base.top,
+          };
+        }
+
+        function sameColumn(a, b) {
+          return Math.abs(a.left - b.left) < 4;
+        }
+
+        // An orthogonal polyline with small rounded corners.
+        function roundedPath(points) {
+          let d = `M${points[0].x} ${points[0].y}`;
+          for (let i = 1; i < points.length - 1; i += 1) {
+            const prev = points[i - 1];
+            const here = points[i];
+            const next = points[i + 1];
+            const inLength = Math.hypot(here.x - prev.x, here.y - prev.y);
+            const outLength = Math.hypot(next.x - here.x, next.y - here.y);
+            const r = Math.min(4, inLength / 2, outLength / 2);
+            if (r < 0.5) {
+              d += ` L${here.x} ${here.y}`;
+              continue;
+            }
+            const inX = here.x - Math.sign(here.x - prev.x) * r;
+            const inY = here.y - Math.sign(here.y - prev.y) * r;
+            const outX = here.x + Math.sign(next.x - here.x) * r;
+            const outY = here.y + Math.sign(next.y - here.y) * r;
+            d += ` L${inX} ${inY} Q${here.x} ${here.y} ${outX} ${outY}`;
+          }
+          const last = points[points.length - 1];
+          return `${d} L${last.x} ${last.y}`;
+        }
+
+        function crossesBox(y, x1, x2, rects, skip, margin = 2) {
+          const low = Math.min(x1, x2);
+          const high = Math.max(x1, x2);
+          return [...rects.entries()].some(
+            ([id, r]) =>
+              !skip.includes(id) &&
+              y > r.top - margin &&
+              y < r.bottom + margin &&
+              high > r.left &&
+              low < r.right,
+          );
+        }
+
+        function routeWires() {
+          const rects = new Map([...boxEls.keys()].map((id) => [id, rectOf(id)]));
+          const wires = [...WIRES.values()].map((wire) => ({ wire }));
+
+          // Entry slots on the left edge: the nearest caller takes the top slot.
+          const byTarget = new Map();
+          for (const item of wires) {
+            if (!byTarget.has(item.wire.to)) byTarget.set(item.wire.to, []);
+            byTarget.get(item.wire.to).push(item);
+          }
+          for (const [to, group] of byTarget) {
+            const target = rects.get(to);
+            const distance = (item) =>
+              item.wire.from === null ? 0 : Math.abs(target.top - rects.get(item.wire.from).bottom);
+            group.sort((p, q) => distance(p) - distance(q));
+            group.forEach((item, slot) => {
+              item.slotY = target.top + SLOT_FIRST + slot * SLOT_STEP;
+            });
+          }
+
+          // Exits on the bottom edge. Wires bound for this column's gutter leave on the left,
+          // farthest first and shallowest; wires bound right leave after them.
+          const bySource = new Map();
+          for (const item of wires) {
+            if (item.wire.from === null) continue;
+            if (!bySource.has(item.wire.from)) bySource.set(item.wire.from, []);
+            bySource.get(item.wire.from).push(item);
+          }
+          for (const [from, group] of bySource) {
+            const source = rects.get(from);
+            const reach = (item) => Math.abs(item.slotY - source.bottom);
+            const left = group.filter((item) => sameColumn(source, rects.get(item.wire.to)));
+            const right = group.filter((item) => !left.includes(item));
+            left.sort((p, q) => reach(q) - reach(p));
+            right.sort((p, q) => reach(p) - reach(q));
+            [...left, ...right].forEach((item, index) => {
+              item.exitX = source.left + EXIT_FIRST + index * EXIT_STEP;
+              item.dropY = source.bottom + DROP_FIRST + index * DROP_STEP;
+            });
+          }
+
+          assignLanes(wires, rects);
+          // A horizontal run must clear every box and every other wire's horizontal.
+          // If the first drop depth does not, walk down to the next free corridor.
+          let moved = false;
+          for (const item of wires) {
+            if (item.wire.from === null) continue;
+            const others = wires.filter((other) => other !== item);
+            if (!blocked(item.dropY, item.exitX, item.laneX, rects, others, item)) continue;
+            let y = item.dropY;
+            while (y < item.dropY + 2000 && blocked(y, item.exitX, item.laneX, rects, others, item))
+              y += 2;
+            item.dropY = y;
+            moved = true;
+          }
+          if (moved) assignLanes(wires, rects);
+          for (const item of wires) {
+            if (
+              item.wire.from !== null &&
+              blocked(
+                item.dropY,
+                item.exitX,
+                item.laneX,
+                rects,
+                wires.filter((o) => o !== item),
+                item,
+              )
+            ) {
+              console.warn('no clear corridor', item.wire.key);
+            }
+          }
+
+          for (const item of wires) {
+            const target = rects.get(item.wire.to);
+            const endX = target.left - 1;
+            if (item.wire.from === null) {
+              item.points = [
+                { x: item.laneX, y: item.slotY },
+                { x: endX, y: item.slotY },
+              ];
+              item.start = { x: item.laneX, y: item.slotY };
+              continue;
+            }
+            const source = rects.get(item.wire.from);
+            item.points = [
+              { x: item.exitX, y: source.bottom },
+              { x: item.exitX, y: item.dropY },
+              { x: item.laneX, y: item.dropY },
+              { x: item.laneX, y: item.slotY },
+              { x: endX, y: item.slotY },
+            ];
+          }
+          return wires;
+        }
+
+        // Horizontals of a routed wire: its drop run (if any) and its arrival stub.
+        function horizontals(item, rects) {
+          const runs = [{ y: item.slotY, x1: item.laneX, x2: rects.get(item.wire.to).left }];
+          if (item.wire.from !== null) runs.push({ y: item.dropY, x1: item.exitX, x2: item.laneX });
+          return runs;
+        }
+
+        function blocked(y, x1, x2, rects, others, self) {
+          if (crossesBox(y, x1, x2, rects, [], 6)) return true;
+          const low = Math.min(x1, x2);
+          const high = Math.max(x1, x2);
+          // Screen frames: a run may cross their edges, never ride along them.
+          for (const frame of screenEls.values()) {
+            const r = relativeRect(frame);
+            if (
+              [r.top, r.bottom].some((edge) => Math.abs(edge - y) < 6) &&
+              high > r.left &&
+              low < r.right
+            )
+              return true;
+          }
+          return (
+            others.some(
+              (other) =>
+                other.laneX !== undefined &&
+                horizontals(other, rects).some(
+                  (run) =>
+                    Math.abs(run.y - y) < 5 &&
+                    Math.max(run.x1, run.x2) > low &&
+                    Math.min(run.x1, run.x2) < high,
+                ),
+            ) ||
+            (self !== undefined && Math.abs(y - self.slotY) < 1)
+          );
+        }
+
+        // Lanes: one gutter per box column, left of the boxes. Shorter runs sit inside.
+        function assignLanes(wires, rects) {
+          const gutters = new Map();
+          for (const item of wires) {
+            const target = rects.get(item.wire.to);
+            const key = Math.round(target.left);
+            const low = item.wire.from === null ? item.slotY - 3 : Math.min(item.dropY, item.slotY);
+            const high =
+              item.wire.from === null ? item.slotY + 3 : Math.max(item.dropY, item.slotY);
+            item.low = low;
+            item.high = high;
+            if (!gutters.has(key)) gutters.set(key, []);
+            gutters.get(key).push(item);
+          }
+          for (const group of gutters.values()) {
+            group.sort((p, q) => p.high - p.low - (q.high - q.low));
+            const lanes = [];
+            for (const item of group) {
+              let lane = 0;
+              while (
+                (lanes[lane] ?? []).some(
+                  (other) => item.low < other.high + 6 && item.high > other.low - 6,
+                )
+              )
+                lane += 1;
+              (lanes[lane] ??= []).push(item);
+              item.laneX = rects.get(item.wire.to).left - LANE_FIRST - lane * LANE_STEP;
+            }
+          }
+        }
+
+        function drawWires() {
+          const layer = map.querySelector('.pb-wires');
+          layer.querySelectorAll('.pb-wire, .pb-start, .pb-port').forEach((n) => n.remove());
+          const showAll = selected === 'All';
+          const order = showAll
+            ? []
+            : PATHS[selected].steps.map(([f, t]) => `${f ?? 'entry'}>${t}`);
+          const routed = routeWires();
+          for (const item of routed) item.on = showAll || item.wire.acs.has(selected);
+          // Faint wires first, so the selected path sits on top.
+          routed.sort((p, q) => p.on - q.on);
+          for (const item of routed) {
+            const path = svg('path', { class: 'pb-wire', d: roundedPath(item.points) });
+            path.dataset.key = item.wire.key;
+            path.dataset.pts = JSON.stringify(
+              item.points.map(({ x, y }) => ({
+                x: Math.round(x * 10) / 10,
+                y: Math.round(y * 10) / 10,
+              })),
+            );
+            if (item.wire.via === 'event') path.dataset.kind = 'event';
+            if (item.on) path.toggleAttribute('data-on', true);
+            if (item.wire.key === hotKey) path.toggleAttribute('data-hot', true);
+            path.style.setProperty('--i', String(Math.max(order.indexOf(item.wire.key), 0)));
+            layer.append(path);
+            path.style.setProperty('--len', String(Math.ceil(path.getTotalLength())));
+            if (item.start && item.on) {
+              layer.append(
+                svg('circle', { class: 'pb-start', cx: item.start.x, cy: item.start.y, r: 4 }),
+              );
+            }
+          }
+          drawPorts(routed);
+        }
+
+        // The two ports of each box on the selected path: a bar on the left edge (in), one on the bottom (out).
+        function drawPorts(routed) {
+          const layer = map.querySelector('.pb-wires');
+          const ins = new Map();
+          const outs = new Map();
+          for (const item of routed) {
+            if (!item.on) continue;
+            (ins.get(item.wire.to) ?? ins.set(item.wire.to, []).get(item.wire.to)).push(item.slotY);
+            if (item.wire.from !== null) {
+              (outs.get(item.wire.from) ?? outs.set(item.wire.from, []).get(item.wire.from)).push(
+                item.exitX,
+              );
+            }
+          }
+          for (const [id, ys] of ins) {
+            const r = rectOf(id);
+            layer.append(
+              svg('line', {
+                class: 'pb-port',
+                x1: r.left,
+                x2: r.left,
+                y1: Math.min(...ys) - 5,
+                y2: Math.max(...ys) + 5,
+              }),
+            );
+          }
+          for (const [id, xs] of outs) {
+            const r = rectOf(id);
+            layer.append(
+              svg('line', {
+                class: 'pb-port',
+                x1: Math.min(...xs) - 5,
+                x2: Math.max(...xs) + 5,
+                y1: r.bottom,
+                y2: r.bottom,
+              }),
+            );
+          }
+        }
+
+        function markBoxes() {
+          const showAll = selected === 'All';
+          for (const [id, node] of boxEls) {
+            node.querySelector('.pb-badges')?.remove();
+            node.querySelector('.aisf-stop')?.remove();
+            const badges = el('span', 'pb-badges');
+            if (showAll) {
+              for (const ac of AC_KEYS) {
+                if (PATHS[ac].steps.some(([, to]) => to === id))
+                  badges.append(el('span', 'pb-badge pb-badge-ac', ac));
+              }
+              node.removeAttribute('data-off');
+            } else {
+              const steps = PATHS[selected].steps;
+              steps.forEach(([, to], index) => {
+                if (to === id) badges.append(el('span', 'pb-badge', String(index + 1)));
+              });
+              node.toggleAttribute('data-off', badges.childElementCount === 0);
+              if (PATHS[selected].end[0] === id)
+                node.append(el('span', 'aisf-stop', PATHS[selected].end[1]));
+            }
+            if (badges.childElementCount > 0) node.append(badges);
+          }
+          // A screen fades with its parts: lit when any part is on the path.
+          for (const [id, frame] of screenEls) {
+            const parts = BOXES.filter((box) => box.screen === id).map((box) => boxEls.get(box.id));
+            frame.toggleAttribute(
+              'data-off',
+              parts.every((node) => node.hasAttribute('data-off')),
+            );
+          }
+        }
+
+        function hop(from, to, actor) {
+          const line = el('span', 'pb-step-hop');
+          line.append(from === null ? (actor ?? 'outside') : byId.get(from).name);
+          line.append(el('span', 'pb-sep', ' → '));
+          line.append(byId.get(to).name);
+          return line;
+        }
+
+        function buildRoute() {
+          route.replaceChildren();
+          if (selected === 'All') {
+            const note = el(
+              'li',
+              'pb-route-all',
+              'Pick AC1, AC2 or AC3 to read one path step by step. Badges show which criteria pass each box.',
+            );
+            route.append(note);
+            return;
+          }
+          const plan = PATHS[selected];
+          plan.steps.forEach(([from, to, call, via], index) => {
+            const row = el('li', 'pb-step');
+            row.tabIndex = 0;
+            row.dataset.key = `${from ?? 'entry'}>${to}`;
+            row.append(el('span', 'pb-badge', String(index + 1)), hop(from, to, plan.actor));
+            const callLine = el('span', 'pb-step-call', call);
+            if (via === 'facade') callLine.append(el('span', 'pb-via', 'facade'));
+            if (via === 'event') callLine.append(el('span', 'pb-via', 'event bus'));
+            if (via === 'http') callLine.append(el('span', 'pb-via', 'http'));
+            row.append(callLine);
+            for (const type of ['mouseenter', 'focus'])
+              row.addEventListener(type, () => setHot(row.dataset.key));
+            for (const type of ['mouseleave', 'blur'])
+              row.addEventListener(type, () => setHot(null));
+            route.append(row);
+          });
+          const end = el('li', 'pb-step pb-step-end');
+          end.append(el('span', ''), el('span', 'aisf-stop', plan.end[1]));
+          route.append(end);
+        }
+
+        function criterionRow(tag, ac) {
+          const row = el(tag, 'pb-criterion-row');
+          row.append(
+            el('span', 'pb-criterion-key', ac),
+            el('span', 'pb-criterion-text', PATHS[ac].title),
+          );
+          return row;
+        }
+
+        function showCriterion() {
+          if (selected === 'All') {
+            const list = el('ol', 'pb-criterion-list');
+            list.setAttribute('aria-label', 'Acceptance criteria');
+            list.append(...AC_KEYS.map((ac) => criterionRow('li', ac)));
+            criterion.replaceChildren(list);
+            return;
+          }
+          criterion.replaceChildren(criterionRow('p', selected));
+        }
+
+        function setHot(key) {
+          hotKey = key;
+          for (const path of map.querySelectorAll('.pb-wire')) {
+            path.toggleAttribute('data-hot', key !== null && path.dataset.key === key);
+          }
+        }
+
+        // Counted from the data: backend modules, plus frontend and event bus when the boxes reach them.
+        function moduleSummary(ids) {
+          const kinds = new Set(ids.map((id) => byId.get(id).module));
+          const backend = [...kinds].filter(
+            (m) => !moduleOf.get(m).bus && moduleOf.get(m).kind !== 'frontend',
+          ).length;
+          let text = `${backend} ${backend === 1 ? 'module' : 'modules'}`;
+          if ([...kinds].some((m) => moduleOf.get(m).kind === 'frontend')) text += ' + frontend';
+          if ([...kinds].some((m) => moduleOf.get(m).bus)) text += ' + event bus';
+          return text;
+        }
+
+        function updateReadout() {
+          if (selected === 'All') {
+            const ids = [...new Set([...WIRES.values()].map((w) => w.to))];
+            readout.textContent = `${AC_KEYS.length} paths · ${ids.length} boxes drawn · ${moduleSummary(ids)}`;
+            return;
+          }
+          const steps = PATHS[selected].steps;
+          const ids = [...new Set(steps.map(([, to]) => to))];
+          readout.textContent = `${selected}: ${steps.length} steps · ${ids.length} of ${boxEls.size} boxes · ${moduleSummary(ids)}`;
+        }
+
+        function select(key) {
+          selected = key;
+          map.toggleAttribute('data-all', key === 'All');
+          for (const button of switches.querySelectorAll('.aisf-switch')) {
+            button.setAttribute('aria-pressed', String(button.dataset.ac === key));
+          }
+          showCriterion();
+          markBoxes();
+          buildRoute();
+          updateReadout();
+          drawWires();
+          const layer = map.querySelector('.pb-wires');
+          layer.removeAttribute('data-drawing');
+          void layer.getBoundingClientRect();
+          if (key !== 'All') layer.setAttribute('data-drawing', '');
+        }
+
+        buildMap();
+        buildSwitches();
+        select('AC1');
+        let frame = 0;
+        new ResizeObserver(() => {
+          cancelAnimationFrame(frame);
+          frame = requestAnimationFrame(drawWires);
+        }).observe(map);
+        document.fonts?.ready.then(drawWires);
+      })();
+    </script>
+  </body>
+</html>

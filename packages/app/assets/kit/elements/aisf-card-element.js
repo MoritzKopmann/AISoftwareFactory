@@ -3,7 +3,7 @@ import { buildElement, setPart } from '../support/dom.js';
 let nextCardId = 0;
 
 export class AisfCardElement extends HTMLElement {
-  static observedAttributes = ['value', 'suggested', 'why', 'gain', 'cost'];
+  static observedAttributes = ['value', 'suggested', 'why', 'gain', 'cost', 'effect'];
 
   connectedCallback() {
     this.render();
@@ -24,7 +24,7 @@ export class AisfCardElement extends HTMLElement {
     return (body?.textContent ?? '').trim().split('\n')[0]?.trim() ?? '';
   }
 
-  /** Internal. Wraps the written content in a choice with a radio; adds the tag, gain, cost and why line. */
+  /** Internal. Wraps the written content in a choice with a radio; adds the tag, gain, cost, effect and why line. */
   render() {
     let choice = [...this.children].find((child) => child.classList.contains('aisf-card-choice'));
     if (choice === undefined) {
@@ -44,7 +44,7 @@ export class AisfCardElement extends HTMLElement {
       'aisf-suggested-tag',
       suggested ? buildElement('span', 'aisf-suggested-tag', 'Suggested') : undefined,
     );
-    for (const kind of ['gain', 'cost']) {
+    for (const kind of ['gain', 'cost', 'effect']) {
       const text = this.getAttribute(kind);
       setPart(
         this,

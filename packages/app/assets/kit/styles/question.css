@@ -153,21 +153,23 @@ aisf-card[selected] {
   border: 1px solid var(--accent);
 }
 
-aisf-card:has(.aisf-card-gain, .aisf-card-cost, .aisf-card-why) {
+aisf-card:has(.aisf-card-gain, .aisf-card-cost, .aisf-card-effect, .aisf-card-why) {
   padding-bottom: 10px;
 }
 
-aisf-card:has(.aisf-card-gain, .aisf-card-cost, .aisf-card-why) .aisf-card-choice {
+aisf-card:has(.aisf-card-gain, .aisf-card-cost, .aisf-card-effect, .aisf-card-why)
+  .aisf-card-choice {
   padding-bottom: 6px;
 }
 
 /* 40px lines the text up with the card body after the radio. */
 .aisf-card-gain,
 .aisf-card-cost,
+.aisf-card-effect,
 .aisf-card-why {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: 7ch minmax(0, 1fr);
+  grid-template-columns: 9ch minmax(0, 1fr);
   column-gap: 8px;
   margin: 0;
   padding: 2px 12px 2px 40px;
@@ -185,13 +187,18 @@ aisf-card:has(.aisf-card-gain, .aisf-card-cost, .aisf-card-why) .aisf-card-choic
   grid-row: 3;
 }
 
-.aisf-card-why {
+.aisf-card-effect {
   grid-row: 4;
+}
+
+.aisf-card-why {
+  grid-row: 5;
   color: var(--muted);
 }
 
 .aisf-card-gain::before,
 .aisf-card-cost::before,
+.aisf-card-effect::before,
 .aisf-card-why::before {
   padding-top: 1px;
   font: 700 11px/1.6 var(--font-mono);
@@ -209,6 +216,11 @@ aisf-card:has(.aisf-card-gain, .aisf-card-cost, .aisf-card-why) .aisf-card-choic
 .aisf-card-cost::before {
   content: '− cost';
   color: var(--warn);
+}
+
+.aisf-card-effect::before {
+  content: '→ effect';
+  color: var(--accent);
 }
 
 .aisf-card-why::before {

@@ -56,14 +56,21 @@ Sends no event itself. Its answer joins the round's Submit payload.
 
 ## `<aisf-card>`
 
-Attributes: `value`, `suggested`, `why`, `gain`, `cost`
+Attributes: `value`, `suggested`, `why`, `gain`, `cost`, `effect`
 
 One choice. `value` is the answer sent. `suggested` marks the choice Accept all picks. `why`
 is one short line shown with the suggestion. `gain` and `cost` are one short phrase each, shown
-under the label. They never change the label or the answer. The body is the label: keep it short.
+under the label. `effect` is one line of fact: what picking it builds or changes, shown after
+cost. They never change the label or the answer. The body is the label: keep it short.
 
 ```html
-<aisf-card value="queue" suggested why="Keeps requests fast" gain="fast replies" cost="more code"
+<aisf-card
+  value="queue"
+  suggested
+  why="Keeps requests fast"
+  gain="fast replies"
+  cost="more code"
+  effect="adds a worker in runs · infrastructure, one more sub-issue"
   >Queue the work</aisf-card
 >
 ```
