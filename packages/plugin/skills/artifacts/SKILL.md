@@ -11,8 +11,7 @@ description: >
 Write one HTML page. The app serves it. The human answers on it. The answer comes back as the
 result of `aisf_show_artifact`.
 
-Read `references/elements.md` before writing any page. Read `references/figures.md` only when
-you draw a figure.
+Read `references/elements.md` and `references/figures.md` before writing any page.
 
 ## When to show a page
 
@@ -93,3 +92,11 @@ Every element is in `references/elements.md`.
 - `<aisf-meta>`: a labelled value.
 - `<aisf-figure>`: a captioned figure.
 - `<aisf-tree-node>`: one row of the decision tree.
+- `<aisf-more>`: longer detail for a question, collapsed.
+- `<aisf-sequence>`, `<aisf-actor>`, `<aisf-step>`: a sequence diagram.
+- `<aisf-state>`: a lifecycle, from `<aisf-step>`.
+- `<aisf-modmap>`, `<aisf-unit>`: a module × layer grid.
+
+Layout pieces (`.aisf-compare`, `.aisf-diff`, `table.aisf-table`, `.aisf-scope`) and free-SVG
+classes (`aisf-shape*`, `aisf-label`, `aisf-edge`) have a full example each in
+`references/figures.md`.
