@@ -60,7 +60,11 @@ function RegisteredProjectPage({
             Settings
           </a>
         </div>
-        <ContractReport report={project.contract} />
+        <ContractReport
+          report={project.contract}
+          projectId={project.id}
+          tickets={state.response?.board?.rows.flatMap((row) => row.tickets)}
+        />
         <NewIdeaForm projectId={project.id} />
         <NeedsYou liveUpdates={liveUpdates} projectId={project.id} />
         {skeletonVisible ? (

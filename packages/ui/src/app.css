@@ -115,11 +115,16 @@ body {
 .panel {
   display: grid;
   gap: 6px;
+  justify-items: start;
   padding: 10px 14px;
   background: var(--surface);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   box-shadow: inset 4px 0 0 var(--warn);
+}
+
+.panel > .btn {
+  margin-top: 6px;
 }
 
 .panel ul {

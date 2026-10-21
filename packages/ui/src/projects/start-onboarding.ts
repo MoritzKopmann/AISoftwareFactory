@@ -7,7 +7,8 @@ const HTTP_CONFLICT_STATUS = 409;
 export type StartOnboardingOutcome =
   | { readonly kind: 'started'; readonly ticketNumber: number }
   | { readonly kind: 'conflict' }
-  | { readonly kind: 'failed'; readonly message: string };
+  | { readonly kind: 'failed'; readonly message: string }
+  | { readonly kind: 'unreachable' };
 
 export async function startOnboarding(
   projectId: string,
@@ -18,7 +19,7 @@ export async function startOnboarding(
     response = await request(`/api/projects/${projectId}/onboarding`, { method: 'POST' });
   } catch (error) {
     if (!isRequestFailure(error)) throw error;
-    return { kind: 'failed', message: "Can't reach aisf." };
+    return { kind: 'unreachable' };
   }
   if (response.ok) {
     const started = (await response.json()) as Pick<IdeaResponse, 'ticketNumber'>;
