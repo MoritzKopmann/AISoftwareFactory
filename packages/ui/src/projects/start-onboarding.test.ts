@@ -35,9 +35,9 @@ describe('startOnboarding', () => {
     });
   });
 
-  it('should return failed when the request throws', async () => {
+  it('should return unreachable when the request throws', async () => {
     const outcome = await startOnboarding('o/n', () => Promise.reject(new TypeError('off')));
 
-    expect(outcome).toEqual({ kind: 'failed', message: "Can't reach aisf." });
+    expect(outcome).toEqual({ kind: 'unreachable' });
   });
 });
