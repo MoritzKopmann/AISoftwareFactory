@@ -24,18 +24,23 @@ One question per card. Each card is **self-contained**: someone who never saw th
 it without scrolling elsewhere. Every term is defined on the card or common knowledge. Supplying
 the context is your job, never the human's.
 
+```html
+<aisf-question
+  name="q3"
+  heading="<title, phrased as the question>"
+  problem="one line: what is decided, what goes wrong if decided badly"
+>
+  <aisf-context kind="diagram">…figure: one panel per option, changes marked…</aisf-context>
+  <aisf-card value="a" suggested why="one line of why" gain="its gain" cost="its cost"
+    >Option A</aisf-card
+  >
+  <aisf-card value="b" gain="its gain" cost="its cost">Option B</aisf-card>
+  <aisf-more>code excerpt by path, edge cases, research findings</aisf-more>
+</aisf-question>
 ```
-┌ Q3 · <title, phrased as the question>
-│ Problem   one or two lines: what is decided, what goes wrong if it is decided badly
-│ ┌─────────────── figure ───────────────┐
-│ │ now   →   option A   |   option B     │   one panel per option, changes marked
-│ └───────────────────────────────────────┘
-│ ○ A  <option>  ★ suggested: one line of why     + gain   − cost
-│ ○ B  <option>                                   + gain   − cost
-│ ○ free text      ○ Discuss [note]
-│ ▸ More (collapsed): code excerpt by path, edge cases, research findings
-└
-```
+
+- `problem` holds the problem, `gain` and `cost` each option's consequence, `<aisf-more>`
+  the depth. The kit adds Other and Discuss.
 
 - **A figure is the default.** It shows each option, not only today's state: comparing the
   options is what the human decides on. Only a pure naming or wording choice goes without, and
@@ -47,13 +52,15 @@ the context is your job, never the human's.
 
 | Decision about           | Figure                                                                          |
 | ------------------------ | ------------------------------------------------------------------------------- |
-| UI / UX                  | low-fi mockup, one per option                                                   |
-| Flow, order of calls     | sequence or flow diagram                                                        |
-| State, lifecycle         | state diagram                                                                   |
-| Where code lives         | module map, new and changed nodes marked                                        |
-| Data shape, API, storage | before → after schema or snippet, by path                                       |
-| Library                  | comparison table: fit, size, upkeep, precedent                                  |
-| Scope                    | in / out, two columns                                                           |
+| UI / UX                  | low-fi mockup, one per option (`aisf-context kind="mockup"`)                    |
+| Flow, order of calls     | `aisf-sequence`                                                                 |
+| State, lifecycle         | `aisf-state`                                                                    |
+| Where code lives         | `aisf-modmap`, new and changed units marked                                     |
+| Data shape, API, storage | `.aisf-diff`, before → after, by path                                           |
+| Library                  | `table.aisf-table`: fit, size, upkeep, precedent                                |
+| Scope                    | `.aisf-scope`, in / out                                                         |
+| Options side by side     | `.aisf-compare` with one `.aisf-panel` per option                               |
+| Anything else            | free SVG with `aisf-shape*`, `aisf-label`, `aisf-edge`                          |
 | Playback, round 1        | each acceptance criterion as a flow over today's system, new and changed marked |
 | Split proposal           | each part as a box: title, Context, Scope, its numbered criteria (A1, A2, B1 …) |
 | `hitl` checkpoint        | the full checkpoint: what is set up, what the human does                        |
