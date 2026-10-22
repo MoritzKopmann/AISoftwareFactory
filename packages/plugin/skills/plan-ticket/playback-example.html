@@ -172,7 +172,7 @@
         display: grid;
         align-content: start;
         min-width: 0;
-        padding: 0 10px 10px 44px;
+        padding: 0 10px 10px var(--pb-gutter, 44px);
         background: color-mix(in srgb, var(--surface) 70%, transparent);
         border: 1px solid var(--border-strong);
         border-radius: var(--radius);
@@ -204,8 +204,11 @@
         flex-wrap: wrap;
         align-items: baseline;
         gap: 2px 8px;
-        margin-left: -34px;
+        margin-left: calc(10px - var(--pb-gutter, 44px));
         padding: 10px 0 8px;
+        /* Above the wires: lanes pass behind a module's name and note, never erase them. */
+        position: relative;
+        z-index: 2;
       }
 
       .pb-module-name {
@@ -253,7 +256,7 @@
         display: grid;
         gap: 22px;
         min-width: 0;
-        padding: 8px 10px 14px 36px;
+        padding: 8px 10px 14px var(--pb-gutter, 36px);
         border: 1px solid var(--border-strong);
         border-radius: var(--radius);
         transition: opacity 0.2s;
@@ -276,7 +279,7 @@
         flex-wrap: wrap;
         align-items: baseline;
         gap: 2px 8px;
-        margin-left: -26px;
+        margin-left: calc(10px - var(--pb-gutter, 36px));
       }
 
       .pb-screen-head .pb-name {
@@ -420,6 +423,126 @@
         opacity: 0.32;
       }
 
+      /* ---- Fold: a whole untouched module as one box. ---- */
+      .pb-fold-toggle {
+        min-height: 24px;
+        padding: 2px 8px;
+        font-size: 11px;
+      }
+
+      .pb-module[data-folded] .pb-layer-empty {
+        display: none;
+      }
+
+      .pb-box.pb-fold {
+        border-style: dashed;
+        cursor: pointer;
+      }
+
+      .pb-fold-count {
+        grid-column: 2;
+        justify-self: start;
+        margin-top: 6px;
+        padding: 0 5px;
+        font: 500 10.5px/16px var(--font-mono);
+        text-transform: var(--label-transform);
+        letter-spacing: var(--label-spacing);
+        color: var(--muted);
+        border: 1px dashed var(--border-strong);
+      }
+
+      .pb-via-fold {
+        color: var(--muted);
+        border-style: dashed;
+        border-color: var(--border-strong);
+      }
+
+      /* ---- Focus: one box, its calls in and out, their route rows; the rest fades. ---- */
+      .pb-box[role='button'] {
+        cursor: pointer;
+      }
+
+      .pb-box:focus-visible {
+        outline: 2px solid var(--info);
+        outline-offset: 3px;
+      }
+
+      .pb-box[data-focus] {
+        outline: 2px solid var(--info);
+        outline-offset: 3px;
+      }
+
+      .pb-box[aria-pressed='true'] {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      .pb-map[data-focus] .pb-box:not([data-focus], [data-near]) {
+        opacity: 0.2;
+      }
+
+      .pb-map[data-focus] .pb-screen:not(:has(.pb-box[data-focus], .pb-box[data-near])) {
+        opacity: 0.32;
+      }
+
+      .pb-map[data-focus] .pb-casing:not([data-near]) {
+        opacity: 0;
+      }
+
+      .pb-map[data-focus] .pb-wire:not([data-near]),
+      .pb-map[data-focus] .pb-lane-badge:not([data-near]),
+      .pb-map[data-focus] .pb-start:not([data-near]),
+      .pb-map[data-focus] .pb-port:not([data-near]) {
+        opacity: 0.12;
+      }
+
+      .pb-map[data-focus] .pb-wire[data-near][data-on] {
+        stroke-width: 3;
+      }
+
+      .pb-route[data-focus] .pb-step:not([data-near]) {
+        opacity: 0.35;
+      }
+
+      .pb-step[data-near] {
+        background: var(--accent-soft);
+      }
+
+      /* Casing: a wider stroke in the surface colour under each lit wire, so close or crossing
+         lines read apart and the later line visibly passes over the earlier one. */
+      .pb-casing {
+        fill: none;
+        stroke: var(--surface);
+        stroke-width: 7;
+      }
+
+      /* An invisible, wider stroke over each lit wire: easy to hover or tap. */
+      .pb-hit {
+        fill: none;
+        stroke: transparent;
+        stroke-width: 12;
+        pointer-events: stroke;
+        cursor: pointer;
+      }
+
+      /* Step number on a long lane, so a line can be named anywhere along it. */
+      .pb-lane-badge circle {
+        fill: var(--info);
+        stroke: var(--surface);
+        stroke-width: 2;
+      }
+
+      .pb-lane-badge text {
+        font: 700 10px var(--font-mono);
+        text-anchor: middle;
+        dominant-baseline: central;
+        fill: var(--surface);
+      }
+
+      .pb-lane-badge[data-hot] circle {
+        fill: var(--accent);
+      }
+
       /* Wires: the selected path in the ink colour, the rest faint. */
       .pb-wire {
         fill: none;
@@ -470,6 +593,7 @@
         font: 600 11px var(--font-mono);
       }
 
+      .pb-wires[data-drawing] .pb-casing,
       .pb-wires[data-drawing] .pb-wire[data-on] {
         stroke-dasharray: var(--len) var(--len);
         stroke-dashoffset: var(--len);
@@ -484,6 +608,7 @@
       }
 
       @media (prefers-reduced-motion: reduce) {
+        .pb-wires[data-drawing] .pb-casing,
         .pb-wires[data-drawing] .pb-wire[data-on] {
           animation: none;
           stroke-dasharray: none;
@@ -597,21 +722,13 @@
 
         /* With a frontend column: it comes first and has no rows of its own. */
         .pb-map[data-ui] {
-          grid-template-columns: 184px max-content minmax(0, 1fr) 128px repeat(3, minmax(0, 1fr));
+          grid-template-columns: 160px max-content minmax(0, 1fr) 132px repeat(3, minmax(0, 1fr));
           column-gap: 10px;
         }
 
         /* Tighter frames so four layered modules keep readable boxes beside the frontend. */
         .pb-map[data-ui] .pb-module:not(.pb-frontend) {
-          padding: 0 8px 4px 42px;
-        }
-
-        .pb-map[data-ui] .pb-module.pb-bus {
-          padding-left: 26px;
-        }
-
-        .pb-map[data-ui] .pb-bus .pb-module-head {
-          margin-left: -16px;
+          padding: 0 8px 4px var(--pb-gutter, 42px);
         }
 
         .pb-map[data-ui] .pb-box.aisf-node {
@@ -620,11 +737,11 @@
         }
 
         .pb-map[data-ui] .pb-frontend .pb-screen {
-          padding: 8px 8px 12px 22px;
+          padding: 8px 8px 12px var(--pb-gutter, 22px);
         }
 
         .pb-map[data-ui] .pb-frontend .pb-screen-head {
-          margin-left: -12px;
+          margin-left: calc(10px - var(--pb-gutter, 22px));
         }
 
         .pb-axis,
@@ -654,11 +771,11 @@
         }
 
         .pb-module {
-          padding: 0 10px 4px 44px;
+          padding: 0 10px 4px var(--pb-gutter, 44px);
         }
 
         .pb-module-head {
-          margin-left: -32px;
+          margin-left: calc(12px - var(--pb-gutter, 44px));
         }
 
         .pb-layer-name {
@@ -772,6 +889,8 @@
         // kind 'frontend' has NO layers: its boxes carry layer: null and group under a screen
         // (a frame, not a box). The frontend column is drawn only when some criterion's path
         // touches one of its boxes; otherwise it is left out entirely.
+        // A module whose boxes are ALL untouched folds into one box (default: folded; click to unfold).
+        // `does`: 1–2 domain words for what that module does for these paths; the folded box shows it.
         const MODULES = [
           { id: 'web', kind: 'frontend', name: 'frontend', mark: 'changed', tag: 'changed' },
           { id: 'pull-requests', mark: 'changed', tag: 'changed' },
@@ -781,6 +900,7 @@
             id: 'tickets',
             mark: 'untouched',
             tag: 'untouched',
+            does: 'reads ticket',
             note: 'Only read, through its facade. Drawn: what the path touches.',
           },
           { id: 'users', mark: 'changed', tag: 'changed' },
@@ -985,15 +1105,48 @@
 
         const AC_KEYS = Object.keys(PATHS);
         const moduleOf = new Map(MODULES.map((module) => [module.id, module]));
+        const byId = new Map(BOXES.map((box) => [box.id, box]));
         const isFrontend = (boxId) =>
-          boxId !== null &&
-          moduleOf.get(BOXES.find((box) => box.id === boxId).module).kind === 'frontend';
+          boxId !== null && moduleOf.get(byId.get(boxId).module).kind === 'frontend';
         const UI_TOUCHED = AC_KEYS.some((ac) =>
           PATHS[ac].steps.some(([from, to]) => isFrontend(from) || isFrontend(to)),
         );
         const SHOWN_MODULES = MODULES.filter((module) => module.kind !== 'frontend' || UI_TOUCHED);
+
+        // Foldable: a layered module whose boxes are all untouched. Each gets one stand-in box.
+        const FOLDABLE = new Set(
+          MODULES.filter((module) => {
+            const boxes = BOXES.filter((box) => box.module === module.id);
+            return (
+              !module.bus &&
+              module.kind !== 'frontend' &&
+              boxes.length > 0 &&
+              boxes.every((box) => box.mark === 'untouched')
+            );
+          }).map((module) => module.id),
+        );
+        const folded = new Set(FOLDABLE);
+        for (const moduleId of FOLDABLE) {
+          const inModule = (id) => id !== null && byId.get(id).module === moduleId;
+          const allSteps = AC_KEYS.flatMap((ac) => PATHS[ac].steps);
+          const entry = allSteps.find(([from, to]) => inModule(to) && !inModule(from));
+          const module = moduleOf.get(moduleId);
+          byId.set(`fold:${moduleId}`, {
+            id: `fold:${moduleId}`,
+            module: moduleId,
+            layer: entry ? byId.get(entry[1]).layer : LAYERS[0],
+            name: module.name ?? module.id,
+            label: module.does ?? module.name ?? module.id,
+            role: 'existing code',
+            mark: 'untouched',
+            fold: true,
+            inner: new Set(
+              allSteps.filter(([, to]) => inModule(to)).map(([from, to]) => `${from}>${to}`),
+            ).size,
+          });
+        }
+
         const SVG_NS = 'http://www.w3.org/2000/svg';
-        const byId = new Map(BOXES.map((box) => [box.id, box]));
         const map = document.getElementById('pb-map');
         const route = document.getElementById('pb-route');
         const criterion = document.getElementById('pb-criterion');
@@ -1005,15 +1158,59 @@
         const screenEls = new Map();
         let selected = 'AC1';
         let hotKey = null;
+        let pinned = null;
+        let hovered = null;
+        let view = computeView();
 
-        // Unique wires across all paths: shared hops are drawn once.
-        const WIRES = new Map();
-        for (const ac of AC_KEYS) {
-          for (const [from, to, , via] of PATHS[ac].steps) {
-            const key = `${from ?? 'entry'}>${to}`;
-            if (!WIRES.has(key)) WIRES.set(key, { key, from, to, via, acs: new Set() });
-            WIRES.get(key).acs.add(ac);
+        // The box a hop is drawn to: a folded module's stand-in, or the box itself.
+        function shown(id) {
+          if (id === null) return null;
+          const box = byId.get(id);
+          return folded.has(box.module) ? `fold:${box.module}` : id;
+        }
+
+        // The paths as drawn: hops inside a folded module drop out; the call into it stays
+        // as one step that carries how many steps it stands for.
+        function computeView() {
+          const paths = {};
+          const wires = new Map();
+          for (const ac of AC_KEYS) {
+            const steps = [];
+            const lastEntry = new Map();
+            for (const [rawFrom, rawTo, call, via] of PATHS[ac].steps) {
+              const from = shown(rawFrom);
+              const to = shown(rawTo);
+              if (from !== null && from === to) {
+                const entry = lastEntry.get(to);
+                if (entry) entry.folded += 1;
+                continue;
+              }
+              const target = byId.get(to);
+              const step = {
+                from,
+                to,
+                call,
+                via,
+                key: `${from ?? 'entry'}>${to}`,
+                folded: target.fold ? 1 : 0,
+              };
+              if (target.fold) lastEntry.set(to, step);
+              steps.push(step);
+            }
+            paths[ac] = { ...PATHS[ac], steps, end: [shown(PATHS[ac].end[0]), PATHS[ac].end[1]] };
+            for (const step of steps) {
+              if (!wires.has(step.key))
+                wires.set(step.key, {
+                  key: step.key,
+                  from: step.from,
+                  to: step.to,
+                  via: step.via,
+                  acs: new Set(),
+                });
+              wires.get(step.key).acs.add(ac);
+            }
           }
+          return { paths, wires };
         }
 
         function el(tag, className, text) {
@@ -1082,6 +1279,7 @@
             const head = el('header', 'pb-module-head');
             head.append(el('span', 'pb-module-name', module.name ?? module.id));
             head.append(el('span', 'pb-module-tag', module.tag));
+            if (FOLDABLE.has(module.id)) head.append(foldToggle(module.id));
             if (module.note) head.append(el('span', 'pb-module-note', module.note));
             card.append(head);
             if (module.kind === 'frontend') {
@@ -1091,10 +1289,16 @@
               map.insertBefore(card, axis);
               continue;
             }
+            const isFolded = folded.has(module.id);
+            if (isFolded) card.dataset.folded = '';
+            const boxesIn = isFolded
+              ? [byId.get(`fold:${module.id}`)]
+              : BOXES.filter((box) => box.module === module.id);
             for (const layer of LAYERS) {
-              const boxes = BOXES.filter((box) => box.module === module.id && box.layer === layer);
+              const boxes = boxesIn.filter((box) => box.layer === layer);
               const row = el('div', boxes.length === 0 ? 'pb-layer pb-layer-empty' : 'pb-layer');
-              if (boxes.length > 0 && !module.bus) row.append(el('span', 'pb-layer-name', layer));
+              if (boxes.length > 0 && !module.bus && !isFolded)
+                row.append(el('span', 'pb-layer-name', layer));
               for (const box of boxes) row.append(buildBox(box));
               card.append(row);
             }
@@ -1102,12 +1306,52 @@
           }
         }
 
+        function foldToggle(moduleId) {
+          const button = el(
+            'button',
+            'aisf-switch pb-fold-toggle',
+            folded.has(moduleId) ? 'unfold' : 'fold',
+          );
+          button.type = 'button';
+          button.dataset.module = moduleId;
+          button.setAttribute('aria-expanded', String(!folded.has(moduleId)));
+          button.addEventListener('click', () => toggleFold(moduleId));
+          return button;
+        }
+
         function buildBox(box) {
-          const node = el('div', `pb-box aisf-node aisf-node-${box.mark}`);
+          const node = el(
+            'div',
+            `pb-box aisf-node aisf-node-${box.mark}${box.fold ? ' pb-fold' : ''}`,
+          );
           node.dataset.id = box.id;
+          node.tabIndex = 0;
+          node.setAttribute('role', 'button');
           const role = identifier(box.role);
           role.className = 'pb-role';
-          node.append(identifier(box.name), role);
+          node.append(identifier(box.label ?? box.name), role);
+          if (box.fold) {
+            node.append(el('span', 'pb-fold-count', `${box.inner} steps`));
+            node.setAttribute('aria-expanded', 'false');
+            node.setAttribute(
+              'aria-label',
+              `${box.name}, ${box.label}, ${box.inner} steps folded. Unfold.`,
+            );
+          }
+          node.addEventListener('pointerenter', (event) => {
+            if (event.pointerType === 'mouse') setHover(`box:${box.id}`);
+          });
+          node.addEventListener('pointerleave', (event) => {
+            if (event.pointerType === 'mouse') setHover(null);
+          });
+          node.addEventListener('click', () =>
+            box.fold ? toggleFold(box.module) : togglePin(`box:${box.id}`),
+          );
+          node.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            node.click();
+          });
           boxEls.set(box.id, node);
           return node;
         }
@@ -1141,14 +1385,20 @@
         // Ports: every box takes calls in on its left edge and sends calls out of its bottom edge.
         // Each wire gets its own exit, its own drop depth, its own lane and its own entry slot,
         // so no two wires share a segment and every arrow ends in a straight stub.
-        const LANE_FIRST = 14;
-        const LANE_STEP = 5;
+        const LANE_FIRST = 12;
+        const LANE_STEP = 10;
         const EXIT_FIRST = 12;
-        const EXIT_STEP = 8;
-        const DROP_FIRST = 5;
-        const DROP_STEP = 5;
+        const EXIT_STEP = 14;
+        const DROP_FIRST = 6;
+        const DROP_STEP = 10;
         const SLOT_FIRST = 18;
-        const SLOT_STEP = 8;
+        const SLOT_STEP = 12;
+        // A routing strip is as wide as its lanes need, plus this much room by the frame edge.
+        const GUTTER_PAD = 12;
+        const GUTTER_MIN = 26;
+        const SCREEN_GUTTER_MIN = 24;
+        // Lanes at least this long carry their step number midway.
+        const LONG_RUN = 120;
 
         function rectOf(id) {
           return relativeRect(boxEls.get(id));
@@ -1208,7 +1458,7 @@
 
         function routeWires() {
           const rects = new Map([...boxEls.keys()].map((id) => [id, rectOf(id)]));
-          const wires = [...WIRES.values()].map((wire) => ({ wire }));
+          const wires = [...view.wires.values()].map((wire) => ({ wire }));
 
           // Entry slots on the left edge: the nearest caller takes the top slot.
           const byTarget = new Map();
@@ -1328,7 +1578,7 @@
                 other.laneX !== undefined &&
                 horizontals(other, rects).some(
                   (run) =>
-                    Math.abs(run.y - y) < 5 &&
+                    Math.abs(run.y - y) < LANE_STEP &&
                     Math.max(run.x1, run.x2) > low &&
                     Math.min(run.x1, run.x2) < high,
                 ),
@@ -1368,19 +1618,32 @@
           }
         }
 
+        function isOn(wire) {
+          return selected === 'All' || wire.acs.has(selected);
+        }
+
         function drawWires() {
           const layer = map.querySelector('.pb-wires');
-          layer.querySelectorAll('.pb-wire, .pb-start, .pb-port').forEach((n) => n.remove());
-          const showAll = selected === 'All';
-          const order = showAll
-            ? []
-            : PATHS[selected].steps.map(([f, t]) => `${f ?? 'entry'}>${t}`);
+          layer
+            .querySelectorAll('.pb-casing, .pb-wire, .pb-hit, .pb-lane-badge, .pb-start, .pb-port')
+            .forEach((n) => n.remove());
+          const order =
+            selected === 'All' ? [] : view.paths[selected].steps.map((step) => step.key);
           const routed = routeWires();
-          for (const item of routed) item.on = showAll || item.wire.acs.has(selected);
+          for (const item of routed) item.on = isOn(item.wire);
           // Faint wires first, so the selected path sits on top.
           routed.sort((p, q) => p.on - q.on);
           for (const item of routed) {
-            const path = svg('path', { class: 'pb-wire', d: roundedPath(item.points) });
+            const d = roundedPath(item.points);
+            const index = String(Math.max(order.indexOf(item.wire.key), 0));
+            if (item.on) {
+              const casing = svg('path', { class: 'pb-casing', d });
+              casing.dataset.key = item.wire.key;
+              casing.style.setProperty('--i', index);
+              layer.append(casing);
+              casing.style.setProperty('--len', String(Math.ceil(casing.getTotalLength())));
+            }
+            const path = svg('path', { class: 'pb-wire', d });
             path.dataset.key = item.wire.key;
             path.dataset.pts = JSON.stringify(
               item.points.map(({ x, y }) => ({
@@ -1391,16 +1654,132 @@
             if (item.wire.via === 'event') path.dataset.kind = 'event';
             if (item.on) path.toggleAttribute('data-on', true);
             if (item.wire.key === hotKey) path.toggleAttribute('data-hot', true);
-            path.style.setProperty('--i', String(Math.max(order.indexOf(item.wire.key), 0)));
+            path.style.setProperty('--i', index);
             layer.append(path);
             path.style.setProperty('--len', String(Math.ceil(path.getTotalLength())));
             if (item.start && item.on) {
-              layer.append(
-                svg('circle', { class: 'pb-start', cx: item.start.x, cy: item.start.y, r: 4 }),
-              );
+              const start = svg('circle', {
+                class: 'pb-start',
+                cx: item.start.x,
+                cy: item.start.y,
+                r: 4,
+              });
+              start.dataset.key = item.wire.key;
+              layer.append(start);
             }
           }
+          for (const item of routed) {
+          }
           drawPorts(routed);
+          drawLaneBadges(layer, routed, order);
+          for (const item of routed) {
+            if (item.on) layer.append(hitArea(item));
+          }
+          applyFocus();
+          sizeGutters(routed);
+        }
+
+        // Hover or tap one wire: just that call, its two boxes and its route row.
+        function hitArea(item) {
+          const hit = svg('path', { class: 'pb-hit', d: roundedPath(item.points) });
+          hit.dataset.key = item.wire.key;
+          hit.addEventListener('pointerenter', (event) => {
+            if (event.pointerType === 'mouse') setHover(`wire:${item.wire.key}`);
+          });
+          hit.addEventListener('pointerleave', (event) => {
+            if (event.pointerType === 'mouse') setHover(null);
+          });
+          hit.addEventListener('click', () => togglePin(`wire:${item.wire.key}`));
+          return hit;
+        }
+
+        // The step number midway along each long lane, clear of boxes, other runs and badges.
+        function drawLaneBadges(layer, routed, order) {
+          if (selected === 'All') return;
+          const grow = (r, by) => ({
+            left: r.left - by,
+            right: r.right + by,
+            top: r.top - by,
+            bottom: r.bottom + by,
+          });
+          const taken = [...boxEls.keys()].map((id) => grow(rectOf(id), 12));
+          const lit = routed.filter((item) => item.on && order.includes(item.wire.key));
+          const runsOf = (item) => item.points.slice(1).map((b, i) => ({ a: item.points[i], b }));
+          for (const item of lit) {
+            const flats = lit
+              .filter((other) => other !== item)
+              .flatMap(runsOf)
+              .filter((run) => Math.abs(run.a.y - run.b.y) < 0.5);
+            const obstacles = [
+              ...taken,
+              ...flats.map((run) => ({
+                left: Math.min(run.a.x, run.b.x),
+                right: Math.max(run.a.x, run.b.x),
+                top: run.a.y - 3,
+                bottom: run.a.y + 3,
+              })),
+            ];
+            const lane = runsOf(item)
+              .filter((run) => Math.abs(run.a.x - run.b.x) < 0.5)
+              .sort((p, q) => Math.abs(q.b.y - q.a.y) - Math.abs(p.b.y - p.a.y))[0];
+            if (!lane || Math.abs(lane.b.y - lane.a.y) < LONG_RUN) continue;
+            const top = Math.min(lane.a.y, lane.b.y) + 22;
+            const bottom = Math.max(lane.a.y, lane.b.y) - 22;
+            const middle = (top + bottom) / 2;
+            const x = lane.a.x;
+            const fits = (y) =>
+              !obstacles.some(
+                (r) => x + 9 > r.left && x - 9 < r.right && y + 9 > r.top && y - 9 < r.bottom,
+              );
+            let spot = null;
+            for (let offset = 0; offset <= (bottom - top) / 2 && spot === null; offset += 4) {
+              spot = [middle + offset, middle - offset].find(fits) ?? null;
+            }
+            if (spot === null) continue;
+            const badge = svg('g', { class: 'pb-lane-badge' });
+            badge.dataset.key = item.wire.key;
+            badge.append(svg('circle', { cx: x, cy: spot, r: 8 }));
+            const number = svg('text', { x, y: spot });
+            number.textContent = String(order.indexOf(item.wire.key) + 1);
+            badge.append(number);
+            if (item.wire.key === hotKey) badge.toggleAttribute('data-hot', true);
+            layer.append(badge);
+            taken.push({ left: x - 10, right: x + 10, top: spot - 10, bottom: spot + 10 });
+          }
+        }
+
+        // Each routing strip gets the width its lanes need. Stacked (phone): one width for every
+        // module, because long lanes pass through several cards. A change redraws, a few times at most.
+        let settling = 0;
+        function sizeGutters(routed) {
+          const stacked =
+            getComputedStyle(map).gridTemplateColumns.trim().split(/\s+/).length === 1;
+          const need = new Map();
+          for (const item of routed) {
+            const target = boxEls.get(item.wire.to);
+            const holder = target.closest('.pb-screen') ?? target.closest('.pb-module');
+            const width = rectOf(item.wire.to).left - item.laneX + GUTTER_PAD;
+            need.set(holder, Math.max(need.get(holder) ?? 0, width));
+          }
+          const modules = [...map.querySelectorAll('.pb-module:not(.pb-frontend)')];
+          const widest = Math.max(GUTTER_MIN, ...modules.map((card) => need.get(card) ?? 0));
+          let changed = false;
+          const apply = (holder, px) => {
+            const value = `${Math.ceil(px)}px`;
+            if (holder.style.getPropertyValue('--pb-gutter') === value) return;
+            holder.style.setProperty('--pb-gutter', value);
+            changed = true;
+          };
+          for (const card of modules)
+            apply(card, stacked ? widest : Math.max(GUTTER_MIN, need.get(card) ?? 0));
+          for (const screen of screenEls.values())
+            apply(screen, Math.max(SCREEN_GUTTER_MIN, need.get(screen) ?? 0));
+          if (changed && settling < 4) {
+            settling += 1;
+            requestAnimationFrame(drawWires);
+          } else {
+            settling = 0;
+          }
         }
 
         // The two ports of each box on the selected path: a bar on the left edge (in), one on the bottom (out).
@@ -1419,28 +1798,113 @@
           }
           for (const [id, ys] of ins) {
             const r = rectOf(id);
-            layer.append(
-              svg('line', {
-                class: 'pb-port',
-                x1: r.left,
-                x2: r.left,
-                y1: Math.min(...ys) - 5,
-                y2: Math.max(...ys) + 5,
-              }),
-            );
+            const port = svg('line', {
+              class: 'pb-port',
+              x1: r.left,
+              x2: r.left,
+              y1: Math.min(...ys) - 5,
+              y2: Math.max(...ys) + 5,
+            });
+            port.dataset.box = id;
+            layer.append(port);
           }
           for (const [id, xs] of outs) {
             const r = rectOf(id);
-            layer.append(
-              svg('line', {
-                class: 'pb-port',
-                x1: Math.min(...xs) - 5,
-                x2: Math.max(...xs) + 5,
-                y1: r.bottom,
-                y2: r.bottom,
-              }),
+            const port = svg('line', {
+              class: 'pb-port',
+              x1: Math.min(...xs) - 5,
+              x2: Math.max(...xs) + 5,
+              y1: r.bottom,
+              y2: r.bottom,
+            });
+            port.dataset.box = id;
+            layer.append(port);
+          }
+        }
+
+        // ---- Focus: one box, its incoming and outgoing calls, and their route rows. ----
+        function setHover(id) {
+          hovered = id;
+          applyFocus();
+        }
+
+        function togglePin(id) {
+          pinned = id === null || pinned === id ? null : id;
+          hovered = null;
+          applyFocus();
+        }
+
+        // Focus is a token: `box:<id>` (the box and every call in or out) or `wire:<key>` (one call).
+        function applyFocus() {
+          const token = pinned ?? hovered;
+          const near = new Set();
+          const neighbours = new Set();
+          let id = null;
+          if (token?.startsWith('wire:')) {
+            const wire = view.wires.get(token.slice(5));
+            if (wire && isOn(wire)) {
+              near.add(wire.key);
+              if (wire.from !== null) neighbours.add(wire.from);
+              neighbours.add(wire.to);
+            }
+          } else if (token?.startsWith('box:')) {
+            id = token.slice(4);
+            for (const wire of view.wires.values()) {
+              if (!isOn(wire) || (wire.from !== id && wire.to !== id)) continue;
+              near.add(wire.key);
+              if (wire.from !== null) neighbours.add(wire.from);
+              neighbours.add(wire.to);
+            }
+          }
+          neighbours.delete(id);
+          const active = near.size > 0;
+          map.toggleAttribute('data-focus', active);
+          route.toggleAttribute(
+            'data-focus',
+            active && route.querySelector('.pb-step[data-key]') !== null,
+          );
+          for (const [boxId, node] of boxEls) {
+            node.toggleAttribute('data-focus', active && boxId === id);
+            node.toggleAttribute('data-near', active && neighbours.has(boxId));
+            if (!byId.get(boxId).fold)
+              node.setAttribute('aria-pressed', String(pinned === `box:${boxId}`));
+          }
+          for (const node of map.querySelectorAll(
+            '.pb-casing, .pb-wire, .pb-lane-badge, .pb-start',
+          )) {
+            node.toggleAttribute('data-near', active && near.has(node.dataset.key));
+          }
+          for (const node of map.querySelectorAll('.pb-port')) {
+            node.toggleAttribute(
+              'data-near',
+              active && (node.dataset.box === id || neighbours.has(node.dataset.box)),
             );
           }
+          for (const row of route.querySelectorAll('.pb-step[data-key]')) {
+            row.toggleAttribute('data-near', active && near.has(row.dataset.key));
+          }
+        }
+
+        // ---- Fold: an untouched module as one box, or as its components. ----
+        function toggleFold(moduleId) {
+          const hadFocus = map.contains(document.activeElement);
+          if (folded.has(moduleId)) folded.delete(moduleId);
+          else folded.add(moduleId);
+          view = computeView();
+          hovered = null;
+          map.replaceChildren();
+          boxEls.clear();
+          screenEls.clear();
+          buildMap();
+          const pinnedGone = pinned?.startsWith('box:')
+            ? !boxEls.has(pinned.slice(4))
+            : !view.wires.has(pinned?.slice(5));
+          if (pinned !== null && pinnedGone) pinned = null;
+          select(selected);
+          if (hadFocus)
+            map
+              .querySelector(`.pb-fold-toggle[data-module="${moduleId}"]`)
+              ?.focus({ preventScroll: true });
         }
 
         function markBoxes() {
@@ -1451,18 +1915,17 @@
             const badges = el('span', 'pb-badges');
             if (showAll) {
               for (const ac of AC_KEYS) {
-                if (PATHS[ac].steps.some(([, to]) => to === id))
+                if (view.paths[ac].steps.some((step) => step.to === id))
                   badges.append(el('span', 'pb-badge pb-badge-ac', ac));
               }
               node.removeAttribute('data-off');
             } else {
-              const steps = PATHS[selected].steps;
-              steps.forEach(([, to], index) => {
-                if (to === id) badges.append(el('span', 'pb-badge', String(index + 1)));
+              const plan = view.paths[selected];
+              plan.steps.forEach((step, index) => {
+                if (step.to === id) badges.append(el('span', 'pb-badge', String(index + 1)));
               });
               node.toggleAttribute('data-off', badges.childElementCount === 0);
-              if (PATHS[selected].end[0] === id)
-                node.append(el('span', 'aisf-stop', PATHS[selected].end[1]));
+              if (plan.end[0] === id) node.append(el('span', 'aisf-stop', plan.end[1]));
             }
             if (badges.childElementCount > 0) node.append(badges);
           }
@@ -1495,16 +1958,21 @@
             route.append(note);
             return;
           }
-          const plan = PATHS[selected];
-          plan.steps.forEach(([from, to, call, via], index) => {
+          const plan = view.paths[selected];
+          plan.steps.forEach((step, index) => {
             const row = el('li', 'pb-step');
             row.tabIndex = 0;
-            row.dataset.key = `${from ?? 'entry'}>${to}`;
-            row.append(el('span', 'pb-badge', String(index + 1)), hop(from, to, plan.actor));
-            const callLine = el('span', 'pb-step-call', call);
-            if (via === 'facade') callLine.append(el('span', 'pb-via', 'facade'));
-            if (via === 'event') callLine.append(el('span', 'pb-via', 'event bus'));
-            if (via === 'http') callLine.append(el('span', 'pb-via', 'http'));
+            row.dataset.key = step.key;
+            row.append(
+              el('span', 'pb-badge', String(index + 1)),
+              hop(step.from, step.to, plan.actor),
+            );
+            const callLine = el('span', 'pb-step-call', step.call);
+            if (step.via === 'facade') callLine.append(el('span', 'pb-via', 'facade'));
+            if (step.via === 'event') callLine.append(el('span', 'pb-via', 'event bus'));
+            if (step.via === 'http') callLine.append(el('span', 'pb-via', 'http'));
+            if (step.folded > 0)
+              callLine.append(el('span', 'pb-via pb-via-fold', `folded · ${step.folded} steps`));
             row.append(callLine);
             for (const type of ['mouseenter', 'focus'])
               row.addEventListener(type, () => setHot(row.dataset.key));
@@ -1539,7 +2007,7 @@
 
         function setHot(key) {
           hotKey = key;
-          for (const path of map.querySelectorAll('.pb-wire')) {
+          for (const path of map.querySelectorAll('.pb-wire, .pb-lane-badge')) {
             path.toggleAttribute('data-hot', key !== null && path.dataset.key === key);
           }
         }
@@ -1553,17 +2021,19 @@
           let text = `${backend} ${backend === 1 ? 'module' : 'modules'}`;
           if ([...kinds].some((m) => moduleOf.get(m).kind === 'frontend')) text += ' + frontend';
           if ([...kinds].some((m) => moduleOf.get(m).bus)) text += ' + event bus';
+          const names = ids.filter((id) => byId.get(id).fold).map((id) => byId.get(id).name);
+          if (names.length > 0) text += ` · ${names.join(', ')} folded`;
           return text;
         }
 
         function updateReadout() {
           if (selected === 'All') {
-            const ids = [...new Set([...WIRES.values()].map((w) => w.to))];
+            const ids = [...new Set([...view.wires.values()].map((w) => w.to))];
             readout.textContent = `${AC_KEYS.length} paths · ${ids.length} boxes drawn · ${moduleSummary(ids)}`;
             return;
           }
-          const steps = PATHS[selected].steps;
-          const ids = [...new Set(steps.map(([, to]) => to))];
+          const steps = view.paths[selected].steps;
+          const ids = [...new Set(steps.map((step) => step.to))];
           readout.textContent = `${selected}: ${steps.length} steps · ${ids.length} of ${boxEls.size} boxes · ${moduleSummary(ids)}`;
         }
 
@@ -1586,6 +2056,10 @@
 
         buildMap();
         buildSwitches();
+        // Empty map space releases a pinned box.
+        map.addEventListener('click', (event) => {
+          if (!event.target.closest('.pb-box, button, .pb-hit')) togglePin(null);
+        });
         select('AC1');
         let frame = 0;
         new ResizeObserver(() => {
