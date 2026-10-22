@@ -13,7 +13,8 @@ import { AddProjectForm } from './projects/add-project-form.js';
 import { ProjectPage } from './projects/project-page.js';
 import { ProjectSettingsPage } from './projects/project-settings-page.js';
 import { TicketPage } from './tickets/ticket-page.js';
-import { isRequestFailure } from './shared/is-request-failure.js';
+import { useLiveRead } from './live/use-live-read.js';
+import { loadProjects } from './projects/load-projects.js';
 
 function readRoute(): AppRoute {
   return parseAppRoute(window.location.hash);
@@ -23,50 +24,36 @@ export function AppShell() {
   const [route, setRoute] = useState<AppRoute>(readRoute);
   const [projects, setProjects] = useState<ReadonlyArray<ProjectResponse> | undefined>(undefined);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [reloadToken, setReloadToken] = useState(0);
   const [liveUpdates] = useState(() =>
     createLiveUpdates({ openStream: (url) => new EventSource(url), visibility: document }),
   );
   const usage = useUsage(liveUpdates);
 
+  const { retry } = useLiveRead(
+    liveUpdates,
+    { kind: 'projects' },
+    () => loadProjects((url) => fetch(url)),
+    (outcome) => {
+      if (outcome.kind === 'loaded') {
+        setProjects(outcome.projects);
+        setLoadFailed(false);
+      } else {
+        setLoadFailed(true);
+      }
+    },
+  );
+
   useEffect(() => {
     const handleHashChange = () => {
       setRoute(readRoute());
-      setReloadToken((token) => token + 1);
+      retry();
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      try {
-        const response = await fetch('/api/projects');
-        if (!response.ok) {
-          if (!cancelled) setLoadFailed(true);
-          return;
-        }
-        const loaded = (await response.json()) as ReadonlyArray<ProjectResponse>;
-        if (!cancelled) {
-          setProjects(loaded);
-          setLoadFailed(false);
-        }
-      } catch (error) {
-        if (!isRequestFailure(error)) throw error;
-        if (!cancelled) setLoadFailed(true);
-      }
-    };
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [reloadToken]);
+  }, [retry]);
 
   const handleAdded = (project: ProjectResponse) => {
-    setReloadToken((token) => token + 1);
+    retry();
     window.location.hash = `#/projects/${project.id}`;
   };
 

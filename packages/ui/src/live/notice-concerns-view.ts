@@ -7,12 +7,14 @@ export type LiveView =
   | { kind: 'artifacts'; projectId: string; ticketNumber: number }
   | { kind: 'findings'; projectId: string; ticketNumber?: number }
   | { kind: 'needs-you'; projectId: string }
+  | { kind: 'projects' }
   | { kind: 'skills' }
   | { kind: 'usage' };
 
 export function noticeConcernsView(notice: LiveNotice, view: LiveView): boolean {
   if (notice.event === 'skills.status-changed')
     return view.kind === 'skills' || view.kind === 'run';
+  if (view.kind === 'projects') return notice.event === 'project.checkout-refreshed';
   if (view.kind === 'usage') return notice.event === 'usage.changed';
   if (view.kind === 'skills' || notice.projectId !== view.projectId) return false;
 
@@ -46,6 +48,7 @@ export function noticeConcernsView(notice: LiveNotice, view: LiveView): boolean 
     case 'snapshot.changed':
     case 'ticket.closed':
     case 'project.added':
+    case 'project.checkout-refreshed':
     case 'usage.window-observed':
     case 'usage.changed':
       return false;

@@ -70,13 +70,14 @@ export class ProjectService {
   }
 
   async refreshCheckout(projectId: string): Promise<void> {
-    const { projectRepository, checkoutFetcher } = this.dependencies;
+    const { projectRepository, checkoutFetcher, events } = this.dependencies;
     const project = await projectRepository.findById(projectId);
     if (project === undefined) {
       return;
     }
 
     await checkoutFetcher.fetch(project.checkoutPath);
+    events.emit('project.checkout-refreshed', { projectId });
   }
 
   async list(): Promise<ReadonlyArray<ProjectWithContract>> {
