@@ -9,6 +9,8 @@ type SessionPanelProps = {
   readonly onRetry: () => void;
   /** Identifies the run shown; a new value starts the chat pinned to the bottom again. */
   readonly runStartedAt?: string | undefined;
+  /** Hidden panels stay mounted, so live lines keep arriving. */
+  readonly hidden?: boolean;
   readonly children: ReactNode;
 };
 
@@ -17,12 +19,18 @@ export function SessionPanel({
   onStop,
   onRetry,
   runStartedAt,
+  hidden = false,
   children,
 }: SessionPanelProps) {
   const { head, connectionBanner } = description;
-  const chatRef = useStickToBottom<HTMLDivElement>(runStartedAt);
+  const chatRef = useStickToBottom<HTMLDivElement>(runStartedAt, hidden);
   return (
-    <section className={`session-panel rail-${description.rail}`} aria-label={description.label}>
+    <section
+      className={`session-panel rail-${description.rail}`}
+      id="ticket-session"
+      aria-label={description.label}
+      hidden={hidden}
+    >
       <div className="head">
         {head.kind === 'live' ? (
           <>

@@ -1109,6 +1109,10 @@ details:not([open]) .t-hide {
   height: 100%;
 }
 
+.tp-cols > .session-panel[hidden] {
+  display: none;
+}
+
 .facts {
   display: grid;
   grid-template-columns: 112px minmax(0, 1fr);

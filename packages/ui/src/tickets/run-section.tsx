@@ -53,6 +53,7 @@ type RunSectionProps = {
   readonly ticketState: Pick<TicketResponse, 'status' | 'waiting' | 'stuck'>;
   readonly runSkill: RunSkill;
   readonly pausedUntil: string | undefined;
+  readonly sessionShown: boolean;
   readonly children: (slots: RunSlots) => ReactNode;
 };
 
@@ -71,6 +72,7 @@ export function RunSection({
   ticketState,
   runSkill,
   pausedUntil,
+  sessionShown,
   children,
 }: RunSectionProps) {
   const { status: ticketStatus, stuck: ticketStuck } = ticketState;
@@ -276,6 +278,7 @@ export function RunSection({
         description={describeSessionPanel(shownPanel, session.view, ticketRun.response?.lastRun)}
         onRetry={retryRun}
         onStop={stopActiveRun}
+        hidden={!sessionShown}
         runStartedAt={(ticketRun.response?.activeRun ?? ticketRun.response?.lastRun)?.startedAt}
       >
         <SessionViewBody view={session.view} opened={session.opened} onToggle={session.toggle} />

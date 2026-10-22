@@ -14,6 +14,7 @@ import {
   settleDescriptionOpen,
   type DescriptionSwap,
 } from './describe-description-swap.js';
+import { describeSessionToggle } from './describe-session-toggle.js';
 import { DescriptionToggle } from './description-toggle.js';
 import { describeMoveToPlanAction, type MoveToPlanState } from './describe-move-to-plan-action.js';
 import { MoveToPlanAction } from './move-to-plan-action.js';
@@ -21,6 +22,7 @@ import { moveTicketToPlan } from './move-ticket-to-plan.js';
 import { outcomeAfterRefresh } from './outcome-after-refresh.js';
 import { ReviewPanel } from './review-panel.js';
 import { RunSection } from './run-section.js';
+import { SessionToggle } from './session-toggle.js';
 import { TicketBodySection } from './ticket-body-section.js';
 import { ticketLiveView } from './ticket-live-view.js';
 import { isRequestFailure } from '../shared/is-request-failure.js';
@@ -172,6 +174,7 @@ function LoadedTicket({
   readonly description: LoadedDescription;
 }) {
   const { statusMark, parent, pullRequests } = description;
+  const [sessionShown, setSessionShown] = useState(true);
   const [moveToPlan, setMoveToPlan] = useState<MoveToPlanState>({ kind: 'idle' });
   const moveToPlanNow = async () => {
     setMoveToPlan({ kind: 'sending' });
@@ -188,6 +191,7 @@ function LoadedTicket({
       ticketState={description}
       runSkill={description.runSkill}
       pausedUntil={pausedUntil}
+      sessionShown={sessionShown}
     >
       {(slots) => (
         <DescriptionSwapState roundUp={slots.lowerPanel !== undefined}>
@@ -239,6 +243,12 @@ function LoadedTicket({
                     variant="popover"
                   />
                   <DescriptionToggle toggle={swap.toggle} onToggle={onToggle} />
+                  <SessionToggle
+                    toggle={describeSessionToggle(sessionShown)}
+                    onToggle={() => {
+                      setSessionShown(!sessionShown);
+                    }}
+                  />
                   {slots.runBar}
                 </div>
               </header>
