@@ -70,16 +70,22 @@ the context is your job, never the human's.
   problem="one line: what is decided, what goes wrong if decided badly"
 >
   <aisf-context kind="diagram">…figure: one panel per option, changes marked…</aisf-context>
-  <aisf-card value="a" suggested why="one line of why" gain="its gain" cost="its cost"
+  <aisf-card
+    value="a"
+    suggested
+    why="one line of why"
+    gain="its gain"
+    cost="its cost"
+    effect="what it builds or changes: module · layer, table, sub-issues added"
     >Option A</aisf-card
   >
-  <aisf-card value="b" gain="its gain" cost="its cost">Option B</aisf-card>
+  <aisf-card value="b" gain="its gain" cost="its cost" effect="its effect">Option B</aisf-card>
   <aisf-more>code excerpt by path, edge cases, research findings</aisf-more>
 </aisf-question>
 ```
 
-- `problem` holds the problem, `gain` and `cost` each option's consequence, `<aisf-more>`
-  the depth. The kit adds Other and Discuss.
+- `problem` holds the problem, `gain`, `cost` and `effect` each option's consequence,
+  `<aisf-more>` the depth. The kit adds Other and Discuss.
 
 - **A figure is the default.** It shows each option, not only today's state: comparing the
   options is what the human decides on. Only a pure naming or wording choice goes without, and
