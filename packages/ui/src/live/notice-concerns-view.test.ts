@@ -119,3 +119,32 @@ describe('noticeConcernsView for needs-you', () => {
     expect(noticeConcernsView(on('run.waiting', 7), needsYou('octo/other'))).toBe(false);
   });
 });
+
+describe('noticeConcernsView for projects', () => {
+  const projects: LiveView = { kind: 'projects' };
+
+  it.each(['p1', 'p2'])(
+    'should concern the project list when project.checkout-refreshed arrives for %s',
+    (projectId) => {
+      expect(noticeConcernsView({ event: 'project.checkout-refreshed', projectId }, projects)).toBe(
+        true,
+      );
+    },
+  );
+
+  it.each(['ticket.closed', 'watch.updated', 'project.added'] as const)(
+    'should not concern the project list when %s arrives',
+    (event) => {
+      expect(noticeConcernsView({ event, projectId: 'p1' }, projects)).toBe(false);
+    },
+  );
+
+  it.each([board('p1'), { kind: 'usage' } as LiveView, skills])(
+    'should not concern the $kind view when project.checkout-refreshed arrives',
+    (view) => {
+      expect(
+        noticeConcernsView({ event: 'project.checkout-refreshed', projectId: 'p1' }, view),
+      ).toBe(false);
+    },
+  );
+});

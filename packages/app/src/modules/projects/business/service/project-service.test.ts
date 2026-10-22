@@ -314,5 +314,41 @@ describe('ProjectService', () => {
 
       expect(checkoutFetcher.fetchCalls).toEqual([]);
     });
+
+    it('should emit project.checkout-refreshed after the fetch when it succeeds', async () => {
+      const { service, checkoutFetcher, events } = createSubject();
+      await service.add(checkoutPath);
+      events.emittedEvents.length = 0;
+      let announcedAtFetch = -1;
+      checkoutFetcher.fetch = async () => {
+        announcedAtFetch = events.emittedEvents.length;
+      };
+
+      await service.refreshCheckout('moritz/aisf');
+
+      expect(announcedAtFetch).toBe(0);
+      expect(events.emittedEvents).toEqual([
+        { name: 'project.checkout-refreshed', payload: { projectId: 'moritz/aisf' } },
+      ]);
+    });
+
+    it('should emit nothing and reject when the fetch fails', async () => {
+      const { service, checkoutFetcher, events } = createSubject();
+      await service.add(checkoutPath);
+      events.emittedEvents.length = 0;
+      checkoutFetcher.failure = new Error('offline');
+
+      await expect(service.refreshCheckout('moritz/aisf')).rejects.toThrow('offline');
+
+      expect(events.emittedEvents).toEqual([]);
+    });
+
+    it('should emit nothing when the project is unknown', async () => {
+      const { service, events } = createSubject();
+
+      await service.refreshCheckout('x/y');
+
+      expect(events.emittedEvents).toEqual([]);
+    });
   });
 });

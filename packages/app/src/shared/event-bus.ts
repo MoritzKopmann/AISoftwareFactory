@@ -6,6 +6,9 @@ export type DomainEvents = {
     readonly repository: { readonly owner: string; readonly name: string };
     readonly checkoutPath: string;
   };
+  readonly 'project.checkout-refreshed': {
+    readonly projectId: string;
+  };
   readonly 'snapshot.changed': {
     readonly projectId: string;
     readonly addedTicketNumbers: ReadonlyArray<number>;
@@ -117,6 +120,7 @@ function listEveryName<const List extends ReadonlyArray<EventName>>(
 /** Every DomainEvents key at runtime. The type checker rejects a missing or an extra name. */
 export const domainEventNames = listEveryName([
   'project.added',
+  'project.checkout-refreshed',
   'snapshot.changed',
   'ticket.closed',
   'run.started',
