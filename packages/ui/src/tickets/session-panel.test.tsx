@@ -33,7 +33,9 @@ function render(description: SessionPanelDescription): string {
 describe('SessionPanel', () => {
   it('should render a Run region with an info rail and a pressable Stop when the run is live', () => {
     const markup = render(liveDescription(liveRun));
-    expect(markup).toContain('class="session-panel rail-info" aria-label="Run"');
+    expect(markup).toContain(
+      'class="session-panel rail-info" id="ticket-session" aria-label="Run"',
+    );
     expect(markup).toMatch(/<button[^>]*>Stop<\/button>/);
     expect(markup).not.toContain('aria-disabled');
   });
@@ -125,7 +127,9 @@ describe('SessionPanel', () => {
       rail: 'border-strong',
       head: { kind: 'session', timeRange: '14:02 – 14:19' },
     });
-    expect(markup).toContain('class="session-panel rail-border-strong" aria-label="Session"');
+    expect(markup).toContain(
+      'class="session-panel rail-border-strong" id="ticket-session" aria-label="Session"',
+    );
     expect(markup).toContain('Session</span>');
     expect(markup).toContain('14:02 – 14:19');
     expect(markup).not.toContain('Stop');
@@ -146,5 +150,33 @@ describe('SessionPanel', () => {
     expect(markup).toMatch(
       /<div class="chat" role="log" aria-label="Session"><p>CONTENT<\/p><\/div>/,
     );
+  });
+});
+
+describe('SessionPanel visibility', () => {
+  const description = liveDescription(liveRun);
+
+  function renderHidden(hidden: boolean): string {
+    return renderToStaticMarkup(
+      <SessionPanel description={description} onStop={ignore} onRetry={ignore} hidden={hidden}>
+        <p>CONTENT</p>
+      </SessionPanel>,
+    );
+  }
+
+  it('should carry hidden and stay mounted with its content when hidden', () => {
+    const markup = renderHidden(true);
+
+    expect(markup).toMatch(/<section[^>]* hidden=""/);
+    expect(markup).toContain('id="ticket-session"');
+    expect(markup).toContain('role="log"');
+    expect(markup).toContain('CONTENT');
+  });
+
+  it('should carry no hidden attribute and keep the id when shown', () => {
+    const markup = renderHidden(false);
+
+    expect(markup).not.toMatch(/<section[^>]* hidden/);
+    expect(markup).toContain('id="ticket-session"');
   });
 });

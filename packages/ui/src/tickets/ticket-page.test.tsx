@@ -47,7 +47,7 @@ describe('TicketPageView', () => {
     expect(markup).not.toContain('runlog');
     expect(markup).not.toContain('class="steps"');
     expect(markup).toMatch(
-      /<main class="page ticket-page">.*<\/header><div class="tp-cols"><div class="tp-left">.*<section class="ticket-body" id="ticket-description" aria-label="Description">.*<\/section><\/div><section class="session-panel rail-border-strong" aria-label="Session">.*role="log" aria-label="Session".*<\/section><\/div><\/main>$/,
+      /<main class="page ticket-page">.*<\/header><div class="tp-cols"><div class="tp-left">.*<section class="ticket-body" id="ticket-description" aria-label="Description">.*<\/section><\/div><section class="session-panel rail-border-strong" id="ticket-session" aria-label="Session">.*role="log" aria-label="Session".*<\/section><\/div><\/main>$/,
     );
     expect(markup.match(/aria-label="Session"/g)).toHaveLength(2);
   });
@@ -55,7 +55,7 @@ describe('TicketPageView', () => {
   it('should show no description toggle when no round is up', () => {
     const markup = render(loaded());
 
-    expect(markup).not.toContain('class="tp-toggle"');
+    expect(markup).not.toContain('aria-controls="ticket-description"');
   });
 
   it('should show the back link, the title, the status chip, Open on GitHub and the parent in that order in the top bar when the ticket has a parent', () => {
@@ -96,10 +96,12 @@ describe('TicketPageView', () => {
     );
   });
 
-  it('should end the top bar with the run actions slot when the ticket is loaded', () => {
+  it('should end the top bar with the session toggle in the run actions slot when the ticket is loaded', () => {
     const markup = render(loaded());
 
-    expect(markup).toMatch(/<\/div><div class="tp-actions"><\/div><\/header><div class="tp-cols">/);
+    expect(markup).toMatch(
+      /<\/div><div class="tp-actions"><button[^>]*>Hide session<\/button><\/div><\/header><div class="tp-cols">/,
+    );
   });
 
   it.each([
@@ -168,6 +170,16 @@ describe('TicketPageView', () => {
 
     expect(markup).toMatch(
       /Couldn&#x27;t load #56.*<p class="sm">Loads again on the next change, or on Retry\.<\/p><button[^>]*>Retry<\/button><p class="sm mono">Failed to fetch<\/p>/,
+    );
+  });
+
+  it('should open with the session shown and a Hide session button when the page has just mounted', () => {
+    const markup = render(loaded());
+
+    expect(markup).toMatch(/<section[^>]*class="session-panel[^"]*"[^>]*id="ticket-session"/);
+    expect(markup).not.toMatch(/<section[^>]*id="ticket-session"[^>]*hidden/);
+    expect(markup).toContain(
+      '<button class="tp-toggle" type="button" aria-expanded="true" aria-controls="ticket-session">Hide session</button>',
     );
   });
 });

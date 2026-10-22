@@ -8,10 +8,11 @@ function scrollToBottom(element: HTMLElement) {
 /**
  * Keeps a scroll box at its bottom while the reader has not scrolled away. Content growth
  * (new children, or a child that grows) follows only while pinned; the reader's own scroll
- * events decide whether it is. A new `runKey` pins again.
+ * events decide whether it is. A new `runKey` pins again, and so does showing the box again.
  */
 export function useStickToBottom<T extends HTMLElement>(
   runKey: string | undefined,
+  hidden = false,
 ): RefObject<T | null> {
   const boxRef = useRef<T>(null);
   const pinned = useRef(true);
@@ -21,9 +22,12 @@ export function useStickToBottom<T extends HTMLElement>(
     if (box === null) {
       return;
     }
+    if (hidden) {
+      return;
+    }
     pinned.current = true;
     scrollToBottom(box);
-  }, [runKey]);
+  }, [runKey, hidden]);
 
   useEffect(() => {
     const box = boxRef.current;
