@@ -35,14 +35,23 @@ example for each ticket, and show whatever helps the human check the plan.
 - **Frontend column first**, leftmost, when a criterion touches the UI: the touched screen
   parts, with no layer rows. Omit it otherwise.
 - **Diff colours on every component**: `aisf-node-new`, `aisf-node-changed`,
-  `aisf-node-untouched`. A module a path only passes through is drawn untouched (greyed), with
-  only the components that path touches.
+  `aisf-node-untouched`.
+- **Fold untouched modules.** A module whose touched components are all untouched starts as
+  one folded box: its name, what it does for these paths in one or two domain words ("reads
+  ticket"), and its step count. Its inner hops leave the map and the route sheet; the call into
+  it stays one row. Clicking the box unfolds it. Unchanged steps inside a changed module stay
+  drawn.
 - **One path per criterion**, picked with `aisf-switch` buttons (AC1, AC2, …, All). The
   selected criterion's text sits directly under the buttons. Steps are numbered in call order
   and named by who starts them (the owner, GitHub). The path's end is marked. A route sheet
   under the map lists each step: from → to, and the call.
 - **Arrows:** in on a box's left edge, out on its bottom edge. Each arrow is right-angled in
-  its own lane: no shared segment, no shared endpoint. The last segment into a box is straight.
+  its own lane, 10px from its neighbours: no shared segment, no shared endpoint. Each is drawn
+  over a halo in the background colour. The last segment into a box is straight. A long lane
+  carries its step number midway.
+- **Focus:** hovering a box lights it, its incoming and outgoing arrows, the boxes at their
+  other ends and their route-sheet rows; the rest fades. Hovering one arrow lights only it,
+  its two boxes and its row. Clicking pins the focus; clicking again releases it.
 - **Generated, never hand-placed:** one data object holds modules, components and paths; the
   page script lays out boxes, routes the wires and computes the readout.
 - **Under the map, in round 1:** one question per criterion, `Correct` (`suggested`) or
