@@ -4,7 +4,6 @@ import { createLiveUpdates } from './live/create-live-updates.js';
 import { OfflineHint } from './live/offline-hint.js';
 import { SkillsStatusPanel } from './skills/skills-status-panel.js';
 import { PausedBanner } from './usage/paused-banner.js';
-import { UsageMeter } from './usage/usage-meter.js';
 import { useUsage, type UsageState } from './usage/use-usage.js';
 import { UsagePage } from './usage/usage-page.js';
 import { parseAppRoute, type AppRoute } from './app-route.js';
@@ -105,9 +104,13 @@ export function AppShell() {
 
   return (
     <div className="shell">
-      <ProjectSidebar projects={projects} route={route} />
+      <ProjectSidebar
+        projects={projects}
+        route={route}
+        usage={usage}
+        isUsageCurrent={route.kind === 'usage'}
+      />
       <div className="main">
-        <UsageMeter usage={usage} current={route.kind === 'usage'} />
         <PausedBanner usage={usage} />
         <OfflineHint liveUpdates={liveUpdates} />
         <SkillsStatusPanel liveUpdates={liveUpdates} />

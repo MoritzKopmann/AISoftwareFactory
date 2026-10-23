@@ -4,6 +4,10 @@ import { describeUsageWindow, type UsageWindowDescription } from './describe-usa
 import type { UsageState } from './use-usage.js';
 import { windowsOf } from './usage-windows.js';
 
+const VALUE_SKELETON_WIDTH_PIXELS = 36;
+const FIVE_HOUR_RESET_SKELETON_WIDTH_PIXELS = 96;
+const WEEKLY_RESET_SKELETON_WIDTH_PIXELS = 128;
+
 export function UsageMeter({
   usage,
   current,
@@ -43,8 +47,8 @@ export function UsageMeter({
         aria-current={ariaCurrent}
         aria-label="Usage loading. Open the usage page."
       >
-        <SkeletonGroup label="5-hour" valueWidth={120} />
-        <SkeletonGroup label="Weekly" valueWidth={150} />
+        <SkeletonGroup label="5-hour" resetWidth={FIVE_HOUR_RESET_SKELETON_WIDTH_PIXELS} />
+        <SkeletonGroup label="Weekly" resetWidth={WEEKLY_RESET_SKELETON_WIDTH_PIXELS} />
       </a>
     );
   }
@@ -77,9 +81,11 @@ function WindowGroup({
   if (description.noData) {
     return (
       <span className="usage-meter-group">
-        <span className="label">{label}</span>
+        <span className="usage-meter-head">
+          <span className="label">{label}</span>
+          <span className="usage-meter-muted">no data yet</span>
+        </span>
         <span aria-hidden="true" className="usage-meter-track usage-meter-track-empty" />
-        <span className="usage-meter-muted">no data yet</span>
       </span>
     );
   }
@@ -94,7 +100,10 @@ function WindowGroup({
 
   return (
     <span className={groupClass}>
-      <span className="label">{label}</span>
+      <span className="usage-meter-head">
+        <span className="label">{label}</span>
+        <span className="usage-meter-value">{description.valueLabel}</span>
+      </span>
       <span aria-hidden="true" className="usage-meter-track">
         <span
           className="usage-meter-fill"
@@ -102,7 +111,6 @@ function WindowGroup({
         />
         <span className="usage-meter-tick" />
       </span>
-      <span className="usage-meter-value">{description.valueLabel}</span>
       {description.resetting ? (
         <span className="usage-meter-reset">
           <span aria-hidden="true" className="pulse">
@@ -119,19 +127,26 @@ function WindowGroup({
 
 function SkeletonGroup({
   label,
-  valueWidth,
+  resetWidth,
 }: {
   readonly label: string;
-  readonly valueWidth: number;
+  readonly resetWidth: number;
 }) {
   return (
     <span className="usage-meter-group">
-      <span className="label">{label}</span>
-      <span aria-hidden="true" className="usage-meter-skeleton pulse" style={{ width: 72 }} />
+      <span className="usage-meter-head loading">
+        <span className="label">{label}</span>
+        <span
+          aria-hidden="true"
+          className="usage-meter-skeleton pulse"
+          style={{ width: VALUE_SKELETON_WIDTH_PIXELS }}
+        />
+      </span>
+      <span aria-hidden="true" className="usage-meter-skeleton pulse" />
       <span
         aria-hidden="true"
-        className="usage-meter-skeleton pulse"
-        style={{ width: valueWidth }}
+        className="usage-meter-skeleton usage-meter-skeleton-reset pulse"
+        style={{ width: resetWidth }}
       />
     </span>
   );
