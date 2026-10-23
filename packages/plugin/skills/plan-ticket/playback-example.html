@@ -94,6 +94,12 @@
         font-size: var(--text-size-sm);
       }
 
+      .pb-wiring {
+        margin: 0;
+        font-size: var(--text-size-sm);
+        color: var(--muted);
+      }
+
       .pb-switches {
         display: flex;
         flex-wrap: wrap;
@@ -771,8 +777,9 @@
         padding: 12px 0 26px;
       }
 
-      .pb-map[data-grid] .pb-layer-empty {
-        display: none;
+      /* An empty layer stays as a blank row, so the next layer keeps its own row. */
+      .pb-map[data-grid] .pb-module .pb-layer-empty {
+        display: grid;
       }
 
       .pb-map[data-grid] .pb-box.aisf-node {
@@ -1084,20 +1091,56 @@
           },
         };
 
+        // Wiring: facades, adapters, event handlers and bus events. Never drawn: a call through
+        // them is one arrow between the two boxes it joins.
+        const WIRING = new Set([
+          'evt',
+          'handler',
+          'ticketsAdapter',
+          'ticketsFacade',
+          'usersAdapter',
+          'usersFacade',
+        ]);
+
         const AC_KEYS = Object.keys(PATHS);
         const moduleOf = new Map(MODULES.map((module) => [module.id, module]));
         const byId = new Map(BOXES.map((box) => [box.id, box]));
+
+        // A hop into wiring waits for the hop out of it; the two become one step that keeps the
+        // first call and names any new or changed wiring it passed.
+        function unwire(steps) {
+          const through = new Map();
+          const out = [];
+          for (const [rawFrom, to, call, via] of steps) {
+            const hop = through.get(rawFrom) ?? { from: rawFrom, call, via, notes: [] };
+            const merged = { ...hop, via: hop.via ?? via };
+            if (WIRING.has(to)) {
+              const box = byId.get(to);
+              const note = box.mark === 'untouched' ? [] : [`${box.name} ${box.mark}`];
+              through.set(to, { ...merged, notes: [...merged.notes, ...note] });
+              continue;
+            }
+            out.push([merged.from, to, [merged.call, ...merged.notes].join(' · '), merged.via]);
+          }
+          return out;
+        }
+
+        const STEPS = Object.fromEntries(AC_KEYS.map((ac) => [ac, unwire(PATHS[ac].steps)]));
+        const drawnIn = (moduleId) =>
+          BOXES.filter((box) => box.module === moduleId && !WIRING.has(box.id));
         const isFrontend = (boxId) =>
           boxId !== null && moduleOf.get(byId.get(boxId).module).kind === 'frontend';
         const UI_TOUCHED = AC_KEYS.some((ac) =>
-          PATHS[ac].steps.some(([from, to]) => isFrontend(from) || isFrontend(to)),
+          STEPS[ac].some(([from, to]) => isFrontend(from) || isFrontend(to)),
         );
-        const SHOWN_MODULES = MODULES.filter((module) => module.kind !== 'frontend' || UI_TOUCHED);
+        const SHOWN_MODULES = MODULES.filter(
+          (module) => (module.kind !== 'frontend' || UI_TOUCHED) && drawnIn(module.id).length > 0,
+        );
 
         // Foldable: a layered module whose boxes are all untouched. Each gets one stand-in box.
         const FOLDABLE = new Set(
           MODULES.filter((module) => {
-            const boxes = BOXES.filter((box) => box.module === module.id);
+            const boxes = drawnIn(module.id);
             return (
               !module.bus &&
               module.kind !== 'frontend' &&
@@ -1109,7 +1152,7 @@
         const folded = new Set(FOLDABLE);
         for (const moduleId of FOLDABLE) {
           const inModule = (id) => id !== null && byId.get(id).module === moduleId;
-          const allSteps = AC_KEYS.flatMap((ac) => PATHS[ac].steps);
+          const allSteps = AC_KEYS.flatMap((ac) => STEPS[ac]);
           const entry = allSteps.find(([from, to]) => inModule(to) && !inModule(from));
           const module = moduleOf.get(moduleId);
           byId.set(`fold:${moduleId}`, {
@@ -1158,7 +1201,7 @@
           for (const ac of AC_KEYS) {
             const steps = [];
             const lastEntry = new Map();
-            for (const [rawFrom, rawTo, call, via] of PATHS[ac].steps) {
+            for (const [rawFrom, rawTo, call, via] of STEPS[ac]) {
               const from = shown(rawFrom);
               const to = shown(rawTo);
               if (from !== null && from === to) {
@@ -1273,9 +1316,7 @@
             }
             const isFolded = folded.has(module.id);
             if (isFolded) card.dataset.folded = '';
-            const boxesIn = isFolded
-              ? [byId.get(`fold:${module.id}`)]
-              : BOXES.filter((box) => box.module === module.id);
+            const boxesIn = isFolded ? [byId.get(`fold:${module.id}`)] : drawnIn(module.id);
             for (const layer of LAYERS) {
               const boxes = boxesIn.filter((box) => box.layer === layer);
               const row = el('div', boxes.length === 0 ? 'pb-layer pb-layer-empty' : 'pb-layer');
@@ -1423,17 +1464,23 @@
         // Ports: every box takes calls in on its left edge and sends calls out of its bottom edge.
         // Each wire gets its own exit, its own drop depth, its own lane and its own entry slot,
         // so no two wires share a segment and every arrow ends in a straight stub.
+        // No segment crosses a box: drops stay in the gap under their box, verticals run in gutters.
         const LANE_FIRST = 12;
         const LANE_STEP = 10;
         const EXIT_FIRST = 12;
         const EXIT_STEP = 14;
         const DROP_FIRST = 6;
         const DROP_STEP = 10;
+        // A drop run keeps this far above the next box; boxes in a layer sit BOX_GAP apart.
+        const DROP_CLEAR = 10;
+        const BOX_GAP = 22;
         const SLOT_FIRST = 18;
         const SLOT_STEP = 12;
         // A routing strip is as wide as its lanes need, plus this much room by the frame edge.
         const GUTTER_PAD = 12;
         const GUTTER_MIN = 26;
+        // A held drop covers this much gutter, so the drop can still reach a lane.
+        const GUTTER_HOLD = 120;
         const SCREEN_GUTTER_MIN = 24;
         // Lanes at least this long carry their step number midway.
         const LONG_RUN = 120;
@@ -1451,10 +1498,6 @@
             top: r.top - base.top,
             bottom: r.bottom - base.top,
           };
-        }
-
-        function sameColumn(a, b) {
-          return Math.abs(a.left - b.left) < 4;
         }
 
         // An orthogonal polyline with small rounded corners.
@@ -1496,7 +1539,13 @@
 
         function routeWires() {
           const rects = new Map([...boxEls.keys()].map((id) => [id, rectOf(id)]));
-          const wires = [...view.wires.values()].map((wire) => ({ wire }));
+          const frames = [...screenEls.values()].map(relativeRect);
+          const wires = [...view.wires.values()].map((wire) => ({ wire, lanes: [] }));
+          // A column is every box sharing one left edge; its gutter is the strip left of them.
+          const columns = [...new Set([...rects.values()].map((r) => Math.round(r.left)))].sort(
+            (a, b) => a - b,
+          );
+          const columnOf = (id) => columns.find((c) => Math.abs(c - rects.get(id).left) < 4);
 
           // Entry slots on the left edge: the nearest caller takes the top slot.
           const byTarget = new Map();
@@ -1514,145 +1563,192 @@
             });
           }
 
-          // Exits on the bottom edge. Wires bound for this column's gutter leave on the left,
-          // farthest first and shallowest; wires bound right leave after them.
-          const bySource = new Map();
-          for (const item of wires) {
-            if (item.wire.from === null) continue;
-            if (!bySource.has(item.wire.from)) bySource.set(item.wire.from, []);
-            bySource.get(item.wire.from).push(item);
-          }
-          for (const [from, group] of bySource) {
+          // Exits on the bottom edge. Wires bound left (or down their own column) leave first,
+          // farthest first and shallowest; wires bound right leave after them, the rightmost
+          // shallowest. So no drop run crosses a sibling's exit.
+          for (const [from, group] of bySource(wires)) {
             const source = rects.get(from);
             const reach = (item) => Math.abs(item.slotY - source.bottom);
-            const left = group.filter((item) => sameColumn(source, rects.get(item.wire.to)));
+            const left = group.filter((item) => columnOf(item.wire.to) <= columnOf(from));
             const right = group.filter((item) => !left.includes(item));
             left.sort((p, q) => reach(q) - reach(p));
             right.sort((p, q) => reach(p) - reach(q));
             [...left, ...right].forEach((item, index) => {
               item.exitX = source.left + EXIT_FIRST + index * EXIT_STEP;
-              item.dropY = source.bottom + DROP_FIRST + index * DROP_STEP;
+              const depth = index < left.length ? index : group.length - 1 - (index - left.length);
+              item.dropY = source.bottom + DROP_FIRST + depth * DROP_STEP;
             });
           }
 
-          assignLanes(wires, rects);
-          // A horizontal run must clear every box and every other wire's horizontal.
-          // If the first drop depth does not, walk down to the next free corridor.
-          let moved = false;
-          for (const item of wires) {
-            if (item.wire.from === null) continue;
-            const others = wires.filter((other) => other !== item);
-            if (!blocked(item.dropY, item.exitX, item.laneX, rects, others, item)) continue;
-            let y = item.dropY;
-            while (y < item.dropY + 2000 && blocked(y, item.exitX, item.laneX, rects, others, item))
-              y += 2;
-            item.dropY = y;
-            moved = true;
-          }
-          if (moved) assignLanes(wires, rects);
-          for (const item of wires) {
-            if (
-              item.wire.from !== null &&
-              blocked(
-                item.dropY,
-                item.exitX,
-                item.laneX,
-                rects,
-                wires.filter((o) => o !== item),
-                item,
-              )
-            ) {
-              console.warn('no clear corridor', item.wire.key);
+          // Lanes: per gutter, numbered outward from the boxes; a lane holds runs that never overlap.
+          const lanes = new Map(columns.map((c) => [c, []]));
+          const laneFor = (column, y1, y2) => {
+            const low = Math.min(y1, y2) - 6;
+            const high = Math.max(y1, y2) + 6;
+            const taken = lanes.get(column);
+            let lane = 0;
+            while ((taken[lane] ?? []).some((run) => low < run.high && high > run.low)) lane += 1;
+            return { column, lane, low, high, x: column - LANE_FIRST - lane * LANE_STEP };
+          };
+          const runs = [];
+          const commit = (item, verticals, horizontals) => {
+            for (const v of verticals) {
+              (lanes.get(v.column)[v.lane] ??= []).push(v);
+              item.lanes.push(v);
             }
+            runs.push(...horizontals);
+            reserved.delete(item);
+          };
+          // Every drop is held before routing starts, so no other wire's run takes the gap under a box.
+          const reserved = new Map(
+            wires
+              .filter((item) => item.wire.from !== null)
+              .map((item) => {
+                const source = rects.get(item.wire.from);
+                const column = columnOf(item.wire.from);
+                return [item, { y: item.dropY, x1: column - GUTTER_HOLD, x2: source.right }];
+              }),
+          );
+
+          // A run is clear when it touches no box and no screen frame edge, and keeps a lane's
+          // width from every other wire's run.
+          const flatClear = (y, x1, x2, self) => {
+            const low = Math.min(x1, x2);
+            const high = Math.max(x1, x2);
+            if (crossesBox(y, low, high, rects, [], 6)) return false;
+            if (
+              frames.some(
+                (r) =>
+                  [r.top, r.bottom].some((edge) => Math.abs(edge - y) < 6) &&
+                  high > r.left &&
+                  low < r.right,
+              )
+            )
+              return false;
+            const held = [...reserved].filter(([owner]) => owner !== self).map(([, run]) => run);
+            return ![...runs, ...held].some(
+              (run) =>
+                Math.abs(run.y - y) < LANE_STEP &&
+                Math.max(run.x1, run.x2) > low &&
+                Math.min(run.x1, run.x2) < high,
+            );
+          };
+          const upClear = (x, y1, y2) => {
+            const low = Math.min(y1, y2);
+            const high = Math.max(y1, y2);
+            return ![...rects.values()].some(
+              (r) => x > r.left - 3 && x < r.right + 3 && high > r.top - 3 && low < r.bottom + 3,
+            );
+          };
+
+          // Entry wires: a start dot in the target's gutter and a straight stub.
+          for (const item of wires.filter((w) => w.wire.from === null)) {
+            const lane = laneFor(columnOf(item.wire.to), item.slotY, item.slotY);
+            item.points = [
+              { x: lane.x, y: item.slotY },
+              { x: rects.get(item.wire.to).left - 1, y: item.slotY },
+            ];
+            item.start = item.points[0];
+            commit(item, [lane], [{ y: item.slotY, x1: lane.x, x2: item.points[1].x }]);
           }
 
-          for (const item of wires) {
-            const target = rects.get(item.wire.to);
-            const endX = target.left - 1;
-            if (item.wire.from === null) {
-              item.points = [
-                { x: item.laneX, y: item.slotY },
-                { x: endX, y: item.slotY },
-              ];
-              item.start = { x: item.laneX, y: item.slotY };
+          // Calls: drop just under the source, then the first clear shape.
+          // Direct: across at the drop, down the target's gutter.
+          // Detour: across to a nearer gutter, along it to a clear height, across, down the target's gutter.
+          for (const item of wires.filter((w) => w.wire.from !== null)) {
+            const source = rects.get(item.wire.from);
+            const endX = rects.get(item.wire.to).left - 1;
+            const target = columnOf(item.wire.to);
+            const { exitX, dropY, slotY } = item;
+            const exit = [
+              { x: exitX, y: source.bottom },
+              { x: exitX, y: dropY },
+            ];
+            const arrive = (lane) => [
+              { x: lane.x, y: slotY },
+              { x: endX, y: slotY },
+            ];
+            const direct = laneFor(target, dropY, slotY);
+            if (flatClear(dropY, exitX, direct.x, item) && upClear(direct.x, dropY, slotY)) {
+              item.points = [...exit, { x: direct.x, y: dropY }, ...arrive(direct)];
+              commit(
+                item,
+                [direct],
+                [
+                  { y: dropY, x1: exitX, x2: direct.x },
+                  { y: slotY, x1: direct.x, x2: endX },
+                ],
+              );
               continue;
             }
-            const source = rects.get(item.wire.from);
+            // Nearer gutters first, and those on the target's side before the others.
+            const toward = Math.sign(target - exitX);
+            const cost = (c) =>
+              Math.abs(c - exitX) + (Math.sign(c - exitX) === toward ? 0 : 100000);
+            const via = columns.filter((c) => c !== target).sort((a, b) => cost(a) - cost(b));
+            let found = null;
+            for (const column of via) {
+              const firstRun = laneFor(column, dropY, dropY);
+              if (!flatClear(dropY, exitX, firstRun.x, item)) continue;
+              for (let step = 0; step < 800 && !found; step += 1) {
+                const y = dropY + (step % 2 === 0 ? step * 2 : -(step + 1) * 2);
+                const along = laneFor(column, dropY, y);
+                const down = laneFor(target, y, slotY);
+                if (
+                  upClear(along.x, dropY, y) &&
+                  flatClear(dropY, exitX, along.x, item) &&
+                  flatClear(y, along.x, down.x, item) &&
+                  upClear(down.x, y, slotY)
+                )
+                  found = { along, down, y };
+              }
+              if (found) break;
+            }
+            if (!found) {
+              console.warn('no clear route', item.wire.key);
+              item.points = [...exit, { x: direct.x, y: dropY }, ...arrive(direct)];
+              commit(item, [direct], [{ y: dropY, x1: exitX, x2: direct.x }]);
+              continue;
+            }
+            const { along, down, y } = found;
             item.points = [
-              { x: item.exitX, y: source.bottom },
-              { x: item.exitX, y: item.dropY },
-              { x: item.laneX, y: item.dropY },
-              { x: item.laneX, y: item.slotY },
-              { x: endX, y: item.slotY },
+              ...exit,
+              { x: along.x, y: dropY },
+              { x: along.x, y },
+              { x: down.x, y },
+              ...arrive(down),
             ];
+            commit(
+              item,
+              [along, down],
+              [
+                { y: dropY, x1: exitX, x2: along.x },
+                { y, x1: along.x, x2: down.x },
+                { y: slotY, x1: down.x, x2: endX },
+              ],
+            );
           }
           return wires;
         }
 
-        // Horizontals of a routed wire: its drop run (if any) and its arrival stub.
-        function horizontals(item, rects) {
-          const runs = [{ y: item.slotY, x1: item.laneX, x2: rects.get(item.wire.to).left }];
-          if (item.wire.from !== null) runs.push({ y: item.dropY, x1: item.exitX, x2: item.laneX });
-          return runs;
-        }
-
-        function blocked(y, x1, x2, rects, others, self) {
-          if (crossesBox(y, x1, x2, rects, [], 6)) return true;
-          const low = Math.min(x1, x2);
-          const high = Math.max(x1, x2);
-          // Screen frames: a run may cross their edges, never ride along them.
-          for (const frame of screenEls.values()) {
-            const r = relativeRect(frame);
-            if (
-              [r.top, r.bottom].some((edge) => Math.abs(edge - y) < 6) &&
-              high > r.left &&
-              low < r.right
-            )
-              return true;
-          }
-          return (
-            others.some(
-              (other) =>
-                other.laneX !== undefined &&
-                horizontals(other, rects).some(
-                  (run) =>
-                    Math.abs(run.y - y) < LANE_STEP &&
-                    Math.max(run.x1, run.x2) > low &&
-                    Math.min(run.x1, run.x2) < high,
-                ),
-            ) ||
-            (self !== undefined && Math.abs(y - self.slotY) < 1)
-          );
-        }
-
-        // Lanes: one gutter per box column, left of the boxes. Shorter runs sit inside.
-        function assignLanes(wires, rects) {
-          const gutters = new Map();
+        function bySource(wires) {
+          const groups = new Map();
           for (const item of wires) {
-            const target = rects.get(item.wire.to);
-            const key = Math.round(target.left);
-            const low = item.wire.from === null ? item.slotY - 3 : Math.min(item.dropY, item.slotY);
-            const high =
-              item.wire.from === null ? item.slotY + 3 : Math.max(item.dropY, item.slotY);
-            item.low = low;
-            item.high = high;
-            if (!gutters.has(key)) gutters.set(key, []);
-            gutters.get(key).push(item);
+            if (item.wire.from === null) continue;
+            if (!groups.has(item.wire.from)) groups.set(item.wire.from, []);
+            groups.get(item.wire.from).push(item);
           }
-          for (const group of gutters.values()) {
-            group.sort((p, q) => p.high - p.low - (q.high - q.low));
-            const lanes = [];
-            for (const item of group) {
-              let lane = 0;
-              while (
-                (lanes[lane] ?? []).some(
-                  (other) => item.low < other.high + 6 && item.high > other.low - 6,
-                )
-              )
-                lane += 1;
-              (lanes[lane] ??= []).push(item);
-              item.laneX = rects.get(item.wire.to).left - LANE_FIRST - lane * LANE_STEP;
-            }
+          return groups;
+        }
+
+        // Room under each box for its drops: the gap below a source holds every drop run.
+        function sizeDrops() {
+          const exits = bySource([...view.wires.values()].map((wire) => ({ wire })));
+          for (const [id, node] of boxEls) {
+            const count = exits.get(id)?.length ?? 0;
+            const need = count === 0 ? 0 : DROP_FIRST + (count - 1) * DROP_STEP + DROP_CLEAR;
+            const extra = `${Math.max(0, need - BOX_GAP)}px`;
+            if (node.style.marginBottom !== extra) node.style.marginBottom = extra;
           }
         }
 
@@ -1667,6 +1763,7 @@
             .forEach((n) => n.remove());
           const order =
             selected === 'All' ? [] : view.paths[selected].steps.map((step) => step.key);
+          sizeDrops();
           const routed = routeWires();
           for (const item of routed) item.on = isOn(item.wire);
           // Faint wires first, so the selected path sits on top.
@@ -1797,11 +1894,16 @@
           sizedFor = map.clientWidth;
           const stacked =
             getComputedStyle(map).gridTemplateColumns.trim().split(/\s+/).length === 1;
+          const holders = new Map();
+          for (const [id, node] of boxEls)
+            holders.set(
+              Math.round(rectOf(id).left),
+              node.closest('.pb-screen') ?? node.closest('.pb-module'),
+            );
           const need = new Map();
-          for (const item of routed) {
-            const target = boxEls.get(item.wire.to);
-            const holder = target.closest('.pb-screen') ?? target.closest('.pb-module');
-            const width = rectOf(item.wire.to).left - item.laneX + GUTTER_PAD;
+          for (const lane of routed.flatMap((item) => item.lanes)) {
+            const holder = holders.get(lane.column);
+            const width = lane.column - lane.x + GUTTER_PAD;
             need.set(holder, Math.max(need.get(holder) ?? 0, width));
           }
           const modules = [...map.querySelectorAll('.pb-module:not(.pb-frontend)')];
@@ -2100,6 +2202,14 @@
 
         buildMap();
         buildSwitches();
+        if (WIRING.size > 0)
+          criterion.after(
+            el(
+              'p',
+              'pb-wiring',
+              'Facades, adapters and event handlers are not drawn. An arrow between two modules runs through them.',
+            ),
+          );
         // Empty map space releases a pinned box.
         map.addEventListener('click', (event) => {
           if (!event.target.closest('.pb-box, button, .pb-hit')) togglePin(null);

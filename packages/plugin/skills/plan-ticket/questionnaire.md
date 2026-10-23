@@ -32,6 +32,10 @@ example for each ticket, and show whatever helps the human check the plan.
 - **Only the touched code.** One column per module the criteria touch, each split into its
   presentation, business and infrastructure layers. Inside each layer, only the components a
   path touches.
+- **Wiring is not drawn.** Facades, adapters, event handlers and bus events go in the data's
+  `WIRING` list. A call through them is one arrow between the two boxes it joins. The arrow
+  keeps the first call and names any new or changed wiring it passed. A line under the
+  criterion says so.
 - **Frontend column first**, leftmost, when a criterion touches the UI: the touched screen
   parts, with no layer rows. Omit it otherwise.
 - **Diff colours on every component**: `aisf-node-new`, `aisf-node-changed`,
@@ -48,7 +52,10 @@ example for each ticket, and show whatever helps the human check the plan.
 - **Arrows:** in on a box's left edge, out on its bottom edge. Each arrow is right-angled in
   its own lane, 10px from its neighbours: no shared segment, no shared endpoint. Each is drawn
   over a halo in the background colour. The last segment into a box is straight. A long lane
-  carries its step number midway.
+  carries its step number midway. No segment crosses a box: a drop stays in the gap under its
+  box, and vertical runs use the gutters left of the boxes.
+- **Layers keep their rows.** An empty layer stays as a blank row, so no box moves up into
+  another layer's row.
 - **Focus:** hovering a box lights it, its incoming and outgoing arrows, the boxes at their
   other ends and their route-sheet rows; the rest fades. Hovering one arrow lights only it,
   its two boxes and its row. Clicking pins the focus; clicking again releases it.
