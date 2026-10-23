@@ -389,6 +389,30 @@ describe('decideRunEndTransition for a plan run that finished', () => {
   });
 });
 
+describe('decideRunEndTransition for design runs', () => {
+  it('should mark the idea waiting when a design run reaches its checkpoint', () => {
+    const ending: RunEnding = { kind: 'checkpoint', request: 'Accept the design' };
+
+    expect(decideRunEndTransition(ending, live('idea'), 'design')).toEqual({
+      kind: 'flag',
+      state: 'waiting',
+      comment: expect.stringContaining('Accept the design') as string,
+    });
+  });
+
+  it('should write nothing when a design run finished and the ticket is at plan', () => {
+    expect(decideRunEndTransition({ kind: 'finished' }, live('plan'), 'design')).toEqual({
+      kind: 'none',
+    });
+  });
+
+  it('should write nothing when a design run parked on an idea', () => {
+    expect(
+      decideRunEndTransition({ kind: 'parked', blockerNumber: 3 }, live('idea'), 'design'),
+    ).toEqual({ kind: 'none' });
+  });
+});
+
 describe('needsSpikeCheck', () => {
   it('should be true only when a plan run finished with the ticket at plan and not stuck', () => {
     expect(needsSpikeCheck({ kind: 'finished' }, live('plan'), 'plan')).toBe(true);

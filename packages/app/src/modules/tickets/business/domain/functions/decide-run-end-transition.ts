@@ -9,6 +9,7 @@ const runningStatuses: Readonly<Record<RunStage, ReadonlyArray<TicketStatus>>> =
   spike: ['ready', 'in-progress'],
   onboard: ['ready', 'in-progress', 'in-review'],
   create: ['idea'],
+  design: ['idea'],
   plan: ['plan'],
 };
 
@@ -30,7 +31,7 @@ export function decideRunEndTransition(
   if (ending.kind === 'usage-limit') {
     return { kind: 'none' };
   }
-  const authoring = stage === 'create' || stage === 'plan';
+  const authoring = isAuthoringStage(stage);
   if (ending.kind === 'parked') {
     return !authoring && live.status === 'in-progress'
       ? { kind: 'return-to-ready' }
@@ -60,6 +61,10 @@ export function decideRunEndTransition(
     return { kind: 'flag', state: 'waiting', comment: describeEnding(ending) };
   }
   return { kind: 'flag', state: 'stuck', comment: describeEnding(ending) };
+}
+
+function isAuthoringStage(stage: RunStage): boolean {
+  return stage === 'create' || stage === 'plan' || stage === 'design';
 }
 
 // A rework run that finishes has completed, or found nothing to do.
