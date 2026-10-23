@@ -12,6 +12,7 @@ function buildCard(overrides: Partial<TicketCardDescription> = {}): TicketCardDe
     backlog: false,
     hitl: false,
     spike: false,
+    ui: false,
     blockerLabels: [],
     conflictLabels: [],
     pullRequestChips: [],
@@ -43,6 +44,28 @@ describe('TicketCard', () => {
     expect(markup).toContain(
       '<span class="chip hitl">HITL</span><span class="chip spike">SPIKE</span>',
     );
+  });
+
+  it('should show the UI chip in the meta row when the ticket is ui and has no other flag', () => {
+    const markup = renderToStaticMarkup(
+      <TicketCard {...buildCard({ ui: true })} projectId="o/n" />,
+    );
+
+    expect(markup).toContain('<span class="meta"><span class="chip ui">UI</span></span>');
+  });
+
+  it('should show no UI chip when the ticket is not ui', () => {
+    const markup = renderToStaticMarkup(<TicketCard {...buildCard()} projectId="o/n" />);
+
+    expect(markup).not.toContain('chip ui');
+  });
+
+  it('should show the HITL chip directly followed by the UI chip when the ticket is a hitl ui ticket', () => {
+    const markup = renderToStaticMarkup(
+      <TicketCard {...buildCard({ hitl: true, ui: true })} projectId="o/n" />,
+    );
+
+    expect(markup).toContain('<span class="chip hitl">HITL</span><span class="chip ui">UI</span>');
   });
 
   it('should render the whole card as one link without an action when the ticket is not in backlog', () => {

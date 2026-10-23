@@ -396,6 +396,10 @@ a.ext::after {
   border-color: var(--hitl);
 }
 
+.chip.ui {
+  border-color: var(--ui);
+}
+
 .chip.spike {
   border-color: var(--accent);
 }

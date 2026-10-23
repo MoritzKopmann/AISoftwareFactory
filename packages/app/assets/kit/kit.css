@@ -68,6 +68,7 @@
   --danger: #b8322f;
   --info: #2d5f93;
   --hitl: #6b47c2;
+  --ui: #0b7a75;
 
   --font-ui: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
@@ -125,6 +126,7 @@
     --danger: #ff8f84;
     --info: #7cb4ea;
     --hitl: #baa0ff;
+    --ui: #4fd1c5;
 
     color-scheme: dark;
   }
@@ -148,6 +150,7 @@
   --danger: #ff8f84;
   --info: #7cb4ea;
   --hitl: #baa0ff;
+  --ui: #4fd1c5;
 
   color-scheme: dark;
 }

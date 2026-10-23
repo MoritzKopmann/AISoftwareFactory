@@ -16,6 +16,7 @@ describe('describeTicketCard', () => {
       backlog: false,
       hitl: false,
       spike: false,
+      ui: false,
       blockerLabels: [],
       conflictLabels: [],
       pullRequestChips: [],
@@ -54,6 +55,16 @@ describe('describeTicketCard', () => {
   it('should flag a spike when the ticket types include spike', () => {
     const card = describeTicketCard(buildTicketResponse({ types: ['spike'] }), 'o/n', []);
     expect(card.spike).toBe(true);
+  });
+
+  it('should flag ui when the ticket types include ui', () => {
+    const card = describeTicketCard(buildTicketResponse({ types: ['ui'] }), 'o/n', []);
+    expect(card.ui).toBe(true);
+  });
+
+  it('should not flag ui when the ticket types do not include ui', () => {
+    const card = describeTicketCard(buildTicketResponse({ types: ['spike'] }), 'o/n', []);
+    expect(card.ui).toBe(false);
   });
 
   it('should list only open blockers, qualified when in another repository', () => {

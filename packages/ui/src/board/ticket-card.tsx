@@ -12,6 +12,7 @@ export function TicketCard({
   parentTitle,
   hitl,
   spike,
+  ui,
   blockerLabels,
   conflictLabels,
   pullRequestChips,
@@ -22,6 +23,7 @@ export function TicketCard({
     conflictLabels.length > 0 ||
     hitl ||
     spike ||
+    ui ||
     blockerLabels.length > 0 ||
     pullRequestChips.length > 0;
   const parentLine = parentTitle !== undefined && <span className="parent">↳ {parentTitle}</span>;
@@ -30,6 +32,7 @@ export function TicketCard({
       {runMarker !== undefined && <RunMarkerChip marker={runMarker} />}
       {conflictLabels.length > 0 && <span>{conflictLabels.join(' · ')}</span>}
       {hitl && <span className="chip hitl">HITL</span>}
+      {ui && <span className="chip ui">UI</span>}
       {spike && <span className="chip spike">SPIKE</span>}
       {blockerLabels.map((label) => (
         <span key={label}>{label}</span>
