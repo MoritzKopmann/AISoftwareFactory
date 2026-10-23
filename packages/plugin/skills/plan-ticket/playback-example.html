@@ -9,6 +9,8 @@
       /* The playback sits above the rounds, in the same centred column a round uses. */
       .pb-playback {
         display: grid;
+        /* The column stays 760px when the wide figure inside it overflows it. */
+        grid-template-columns: minmax(0, 1fr);
         gap: 12px;
         min-width: 0;
         max-width: 760px;
@@ -27,17 +29,9 @@
         text-wrap: pretty;
       }
 
-      /* The figure is the page: on wide screens it leaves the 760px column. */
+      /* The figure is the page: `wide` takes it out of the 760px column to the window's width. */
       .pb-figure {
-        --pb-width: min(1200px, calc(100vw - 48px));
         gap: 14px;
-      }
-
-      @media (min-width: 1100px) {
-        .pb-figure {
-          width: var(--pb-width);
-          margin-left: calc((100% - var(--pb-width)) / 2);
-        }
       }
 
       .pb-controls {
@@ -700,103 +694,89 @@
         padding-bottom: 12px;
       }
 
+      /* The route sheet fills the width: as many columns of rows as fit. */
       @media (min-width: 640px) {
         .pb-route {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
           column-gap: 24px;
         }
       }
 
-      /* ---- Wide: a true module × layer grid. Rows line up across modules via subgrid. ---- */
-      @media (min-width: 1100px) {
-        .pb-figure {
-          --pb-width: min(1320px, calc(100vw - 32px));
-        }
+      /* ---- Grid: a true module × layer grid, set by the script when every column fits.
+         The script writes grid-template-columns from the data. Rows line up via subgrid. ---- */
+      .pb-map[data-grid] {
+        grid-template-rows: auto auto auto auto;
+        column-gap: 12px;
+        row-gap: 0;
+      }
 
-        .pb-map {
-          grid-template-columns: max-content minmax(0, 1fr) 170px repeat(3, minmax(0, 1fr));
-          grid-template-rows: auto auto auto auto;
-          column-gap: 12px;
-          row-gap: 0;
-        }
+      /* Tighter frames when a frontend column sits beside the layered modules. */
+      .pb-map[data-grid][data-ui] .pb-module:not(.pb-frontend) {
+        padding: 0 8px 4px var(--pb-gutter, 42px);
+      }
 
-        /* With a frontend column: it comes first and has no rows of its own. */
-        .pb-map[data-ui] {
-          grid-template-columns: 160px max-content minmax(0, 1fr) 132px repeat(3, minmax(0, 1fr));
-          column-gap: 10px;
-        }
+      .pb-map[data-grid][data-ui] .pb-box.aisf-node {
+        padding-right: 8px;
+        padding-left: 8px;
+      }
 
-        /* Tighter frames so four layered modules keep readable boxes beside the frontend. */
-        .pb-map[data-ui] .pb-module:not(.pb-frontend) {
-          padding: 0 8px 4px var(--pb-gutter, 42px);
-        }
+      .pb-map[data-grid][data-ui] .pb-frontend .pb-screen {
+        padding: 8px 8px 12px var(--pb-gutter, 22px);
+      }
 
-        .pb-map[data-ui] .pb-box.aisf-node {
-          padding-right: 8px;
-          padding-left: 8px;
-        }
+      .pb-map[data-grid][data-ui] .pb-frontend .pb-screen-head {
+        margin-left: calc(10px - var(--pb-gutter, 22px));
+      }
 
-        .pb-map[data-ui] .pb-frontend .pb-screen {
-          padding: 8px 8px 12px var(--pb-gutter, 22px);
-        }
+      .pb-map[data-grid] :is(.pb-axis, .pb-module) {
+        display: grid;
+        grid-row: 1 / span 4;
+        grid-template-rows: subgrid;
+      }
 
-        .pb-map[data-ui] .pb-frontend .pb-screen-head {
-          margin-left: calc(10px - var(--pb-gutter, 22px));
-        }
+      .pb-map[data-grid] .pb-module.pb-frontend {
+        grid-template-rows: none;
+        align-content: start;
+        gap: 8px;
+      }
 
-        .pb-axis,
-        .pb-module {
-          display: grid;
-          grid-row: 1 / span 4;
-          grid-template-rows: subgrid;
-        }
+      /* Layer names run down a thin strip, so they take no column of their own. */
+      .pb-map[data-grid] .pb-axis > * {
+        padding: 12px 0;
+        writing-mode: vertical-rl;
+        border-top: 1px dashed var(--border);
+        font: var(--label-weight) var(--label-size) / 1.4 var(--label-font);
+        text-transform: var(--label-transform);
+        letter-spacing: var(--label-spacing);
+        color: var(--muted);
+      }
 
-        .pb-module.pb-frontend {
-          grid-template-rows: none;
-          align-content: start;
-          gap: 8px;
-        }
+      .pb-map[data-grid] .pb-axis > :first-child {
+        border-top: 0;
+      }
 
-        .pb-axis > * {
-          padding: 10px 0;
-          border-top: 1px dashed var(--border);
-          font: var(--label-weight) var(--label-size) / 1.4 var(--label-font);
-          text-transform: var(--label-transform);
-          letter-spacing: var(--label-spacing);
-          color: var(--muted);
-        }
+      .pb-map[data-grid] .pb-module {
+        padding: 0 10px 4px var(--pb-gutter, 44px);
+      }
 
-        .pb-axis > :first-child {
-          border-top: 0;
-        }
+      .pb-map[data-grid] .pb-module-head {
+        margin-left: calc(12px - var(--pb-gutter, 44px));
+      }
 
-        .pb-module {
-          padding: 0 10px 4px var(--pb-gutter, 44px);
-        }
+      .pb-map[data-grid] .pb-layer-name {
+        display: none;
+      }
 
-        .pb-module-head {
-          margin-left: calc(12px - var(--pb-gutter, 44px));
-        }
+      .pb-map[data-grid] .pb-layer {
+        padding: 12px 0 26px;
+      }
 
-        .pb-layer-name {
-          display: none;
-        }
+      .pb-map[data-grid] .pb-layer-empty {
+        display: none;
+      }
 
-        .pb-layer {
-          padding: 12px 0 26px;
-        }
-
-        .pb-layer-empty {
-          display: none;
-        }
-
-        .pb-box.aisf-node {
-          max-width: none;
-        }
-
-        .pb-route {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
+      .pb-map[data-grid] .pb-box.aisf-node {
+        max-width: none;
       }
     </style>
   </head>
@@ -814,6 +794,7 @@
 
       <aisf-figure
         class="pb-figure"
+        wide
         caption="Only the modules this ticket touches, by layer. Pick a criterion to trace its path; numbers are call order."
       >
         <div class="pb-controls">
@@ -1274,6 +1255,7 @@
                 ? ' pb-frontend'
                 : '';
             const card = el('section', `pb-module${kindClass}`);
+            card.dataset.module = module.id;
             if (module.mark) card.dataset.mark = module.mark;
             card.setAttribute('aria-label', `${module.name ?? module.id}, ${module.tag}`);
             const head = el('header', 'pb-module-head');
@@ -1304,6 +1286,62 @@
             }
             map.append(card);
           }
+          placeColumns();
+        }
+
+        // Columns come from the data, never from a fixed template. A column is never narrower than
+        // its longest unbreakable word plus box and wire room; the space left is shared by each
+        // module's longest box name. When the map is too narrow for every minimum, the modules stack.
+        const NAME_CHAR = 8;
+        const BOX_ROOM = 32;
+        const GUTTER_ROOM = 56;
+        // Frontend boxes sit inside a screen frame, with its own border and routing strip.
+        const SCREEN_ROOM = 48;
+        const COLUMN_FLOOR = 160;
+        const COLUMN_GAP = 12;
+        const AXIS_WIDTH = 20;
+        const SHARE_MIN = 12;
+        const SHARE_MAX = 32;
+
+        function namesIn(moduleId) {
+          return [...boxEls.keys()]
+            .map((id) => byId.get(id))
+            .filter((box) => box.module === moduleId)
+            .map((box) => box.label ?? box.name);
+        }
+
+        function columnMin(moduleId) {
+          const words = namesIn(moduleId).flatMap((name) =>
+            name.split(/\s+|(?<=[a-z.])(?=[A-Z])|(?<=\.)/),
+          );
+          const longest = Math.max(0, ...words.map((word) => word.length));
+          const frame = moduleOf.get(moduleId).kind === 'frontend' ? SCREEN_ROOM : 0;
+          return Math.max(COLUMN_FLOOR, longest * NAME_CHAR + BOX_ROOM + GUTTER_ROOM + frame);
+        }
+
+        function columnShare(moduleId) {
+          const longest = Math.max(0, ...namesIn(moduleId).map((name) => name.length));
+          return Math.min(SHARE_MAX, Math.max(SHARE_MIN, longest));
+        }
+
+        function placeColumns() {
+          const columns = [...map.querySelectorAll(':scope > .pb-axis, :scope > .pb-module')];
+          const modules = columns.filter((column) => column.matches('.pb-module'));
+          const needed = modules.reduce(
+            (sum, column) => sum + columnMin(column.dataset.module) + COLUMN_GAP,
+            AXIS_WIDTH,
+          );
+          const fits = map.clientWidth >= needed;
+          map.toggleAttribute('data-grid', fits);
+          map.style.gridTemplateColumns = fits
+            ? columns
+                .map((column) =>
+                  column.matches('.pb-axis')
+                    ? 'auto'
+                    : `minmax(${columnMin(column.dataset.module)}px, ${columnShare(column.dataset.module)}fr)`,
+                )
+                .join(' ')
+            : '';
         }
 
         function foldToggle(moduleId) {
@@ -2070,7 +2108,10 @@
         let frame = 0;
         new ResizeObserver(() => {
           cancelAnimationFrame(frame);
-          frame = requestAnimationFrame(drawWires);
+          frame = requestAnimationFrame(() => {
+            placeColumns();
+            drawWires();
+          });
         }).observe(map);
         document.fonts?.ready.then(drawWires);
       })();

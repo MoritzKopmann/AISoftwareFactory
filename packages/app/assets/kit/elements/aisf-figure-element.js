@@ -1,7 +1,7 @@
 import { buildElement, setPart } from '../support/dom.js';
 
 export class AisfFigureElement extends HTMLElement {
-  static observedAttributes = ['caption'];
+  static observedAttributes = ['caption', 'wide'];
 
   connectedCallback() {
     this.render();

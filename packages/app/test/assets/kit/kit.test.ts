@@ -14,7 +14,7 @@ const documented: Record<string, string[]> = {
   'aisf-confirm': [],
   'aisf-more': [],
   'aisf-meta': ['label'],
-  'aisf-figure': ['caption'],
+  'aisf-figure': ['caption', 'wide'],
   'aisf-tree-node': ['round', 'question', 'resolution', 'rejected', 'assumes', 'fact'],
   'aisf-task': ['number', 'heading', 'blocked-by', 'files', 'risk', 'hitl'],
   'aisf-precedent': [],

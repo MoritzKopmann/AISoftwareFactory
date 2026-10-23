@@ -165,10 +165,11 @@ A labelled value, such as a status or an owner. The body is the value. Sends not
 
 ## `<aisf-figure>`
 
-Attributes: `caption`
+Attributes: `caption`, `wide`
 
 Wraps a figure you wrote (inline SVG or a diagram) and adds a caption after it. Sends
-nothing. See `figures.md` for drawing.
+nothing. See `figures.md` for drawing. `wide` lets a figure that needs room leave the 760px
+reading column and span the whole window. Use it inside a centred column only.
 
 ```html
 <aisf-figure caption="Request path, left to right">

@@ -54,6 +54,14 @@ example for each ticket, and show whatever helps the human check the plan.
   its two boxes and its row. Clicking pins the focus; clicking again releases it.
 - **Generated, never hand-placed:** one data object holds modules, components and paths; the
   page script lays out boxes, routes the wires and computes the readout.
+- **Full width.** The figure is `<aisf-figure wide>`: the map spans the window, with no
+  maximum width.
+- **Columns from the data.** The script sets the column widths from the modules shown: each
+  module's share follows its longest box name. Never copy a fixed column template from the
+  example; it fits only the example's modules. No column narrower than a box name; names break
+  only at word joins. When the columns don't fit, the modules stack.
+- **Check before showing:** view the map at about 1440 and 1920px wide. No empty column, no
+  column much thinner than its neighbours.
 - **Under the map, in round 1:** one question per criterion, `Correct` (`suggested`) or
   `Wrong path`, with its `assumes`.
 
