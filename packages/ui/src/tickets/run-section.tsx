@@ -1,13 +1,9 @@
 import type { TicketResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
-import type { TicketArtifactsResponse } from '@aisf/app/api-schemas/artifacts-schemas.js';
 import { useEffect, useState, type ReactNode } from 'react';
 import type { LiveUpdates } from '../live/live-updates.js';
-import { useLiveRead } from '../live/use-live-read.js';
-import { ArtifactLinks } from './artifact-links.js';
 import { answerCheckpoint } from './answer-checkpoint.js';
 import { answerPermissionPrompt } from './answer-permission-prompt.js';
 import { CheckpointPrompt } from './checkpoint-prompt.js';
-import { describeArtifactLinks } from './describe-artifact-links.js';
 import {
   describeCheckpointPrompt,
   settleCheckpointAnswer,
@@ -30,7 +26,6 @@ import {
 import { describeRunPanel, type RunPanelDescription } from './describe-run-panel.js';
 import { describeSessionPanel } from './describe-session-panel.js';
 import { editCheckpointDraft } from './edit-checkpoint-draft.js';
-import { fetchTicketArtifacts, type TicketArtifactsFailure } from './fetch-ticket-artifacts.js';
 import { PermissionPrompt } from './permission-prompt.js';
 import { ResetAction } from './reset-action.js';
 import { rememberRoundRun } from './remember-round-run.js';
@@ -84,10 +79,6 @@ export function RunSection({
   const [checkpointAnswer, setCheckpointAnswer] = useState<CheckpointAnswer | undefined>(undefined);
   const [reset, setReset] = useState<ResetState>({ kind: 'idle' });
   const [roundRunId, setRoundRunId] = useState<string | undefined>(undefined);
-  const [artifacts, setArtifacts] = useState<TicketArtifactsResponse | undefined>(undefined);
-  const [artifactsFailure, setArtifactsFailure] = useState<TicketArtifactsFailure | undefined>(
-    undefined,
-  );
   const activeRunId = ticketRun.response?.activeRun?.id;
 
   useEffect(() => {
@@ -101,21 +92,6 @@ export function RunSection({
   useEffect(() => {
     setRoundRunId((current) => rememberRoundRun(current, ticketRun.response));
   }, [ticketRun.response]);
-
-  // A failed read keeps the links from the last answer.
-  const { retry: retryArtifacts } = useLiveRead(
-    liveUpdates,
-    { kind: 'artifacts', projectId, ticketNumber: number },
-    () => fetchTicketArtifacts(projectId, number, (url) => fetch(url)),
-    (outcome) => {
-      if (outcome.kind === 'answer') {
-        setArtifacts(outcome.response);
-        setArtifactsFailure(undefined);
-      } else {
-        setArtifactsFailure(outcome.cause);
-      }
-    },
-  );
 
   useEffect(() => {
     setStart((current) => settleStartState(current, ticketRun.response));
@@ -258,10 +234,6 @@ export function RunSection({
               void sendCheckpointAnswer(checkpointPrompt.runId, checkpointPrompt.draft);
             }
           }}
-        />
-        <ArtifactLinks
-          description={describeArtifactLinks(artifacts, artifactsFailure)}
-          onRetry={retryArtifacts}
         />
         <RunPanel description={shownPanel} />
       </>

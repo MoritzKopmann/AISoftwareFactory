@@ -40,7 +40,6 @@ export function MoveToPlanAction({ description, onMove }: MoveToPlanActionProps)
               'Move to plan'
             )}
           </button>
-          <p className="reason">Sets the ticket&apos;s status to plan.</p>
           {description.kind === 'failed' && (
             <div className="err" role="alert">
               <span className="shape" aria-hidden="true">

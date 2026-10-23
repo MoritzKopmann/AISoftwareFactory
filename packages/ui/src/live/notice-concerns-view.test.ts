@@ -15,11 +15,6 @@ const run = (ticketNumber = 7): LiveView => ({
   projectId: defaultProjectId,
   ticketNumber,
 });
-const artifacts = (ticketNumber = 7): LiveView => ({
-  kind: 'artifacts',
-  projectId: defaultProjectId,
-  ticketNumber,
-});
 const findings = (ticketNumber?: number): LiveView =>
   ticketNumber === undefined
     ? { kind: 'findings', projectId: defaultProjectId }
@@ -51,10 +46,11 @@ describe('noticeConcernsView', () => {
     ['ticket.status-written', on('ticket.status-written', 7), ticket(true), true],
     ['ticket.status-written', on('ticket.status-written', 7), run(8), false],
     ['run.started', on('run.started', 7), board(), true],
-    ['run.finished', on('run.finished', 7), artifacts(), true],
+    ['run.finished', on('run.finished', 7), run(), true],
     ['run.waiting', on('run.waiting', 7), board(), false],
-    ['run.wait-cleared', on('run.wait-cleared', 7), artifacts(), true],
-    ['artifact.published', on('artifact.published', 7), artifacts(), true],
+    ['run.wait-cleared', on('run.wait-cleared', 7), run(), true],
+    ['artifact.published', on('artifact.published', 7), run(), false],
+    ['artifact.published', on('artifact.published', 7), ticket(false), false],
     ['finding.changed', on('finding.changed', 7), findings(), true],
     ['finding.changed', on('finding.changed', 7), findings(8), false],
     ['finding.changed', on('finding.changed', 7), findings(7), true],
@@ -72,7 +68,6 @@ describe('noticeConcernsView', () => {
     ['watch.updated changed', changed(), run(), true],
     ['watch.updated changed', changed(), ticket(true), false],
     ['watch.updated changed', changed(), findings(), false],
-    ['watch.updated changed', changed(), artifacts(), false],
     ['watch.updated changed', changed(), skills, false],
   ])('should map %s to the view as expected', (_name, notice, view, expected) => {
     expect(noticeConcernsView(notice, view)).toBe(expected);

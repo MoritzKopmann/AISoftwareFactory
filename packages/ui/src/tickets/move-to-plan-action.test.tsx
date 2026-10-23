@@ -13,14 +13,14 @@ describe('MoveToPlanAction', () => {
     ).toBe('');
   });
 
-  it('should render a pressable primary Move to plan with its reason in a labelled section when idle', () => {
+  it('should render a pressable primary Move to plan in a labelled section when idle', () => {
     const markup = renderToStaticMarkup(
       <MoveToPlanAction description={{ kind: 'idle' }} onMove={ignoreMove} />,
     );
     expect(markup).toContain('aria-label="Move to plan"');
     expect(markup).toMatch(/<button[^>]*class="btn primary"[^>]*>Move to plan<\/button>/);
     expect(markup).not.toContain('aria-disabled');
-    expect(markup).toContain('Sets the ticket&#x27;s status to plan.');
+    expect(markup).not.toContain('Sets the ticket');
   });
 
   it('should keep the busy button focusable and show Moving to plan… when sending', () => {

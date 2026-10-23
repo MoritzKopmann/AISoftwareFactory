@@ -173,7 +173,7 @@ function LoadedTicket({
   readonly pausedUntil: string | undefined;
   readonly description: LoadedDescription;
 }) {
-  const { statusMark, parent, pullRequests } = description;
+  const { statusMark, parent } = description;
   const [sessionShown, setSessionShown] = useState(true);
   const [moveToPlan, setMoveToPlan] = useState<MoveToPlanState>({ kind: 'idle' });
   const moveToPlanNow = async () => {
@@ -249,6 +249,10 @@ function LoadedTicket({
                       setSessionShown(!sessionShown);
                     }}
                   />
+                  <MoveToPlanAction
+                    description={describeMoveToPlanAction(description.status, moveToPlan, number)}
+                    onMove={() => void moveToPlanNow()}
+                  />
                   {slots.runBar}
                 </div>
               </header>
@@ -258,14 +262,7 @@ function LoadedTicket({
                     <ReviewPanel description={description.reviewPanel} />
                   )}
                   {slots.stack}
-                  <MoveToPlanAction
-                    description={describeMoveToPlanAction(description.status, moveToPlan, number)}
-                    onMove={() => void moveToPlanNow()}
-                  />
                   {slots.reset}
-                  {description.reviewPanel === undefined && (
-                    <PullRequestsRow pullRequests={pullRequests} />
-                  )}
                   {slots.lowerPanel !== undefined && (
                     <div className="tp-lower" hidden={swap.panel !== 'round'}>
                       {slots.lowerPanel}
@@ -307,33 +304,5 @@ function BackLink({ projectId }: { readonly projectId: string }) {
       </span>
       Back to the board
     </a>
-  );
-}
-
-function PullRequestsRow({
-  pullRequests,
-}: {
-  readonly pullRequests: LoadedDescription['pullRequests'];
-}) {
-  return (
-    <dl className="facts">
-      <dt className="label">Pull requests</dt>
-      {pullRequests.length === 0 ? (
-        <dd className="sm">None</dd>
-      ) : (
-        <dd>
-          <ul>
-            {pullRequests.map((pullRequest) => (
-              <li key={pullRequest.url}>
-                <a className="ext" href={pullRequest.url} target="_blank" rel="noopener">
-                  {pullRequest.label}
-                </a>
-                <span className="pr-state">{pullRequest.state}</span>
-              </li>
-            ))}
-          </ul>
-        </dd>
-      )}
-    </dl>
   );
 }
