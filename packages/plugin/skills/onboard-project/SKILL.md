@@ -2,8 +2,8 @@
 name: onboard-project
 description: >
   Draft a project's four slots (project-architecture, code-rules, project-testing,
-  project-toolchain) with the owner and deliver them as one PR. Migrates existing docs, scans the
-  repo, asks for unwritten knowledge, suggests best practices. Runs on a type: onboard issue.
+  project-toolchain), plus project-design when the project has a frontend, with the owner and
+  deliver them as one PR. Migrates existing docs, scans the repo, asks for unwritten knowledge, suggests best practices. Runs on a type: onboard issue.
   Use when the user wants to onboard a project. Triggers: "onboard #N", "onboard project".
 ---
 
@@ -86,6 +86,20 @@ comes from the sources above.
 | `project-testing`      | `references/shape-project-testing.md`      | `.claude/skills/project-testing/SKILL.md`                              |
 | `project-architecture` | `references/shape-project-architecture.md` | `.claude/skills/project-architecture/SKILL.md` + `references/rules.md` |
 | `code-rules`           | `references/shape-code-rules.md`           | `.claude/skills/code-rules/SKILL.md`                                   |
+
+`project-design` is optional. Ask the owner first, as the page's first question: does the
+project have a frontend? Cards `yes` and `no`, ledger section `project-design.frontend`.
+
+- `yes` → draft the slot below, shaped by `references/shape-project-design.md`.
+- `no` → write no `project-design` slot. Never ask about it again.
+
+| Slot             | Shape                                | File written                             |
+| ---------------- | ------------------------------------ | ---------------------------------------- |
+| `project-design` | `references/shape-project-design.md` | `.claude/skills/project-design/SKILL.md` |
+
+Its presence marks the project as having a frontend. Suggest what helps `aisf:design`: where
+tokens live and how to dump them, where fonts and icons live locally. Content is free-form:
+whatever the owner wants.
 
 Every slot file has frontmatter `name`, `description` and `user-invocable: false`.
 
