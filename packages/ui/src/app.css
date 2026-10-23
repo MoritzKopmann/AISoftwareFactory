@@ -20,7 +20,17 @@ body {
   position: sticky;
   top: 0;
   height: 100vh;
-  overflow-y: auto;
+}
+
+.rail-spacer {
+  flex: 1;
+  min-height: 0;
+}
+
+.rail-footer {
+  margin: 0 -8px;
+  padding: 8px 8px 0;
+  border-top: 1px solid var(--border);
 }
 
 .brand {
@@ -30,8 +40,12 @@ body {
 }
 
 .nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  align-content: start;
   gap: 2px;
 }
 
@@ -573,23 +587,23 @@ a.ext::after {
 }
 
 .usage-meter {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 4px 24px;
-  min-height: 40px;
-  padding: 0 24px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border-strong);
+  display: grid;
+  gap: 14px;
+  padding: 8px;
+  border-radius: var(--radius);
   color: var(--text);
   font: 12px var(--font-mono);
   font-variant-numeric: tabular-nums;
   text-decoration: none;
 }
 
-.usage-meter:hover {
+.usage-meter:hover,
+.usage-meter[aria-current='page'] {
   background: var(--surface-2);
+}
+
+.usage-meter[aria-current='page'] {
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .usage-meter:focus-visible {
@@ -598,7 +612,10 @@ a.ext::after {
 }
 
 .usage-meter-failed {
+  display: flex;
+  align-items: baseline;
   gap: 8px;
+  line-height: 1.4;
 }
 
 .usage-meter-failed-mark {
@@ -608,9 +625,8 @@ a.ext::after {
 }
 
 .usage-meter-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  gap: 6px;
   --c: var(--info);
 }
 
@@ -622,9 +638,19 @@ a.ext::after {
   --c: var(--danger);
 }
 
+.usage-meter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.usage-meter-head.loading {
+  align-items: center;
+}
+
 .usage-meter-track {
   position: relative;
-  width: 72px;
+  display: block;
   height: 6px;
   background: var(--surface-sunken);
   border: 1px solid var(--border);
@@ -637,7 +663,9 @@ a.ext::after {
 
 .usage-meter-fill {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
   background: var(--c);
 }
 
@@ -664,7 +692,7 @@ a.ext::after {
 }
 
 .usage-meter-reset {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 4px;
   color: var(--muted);
@@ -679,8 +707,13 @@ a.ext::after {
 }
 
 .usage-meter-skeleton {
+  display: block;
   height: 8px;
   background: var(--surface-2);
+}
+
+.usage-meter-skeleton-reset {
+  margin-top: 4px;
 }
 
 .usage-cards {
