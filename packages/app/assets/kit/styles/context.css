@@ -114,6 +114,13 @@ aisf-figure {
   border-radius: var(--radius-sm);
 }
 
+/* Wide: leaves the centred reading column and spans the window, 16px from each edge. */
+aisf-figure[wide] {
+  --figure-width: calc(100vw - 32px);
+  width: var(--figure-width);
+  margin-left: calc((100% - var(--figure-width)) / 2);
+}
+
 .aisf-figure-caption {
   margin: 0 -12px;
   padding: 6px 12px;
