@@ -7,13 +7,16 @@ import { FileSystemArtifactFiles } from './file-system-artifact-files.js';
 describe('FileSystemArtifactFiles', () => {
   let root: string;
   let directory: string;
+  let kitDirectory: string;
   let files: FileSystemArtifactFiles;
 
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'aisf-artifact-files-'));
     directory = join(root, 'plan');
     mkdirSync(directory);
-    files = new FileSystemArtifactFiles();
+    kitDirectory = join(root, 'kit');
+    mkdirSync(kitDirectory);
+    files = new FileSystemArtifactFiles({ kitDirectory });
   });
 
   afterEach(() => {
@@ -32,6 +35,29 @@ describe('FileSystemArtifactFiles', () => {
       expect(await files.hasIndex(directory)).toBe(false);
       expect(await files.readIndex(directory)).toBeUndefined();
       expect(await files.hasIndex(join(root, 'gone'))).toBe(false);
+    });
+  });
+
+  describe('hasDesignIndex', () => {
+    it('should return true when index.json exists and no index.html does', async () => {
+      writeFileSync(join(directory, 'index.json'), '{}');
+
+      expect(await files.hasDesignIndex(directory)).toBe(true);
+    });
+
+    it('should return false when index.json is missing', async () => {
+      writeFileSync(join(directory, 'index.html'), '<p>hi</p>');
+
+      expect(await files.hasDesignIndex(directory)).toBe(false);
+      expect(await files.hasDesignIndex(join(root, 'gone'))).toBe(false);
+    });
+  });
+
+  describe('readBoardShell', () => {
+    it('should return the board.html of the kit directory', async () => {
+      writeFileSync(join(kitDirectory, 'board.html'), '<main>board</main>');
+
+      expect(await files.readBoardShell()).toBe('<main>board</main>');
     });
   });
 

@@ -4,6 +4,8 @@ import { join, sep } from 'node:path';
 import type { ArtifactFiles } from '../../business/port/file/artifact-files.js';
 
 const indexName = 'index.html';
+const designIndexName = 'index.json';
+const boardShellName = 'board.html';
 const userInputStateFileName = 'user-input-state.json';
 
 const missingFileCodes: ReadonlyArray<string> = [
@@ -22,6 +24,17 @@ function isMissingFileError(error: unknown): boolean {
   );
 }
 
+async function isFile(path: string): Promise<boolean> {
+  try {
+    return (await stat(path)).isFile();
+  } catch (error) {
+    if (isMissingFileError(error)) {
+      return false;
+    }
+    throw error;
+  }
+}
+
 async function readTextOrUndefined(path: string): Promise<string | undefined> {
   try {
     return await readFile(path, 'utf8');
@@ -34,15 +47,18 @@ async function readTextOrUndefined(path: string): Promise<string | undefined> {
 }
 
 export class FileSystemArtifactFiles implements ArtifactFiles {
-  async hasIndex(directory: string): Promise<boolean> {
-    try {
-      return (await stat(join(directory, indexName))).isFile();
-    } catch (error) {
-      if (isMissingFileError(error)) {
-        return false;
-      }
-      throw error;
-    }
+  constructor(private readonly options: { readonly kitDirectory: string }) {}
+
+  hasIndex(directory: string): Promise<boolean> {
+    return isFile(join(directory, indexName));
+  }
+
+  hasDesignIndex(directory: string): Promise<boolean> {
+    return isFile(join(directory, designIndexName));
+  }
+
+  readBoardShell(): Promise<string> {
+    return readFile(join(this.options.kitDirectory, boardShellName), 'utf8');
   }
 
   readIndex(directory: string): Promise<string | undefined> {
