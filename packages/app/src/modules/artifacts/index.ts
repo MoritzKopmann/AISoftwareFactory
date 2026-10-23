@@ -1,10 +1,12 @@
 import type { ArtifactFiles } from './business/port/file/artifact-files.js';
+import type { DesignWatcher } from './business/port/watch/design-watcher.js';
 import type { ArtifactRepository } from './business/port/repository/artifact-repository.js';
 import { ArtifactService } from './business/service/artifact-service.js';
 import { PageService } from './business/service/page-service.js';
 import { FileSystemArtifactFiles } from './infrastructure/file/file-system-artifact-files.js';
 import { AgentRunsAdapter } from './infrastructure/internal/agent-runs-adapter.js';
 import { SchedulerAdapter } from './infrastructure/internal/scheduler-adapter.js';
+import { FileSystemDesignWatcher } from './infrastructure/watch/file-system-design-watcher.js';
 import { SqliteArtifactRepository } from './infrastructure/repository/sqlite-artifact-repository.js';
 import { createArtifactsRoutes } from './presentation/api/artifacts-routes.js';
 import { ArtifactsFacade } from './presentation/internal/artifacts-facade.js';
@@ -25,6 +27,7 @@ export type {
 type ArtifactsInfrastructure = {
   readonly artifactRepository: ArtifactRepository;
   readonly artifactFiles: ArtifactFiles;
+  readonly designWatcher: DesignWatcher;
 };
 
 export function createArtifactsModule(
@@ -36,7 +39,8 @@ export function createArtifactsModule(
 ): ArtifactsModule {
   const { artifactRepository, artifactFiles }: ArtifactsInfrastructure = {
     artifactRepository: new SqliteArtifactRepository(dependencies.database),
-    artifactFiles: new FileSystemArtifactFiles(),
+    artifactFiles: new FileSystemArtifactFiles({ kitDirectory: dependencies.kitDirectory }),
+    designWatcher: new FileSystemDesignWatcher(),
     ...overrides,
   };
   const runPort = new AgentRunsAdapter(dependencies.agentRuns);

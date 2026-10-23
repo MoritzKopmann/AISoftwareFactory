@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Boards</title>
+  </head>
+  <body>
+    <ul id="boards"></ul>
+    <script>
+      fetch('./index.json')
+        .then((response) => response.json())
+        .then((index) => {
+          const list = document.getElementById('boards');
+          for (const board of index.boards ?? []) {
+            const item = document.createElement('li');
+            item.textContent = board.title ?? board.file ?? String(board);
+            list.append(item);
+          }
+        });
+    </script>
+  </body>
+</html>
