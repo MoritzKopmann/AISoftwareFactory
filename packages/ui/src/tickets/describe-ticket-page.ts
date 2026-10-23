@@ -45,11 +45,6 @@ export type TicketPageDescription =
         readonly numberLabel: string;
         readonly title: string;
       };
-      readonly pullRequests: ReadonlyArray<{
-        readonly label: string;
-        readonly url: string;
-        readonly state: string;
-      }>;
     };
 
 function runSkillFor(ticket: TicketResponse): RunSkill {
@@ -86,11 +81,6 @@ function describeLoadedTicket(ticket: TicketResponse, projectId: string): Ticket
             title: ticket.parent.title,
           },
         }),
-    pullRequests: ticket.closingPullRequests.map((pullRequest) => ({
-      label: `PR #${pullRequest.number}`,
-      url: pullRequest.url,
-      state: pullRequest.state.toLowerCase(),
-    })),
   };
 }
 

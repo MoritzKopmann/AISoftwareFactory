@@ -29,6 +29,23 @@ describe('RoundPanel', () => {
     expect(markup).toMatch(/<iframe[^>]*src="\/pages\/a\/index.html"/);
   });
 
+  it('should render an open-page link before Stop when shown', () => {
+    const markup = render({ ...shown, url: '/a/tok/', title: 'Plan round 2' });
+    expect(markup).toMatch(
+      /<a[^>]*class="btn ext"[^>]*href="\/a\/tok\/"[^>]*target="_blank"[^>]*aria-label="Open Plan round 2 in its own tab"[^>]*><\/a><button[^>]*>Stop<\/button>/,
+    );
+  });
+
+  it('should render the open-page link when shown without Stop', () => {
+    const markup = render({
+      kind: 'shown',
+      title: shown.title,
+      url: shown.url,
+      subtitle: shown.subtitle,
+    });
+    expect(markup).toContain('aria-label="Open Plan round 2 in its own tab"');
+  });
+
   it('should mark the section busy and keep the iframe mounted but hidden until it loads', () => {
     const markup = render(shown);
     expect(markup).toMatch(/<section[^>]*aria-busy="true"/);
@@ -55,5 +72,7 @@ describe('RoundPanel', () => {
     expect(markup).toContain('The run ended before this round was answered.');
     expect(markup).not.toContain('<button');
     expect(markup).not.toContain('<iframe');
+    expect(markup).not.toContain('Open Plan');
+    expect(markup).not.toContain('btn ext');
   });
 });

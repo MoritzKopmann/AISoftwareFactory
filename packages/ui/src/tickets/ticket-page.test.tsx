@@ -22,7 +22,6 @@ function loaded(overrides: Partial<LoadedDescription> = {}): LoadedDescription {
     url: 'https://github.com/o/n/issues/56',
     body: 'Some body',
     runSkill: 'implement-ticket',
-    pullRequests: [],
     ...overrides,
   };
 }
@@ -109,7 +108,7 @@ describe('TicketPageView', () => {
     { status: 'plan', shown: false },
     { status: 'ready', shown: false },
   ] as const)(
-    'should show Move to plan in the left column only when the status is backlog ($status)',
+    'should show Move to plan in the header actions only when the status is backlog ($status)',
     ({ status, shown }) => {
       const markup = render(
         loaded({ status, statusLabel: 'Backlog', runSkill: 'create-ticket' }),
@@ -119,35 +118,25 @@ describe('TicketPageView', () => {
       expect(markup.includes('aria-label="Move to plan"')).toBe(shown);
       if (shown) {
         expect(markup).toMatch(
-          /<div class="tp-left"><section class="move-to-plan" aria-label="Move to plan">/,
+          /<div class="tp-actions">(?:(?!<\/div>).)*<section class="move-to-plan" aria-label="Move to plan">.*<\/section>(?:<button|<\/div><\/header>)/,
+        );
+        expect(markup).not.toMatch(
+          /<div class="tp-left">(?:(?!<div class="tp-cols">).)*aria-label="Move to plan"/,
         );
       }
     },
   );
 
-  it('should show a Pull requests row with the links when the ticket has a pull request and no review panel', () => {
-    const markup = render(
-      loaded({
-        pullRequests: [{ label: 'PR #9', url: 'https://github.com/o/n/pull/9', state: 'open' }],
-      }),
-    );
-
-    expect(markup).toMatch(
-      /<dl class="facts"><dt class="label">Pull requests<\/dt><dd><ul><li><a class="ext" href="https:\/\/github.com\/o\/n\/pull\/9"[^>]*>PR #9<\/a><span class="pr-state">open<\/span><\/li><\/ul><\/dd><\/dl>/,
-    );
-  });
-
-  it('should show None in the Pull requests row when the ticket has no pull request and no review panel', () => {
+  it('should show no plain Pull requests row when the ticket has no pull request', () => {
     const markup = render(loaded());
 
-    expect(markup).toContain('<dt class="label">Pull requests</dt><dd class="sm">None</dd>');
+    expect(markup).not.toContain('Pull requests');
   });
 
-  it('should leave out the Pull requests row when the review panel shows', () => {
+  it('should show the review panel and no plain Pull requests row when the ticket has a pull request', () => {
     const markup = render(
       loaded({
         status: 'in-review',
-        pullRequests: [{ label: 'PR #9', url: 'https://github.com/o/n/pull/9', state: 'open' }],
         reviewPanel: {
           kind: 'shown',
           state: 'open',
@@ -158,7 +147,11 @@ describe('TicketPageView', () => {
     );
 
     expect(markup).toContain('Review the PR');
-    expect(markup).not.toContain('Pull requests');
+    expect(markup).not.toContain('<dl class="facts"><dt class="label">Pull requests');
+  });
+
+  it('should show no Open page line above the questionnaire', () => {
+    expect(render(loaded())).not.toContain('Open page:');
   });
 
   it('should show the message, the reload hint, Retry and the detail in that order when the ticket read failed', () => {

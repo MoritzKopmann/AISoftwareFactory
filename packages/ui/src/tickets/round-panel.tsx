@@ -47,6 +47,14 @@ export function RoundPanel({ description, onStop }: RoundPanelProps) {
         </h2>
         <span className="sm">{subtitle}</span>
         <span className="grow" />
+        <a
+          className="btn ext"
+          href={url}
+          target="_blank"
+          rel="noopener"
+          aria-label={`Open ${title} in its own tab`}
+          title={`Open ${title} in its own tab`}
+        ></a>
         {stop !== undefined && <StopButton stop={stop} onStop={onStop} />}
       </div>
       <div className="body">

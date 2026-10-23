@@ -93,7 +93,6 @@ describe('describeTicketPage', () => {
       url: 'https://github.com/MoritzKopmann/postkarte/issues/36',
       body: '',
       runSkill: 'implement-ticket',
-      pullRequests: [],
     });
   });
 
@@ -191,24 +190,6 @@ describe('describeTicketPage', () => {
         numberLabel: '#40',
         title: 'Small-screen polish',
       },
-    });
-  });
-
-  it('should list each closing pull request with its url and lowercase state when there are some', () => {
-    const ticket = buildTicketResponse({
-      closingPullRequests: [
-        buildClosingPullRequestResponse({ number: 52 }),
-        buildClosingPullRequestResponse({ number: 54, state: 'MERGED' }),
-      ],
-    });
-
-    const description = describeTicketPage(answered(ticket), projectId, 1);
-
-    expect(description).toMatchObject({
-      pullRequests: [
-        { label: 'PR #52', url: 'https://github.com/o/n/pull/52', state: 'open' },
-        { label: 'PR #54', url: 'https://github.com/o/n/pull/54', state: 'merged' },
-      ],
     });
   });
 

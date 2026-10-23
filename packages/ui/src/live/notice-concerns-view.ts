@@ -4,7 +4,6 @@ export type LiveView =
   | { kind: 'board'; projectId: string }
   | { kind: 'ticket'; projectId: string; ticketNumber: number; closed: boolean }
   | { kind: 'run'; projectId: string; ticketNumber: number }
-  | { kind: 'artifacts'; projectId: string; ticketNumber: number }
   | { kind: 'findings'; projectId: string; ticketNumber?: number }
   | { kind: 'needs-you'; projectId: string }
   | { kind: 'projects' }
@@ -39,12 +38,11 @@ export function noticeConcernsView(notice: LiveNotice, view: LiveView): boolean 
     case 'run.waiting':
     case 'run.wait-cleared':
       return view.kind === 'needs-you' || (isTicketScoped(view) && sameTicket(notice, view));
-    case 'artifact.published':
-      return view.kind === 'artifacts' && sameTicket(notice, view);
     case 'finding.changed':
       return (
         view.kind === 'findings' && (view.ticketNumber === undefined || sameTicket(notice, view))
       );
+    case 'artifact.published':
     case 'snapshot.changed':
     case 'ticket.closed':
     case 'project.added':
@@ -56,7 +54,7 @@ export function noticeConcernsView(notice: LiveNotice, view: LiveView): boolean 
 }
 
 function isTicketScoped(view: LiveView): boolean {
-  return view.kind === 'ticket' || view.kind === 'run' || view.kind === 'artifacts';
+  return view.kind === 'ticket' || view.kind === 'run';
 }
 
 function sameTicket(notice: LiveNotice, view: LiveView & { ticketNumber?: number }): boolean {
