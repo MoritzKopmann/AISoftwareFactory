@@ -1750,8 +1750,13 @@
 
         // Each routing strip gets the width its lanes need. Stacked (phone): one width for every
         // module, because long lanes pass through several cards. A change redraws, a few times at most.
+        // While the map width holds, a strip only grows: a wider strip wraps box text, which can free
+        // a lane, which would shrink the strip and unwrap the text again — a loop that never settles.
         let settling = 0;
+        let sizedFor = 0;
         function sizeGutters(routed) {
+          const grow = map.clientWidth === sizedFor;
+          sizedFor = map.clientWidth;
           const stacked =
             getComputedStyle(map).gridTemplateColumns.trim().split(/\s+/).length === 1;
           const need = new Map();
@@ -1765,7 +1770,8 @@
           const widest = Math.max(GUTTER_MIN, ...modules.map((card) => need.get(card) ?? 0));
           let changed = false;
           const apply = (holder, px) => {
-            const value = `${Math.ceil(px)}px`;
+            const floor = grow ? parseFloat(holder.style.getPropertyValue('--pb-gutter')) || 0 : 0;
+            const value = `${Math.ceil(Math.max(px, floor))}px`;
             if (holder.style.getPropertyValue('--pb-gutter') === value) return;
             holder.style.setProperty('--pb-gutter', value);
             changed = true;
