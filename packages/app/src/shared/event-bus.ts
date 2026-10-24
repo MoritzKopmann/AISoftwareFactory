@@ -23,7 +23,7 @@ export type DomainEvents = {
     readonly runId: string;
     readonly projectId: string;
     readonly ticketNumber: number;
-    readonly stage: 'implement' | 'spike' | 'create' | 'plan' | 'onboard';
+    readonly stage: 'implement' | 'spike' | 'create' | 'plan' | 'onboard' | 'design';
     readonly ending:
       | {
           readonly kind: 'escalated';
@@ -48,7 +48,7 @@ export type DomainEvents = {
     readonly runId: string;
     readonly projectId: string;
     readonly ticketNumber: number;
-    readonly stage: 'implement' | 'spike' | 'create' | 'plan' | 'onboard';
+    readonly stage: 'implement' | 'spike' | 'create' | 'plan' | 'onboard' | 'design';
     readonly wait:
       | { readonly kind: 'checkpoint'; readonly request: string; readonly artifactId?: string }
       | {
