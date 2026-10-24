@@ -7,6 +7,9 @@ export function runStageFor(ticket: {
   readonly types: ReadonlyArray<TicketType>;
 }): RunStage {
   if (ticket.status === 'idea') {
+    if (ticket.types.includes('ui')) {
+      return 'design';
+    }
     return 'create';
   }
   if (ticket.status === 'plan') {

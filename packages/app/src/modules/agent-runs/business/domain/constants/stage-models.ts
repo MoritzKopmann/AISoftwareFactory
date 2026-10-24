@@ -6,4 +6,5 @@ export const stageModels: Readonly<Record<RunStage, string>> = {
   onboard: 'opus',
   create: 'sonnet',
   plan: 'opus',
+  design: 'opus',
 };
