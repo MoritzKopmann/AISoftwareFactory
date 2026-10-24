@@ -217,7 +217,8 @@ then guard `plan → planned` on `<n>`.
 ## 4. Split
 
 **Frontend and backend first.** Frontend is every surface a human sees, judged from the codebase. All of it becomes **one UI sub-issue**, built later through the design
-path, never by `aisf:implement-ticket`. It is blocked by every backend sub-issue it reads from.
+path, never by `aisf:implement-ticket`. With `project-design` present, that child is filed as an
+idea and starts its design run by itself. It is blocked by every backend sub-issue it reads from.
 
 **Backend** is cut by module responsibility first, then along the interfaces between layers:
 **one module and one layer each**, as `project-architecture` names them. Wiring a sub-issue's
@@ -247,7 +248,7 @@ judges. Only an agreed checkpoint goes into a spec.
 Two splits have no umbrella:
 
 - **Fits one PR, no UI.** Plan and spec land on the ticket itself.
-- **UI only.** The ticket itself becomes the UI ticket.
+- **UI only.** The ticket itself becomes the UI ticket (an idea when `project-design` exists).
 
 ## 5. Critic
 
@@ -332,7 +333,8 @@ is**.
    present.
 2. **Sub-issues, in dependency order**, each with `--parent`, `--blocked-by` and the ticket's
    `priority:`. Title from the `####` line, body the spec under it. Backend: its own `type:`,
-   `status: ready`, `hitl` where confirmed. UI: `type: ui`, `status: backlog`.
+   `status: ready`, `hitl` where confirmed. UI: `type: ui`; with `project-design` present, an
+   idea (no `status:` label) whose body is the plan's UI spec; otherwise `status: backlog`.
 3. **Backfill** the plan with the real sub-issue numbers, guard `plan → planned`, and check
    the count landed. Write each backfilled body to a **new file**, never over its source.
 
@@ -344,7 +346,8 @@ is**.
 `### Sub-issues`, go on the ticket itself. Then guard `plan → ready`.
 
 **UI only:** the UI spec goes on the ticket itself, its `type:` becomes `type: ui`, then
-guard `plan → backlog`.
+guard `plan → backlog`. With `project-design` present: drop the `status:` label instead (`plan → idea`).
 
-Report every number written, what `aisf:implement-ticket` can pick up next, and for a UI ticket
-that it needs a design before `aisf:ui-ticket <design> <n>`.
+Report every number written and what `aisf:implement-ticket` can pick up next. For a UI ticket:
+with `project-design`, it starts its design run by itself; otherwise it needs a design before
+`aisf:ui-ticket <design> <n>`.
