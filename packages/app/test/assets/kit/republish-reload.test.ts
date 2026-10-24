@@ -11,6 +11,7 @@ import { FakeEventPublisher } from '../../../src/shared/testing/fake-event-publi
 import { FakeClock } from '../../../src/shared/testing/fake-clock.js';
 import { FakeArtifactFiles } from '../../../src/modules/artifacts/testing/fake-artifact-files.js';
 import { FakeSchedulerPort } from '../../../src/modules/artifacts/testing/fake-scheduler-port.js';
+import { FakeDesignWatcher } from '../../../src/modules/artifacts/testing/fake-design-watcher.js';
 import { FakeRunPort } from '../../../src/modules/artifacts/testing/fake-run-port.js';
 import { InMemoryArtifactRepository } from '../../../src/modules/artifacts/testing/in-memory-artifact-repository.js';
 
@@ -59,6 +60,7 @@ describe('a republished page', () => {
           artifactFiles,
           runPort,
           schedulerPort: new FakeSchedulerPort(),
+          designWatcher: new FakeDesignWatcher(),
         }),
       ),
     );

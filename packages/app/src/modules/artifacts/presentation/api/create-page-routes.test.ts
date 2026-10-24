@@ -7,6 +7,7 @@ import { PageService } from '../../business/service/page-service.js';
 import { buildArtifact } from '../../testing/build-artifact.js';
 import { FakeArtifactFiles } from '../../testing/fake-artifact-files.js';
 import { FakeSchedulerPort } from '../../testing/fake-scheduler-port.js';
+import { FakeDesignWatcher } from '../../testing/fake-design-watcher.js';
 import { FakeRunPort } from '../../testing/fake-run-port.js';
 import { InMemoryArtifactRepository } from '../../testing/in-memory-artifact-repository.js';
 
@@ -24,7 +25,13 @@ function buildApp(
   return new Hono().route(
     '/a',
     createPageRoutes(
-      new PageService({ artifactRepository, artifactFiles, runPort, schedulerPort }),
+      new PageService({
+        artifactRepository,
+        artifactFiles,
+        runPort,
+        schedulerPort,
+        designWatcher: new FakeDesignWatcher(),
+      }),
     ),
   );
 }

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { injectPageBridge } from '../domain/functions/inject-page-bridge.js';
 import { ArtifactNotFoundError } from '../errors/artifact-not-found-error.js';
 import { PageBusyError } from '../errors/page-busy-error.js';
@@ -7,6 +7,7 @@ import { PageService } from './page-service.js';
 import { buildArtifact } from '../../testing/build-artifact.js';
 import { FakeArtifactFiles } from '../../testing/fake-artifact-files.js';
 import { FakeSchedulerPort } from '../../testing/fake-scheduler-port.js';
+import { FakeDesignWatcher } from '../../testing/fake-design-watcher.js';
 import { FakeRunPort } from '../../testing/fake-run-port.js';
 import { InMemoryArtifactRepository } from '../../testing/in-memory-artifact-repository.js';
 
@@ -18,10 +19,13 @@ describe('PageService', () => {
   let artifactFiles: FakeArtifactFiles;
   let runPort: FakeRunPort;
   let schedulerPort: FakeSchedulerPort;
+  let artifactRepository: InMemoryArtifactRepository;
+  let designWatcher: FakeDesignWatcher;
   let service: PageService;
 
   beforeEach(() => {
-    const artifactRepository = new InMemoryArtifactRepository();
+    artifactRepository = new InMemoryArtifactRepository();
+    designWatcher = new FakeDesignWatcher();
     artifactRepository.add(buildArtifact({ directory, version: 2 }));
     artifactFiles = new FakeArtifactFiles();
     runPort = new FakeRunPort();
@@ -31,6 +35,7 @@ describe('PageService', () => {
       artifactFiles,
       runPort,
       schedulerPort,
+      designWatcher,
     });
   });
 
@@ -159,6 +164,61 @@ describe('PageService', () => {
 
     it('should throw when the token is unknown', async () => {
       await expect(service.submitEvent('nope', event)).rejects.toThrow(ArtifactNotFoundError);
+    });
+  });
+
+  describe('boards', () => {
+    const boardDirectory = '/worktrees/n/7/.aisf/artifacts/design';
+
+    beforeEach(() => {
+      artifactRepository.add(
+        buildArtifact({ token: 'B', artifactId: 'design', directory: boardDirectory }),
+      );
+    });
+
+    it('should return the board shell with the bridge when the artifact is a board', async () => {
+      artifactFiles.files.set(`${boardDirectory}/index.html`, '<p>folder file</p>');
+
+      expect(await service.read('B', 'N')).toBe(injectPageBridge('<main>board</main>', 'N'));
+    });
+
+    it('should deliver the tagged feedback when a board gets design-feedback', async () => {
+      runPort.latestRun = { id: 'r1', state: 'running', waitingFor: { artifactId: 'design' } };
+      const payload = { round: 2, comments: [], message: 'm' };
+
+      await service.submitEvent('B', { kind: 'design-feedback', round: 2, payload });
+
+      expect(schedulerPort.calls).toEqual([
+        {
+          runId: 'r1',
+          text: `<aisf-event artifact=design kind=design-feedback round=2>${JSON.stringify(payload)}</aisf-event>`,
+        },
+      ]);
+    });
+
+    it('should report open when the run ended at a checkpoint on the board', async () => {
+      runPort.latestRun = {
+        id: 'r1',
+        state: 'ended',
+        ending: { kind: 'checkpoint', artifactId: 'design' },
+      };
+
+      expect(await service.readStatus('B')).toEqual({ status: 'open', version: 1 });
+    });
+
+    it('should report changes of the board directory when watching a board', async () => {
+      const onChange = vi.fn();
+
+      const stop = await service.watchChanges('B', onChange);
+      designWatcher.emit(boardDirectory, 'boards/home.html');
+      stop();
+
+      expect(onChange).toHaveBeenCalledWith('boards/home.html');
+      expect(designWatcher.stopped).toBe(1);
+    });
+
+    it('should throw when watching a page artifact', async () => {
+      await expect(service.watchChanges('T', vi.fn())).rejects.toThrow(ArtifactNotFoundError);
     });
   });
 });
