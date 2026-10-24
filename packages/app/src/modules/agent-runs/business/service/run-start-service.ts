@@ -12,6 +12,7 @@ import { buildResumePrompt } from '../domain/functions/build-resume-prompt.js';
 import { buildStartPrompt } from '../domain/functions/build-start-prompt.js';
 import { commandToLabel } from '../domain/functions/command-to-label.js';
 import { describeError } from '../domain/functions/describe-error.js';
+import { isAuthoringStage } from '../domain/functions/is-authoring-stage.js';
 import { runStageFor } from '../domain/functions/run-stage-for.js';
 import { worktreePathFor } from '../domain/functions/worktree-path-for.js';
 import type { PermissionRequest } from '../domain/types/permission-request.js';
@@ -87,7 +88,7 @@ export class RunStartService {
     }
 
     const stage = runStageFor(request);
-    const authoring = stage === 'create' || stage === 'plan';
+    const authoring = isAuthoringStage(stage);
     const worktreePath = (authoring ? authoringWorktreePathFor : worktreePathFor)(
       this.dependencies.worktreesDirectory,
       target.repositoryName,

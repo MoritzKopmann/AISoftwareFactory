@@ -266,6 +266,20 @@ describe('RunStartService', () => {
       },
     );
 
+    it('should start aisf:design in the authoring worktree without a branch when a ui idea starts', async () => {
+      const { service, agentSessions } = buildStartSubject();
+
+      const run = await service.start({ ...startRequest, status: 'idea', types: ['ui'] });
+
+      expect(run.stage).toBe('design');
+      expect(run.worktreePath).toMatch(/-authoring$/);
+      expect(run.branchName).toBe('');
+      expect(agentSessions.startedSpecs[0]).toMatchObject({
+        prompt: '/aisf:design 137',
+        model: 'opus',
+      });
+    });
+
     it('should run an onboard ticket on a branch worktree when it starts', async () => {
       const { service } = buildStartSubject();
 

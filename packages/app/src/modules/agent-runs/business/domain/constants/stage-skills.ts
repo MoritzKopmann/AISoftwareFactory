@@ -6,4 +6,5 @@ export const stageSkills: Readonly<Record<RunStage, string>> = {
   onboard: 'aisf:onboard-project',
   create: 'aisf:create-ticket',
   plan: 'aisf:plan-ticket',
+  design: 'aisf:design',
 };
