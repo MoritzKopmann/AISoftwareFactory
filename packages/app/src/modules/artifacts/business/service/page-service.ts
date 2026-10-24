@@ -1,3 +1,4 @@
+import { artifactKindFor } from '../domain/functions/artifact-kind-for.js';
 import { decidePageStatus } from '../domain/functions/decide-page-status.js';
 import { formatPageEvent } from '../domain/functions/format-page-event.js';
 import { injectPageBridge } from '../domain/functions/inject-page-bridge.js';
@@ -9,6 +10,7 @@ import { PageBusyError } from '../errors/page-busy-error.js';
 import { PageClosedError } from '../errors/page-closed-error.js';
 import type { SchedulerPort } from '../port/scheduler/scheduler-port.js';
 import type { ArtifactFiles } from '../port/file/artifact-files.js';
+import type { DesignWatcher } from '../port/watch/design-watcher.js';
 import type { ArtifactRepository } from '../port/repository/artifact-repository.js';
 import type { RunPort } from '../port/run/run-port.js';
 
@@ -17,16 +19,15 @@ export type PageServiceDependencies = {
   readonly artifactFiles: ArtifactFiles;
   readonly runPort: RunPort;
   readonly schedulerPort: SchedulerPort;
+  readonly designWatcher: DesignWatcher;
 };
 
 export class PageService {
   constructor(private readonly dependencies: PageServiceDependencies) {}
 
   async read(token: string, nonce: string): Promise<string> {
-    const { artifactRepository, artifactFiles } = this.dependencies;
-    const artifact = await artifactRepository.findByToken(token);
-    const html =
-      artifact === undefined ? undefined : await artifactFiles.readIndex(artifact.directory);
+    const artifact = await this.dependencies.artifactRepository.findByToken(token);
+    const html = artifact === undefined ? undefined : await this.readDocument(artifact);
     if (html === undefined) {
       throw new ArtifactNotFoundError('Unknown page');
     }
@@ -78,6 +79,23 @@ export class PageService {
       throw new PageClosedError('The page is closed');
     }
     await schedulerPort.answer(artifact.runId, formatPageEvent(artifact.artifactId, event));
+  }
+
+  /** Boards only. Returns a stop function. */
+  async watchChanges(token: string, onChange: (file: string) => void): Promise<() => void> {
+    const artifact = await this.requireArtifact(token);
+    if (artifactKindFor(artifact.artifactId) !== 'board') {
+      throw new ArtifactNotFoundError('Unknown board');
+    }
+    return this.dependencies.designWatcher.watch(artifact.directory, onChange);
+  }
+
+  private async readDocument(artifact: Artifact): Promise<string | undefined> {
+    const { artifactFiles } = this.dependencies;
+    if (artifactKindFor(artifact.artifactId) === 'board') {
+      return artifactFiles.readBoardShell();
+    }
+    return artifactFiles.readIndex(artifact.directory);
   }
 
   private async requireArtifact(token: string): Promise<Artifact> {

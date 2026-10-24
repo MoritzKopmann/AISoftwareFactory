@@ -2,6 +2,7 @@ import type { Clock } from '../../../../shared/clock/clock.js';
 import type { EventPublisher } from '../../../../shared/event-bus.js';
 import type { Identifiers } from '../../../../shared/identifiers/identifiers.js';
 import { artifactDirectoryFor } from '../domain/functions/artifact-directory-for.js';
+import { artifactKindFor } from '../domain/functions/artifact-kind-for.js';
 import { decidePageStatus } from '../domain/functions/decide-page-status.js';
 import type { Artifact } from '../domain/types/artifact.js';
 import type { ListedArtifact } from '../domain/types/listed-artifact.js';
@@ -26,9 +27,14 @@ export class ArtifactService {
   async publish(request: PublishRequest): Promise<Artifact> {
     const { artifactRepository, artifactFiles, events, identifiers, clock } = this.dependencies;
     const directory = artifactDirectoryFor(request.worktreePath, request.artifactId);
-    if (!(await artifactFiles.hasIndex(directory))) {
+    const isBoard = artifactKindFor(request.artifactId) === 'board';
+    const indexName = isBoard ? 'index.json' : 'index.html';
+    const hasIndex = isBoard
+      ? await artifactFiles.hasDesignIndex(directory)
+      : await artifactFiles.hasIndex(directory);
+    if (!hasIndex) {
       throw new ArtifactNotFoundError(
-        `The artifact "${request.artifactId}" has no index.html in .aisf/artifacts/${request.artifactId}/`,
+        `The artifact "${request.artifactId}" has no ${indexName} in .aisf/artifacts/${request.artifactId}/`,
       );
     }
     const artifact = await artifactRepository.publish({

@@ -37,7 +37,7 @@ export function createArtifactsModule(
   },
   overrides: Partial<ArtifactsInfrastructure> = {},
 ): ArtifactsModule {
-  const { artifactRepository, artifactFiles }: ArtifactsInfrastructure = {
+  const { artifactRepository, artifactFiles, designWatcher }: ArtifactsInfrastructure = {
     artifactRepository: new SqliteArtifactRepository(dependencies.database),
     artifactFiles: new FileSystemArtifactFiles({ kitDirectory: dependencies.kitDirectory }),
     designWatcher: new FileSystemDesignWatcher(),
@@ -57,6 +57,7 @@ export function createArtifactsModule(
     artifactFiles,
     runPort,
     schedulerPort: new SchedulerAdapter(dependencies.scheduler),
+    designWatcher,
   });
 
   dependencies.agentTools.register(createShowArtifactTool(artifactService));

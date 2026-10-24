@@ -51,6 +51,23 @@ describe('ArtifactService.publish', () => {
     });
   });
 
+  it('should save the design directory when index.json exists and index.html does not', async () => {
+    artifactFiles.files.set('/worktrees/n/7/.aisf/artifacts/design/index.json', '{}');
+
+    const artifact = await service.publish({ ...request, artifactId: 'design' });
+
+    expect(artifact.directory).toBe('/worktrees/n/7/.aisf/artifacts/design');
+    expect(await artifactRepository.findByToken('T')).toEqual(artifact);
+  });
+
+  it('should throw when the design folder has no index.json', async () => {
+    artifactFiles.files.set('/worktrees/n/7/.aisf/artifacts/design/index.html', '<p>x</p>');
+
+    await expect(service.publish({ ...request, artifactId: 'design' })).rejects.toThrow(
+      ArtifactNotFoundError,
+    );
+  });
+
   it('should store the artifact at version 1 with a new token when the page exists', async () => {
     const artifact = await service.publish(request);
 
