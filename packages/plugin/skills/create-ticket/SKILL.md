@@ -3,7 +3,7 @@ name: create-ticket
 description: >
   Turn an idea issue (open, no status: label) into a ticket. Interviews the human in rounds on a
   bridge page (chat when no page tool), rewrites the issue in place, and ends at status: backlog
-  or status: plan. Splits surplus scope into bare ideas. Use when the user wants to create,
+  or status: plan (a type: ui idea stays an idea). Splits surplus scope into bare ideas. Use when the user wants to create,
   refine or shape a ticket. Triggers: "create ticket", "refine #N", "turn #N into a ticket".
 ---
 
@@ -61,7 +61,8 @@ Load `aisf:grilling` and follow it. Specific to create-ticket:
 
 1. **Round 1.** Draft a one-sentence summary from the issue. Ask the human to confirm it and
    pick the type: `bug`, `enhancement` or `task` (a spike is a task whose deliverable is an
-   answer). Hand run with no number: ask for the summary instead.
+   answer). Offer `ui` too only when the skill `project-design` exists (try loading it; skip
+   silently if absent). You suggest, the human picks. Hand run with no number: ask for the summary instead.
 2. **Group the frontier.** Every question whose answer does not depend on another open one goes
    in the same round, across track areas. No cap on the count. The track lists the areas to
    cover, in its order. Cover every area. Skip one an earlier answer settled.
@@ -97,6 +98,11 @@ Load `aisf:grilling` and follow it. Specific to create-ticket:
 8. Design or UX reference. Only when the feature has UI.
 9. Dependencies: blocked-by or related.
 
+**UI**
+
+Same what/why interview as the enhancement track. Ask nothing about layout: the design run
+settles it.
+
 **Task or spike**
 
 1. Deliverable.
@@ -130,12 +136,14 @@ any change request counts as a Reopen.
 
 ## Write
 
-Through `aisf:github-issue`, guard first (`idea → backlog` or `idea → plan`).
+Through `aisf:github-issue`, guard first (`idea → backlog`, `idea → plan`, or `idea → idea` for
+`type: ui`).
 
 1. Rewrite title and body in place. Full anatomy, cold-read test. Open questions stay in the
    body.
 2. Labels: one `type:`, one `priority:`, and `status: backlog` (Plan next off) or
-   `status: plan` (on). **Never** `hitl`, **never** `domain:`.
+   `status: plan` (on). A `type: ui` idea gets no `status:` label and no Plan next switch: it
+   stays an idea and the design run picks it up. **Never** `hitl`, **never** `domain:`.
 3. A dependency is a native blocked-by (`--add-blocked-by`). "Related" stays a `Related: #N`
    body line.
 4. Post the spin-offs.
