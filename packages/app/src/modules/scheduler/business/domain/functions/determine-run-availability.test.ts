@@ -232,6 +232,14 @@ describe('determineRunAvailability', () => {
       });
     });
 
+    it('should be available when the ticket is a ui idea', () => {
+      const ticket: SchedulableTicket = { ...readyLeaf, status: 'idea', types: ['ui'] };
+
+      expect(determineRunAvailability(buildInput({ trigger: 'auto', ticket }))).toEqual({
+        kind: 'available',
+      });
+    });
+
     it('should be absent when the ticket is an idea', () => {
       const ticket: SchedulableTicket = { ...readyLeaf, status: 'idea' };
 
@@ -370,4 +378,16 @@ describe('determineRunAvailability', () => {
       });
     });
   });
+
+  it.each(['auto', 'manual'] as const)(
+    'should be disabled until the UI split when a ui ticket is at plan and the trigger is %s',
+    (trigger) => {
+      const ticket: SchedulableTicket = { ...readyLeaf, status: 'plan', types: ['ui'] };
+
+      expect(determineRunAvailability(buildInput({ trigger, ticket }))).toEqual({
+        kind: 'disabled',
+        reason: 'Waiting for the UI split (#689)',
+      });
+    },
+  );
 });

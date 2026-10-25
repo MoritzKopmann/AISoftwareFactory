@@ -5,13 +5,19 @@ const rankByStatus: Readonly<Partial<Record<ReviewedTicket['status'], number>>> 
   ready: 1,
   plan: 2,
 };
+const uiIdeaRank = 3;
 
 export function rankDueTickets(
   tickets: ReadonlyArray<ReviewedTicket>,
 ): ReadonlyArray<ReviewedTicket> {
   return tickets
-    .filter(({ status }) => rankByStatus[status] !== undefined)
-    .toSorted(
-      (first, second) => (rankByStatus[first.status] ?? 0) - (rankByStatus[second.status] ?? 0),
-    );
+    .filter((ticket) => rankOf(ticket) !== undefined)
+    .toSorted((first, second) => (rankOf(first) ?? 0) - (rankOf(second) ?? 0));
+}
+
+function rankOf({ status, types }: ReviewedTicket): number | undefined {
+  if (status === 'idea') {
+    return types.includes('ui') ? uiIdeaRank : undefined;
+  }
+  return rankByStatus[status];
 }

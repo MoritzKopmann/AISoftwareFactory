@@ -17,8 +17,11 @@ export function determineRunAvailability(input: RunAvailabilityInput): RunAvaila
   if (ticket === undefined || ticket.hasOpenBlocker || !isRunnableTicket(ticket, lastRunEndedAt)) {
     return { kind: 'absent' };
   }
+  if (isAcceptedUiDesign(ticket)) {
+    return { kind: 'disabled', reason: 'Waiting for the UI split (#689)' };
+  }
   if (trigger === 'auto') {
-    if (ticket.status === 'idea') {
+    if (isPlainIdea(ticket)) {
       return { kind: 'absent' };
     }
     const autoBlock = findAutoBlock(ticket, projectPaused);
@@ -80,6 +83,14 @@ function isRunnableTicket(ticket: SchedulableTicket, lastRunEndedAt: string | un
     return !isOnboardTicket(ticket) && needsRework(ticket.openPullRequest, lastRunEndedAt);
   }
   return ticket.status === 'ready';
+}
+
+function isAcceptedUiDesign(ticket: SchedulableTicket): boolean {
+  return ticket.status === 'plan' && ticket.types.includes('ui');
+}
+
+function isPlainIdea(ticket: SchedulableTicket): boolean {
+  return ticket.status === 'idea' && !ticket.types.includes('ui');
 }
 
 function isOnboardTicket(ticket: SchedulableTicket): boolean {
