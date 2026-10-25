@@ -8,11 +8,12 @@ export type StartState =
   | Extract<StartRunOutcome, { kind: 'failed' }>;
 
 export type RunSkill =
-  'spike' | 'implement-ticket' | 'create-ticket' | 'plan-ticket' | 'onboard-project';
+  'spike' | 'implement-ticket' | 'create-ticket' | 'plan-ticket' | 'design' | 'onboard-project';
 
 const ticketSkillLabels: Partial<Record<RunSkill, string>> = {
   'create-ticket': 'Start',
   'plan-ticket': 'Plan',
+  design: 'Design',
 };
 
 export function isIdeaOrPlanSkill(runSkill: RunSkill): boolean {
