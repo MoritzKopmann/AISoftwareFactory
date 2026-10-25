@@ -30,4 +30,22 @@ describe('rankDueTickets', () => {
 
     expect(ranked.map(({ number }) => number)).toEqual([13, 12, 11]);
   });
+
+  it('should keep a ui idea and drop a plain idea', () => {
+    const ranked = rankDueTickets([
+      { number: 20, status: 'idea', types: [], closingPullRequests: [] },
+      { number: 21, status: 'idea', types: ['ui'], closingPullRequests: [] },
+    ]);
+
+    expect(ranked.map(({ number }) => number)).toEqual([21]);
+  });
+
+  it('should put a ui idea after plan tickets', () => {
+    const ranked = rankDueTickets([
+      { number: 21, status: 'idea', types: ['ui'], closingPullRequests: [] },
+      { number: 11, status: 'plan', types: [], closingPullRequests: [] },
+    ]);
+
+    expect(ranked.map(({ number }) => number)).toEqual([11, 21]);
+  });
 });
