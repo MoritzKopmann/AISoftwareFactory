@@ -129,6 +129,14 @@ describe('describeTicketPage', () => {
     ).toMatchObject({ runSkill: skill });
   });
 
+  it('should run design when the ticket is an idea with the ui type', () => {
+    const ticket = buildTicketResponse({ status: 'idea', types: ['ui'] });
+
+    expect(describeTicketPage(answered(ticket), projectId, 1)).toMatchObject({
+      runSkill: 'design',
+    });
+  });
+
   it('should run onboard-project when the ticket types include onboard', () => {
     const ticket = buildTicketResponse({ status: 'ready', types: ['onboard'] });
 

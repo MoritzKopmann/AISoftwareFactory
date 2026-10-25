@@ -343,6 +343,18 @@ describe('describeRunBar for idea and plan tickets', () => {
     });
   });
 
+  it('should offer a pressable Design with the design hint when a ui idea ticket is available', () => {
+    expect(
+      describeRunBar(available, { status: 'idea', stuck: false }, { kind: 'idle' }, 419, 'design'),
+    ).toEqual({
+      kind: 'shown',
+      button: 'run',
+      pressable: true,
+      label: 'Design',
+      hint: 'Runs design on #419.',
+    });
+  });
+
   it('should offer a pressable Plan with the plan-ticket hint when a plan ticket is available', () => {
     expect(
       describeRunBar(
