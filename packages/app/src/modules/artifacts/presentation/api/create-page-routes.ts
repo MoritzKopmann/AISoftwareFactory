@@ -1,5 +1,6 @@
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 import { NONCE, secureHeaders } from 'hono/secure-headers';
+import { streamSSE } from 'hono/streaming';
 import { getMimeType } from 'hono/utils/mime';
 import { ConflictError } from '../../../../shared/errors.js';
 import { statusForDomainError } from '../../../../shared/http.js';
@@ -15,24 +16,31 @@ const eventConflictStatuses: Readonly<Record<string, 'busy' | 'closed' | undefin
   PageClosedError: 'closed',
 };
 
-const addPageHeaders: MiddlewareHandler = (context, next) =>
-  secureHeaders({
-    contentSecurityPolicy: {
-      defaultSrc: ["'none'"],
-      scriptSrc: ["'self'", NONCE],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      fontSrc: ["'self'"],
-      imgSrc: ["'self'", 'data:'],
-      connectSrc: [`http://${context.req.header('host')}/a/${context.req.param('token')}/`],
-      frameAncestors: ["'self'"],
-      baseUri: ["'none'"],
-      formAction: ["'none'"],
-    },
-    referrerPolicy: 'no-referrer',
-  })(context, async () => {
-    context.header('Cache-Control', 'no-store');
-    await next();
-  });
+const heartbeatIntervalMilliseconds = 25_000;
+
+const addPageHeaders =
+  (pageService: PageService): MiddlewareHandler =>
+  async (context, next) => {
+    const isBoard = (await pageService.kindOf(context.req.param('token') ?? '')) === 'board';
+    return secureHeaders({
+      contentSecurityPolicy: {
+        defaultSrc: ["'none'"],
+        scriptSrc: ["'self'", NONCE],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        fontSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:'],
+        connectSrc: [`http://${context.req.header('host')}/a/${context.req.param('token')}/`],
+        ...(isBoard ? { frameSrc: ["'self'"] } : {}),
+        frameAncestors: ["'self'"],
+        baseUri: ["'none'"],
+        formAction: ["'none'"],
+      },
+      referrerPolicy: 'no-referrer',
+    })(context, async () => {
+      context.header('Cache-Control', 'no-store');
+      await next();
+    });
+  };
 
 async function answerOrDomainError(
   context: Context,
@@ -65,7 +73,7 @@ function assetPathOf(context: Context, token: string): string | undefined {
 
 export function createPageRoutes(pageService: PageService): Hono {
   return new Hono()
-    .use('/:token/*', addPageHeaders)
+    .use('/:token/*', addPageHeaders(pageService))
     .get('/:token/', (context) =>
       answerOrDomainError(context, async () => {
         const html = await pageService.read(
@@ -82,6 +90,13 @@ export function createPageRoutes(pageService: PageService): Hono {
         ),
       ),
     )
+    .get('/:token/_changes', async (context) => {
+      const token = context.req.param('token');
+      if ((await pageService.kindOf(token)) !== 'board') {
+        return context.json({ message: 'Unknown board' }, 404);
+      }
+      return streamChanges(context, pageService, token);
+    })
     .get('/:token/_user-input-state', (context) =>
       answerOrDomainError(context, async () => {
         const userInputState = await pageService.readUserInputState(context.req.param('token'));
@@ -148,4 +163,26 @@ export function createPageRoutes(pageService: PageService): Hono {
         });
       }),
     );
+}
+
+function streamChanges(context: Context, pageService: PageService, token: string): Response {
+  return streamSSE(context, async (stream) => {
+    let wake: () => void = () => undefined;
+    const stop = await pageService.watchChanges(token, (file) => {
+      void stream
+        .writeSSE({ event: 'reload', data: JSON.stringify({ file }) })
+        .catch(() => undefined);
+    });
+    const heartbeat = setInterval(() => {
+      void stream.write(': ping\n\n').catch(() => undefined);
+    }, heartbeatIntervalMilliseconds);
+    stream.onAbort(() => {
+      clearInterval(heartbeat);
+      stop();
+      wake();
+    });
+    await new Promise<void>((resolve) => {
+      wake = resolve;
+    });
+  });
 }
