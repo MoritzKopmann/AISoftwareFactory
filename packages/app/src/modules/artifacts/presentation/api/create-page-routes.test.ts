@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPageRoutes } from './create-page-routes.js';
 import type { TicketLatestRun } from '../../business/domain/types/ticket-latest-run.js';
 import { PageBusyError } from '../../business/errors/page-busy-error.js';
@@ -21,6 +21,7 @@ function buildApp(
   artifactFiles: FakeArtifactFiles,
   runPort: FakeRunPort,
   schedulerPort: FakeSchedulerPort,
+  designWatcher = new FakeDesignWatcher(),
 ): Hono {
   return new Hono().route(
     '/a',
@@ -30,10 +31,17 @@ function buildApp(
         artifactFiles,
         runPort,
         schedulerPort,
-        designWatcher: new FakeDesignWatcher(),
+        designWatcher,
       }),
     ),
   );
+}
+
+function readerOf(response: Response): ReadableStreamDefaultReader<Uint8Array> {
+  if (response.body === null) {
+    throw new Error('The response has no body');
+  }
+  return response.body.getReader();
 }
 
 describe('createPageRoutes', () => {
@@ -339,6 +347,78 @@ describe('createPageRoutes', () => {
       const response = await app.request('/a/T/_status', { headers: { Host: host } });
 
       expect(await response.json()).toEqual({ status: 'open', version: 1 });
+    });
+  });
+
+  describe('boards', () => {
+    const boardDirectory = '/worktrees/n/7/.aisf/artifacts/design';
+    let designWatcher: FakeDesignWatcher;
+    let boardApp: Hono;
+
+    beforeEach(() => {
+      designWatcher = new FakeDesignWatcher();
+      artifactRepository.add(
+        buildArtifact({ token: 'B', artifactId: 'design', directory: boardDirectory }),
+      );
+      boardApp = buildApp(artifactRepository, artifactFiles, runPort, schedulerPort, designWatcher);
+    });
+
+    it("should allow frame-src 'self' and no remote origin when the board shell is served", async () => {
+      const response = await boardApp.request('/a/B/', { headers: hostHeaders });
+      const csp = response.headers.get('Content-Security-Policy') ?? '';
+
+      expect(response.status).toBe(200);
+      expect(csp).toContain("frame-src 'self';");
+      expect(csp).not.toMatch(/https?:\/\/(?!127\.0\.0\.1:4000)/);
+    });
+
+    it('should send no frame-src when a page is served', async () => {
+      const response = await boardApp.request('/a/T/', { headers: hostHeaders });
+
+      expect(response.headers.get('Content-Security-Policy')).not.toContain('frame-src');
+    });
+
+    it('should stream a reload event when the watcher reports a file', async () => {
+      const response = await boardApp.request('/a/B/_changes', { headers: hostHeaders });
+      const reader = readerOf(response);
+      await vi.waitFor(() => expect(designWatcher.watched).toHaveLength(1));
+
+      designWatcher.emit(boardDirectory, 'boards/home.html');
+      const { value } = await reader.read();
+
+      expect(response.headers.get('Content-Type')).toContain('text/event-stream');
+      expect(new TextDecoder().decode(value)).toBe(
+        'event: reload\ndata: {"file":"boards/home.html"}\n\n',
+      );
+      await reader.cancel();
+    });
+
+    it('should stop the watcher when the client disconnects', async () => {
+      const response = await boardApp.request('/a/B/_changes', { headers: hostHeaders });
+      const reader = readerOf(response);
+      await vi.waitFor(() => expect(designWatcher.watched).toHaveLength(1));
+
+      await reader.cancel();
+
+      await vi.waitFor(() => expect(designWatcher.stopped).toBe(1));
+    });
+
+    it('should answer 404 when the changes of a page are requested', async () => {
+      const response = await boardApp.request('/a/T/_changes', { headers: hostHeaders });
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should answer 201 when a design-accepted event is posted', async () => {
+      runPort.latestRun = { id: 'r1', state: 'running', waitingFor: { artifactId: 'design' } };
+
+      const response = await boardApp.request('/a/B/_events', {
+        method: 'POST',
+        headers: { ...hostHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'design-accepted', round: 3, payload: { round: 3 } }),
+      });
+
+      expect(response.status).toBe(201);
     });
   });
 });

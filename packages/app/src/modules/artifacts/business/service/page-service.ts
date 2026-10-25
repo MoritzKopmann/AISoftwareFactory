@@ -1,4 +1,4 @@
-import { artifactKindFor } from '../domain/functions/artifact-kind-for.js';
+import { artifactKindFor, type ArtifactKind } from '../domain/functions/artifact-kind-for.js';
 import { decidePageStatus } from '../domain/functions/decide-page-status.js';
 import { formatPageEvent } from '../domain/functions/format-page-event.js';
 import { injectPageBridge } from '../domain/functions/inject-page-bridge.js';
@@ -32,6 +32,12 @@ export class PageService {
       throw new ArtifactNotFoundError('Unknown page');
     }
     return injectPageBridge(html, nonce);
+  }
+
+  /** `undefined` when the token is unknown. */
+  async kindOf(token: string): Promise<ArtifactKind | undefined> {
+    const artifact = await this.dependencies.artifactRepository.findByToken(token);
+    return artifact === undefined ? undefined : artifactKindFor(artifact.artifactId);
   }
 
   async readAsset(token: string, relativePath: string): Promise<Uint8Array> {

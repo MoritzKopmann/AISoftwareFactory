@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const pageEventBodySchema = z.object({
-  kind: z.enum(['submit', 'confirm', 'reopen']),
+  kind: z.enum(['submit', 'confirm', 'reopen', 'design-feedback', 'design-accepted']),
   round: z.number().int().min(1),
   payload: z.unknown().refine((value) => value !== undefined, 'payload is required'),
 });
