@@ -144,6 +144,19 @@ describe('BoardStore', () => {
     expect(store.get().updated).toEqual(['settings']);
   });
 
+  it('should tell board reload listeners the board id each time its file changes', async () => {
+    await start();
+    const listener = vi.fn();
+    store.onBoardReload(listener);
+
+    server.reload('boards/settings.html');
+    server.reload('boards/settings.html');
+    server.reload('index.json');
+    await settle();
+
+    expect(listener.mock.calls).toEqual([['settings'], ['settings']]);
+  });
+
   it('should re-read the index when index.json changes', async () => {
     await start();
     server.index = buildIndex({ title: 'Renamed' });

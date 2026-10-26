@@ -68,6 +68,8 @@ export class BoardStore {
     };
     /** @type {Set<() => void>} */
     this.listeners = new Set();
+    /** @type {Set<(boardId: string) => void>} */
+    this.boardReloadListeners = new Set();
     dependencies.session.subscribe(() => {
       if (dependencies.session.status !== this.state.status) {
         this.merge({ status: dependencies.session.status });
@@ -97,6 +99,15 @@ export class BoardStore {
   subscribe(listener) {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  /**
+   * @param {(boardId: string) => void} listener called each time a board's file changes
+   * @returns {() => void} unsubscribe
+   */
+  onBoardReload(listener) {
+    this.boardReloadListeners.add(listener);
+    return () => this.boardReloadListeners.delete(listener);
   }
 
   /** @returns {boolean} whether the human may comment, send or accept */
@@ -181,7 +192,9 @@ export class BoardStore {
       return;
     }
     const boardId = BOARD_FILE_PATTERN.exec(file)?.[1];
-    if (boardId !== undefined) this.markUpdated(boardId);
+    if (boardId === undefined) return;
+    this.markUpdated(boardId);
+    for (const listener of [...this.boardReloadListeners]) listener(boardId);
   }
 
   /**
