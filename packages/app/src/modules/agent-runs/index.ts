@@ -1,4 +1,5 @@
 import type { CommandLabeler } from './business/port/label/command-labeler.js';
+import type { DesignCopier } from './business/port/design/design-copier.js';
 import type { CommandLabelRepository } from './business/port/repository/command-label-repository.js';
 import type { AgentSessions } from './business/port/session/agent-sessions.js';
 import type { RunAnswerWaits } from './business/port/repository/run-answer-waits.js';
@@ -21,6 +22,7 @@ import { InMemorySessionFeed } from './infrastructure/session/in-memory-session-
 import { ClaudeAgentSdkCommandLabeler } from './infrastructure/label/claude-agent-sdk-command-labeler.js';
 import { ClaudeAgentSdkSessions } from './infrastructure/session/claude-agent-sdk-sessions.js';
 import { ClaudeAgentSdkRunTranscripts } from './infrastructure/transcript/claude-agent-sdk-run-transcripts.js';
+import { FileSystemDesignCopier } from './infrastructure/design/file-system-design-copier.js';
 import { GitCliWorktrees } from './infrastructure/worktree/git-cli-worktrees.js';
 import { createAgentRunsRoutes } from './presentation/api/agent-runs-routes.js';
 import { createAgentRunsAbortSessionsJob } from './presentation/cron/agent-runs-abort-sessions-job.js';
@@ -61,6 +63,7 @@ type AgentRunsInfrastructure = {
   readonly sessionFeed: SessionFeed;
   readonly commandLabelRepository: CommandLabelRepository;
   readonly commandLabeler: CommandLabeler;
+  readonly designCopier: DesignCopier;
 };
 
 const answerTimeoutMarginMilliseconds = 600_000;
@@ -89,6 +92,7 @@ export function createAgentRunsModule(
       claudeExecutablePath: dependencies.claudeExecutablePath,
       timeoutMilliseconds: commandLabelTimeoutMilliseconds,
     }),
+    designCopier: new FileSystemDesignCopier(),
     ...overrides,
   };
   const { runRepository, agentSessions, runAnswerWaits } = infrastructure;
