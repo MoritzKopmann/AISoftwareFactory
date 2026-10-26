@@ -256,16 +256,77 @@ describe('board panel', () => {
     expect(findAccept().disabled).toBe(true);
   });
 
-  it('should hide the dropped warning when nothing is unsent', async () => {
+  it('should save board.sentRound at once when a send is delivered', async () => {
+    await load();
+    store.update({ pins: [buildPin(), buildPin({ n: 2 })] });
+    aisf.saves.length = 0;
+
+    await click(findSend());
+
+    expect(aisf.saves.length).toBeGreaterThan(0);
+    expect(aisf.lastSave).toMatchObject({ board: { sentRound: 2 } });
+  });
+
+  it('should save board.acceptedRound at once when an accept is delivered', async () => {
+    await load();
+    aisf.saves.length = 0;
+
+    await click(findAccept());
+
+    expect(aisf.lastSave).toMatchObject({ board: { acceptedRound: 2 } });
+  });
+
+  it('should accept with no prompt when only sent comments exist in a later round', async () => {
+    await load();
+    store.update({ pins: [buildPin(), buildPin({ n: 2 })] });
+    await click(findSend());
+    aisf.draft = aisf.lastSave;
+    aisf.sent.length = 0;
+    pageSession().dispose();
+    startPage(aisf);
+    document.body.innerHTML = '<aside id="board-panel"></aside>';
+    server.index = buildIndex({
+      round: 3,
+      brief: 'Settings page for one project.',
+      boards: [{ id: 'default', title: 'Default', w: 1280, h: 800, note: '' }],
+    });
+    store = new BoardStore({ session: pageSession(), ...server.dependencies() });
+    mountBoardPanel($('#board-panel'), store, pageSession());
     await load();
 
     await click(findAccept());
 
-    expect($('.board-unsent').hidden).toBe(true);
+    expect($$('.board-pin-earlier')).toHaveLength(2);
+    expect(aisf.sent).toEqual([{ kind: 'design-accepted', round: 3, payload: { round: 3 } }]);
+    expect(findConfirm().hidden).toBe(true);
+  });
+
+  it('should read Accept design… only when comments are unsent', async () => {
+    await load();
+    const before = findAccept().textContent;
+
+    store.update({ pins: [buildPin()] });
+
+    expect(before).toBe('Accept design');
+    expect(findAccept().textContent).toBe('Accept design…');
+  });
+
+  it('should show the busy refusal when a one-click accept is refused', async () => {
+    await load();
+    aisf.sendResult = { ok: false, status: 'busy' };
+
+    await click(findAccept());
+
+    expect($('[role="alert"]').textContent).toBe(
+      'Not sent: the session is busy. Try again in a moment.',
+    );
+    expect(store.get().acceptedRound).toBeNull();
+    expect(findConfirm().hidden).toBe(true);
   });
 
   it('should close the confirm when Cancel is clicked', async () => {
     await load();
+    store.update({ pins: [buildPin()] });
     await click(findAccept());
 
     await click($('.board-confirm-cancel'));
