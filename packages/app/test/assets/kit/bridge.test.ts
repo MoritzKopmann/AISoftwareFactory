@@ -97,6 +97,17 @@ describe('bridge.js', () => {
       expect(loaded).toEqual({ q1: 'yes' });
     });
 
+    it('should send the draft PUT with keepalive when a draft is saved', async () => {
+      await loadBridge();
+
+      await aisf().userInputState.save({ q1: 'yes' });
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        './_user-input-state',
+        expect.objectContaining({ method: 'PUT', keepalive: true }),
+      );
+    });
+
     it('should resolve to null when the server has no draft', async () => {
       await loadBridge();
 

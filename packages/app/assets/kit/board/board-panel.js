@@ -196,7 +196,7 @@ function listenToControls(parts, store, session) {
   parts.list.addEventListener('input', (event) => editPinText(store, event.target));
   parts.list.addEventListener('click', (event) => removeClickedPin(store, event.target));
   parts.send.addEventListener('click', () => void sendFeedback(store, session));
-  parts.accept.addEventListener('click', () => store.update({ confirming: true, refused: null }));
+  parts.accept.addEventListener('click', () => void startAccept(store, session));
   parts.confirmAccept.addEventListener('click', () => void acceptDesign(store, session));
   parts.confirmCancel.addEventListener('click', () => store.update({ confirming: false }));
 }
@@ -396,6 +396,7 @@ function fillParts(parts, { state, index, isInputOn, mode }) {
   parts.unsent.textContent = describeUnsent(unsentCount);
   parts.send.textContent = `Send feedback (${state.pins.length} pinned)`;
   parts.send.disabled = !isInputOn || unsentCount === 0;
+  parts.accept.textContent = unsentCount === 0 ? 'Accept design' : 'Accept design…';
   parts.accept.hidden = mode === 'accepted';
   parts.accept.disabled = !isInputOn || state.confirming;
 }
@@ -553,6 +554,7 @@ async function sendFeedback(store, session) {
   await session.saveNow();
   await deliver(
     store,
+    session,
     () => session.send({ kind: 'design-feedback', round: index.round, payload }),
     { updated: [] },
     async () => {
@@ -560,6 +562,19 @@ async function sendFeedback(store, session) {
       await session.saveNow();
     },
   );
+}
+
+/**
+ * Accepts at once when nothing is unsent, otherwise asks to drop the unsent comments.
+ * @param {BoardStore} store
+ * @param {PageSession} session
+ */
+async function startAccept(store, session) {
+  if (countUnsent(store.get()) === 0) {
+    await acceptDesign(store, session);
+    return;
+  }
+  store.update({ confirming: true, refused: null });
 }
 
 /**
@@ -572,6 +587,7 @@ async function acceptDesign(store, session) {
   const payload = { round: index.round };
   await deliver(
     store,
+    session,
     () => session.send({ kind: 'design-accepted', round: index.round, payload }),
     {
       acceptedRound: index.round,
@@ -584,15 +600,18 @@ async function acceptDesign(store, session) {
 /**
  * Sends one event. Applies `deliveredPatch` once it is delivered, otherwise records the refusal.
  * @param {BoardStore} store
+ * @param {PageSession} session
  * @param {() => Promise<SendResult | undefined>} send
  * @param {Partial<BoardState>} deliveredPatch
  * @param {() => Promise<void>} [undo] runs first when the send is refused
  */
-async function deliver(store, send, deliveredPatch, undo) {
+async function deliver(store, session, send, deliveredPatch, undo) {
   store.update({ refused: null });
   const refused = await sendForRefusal(send);
   if (refused === null) {
     store.update({ ...deliveredPatch, commenting: false, confirming: false });
+    // The ticket page may remove this page at once; a delayed save would be lost.
+    await session.saveNow();
     return;
   }
   await undo?.();

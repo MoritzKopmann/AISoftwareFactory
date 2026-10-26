@@ -81,6 +81,8 @@
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(value),
+        // Survives the ticket page removing this page right after a Send.
+        keepalive: true,
       });
       if (!response.ok) {
         throw new Error(`Saving the draft failed: ${response.status}`);
