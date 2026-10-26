@@ -1,0 +1,145 @@
+/* The board page's canvas. Linked from board.html only. Colours are kit tokens; the pin halo is
+   the one hardcoded exception, so it reads on any board in either theme. */
+
+#board-canvas {
+  overflow: auto;
+  padding: 24px 16px 64px;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--muted) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--muted) 10%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.canvas-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.canvas-section {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.canvas-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.canvas-num {
+  font: 700 12px var(--font-mono);
+  color: var(--accent);
+}
+
+.canvas-title {
+  margin: 0;
+  font: 700 14px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.canvas-dims {
+  font: 500 11px var(--font-mono);
+  color: var(--muted);
+}
+
+.canvas-updated {
+  padding: 1px 6px;
+  border-radius: 0;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font: 700 11px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.canvas-note {
+  margin: 0;
+  max-width: 760px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.canvas-frames {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+  min-width: 0;
+}
+
+.canvas-frame-wrap {
+  display: grid;
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.canvas-frame-label {
+  font: 500 11px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* Width and height are the board's size times the zoom, set by board-canvas.js. */
+.canvas-frame {
+  position: relative;
+  flex: none;
+  border: 1px solid var(--border-strong);
+  overflow: hidden;
+}
+
+/* Width, height and scale are set by board-canvas.js. */
+.canvas-doc {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  transform-origin: 0 0;
+}
+
+/* Covers the board, so wheel events reach the page and clicks place pins. */
+.canvas-hit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: crosshair;
+}
+
+.canvas-hit:disabled {
+  cursor: default;
+}
+
+/* Left and top are the pin's board point times the zoom; the marker sits above-right of it. */
+.canvas-pin {
+  position: absolute;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  margin: -24px 0 0 -2px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  font: 700 11px / 20px var(--font-mono);
+  text-align: center;
+  pointer-events: none;
+}
+
+.canvas-pin[data-tone='hitl'] {
+  background: var(--hitl);
+  color: var(--accent-ink);
+}
+
+.canvas-pin[data-tone='muted'] {
+  background: var(--muted);
+  color: var(--surface);
+}
