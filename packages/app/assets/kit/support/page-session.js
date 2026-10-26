@@ -3,7 +3,7 @@
 import { isRecord } from './dom.js';
 
 /** @typedef {'open' | 'busy' | 'closed'} PageStatus */
-/** @typedef {{ kind: 'submit' | 'confirm' | 'reopen', round: number, payload: unknown }} PageEvent */
+/** @typedef {{ kind: 'submit' | 'confirm' | 'reopen' | 'design-feedback' | 'design-accepted', round: number, payload: unknown }} PageEvent */
 /** @typedef {{ ok: true } | { ok: false, status: 'busy' | 'closed' }} SendResult */
 /**
  * @typedef {object} Aisf

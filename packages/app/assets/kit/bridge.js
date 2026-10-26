@@ -119,7 +119,7 @@
    * session. Resolves `{ok: true}` once delivered, or `{ok: false, status}` when
    * the page is `busy` (keep the draft, retry) or `closed`. Rejects on any other
    * failure.
-   * @param {{ kind: 'submit' | 'confirm' | 'reopen', round: number, payload: unknown }} event
+   * @param {{ kind: 'submit' | 'confirm' | 'reopen' | 'design-feedback' | 'design-accepted', round: number, payload: unknown }} event
    * @returns {Promise<{ ok: true } | { ok: false, status: 'busy' | 'closed' }>}
    */
   async function send(event) {
