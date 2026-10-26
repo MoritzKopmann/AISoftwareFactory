@@ -60,6 +60,82 @@ Anything not in this table gets a failing test first.
 - The bus in tests is the real `InMemoryEventBus` from `shared/`. It has no I/O, so it isn't faked.
 - **Until a module migrates,** its tests, fakes and fixtures stay in `packages/app/test/` in the old layout (`logic/`, `infra/`, `api/`).
 
+## Visual rendering
+
+Render one `packages/ui` component to PNG: a throwaway Vite page plus headless Chrome. No new
+dependency.
+
+**Render target:** a harness in `packages/ui/.aisf/render/`. `.aisf/` is gitignored, so it is
+never committed. It has three parts:
+
+- `aisf`: a symlink to the kit, so `/aisf/kit.css` and `/aisf/fonts/…` resolve as in the app:
+  `ln -s ../../../app/assets/kit packages/ui/.aisf/render/aisf`
+- `index.html`:
+
+  ```html
+  <!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <link rel="stylesheet" href="/aisf/kit.css" />
+    </head>
+    <body>
+      <div id="root"></div>
+      <script type="module" src="./render.tsx"></script>
+    </body>
+  </html>
+  ```
+
+- `render.tsx`: imports `../../src/app.css` and the component, reads `theme` and `state` from
+  the query string, and mounts the component with that state's props in a box of the real
+  width:
+
+  ```tsx
+  import { createRoot } from 'react-dom/client';
+  import '../../src/app.css';
+  import { HeldStatus } from '../../src/tickets/held-status.js';
+
+  const params = new URLSearchParams(location.search);
+  document.documentElement.dataset.theme = params.get('theme') ?? 'light';
+  const states = {
+    default: <HeldStatus />,
+    timed: <HeldStatus heldUntilLabel="14:30" />,
+  };
+  const state = (params.get('state') ?? 'default') as keyof typeof states;
+
+  createRoot(document.getElementById('root')!).render(
+    <div style={{ width: 824, padding: 16 }}>{states[state]}</div>,
+  );
+  ```
+
+  One entry in `states` per state the leaf lists.
+
+**Command:** start Vite from `packages/ui`, in the background:
+
+    npx vite .aisf/render --config vite.config.ts --port 5199 --strictPort
+
+Then one PNG per state and theme. The window is the box width plus padding, and tall enough
+for the state:
+
+    google-chrome --headless --disable-gpu --hide-scrollbars --window-size=856,400 --virtual-time-budget=3000 --screenshot=<abs path>.png "http://localhost:5199/?state=<state>&theme=<theme>"
+
+The mock renders the same way: `file://<abs path to the mock>` in place of the URL. Stop Vite
+when done.
+
+**Themes:** `?theme=light` and `?theme=dark` set `data-theme` on `<html>`. `kit.css` and
+`app.css` both key dark mode on it.
+
+**Gotchas:**
+
+- Without `--virtual-time-budget`, the PNG can be taken before the kit fonts load.
+- Mount the component that takes its state as props. One that fetches has no API here: render
+  its view with each described state instead.
+- `--screenshot` captures the window only. Too short cuts the component; too tall leaves `--bg`
+  below it.
+- Chrome renders at 1×, so 1 px in the PNG is 1 CSS px.
+- Pass one plain absolute path to `--screenshot`. A shell variable in the command can trip the
+  sandbox check of an isolated session.
+
 ## Load also
 
 None yet.
