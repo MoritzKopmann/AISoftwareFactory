@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { readFile, realpath, rename, stat, writeFile } from 'node:fs/promises';
-import { join, sep } from 'node:path';
+import { readdir, readFile, realpath, rename, stat, writeFile } from 'node:fs/promises';
+import { extname, join, sep } from 'node:path';
 import type { ArtifactFiles } from '../../business/port/file/artifact-files.js';
 
 const indexName = 'index.html';
 const designIndexName = 'index.json';
 const boardShellName = 'board.html';
 const userInputStateFileName = 'user-input-state.json';
+
+const imageExtensions: ReadonlyArray<string> = ['.png', '.jpg', '.jpeg', '.webp', '.svg'];
 
 const missingFileCodes: ReadonlyArray<string> = [
   'ENOENT',
@@ -46,6 +48,19 @@ async function readTextOrUndefined(path: string): Promise<string | undefined> {
   }
 }
 
+/** True when `name` resolves, through symlinks, to a file inside the real directory. */
+async function isContainedFile(realDirectory: string, name: string): Promise<boolean> {
+  try {
+    const realFile = await realpath(join(realDirectory, name));
+    return realFile.startsWith(realDirectory + sep) && (await stat(realFile)).isFile();
+  } catch (error) {
+    if (isMissingFileError(error)) {
+      return false;
+    }
+    throw error;
+  }
+}
+
 export class FileSystemArtifactFiles implements ArtifactFiles {
   constructor(private readonly options: { readonly kitDirectory: string }) {}
 
@@ -77,6 +92,24 @@ export class FileSystemArtifactFiles implements ArtifactFiles {
     } catch (error) {
       if (isMissingFileError(error)) {
         return undefined;
+      }
+      throw error;
+    }
+  }
+
+  async listImages(directory: string): Promise<ReadonlyArray<string>> {
+    try {
+      const realDirectory = await realpath(directory);
+      const names = (await readdir(realDirectory)).filter((name) =>
+        imageExtensions.includes(extname(name).toLowerCase()),
+      );
+      const contained = await Promise.all(
+        names.map((name) => isContainedFile(realDirectory, name)),
+      );
+      return names.filter((_, index) => contained[index]).sort();
+    } catch (error) {
+      if (isMissingFileError(error)) {
+        return [];
       }
       throw error;
     }

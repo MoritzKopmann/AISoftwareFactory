@@ -108,4 +108,42 @@ describe('FileSystemArtifactFiles', () => {
       expect(readdirSync(directory)).toEqual(['user-input-state.json']);
     });
   });
+
+  describe('listImages', () => {
+    it('should list image names sorted when the folder holds images, other files and a subfolder', async () => {
+      writeFileSync(join(directory, 'b.png'), 'x');
+      writeFileSync(join(directory, 'a.svg'), 'x');
+      writeFileSync(join(directory, 'notes.txt'), 'x');
+      mkdirSync(join(directory, 'x'));
+      writeFileSync(join(directory, 'x', 'c.png'), 'x');
+
+      expect(await files.listImages(directory)).toEqual(['a.svg', 'b.png']);
+    });
+
+    it('should return an empty list when the folder does not exist', async () => {
+      expect(await files.listImages(join(root, 'gone'))).toEqual([]);
+    });
+
+    it('should match every image kind regardless of case', async () => {
+      for (const name of ['a.PNG', 'b.jpg', 'c.JPEG', 'd.webp', 'e.SVG']) {
+        writeFileSync(join(directory, name), 'x');
+      }
+
+      expect(await files.listImages(directory)).toEqual([
+        'a.PNG',
+        'b.jpg',
+        'c.JPEG',
+        'd.webp',
+        'e.SVG',
+      ]);
+    });
+
+    it('should skip a symlink that leaves the folder', async () => {
+      writeFileSync(join(root, 'outside.png'), 'x');
+      writeFileSync(join(directory, 'in.png'), 'x');
+      symlinkSync(join(root, 'outside.png'), join(directory, 'link.png'));
+
+      expect(await files.listImages(directory)).toEqual(['in.png']);
+    });
+  });
 });

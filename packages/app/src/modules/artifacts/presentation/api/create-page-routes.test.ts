@@ -180,7 +180,7 @@ describe('createPageRoutes', () => {
     });
 
     it('should store the state when the page is busy', async () => {
-      runPort.latestRun = { id: 'r2', state: 'running' };
+      runPort.latestRun = { id: 'r2', worktreePath: '/w', state: 'running' };
 
       expect((await put(hostHeaders)).status).toBeLessThan(300);
     });
@@ -213,6 +213,7 @@ describe('createPageRoutes', () => {
   describe('POST /:token/_events', () => {
     const waiting: TicketLatestRun = {
       id: 'r1',
+      worktreePath: '/w',
       state: 'running',
       waitingFor: { artifactId: 'plan' },
     };
@@ -253,6 +254,7 @@ describe('createPageRoutes', () => {
     it('should answer 201 when the run ended at a checkpoint on the page', async () => {
       runPort.latestRun = {
         id: 'r1',
+        worktreePath: '/w',
         state: 'ended',
         ending: { kind: 'checkpoint', artifactId: 'plan' },
       };
@@ -262,7 +264,12 @@ describe('createPageRoutes', () => {
     });
 
     it('should answer 409 closed and deliver nothing when the run ended other than at a checkpoint', async () => {
-      runPort.latestRun = { id: 'r1', state: 'ended', ending: { kind: 'done' } };
+      runPort.latestRun = {
+        id: 'r1',
+        worktreePath: '/w',
+        state: 'ended',
+        ending: { kind: 'done' },
+      };
 
       const response = await post(submit);
 
@@ -274,7 +281,7 @@ describe('createPageRoutes', () => {
     it('should answer 409 closed when the same submit is posted again after delivery', async () => {
       runPort.latestRun = waiting;
       await post(submit);
-      runPort.latestRun = { id: 'r1', state: 'running' };
+      runPort.latestRun = { id: 'r1', worktreePath: '/w', state: 'running' };
 
       const response = await post(submit);
 
@@ -284,7 +291,7 @@ describe('createPageRoutes', () => {
     });
 
     it('should answer 409 busy and deliver nothing when another run is running', async () => {
-      runPort.latestRun = { id: 'r2', state: 'running' };
+      runPort.latestRun = { id: 'r2', worktreePath: '/w', state: 'running' };
 
       const response = await post(submit);
 
@@ -339,6 +346,7 @@ describe('createPageRoutes', () => {
     it('should answer the status and version when the publishing run waits on the page', async () => {
       const waiting: TicketLatestRun = {
         id: 'r1',
+        worktreePath: '/w',
         state: 'running',
         waitingFor: { artifactId: 'plan' },
       };
@@ -410,7 +418,12 @@ describe('createPageRoutes', () => {
     });
 
     it('should answer 201 when a design-accepted event is posted', async () => {
-      runPort.latestRun = { id: 'r1', state: 'running', waitingFor: { artifactId: 'design' } };
+      runPort.latestRun = {
+        id: 'r1',
+        worktreePath: '/w',
+        state: 'running',
+        waitingFor: { artifactId: 'design' },
+      };
 
       const response = await boardApp.request('/a/B/_events', {
         method: 'POST',
