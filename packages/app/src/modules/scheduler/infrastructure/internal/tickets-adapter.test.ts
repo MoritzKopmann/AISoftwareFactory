@@ -28,6 +28,20 @@ describe('TicketsAdapter', () => {
       });
     });
 
+    it('should carry the parent number when the ticket has a parent', async () => {
+      const adapter = new TicketsAdapter(
+        new FakeTicketsApi(buildTicketDto({ number: 41, parent: { number: 40, title: 'Epic' } })),
+      );
+
+      expect(await adapter.find('moritz/aisf', 41)).toMatchObject({ parentNumber: 40 });
+    });
+
+    it('should leave out the parent number when the ticket has no parent', async () => {
+      const adapter = new TicketsAdapter(new FakeTicketsApi(buildTicketDto({ number: 40 })));
+
+      expect(await adapter.find('moritz/aisf', 40)).not.toHaveProperty('parentNumber');
+    });
+
     it('should flag an open blocker and sub-issues when the ticket has them', async () => {
       const ticket = buildTicketDto({
         subIssueNumbers: [9],
