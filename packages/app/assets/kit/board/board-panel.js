@@ -9,6 +9,7 @@ import { boardStore } from './board-store.js';
 /** @typedef {import('./board-store.js').BoardMode} BoardMode */
 /** @typedef {import('./board-store.js').Pin} Pin */
 /** @typedef {import('./board-store.js').EarlierPin} EarlierPin */
+/** @typedef {import('./board-store.js').EarlierMessage} EarlierMessage */
 /** @typedef {import('../support/page-session.js').PageSession} PageSession */
 /** @typedef {import('../support/page-session.js').SendResult} SendResult */
 /** @typedef {(pin: Pin, where: string) => HTMLElement} PinRowBuilder */
@@ -230,7 +231,13 @@ function createRenderer(parts, store) {
     if (nextListKey !== listKey) {
       listKey = nextListKey;
       const buildRow = isInputOn ? buildEditablePinRow : buildReadOnlyPinRow;
-      fillList(parts.list, { index, pins: state.pins, earlier: state.earlier, buildRow });
+      fillList(parts.list, {
+        index,
+        pins: state.pins,
+        earlier: state.earlier,
+        earlierMessages: state.earlierMessages,
+        buildRow,
+      });
     } else {
       syncPinTexts(parts.list, state.pins);
     }
@@ -248,21 +255,30 @@ function createRenderer(parts, store) {
 function describeListKey(state, index, isInputOn) {
   const pins = state.pins.map((pin) => [pin.n, pin.board, pin.theme, pin.x, pin.y]);
   const titles = index.boards.map((board) => [board.id, board.title]);
-  return JSON.stringify({ pins, earlier: state.earlier, isInputOn, titles });
+  return JSON.stringify({
+    pins,
+    earlier: state.earlier,
+    earlierMessages: state.earlierMessages,
+    isInputOn,
+    titles,
+  });
 }
 
 /**
  * @param {HTMLElement} list
- * @param {{ index: BoardIndex, pins: Pin[], earlier: EarlierPin[], buildRow: PinRowBuilder }} content
+ * @param {{ index: BoardIndex, pins: Pin[], earlier: EarlierPin[], earlierMessages: EarlierMessage[], buildRow: PinRowBuilder }} content
  */
-function fillList(list, { index, pins, earlier, buildRow }) {
+function fillList(list, { index, pins, earlier, earlierMessages, buildRow }) {
   /** @type {HTMLElement[]} */
   const children = pins.map((pin) => buildRow(pin, describeWhere(index, pin)));
   if (pins.length === 0) children.push(buildElement('p', 'board-pins-empty', 'No pins yet.'));
-  if (earlier.length > 0) {
+  if (earlier.length + earlierMessages.length > 0) {
     children.push(buildElement('h3', 'board-earlier-heading', 'Earlier rounds'));
     for (const pin of earlier) {
       children.push(buildEarlierRow(pin, `Round ${pin.round} · ${describeWhere(index, pin)}`));
+    }
+    for (const { round, text } of earlierMessages) {
+      children.push(buildEarlierMessageRow(`Round ${round} · Whole design`, text));
     }
   }
   list.replaceChildren(...children);
@@ -318,6 +334,23 @@ function buildEarlierRow(pin, where) {
     buildElement('p', 'board-pin-read', pin.text),
   );
   row.append(buildElement('span', 'board-pin-badge', String(pin.n)), body);
+  return row;
+}
+
+/**
+ * @param {string} where
+ * @param {string} text
+ * @returns {HTMLElement}
+ */
+function buildEarlierMessageRow(where, text) {
+  const row = buildElement('div', 'board-pin board-pin-earlier');
+  row.setAttribute('role', 'listitem');
+  const body = buildElement('div', 'board-pin-body');
+  body.append(
+    buildElement('span', 'board-pin-where', where),
+    buildElement('p', 'board-pin-read', text),
+  );
+  row.append(body);
   return row;
 }
 
@@ -512,12 +545,17 @@ async function sendFeedback(store, session) {
     text: pin.text,
   }));
   const payload = { round: index.round, comments, message };
+  // Saved before the POST: the answer lets the ticket page remove this board before the
+  // debounced save would run.
+  store.update({ sentRound: index.round });
+  await session.saveNow();
   await deliver(
     store,
     () => session.send({ kind: 'design-feedback', round: index.round, payload }),
-    {
-      sentRound: index.round,
-      updated: [],
+    { updated: [] },
+    async () => {
+      store.update({ sentRound: null });
+      await session.saveNow();
     },
   );
 }
@@ -546,14 +584,16 @@ async function acceptDesign(store, session) {
  * @param {BoardStore} store
  * @param {() => Promise<SendResult | undefined>} send
  * @param {Partial<BoardState>} deliveredPatch
+ * @param {() => Promise<void>} [undo] runs first when the send is refused
  */
-async function deliver(store, send, deliveredPatch) {
+async function deliver(store, send, deliveredPatch, undo) {
   store.update({ refused: null });
   const refused = await sendForRefusal(send);
   if (refused === null) {
     store.update({ ...deliveredPatch, commenting: false, confirming: false });
     return;
   }
+  await undo?.();
   store.update({ refused });
 }
 
