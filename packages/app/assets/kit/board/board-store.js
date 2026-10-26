@@ -6,12 +6,14 @@ import { pageSession } from '../support/page-session.js';
 /** @typedef {{ title: string, brief: string, round: number, boards: Board[] }} BoardIndex */
 /** @typedef {{ n: number, board: string, theme: string, x: number, y: number, text: string }} Pin */
 /** @typedef {Pin & { round: number }} EarlierPin */
+/** @typedef {{ round: number, text: string }} EarlierMessage */
 /**
  * The fields saved through `pageSession()` under `state.board`.
  * @typedef {object} BoardDraft
  * @property {Pin[]} pins this round
  * @property {string} message
  * @property {EarlierPin[]} earlier
+ * @property {EarlierMessage[]} earlierMessages whole-design messages of sent rounds
  * @property {string[]} updated board ids changed since the last feedback
  * @property {number | null} sentRound
  * @property {number | null} acceptedRound
@@ -35,7 +37,15 @@ import { pageSession } from '../support/page-session.js';
  */
 
 /** @type {ReadonlyArray<keyof BoardDraft>} */
-const draftKeys = ['pins', 'message', 'earlier', 'updated', 'sentRound', 'acceptedRound'];
+const draftKeys = [
+  'pins',
+  'message',
+  'earlier',
+  'earlierMessages',
+  'updated',
+  'sentRound',
+  'acceptedRound',
+];
 const NOT_FOUND_STATUS = 404;
 const BOARD_FILE_PATTERN = /^boards\/(.+)\.html$/;
 
@@ -164,9 +174,13 @@ export class BoardStore {
   riseRound() {
     const overtakenRound = findOvertakenSentRound(this.state);
     if (overtakenRound === undefined) return;
-    const { pins, earlier } = this.state;
+    const { pins, earlier, earlierMessages, message } = this.state;
     this.update({
       earlier: [...earlier, ...pins.map((pin) => ({ ...pin, round: overtakenRound }))],
+      earlierMessages:
+        message.trim() === ''
+          ? earlierMessages
+          : [...earlierMessages, { round: overtakenRound, text: message }],
       pins: [],
       message: '',
       sentRound: null,
@@ -209,7 +223,15 @@ export class BoardStore {
 
 /** @returns {BoardDraft} */
 function buildEmptyDraft() {
-  return { pins: [], message: '', earlier: [], updated: [], sentRound: null, acceptedRound: null };
+  return {
+    pins: [],
+    message: '',
+    earlier: [],
+    earlierMessages: [],
+    updated: [],
+    sentRound: null,
+    acceptedRound: null,
+  };
 }
 
 /**
@@ -233,6 +255,9 @@ function readDraft(saved) {
     pins: Array.isArray(saved['pins']) ? saved['pins'] : draft.pins,
     message: typeof saved['message'] === 'string' ? saved['message'] : draft.message,
     earlier: Array.isArray(saved['earlier']) ? saved['earlier'] : draft.earlier,
+    earlierMessages: Array.isArray(saved['earlierMessages'])
+      ? saved['earlierMessages']
+      : draft.earlierMessages,
     updated: Array.isArray(saved['updated']) ? saved['updated'] : draft.updated,
     sentRound: readRound(saved['sentRound']),
     acceptedRound: readRound(saved['acceptedRound']),

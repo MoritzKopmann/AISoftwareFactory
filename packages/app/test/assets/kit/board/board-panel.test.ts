@@ -319,6 +319,60 @@ describe('board panel', () => {
     expect($$('textarea, button', earlier[0])).toEqual([]);
   });
 
+  it('should list an earlier message read-only under Whole design with no field or Remove', async () => {
+    await load();
+
+    store.update({ earlierMessages: [{ round: 1, text: 'Make it calmer' }] });
+
+    const earlier = $$('.board-pin-earlier');
+    expect($('.board-earlier-heading').textContent).toBe('Earlier rounds');
+    expect($('.board-pin-where', earlier[0]).textContent).toBe('Round 1 · Whole design');
+    expect($('.board-pin-read', earlier[0]).textContent).toBe('Make it calmer');
+    expect($$('textarea, button', earlier[0])).toEqual([]);
+  });
+
+  it('should save the sent round before the POST goes out when Send is clicked', async () => {
+    await load();
+    store.update({ message: 'Make it calmer' });
+    let savedAtSend: unknown;
+    aisf.send = async () => {
+      savedAtSend = aisf.lastSave;
+      return { ok: true };
+    };
+
+    await click(findSend());
+
+    expect(savedAtSend).toMatchObject({ board: { sentRound: 2, message: 'Make it calmer' } });
+  });
+
+  it('should move the sent message to earlier rounds when the board restarts at the next round', async () => {
+    await load();
+    store.update({ message: 'Make it calmer' });
+    await click(findSend());
+    aisf.draft = aisf.lastSave;
+    server.index = buildIndex({ round: 3 });
+
+    const next = new BoardStore({ session: pageSession(), ...server.dependencies() });
+    await next.start();
+
+    expect(next.get()).toMatchObject({
+      message: '',
+      earlierMessages: [{ round: 2, text: 'Make it calmer' }],
+    });
+  });
+
+  it('should save sentRound null and keep the draft when the bridge answers busy', async () => {
+    await load();
+    store.update({ pins: [buildPin({ text: 'Too narrow' })], message: 'Calmer' });
+    aisf.sendResult = { ok: false, status: 'busy' };
+
+    await click(findSend());
+
+    expect(aisf.lastSave).toMatchObject({
+      board: { sentRound: null, message: 'Calmer', pins: [buildPin({ text: 'Too narrow' })] },
+    });
+  });
+
   it.each([
     { name: 'revising', patch: { sentRound: 2 } },
     { name: 'accepted', patch: { acceptedRound: 2 } },

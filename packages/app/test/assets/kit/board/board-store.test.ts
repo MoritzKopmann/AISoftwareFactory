@@ -72,6 +72,39 @@ describe('BoardStore', () => {
     });
   });
 
+  it('should move the sent message to earlierMessages when a new round starts', async () => {
+    aisf.draft = { rounds: {}, board: { message: 'Make it calmer', sentRound: 1 } };
+    server.index = buildIndex({ round: 2 });
+
+    await start();
+
+    expect(store.get()).toMatchObject({
+      message: '',
+      earlierMessages: [{ round: 1, text: 'Make it calmer' }],
+    });
+  });
+
+  it('should add no earlier message when the sent message is blank', async () => {
+    aisf.draft = { rounds: {}, board: { message: '   ', sentRound: 1 } };
+    server.index = buildIndex({ round: 2 });
+
+    await start();
+
+    expect(store.get().earlierMessages).toEqual([]);
+  });
+
+  it.each([{ board: { sentRound: null } }, { board: { earlierMessages: 'x' } }])(
+    'should read earlierMessages as empty when the saved draft is $board',
+    async ({ board }) => {
+      aisf.draft = { rounds: {}, board };
+      server.index = buildIndex({ round: 1 });
+
+      await start();
+
+      expect(store.get().earlierMessages).toEqual([]);
+    },
+  );
+
   it.each([
     { sentRound: null, acceptedRound: null, mode: 'yourTurn' },
     { sentRound: 2, acceptedRound: null, mode: 'revising' },
