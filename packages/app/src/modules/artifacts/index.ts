@@ -3,6 +3,7 @@ import type { DesignWatcher } from './business/port/watch/design-watcher.js';
 import type { ArtifactRepository } from './business/port/repository/artifact-repository.js';
 import { ArtifactService } from './business/service/artifact-service.js';
 import { PageService } from './business/service/page-service.js';
+import { TicketImageService } from './business/service/ticket-image-service.js';
 import { FileSystemArtifactFiles } from './infrastructure/file/file-system-artifact-files.js';
 import { AgentRunsAdapter } from './infrastructure/internal/agent-runs-adapter.js';
 import { SchedulerAdapter } from './infrastructure/internal/scheduler-adapter.js';
@@ -60,6 +61,8 @@ export function createArtifactsModule(
     designWatcher,
   });
 
+  const ticketImageService = new TicketImageService({ runPort, artifactFiles });
+
   dependencies.agentTools.register(createShowArtifactTool(artifactService));
 
   return {
@@ -67,6 +70,7 @@ export function createArtifactsModule(
       kitDirectory: dependencies.kitDirectory,
       artifactService,
       pageService,
+      ticketImageService,
     }),
     jobs: {},
     internal: new ArtifactsFacade(),
