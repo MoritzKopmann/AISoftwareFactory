@@ -1504,6 +1504,77 @@ details:not([open]) .t-hide {
   overflow-wrap: anywhere;
 }
 
+.image-viewer[open] {
+  position: fixed;
+  inset: 24px;
+  display: flex;
+  flex-direction: column;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.image-viewer::backdrop {
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+}
+
+.iv-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 8px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.iv-title {
+  flex: 1;
+  margin: 0;
+  font: 700 13px var(--font-mono);
+  text-transform: none;
+  letter-spacing: normal;
+  text-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+
+.iv-close {
+  min-width: 48px;
+  min-height: 48px;
+  padding: 6px 14px;
+}
+
+.iv-close > .iv-glyph {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.iv-stage {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  /* A sized track, so the image's max-height: 100% caps it at the stage height. */
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  place-items: center;
+  padding: 16px;
+  background: var(--surface-sunken);
+}
+
+.iv-stage > img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  border: 1px solid var(--border);
+}
+
 .inline-banner {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);

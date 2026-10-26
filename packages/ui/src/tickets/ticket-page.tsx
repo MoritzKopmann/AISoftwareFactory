@@ -17,7 +17,7 @@ import {
 import { describeSessionToggle } from './describe-session-toggle.js';
 import { DescriptionToggle } from './description-toggle.js';
 import type { TicketImage } from './fetch-ticket-images.js';
-import { ImageWindow } from './image-window.js';
+import { TicketImages } from './ticket-images.js';
 import { describeMoveToPlanAction, type MoveToPlanState } from './describe-move-to-plan-action.js';
 import { MoveToPlanAction } from './move-to-plan-action.js';
 import { moveTicketToPlan } from './move-ticket-to-plan.js';
@@ -273,8 +273,7 @@ function LoadedTicket({
                   )}
                   {slots.stack}
                   {slots.reset}
-                  {/* TODO(#752): open the image at full size. */}
-                  <ImageWindow images={images} onOpen={() => undefined} />
+                  <TicketImages images={images} />
                   {slots.lowerPanel !== undefined && (
                     <div className="tp-lower" hidden={swap.panel !== 'round'}>
                       {slots.lowerPanel}
