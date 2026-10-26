@@ -225,10 +225,7 @@ function updateSection({ board, heading, frames }, state, { zoom, hitEnabled, th
     part.document.style.transform = `scale(${zoom})`;
     part.hit.disabled = !hitEnabled;
     const isHere = (/** @type {Pin} */ pin) => pin.board === board.id && pin.theme === part.theme;
-    const markers = [
-      ...state.earlier.filter(isHere).map((pin) => buildMarker(pin, 'muted', zoom)),
-      ...state.pins.filter(isHere).map((pin) => buildMarker(pin, thisRoundTone, zoom)),
-    ];
+    const markers = state.pins.filter(isHere).map((pin) => buildMarker(pin, thisRoundTone, zoom));
     for (const old of part.frame.querySelectorAll('.canvas-pin')) old.remove();
     part.frame.append(...markers);
   }
