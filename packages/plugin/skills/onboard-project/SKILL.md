@@ -90,8 +90,11 @@ comes from the sources above.
 `project-design` is optional. Ask the owner first, as the page's first question: does the
 project have a frontend? Cards `yes` and `no`, ledger section `project-design.frontend`.
 
-- `yes` → draft the slot below, shaped by `references/shape-project-design.md`.
-- `no` → write no `project-design` slot. Never ask about it again.
+- `yes` → draft the slot below, shaped by `references/shape-project-design.md`. Also draft the
+  optional `## Visual rendering` section of `project-testing`, shaped by
+  `references/shape-project-testing.md`. It shows on the review page with that slot.
+- `no` → write no `project-design` slot and no `## Visual rendering` section. Never ask about
+  it again.
 
 | Slot             | Shape                                | File written                             |
 | ---------------- | ------------------------------------ | ---------------------------------------- |
