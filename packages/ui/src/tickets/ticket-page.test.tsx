@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { LiveUpdates } from '../live/live-updates.js';
 import type { TicketPageDescription } from './describe-ticket-page.js';
+import type { TicketImage } from './fetch-ticket-images.js';
 import { TicketPageView } from './ticket-page.js';
 
 const ignore = () => undefined;
@@ -26,7 +27,11 @@ function loaded(overrides: Partial<LoadedDescription> = {}): LoadedDescription {
   };
 }
 
-function render(description: TicketPageDescription, number = 56): string {
+function render(
+  description: TicketPageDescription,
+  number = 56,
+  images: readonly TicketImage[] = [],
+): string {
   return renderToStaticMarkup(
     <TicketPageView
       liveUpdates={liveUpdates}
@@ -34,6 +39,7 @@ function render(description: TicketPageDescription, number = 56): string {
       number={number}
       pausedUntil={undefined}
       description={description}
+      images={images}
       onRetry={ignore}
     />,
   );
@@ -49,6 +55,20 @@ describe('TicketPageView', () => {
       /<main class="page ticket-page">.*<\/header><div class="tp-cols"><div class="tp-left">.*<section class="ticket-body" id="ticket-description" aria-label="Description">.*<\/section><\/div><section class="session-panel rail-border-strong" id="ticket-session" aria-label="Session">.*role="log" aria-label="Session".*<\/section><\/div><\/main>$/,
     );
     expect(markup.match(/aria-label="Session"/g)).toHaveLength(2);
+  });
+
+  it('should show the images window in the left column before the description when the ticket has images', () => {
+    const images = [{ name: 'a.png', url: '/api/projects/o/n/tickets/56/images/a.png' }];
+
+    const markup = render(loaded(), 56, images);
+
+    expect(markup).toMatch(
+      /<div class="tp-left">(?:(?!<section class="session-panel).)*<section class="image-window"[^>]*>.*<\/section><section class="ticket-body"/,
+    );
+  });
+
+  it('should show no images window when the ticket has no images', () => {
+    expect(render(loaded())).not.toContain('image-window');
   });
 
   it('should show no description toggle when no round is up', () => {

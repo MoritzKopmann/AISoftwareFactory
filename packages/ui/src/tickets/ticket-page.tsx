@@ -16,6 +16,8 @@ import {
 } from './describe-description-swap.js';
 import { describeSessionToggle } from './describe-session-toggle.js';
 import { DescriptionToggle } from './description-toggle.js';
+import type { TicketImage } from './fetch-ticket-images.js';
+import { ImageWindow } from './image-window.js';
 import { describeMoveToPlanAction, type MoveToPlanState } from './describe-move-to-plan-action.js';
 import { MoveToPlanAction } from './move-to-plan-action.js';
 import { moveTicketToPlan } from './move-ticket-to-plan.js';
@@ -25,6 +27,7 @@ import { RunSection } from './run-section.js';
 import { SessionToggle } from './session-toggle.js';
 import { TicketBodySection } from './ticket-body-section.js';
 import { ticketLiveView } from './ticket-live-view.js';
+import { useTicketImages } from './use-ticket-images.js';
 import { isRequestFailure } from '../shared/is-request-failure.js';
 
 type LoadedDescription = Extract<TicketPageDescription, { kind: 'loaded' }>;
@@ -56,6 +59,7 @@ export function TicketPage({ liveUpdates, id, number, pausedUntil }: TicketPageP
     },
     (refreshed) => setOutcome((shown) => outcomeAfterRefresh(shown, refreshed)),
   );
+  const images = useTicketImages(liveUpdates, id, number, outcome);
 
   return (
     <TicketPageView
@@ -64,6 +68,7 @@ export function TicketPage({ liveUpdates, id, number, pausedUntil }: TicketPageP
       number={number}
       pausedUntil={pausedUntil}
       description={describeTicketPage(outcome, id, number)}
+      images={images}
       onRetry={() => {
         setOutcome({ kind: 'loading' });
         retry();
@@ -78,6 +83,7 @@ type TicketPageViewProps = {
   readonly number: number;
   readonly pausedUntil: string | undefined;
   readonly description: TicketPageDescription;
+  readonly images: readonly TicketImage[];
   readonly onRetry: () => void;
 };
 
@@ -87,6 +93,7 @@ export function TicketPageView({
   number,
   pausedUntil,
   description,
+  images,
   onRetry,
 }: TicketPageViewProps) {
   return (
@@ -136,6 +143,7 @@ export function TicketPageView({
           number={number}
           pausedUntil={pausedUntil}
           description={description}
+          images={images}
           liveUpdates={liveUpdates}
         />
       )}
@@ -166,12 +174,14 @@ function LoadedTicket({
   number,
   pausedUntil,
   description,
+  images,
 }: {
   readonly liveUpdates: LiveUpdates;
   readonly projectId: string;
   readonly number: number;
   readonly pausedUntil: string | undefined;
   readonly description: LoadedDescription;
+  readonly images: readonly TicketImage[];
 }) {
   const { statusMark, parent } = description;
   const [sessionShown, setSessionShown] = useState(true);
@@ -263,6 +273,8 @@ function LoadedTicket({
                   )}
                   {slots.stack}
                   {slots.reset}
+                  {/* TODO(#752): open the image at full size. */}
+                  <ImageWindow images={images} onOpen={() => undefined} />
                   {slots.lowerPanel !== undefined && (
                     <div className="tp-lower" hidden={swap.panel !== 'round'}>
                       {slots.lowerPanel}
