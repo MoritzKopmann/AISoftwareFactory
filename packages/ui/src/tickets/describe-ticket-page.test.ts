@@ -137,6 +137,22 @@ describe('describeTicketPage', () => {
     });
   });
 
+  it('should run ui-ticket when the ticket is at plan with the ui type', () => {
+    const ticket = buildTicketResponse({ status: 'plan', types: ['ui'] });
+
+    expect(describeTicketPage(answered(ticket), projectId, 1)).toMatchObject({
+      runSkill: 'ui-ticket',
+    });
+  });
+
+  it('should run ui-implement-ticket when the ticket is a ready ui leaf', () => {
+    const ticket = buildTicketResponse({ status: 'ready', types: ['ui'] });
+
+    expect(describeTicketPage(answered(ticket), projectId, 1)).toMatchObject({
+      runSkill: 'ui-implement-ticket',
+    });
+  });
+
   it('should run onboard-project when the ticket types include onboard', () => {
     const ticket = buildTicketResponse({ status: 'ready', types: ['onboard'] });
 
