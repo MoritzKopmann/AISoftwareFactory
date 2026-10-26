@@ -211,6 +211,7 @@ body text, because it isn't a dependency.
   from the parent.
 - **A `type: ui` child is never `ready`.** With `project-design` it is an idea (no `status:`
   label): its design run starts by itself. Without, it is `status: backlog` and waits for a design.
+  Exception: leaves posted by `aisf:ui-ticket` under a designed `type: ui` ticket are `status: ready`.
 - **A spike child leaves its parent at `status: plan`**: planning resumes on its verdict.
 
   ```bash

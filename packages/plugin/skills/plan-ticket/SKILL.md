@@ -350,4 +350,4 @@ guard `plan → backlog`. With `project-design` present: drop the `status:` labe
 
 Report every number written and what `aisf:implement-ticket` can pick up next. For a UI ticket:
 with `project-design`, it starts its design run by itself; otherwise it needs a design before
-`aisf:ui-ticket <design> <n>`.
+`aisf:ui-ticket <n>`.
