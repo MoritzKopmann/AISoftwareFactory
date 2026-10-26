@@ -14,6 +14,7 @@ export interface RunPort {
     readonly ticketTitle: string;
     readonly status: TicketStatus;
     readonly types: ReadonlyArray<TicketType>;
+    readonly parentNumber?: number;
   }): Promise<StartedRun>;
   answer(runId: string, answer: RunAnswer): Promise<StartedRun>;
   pausedRuns(projectId: string): Promise<ReadonlyArray<PausedRun>>;

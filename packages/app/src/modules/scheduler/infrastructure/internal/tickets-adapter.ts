@@ -38,6 +38,7 @@ export class TicketsAdapter implements TicketPort {
       waiting: ticket.waiting,
       syncFailed: projectTicket.sync.state === 'failed',
       subIssueNumbers: ticket.subIssueNumbers,
+      ...(ticket.parent === undefined ? {} : { parentNumber: ticket.parent.number }),
       ...(snapshotTakenAt === undefined ? {} : { snapshotTakenAt }),
       ...(openPullRequest === undefined ? {} : { openPullRequest }),
     };

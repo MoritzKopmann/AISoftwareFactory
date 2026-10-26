@@ -18,6 +18,7 @@ export type SchedulableTicket = {
   readonly waiting: boolean;
   readonly syncFailed: boolean;
   readonly subIssueNumbers: ReadonlyArray<number>;
+  readonly parentNumber?: number;
   readonly snapshotTakenAt?: string;
   readonly openPullRequest?: OpenPullRequest;
 };

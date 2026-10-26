@@ -162,6 +162,7 @@ export class FakeAgentRunsApi implements Pick<
   | 'resumePaused'
 > {
   readonly calls: string[] = [];
+  readonly startRequests: StartRunRequestDto[] = [];
   paused: ReadonlyArray<PausedRunDto> = [];
   resumeResult: AnswerRunResultDto = {
     kind: 'answered',
@@ -179,6 +180,7 @@ export class FakeAgentRunsApi implements Pick<
 
   async start(request: StartRunRequestDto): Promise<StartRunResultDto> {
     this.calls.push(`start ${request.projectId} #${request.ticketNumber}`);
+    this.startRequests.push(request);
     return this.startResult;
   }
 

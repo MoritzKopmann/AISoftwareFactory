@@ -20,6 +20,14 @@ describe('AgentRunsAdapter', () => {
       expect(await port.start(request)).toMatchObject({ id: 'run-1' });
     });
 
+    it('should pass the parent number and afk mode on when the request carries a parent', async () => {
+      const agentRuns = new FakeAgentRunsApi();
+
+      await new AgentRunsAdapter(agentRuns).start({ ...request, parentNumber: 40 });
+
+      expect(agentRuns.startRequests).toEqual([{ ...request, parentNumber: 40, mode: 'afk' }]);
+    });
+
     it('should throw RunAlreadyActiveError when agent runs reports a run already active', async () => {
       const agentRuns = new FakeAgentRunsApi();
       agentRuns.startResult = { kind: 'already-active', message: 'busy' };
