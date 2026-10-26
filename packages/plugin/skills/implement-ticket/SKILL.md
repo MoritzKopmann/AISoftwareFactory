@@ -67,8 +67,10 @@ gh issue view <n> --json title,body,labels,state,parent,subIssues,blockedBy
 Go on only for a leaf that is `status: ready` (new), `in-progress` (resume) or `in-review`
 (rework, §1), not `type: spike`, `type: ui` or `type: onboard`, with Scope, Landing zone and Acceptance criteria
 in its body (under `## Spec` on a one-PR ticket). `planned` → §1. Anything else → stop, name
-the next step (`aisf:spike`, `aisf:ui-ticket`, `aisf:onboard-project`, `aisf:plan-ticket`, `aisf:create-ticket`, or the
-human for a ticket with the `stuck` label). A stop here writes nothing.
+the next step (`aisf:spike`, `aisf:ui-implement-ticket` for a `type: ui` leaf, `aisf:ui-ticket`
+for a `type: ui` ticket at `plan`, `aisf:onboard-project`, `aisf:plan-ticket`,
+`aisf:create-ticket`, or the human for a ticket with the `stuck` label). A stop here writes
+nothing.
 
 The `waiting` label → stop. The run waits at its human checkpoint. The human answers on the
 ticket page, and the app resumes the run.
