@@ -17,9 +17,6 @@ export function determineRunAvailability(input: RunAvailabilityInput): RunAvaila
   if (ticket === undefined || ticket.hasOpenBlocker || !isRunnableTicket(ticket, lastRunEndedAt)) {
     return { kind: 'absent' };
   }
-  if (isAcceptedUiDesign(ticket)) {
-    return { kind: 'disabled', reason: 'Waiting for the UI split (#689)' };
-  }
   if (trigger === 'auto') {
     if (isPlainIdea(ticket)) {
       return { kind: 'absent' };
@@ -76,7 +73,7 @@ function isRunnableTicket(ticket: SchedulableTicket, lastRunEndedAt: string | un
   if (ticket.status === 'idea' || ticket.status === 'plan') {
     return true;
   }
-  if (!ticket.isLeaf || isPureUiTicket(ticket)) {
+  if (!ticket.isLeaf) {
     return false;
   }
   if (ticket.status === 'in-review') {
@@ -85,20 +82,12 @@ function isRunnableTicket(ticket: SchedulableTicket, lastRunEndedAt: string | un
   return ticket.status === 'ready';
 }
 
-function isAcceptedUiDesign(ticket: SchedulableTicket): boolean {
-  return ticket.status === 'plan' && ticket.types.includes('ui');
-}
-
 function isPlainIdea(ticket: SchedulableTicket): boolean {
   return ticket.status === 'idea' && !ticket.types.includes('ui');
 }
 
 function isOnboardTicket(ticket: SchedulableTicket): boolean {
   return ticket.types.includes('onboard');
-}
-
-function isPureUiTicket(ticket: SchedulableTicket): boolean {
-  return ticket.types.includes('ui') && !ticket.types.includes('spike');
 }
 
 function needsRework(
