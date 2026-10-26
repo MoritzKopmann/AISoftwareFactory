@@ -1,0 +1,294 @@
+/* The board page's feedback panel. Linked from board.html only. Colours are kit tokens. */
+
+/* flex 0 0 360px comes from board.css. */
+#board-panel {
+  width: 360px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-left: 1px solid var(--border-strong);
+}
+
+.board-h2,
+.board-message-label {
+  margin: 0;
+  font: 700 12px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.board-brief {
+  flex: none;
+  display: grid;
+  gap: 4px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.board-brief-text {
+  margin: 0;
+  font-size: 14px;
+  max-height: 84px;
+  overflow-y: auto;
+}
+
+.board-pins {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border);
+}
+
+.board-pins-head {
+  flex: none;
+  display: grid;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.board-toggle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--text);
+  font: 500 11px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.board-toggle[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.board-toggle kbd {
+  font: 500 11px var(--font-mono);
+  padding: 1px 5px;
+  border: 1px solid currentcolor;
+  border-radius: 2px;
+}
+
+.board-pin-list {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.board-pins-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.board-pin {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.board-pin-badge {
+  width: 24px;
+  height: 24px;
+  background: var(--hitl);
+  color: var(--accent-ink);
+  font: 700 11px / 24px var(--font-mono);
+  text-align: center;
+}
+
+.board-pin-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.board-pin-where {
+  font: 500 11px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.board-pin-label {
+  display: grid;
+}
+
+.board-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.board-field {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.board-pin-text {
+  min-height: 54px;
+}
+
+.board-pin-read {
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.board-pin-remove {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.board-earlier-heading {
+  margin: 8px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font: 700 11px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.board-pin-earlier {
+  grid-template-columns: 24px minmax(0, 1fr);
+  color: var(--muted);
+}
+
+.board-pin-earlier .board-pin-badge {
+  background: var(--muted);
+  color: var(--surface);
+}
+
+.board-pin-earlier .board-pin-where {
+  color: inherit;
+}
+
+.board-whole {
+  flex: none;
+  display: grid;
+  gap: 6px;
+  padding: 12px 16px;
+}
+
+.board-message {
+  min-height: 72px;
+}
+
+.board-message:disabled {
+  opacity: 0.6;
+}
+
+.board-actions {
+  flex: none;
+  display: grid;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-strong);
+  background: var(--surface);
+}
+
+.board-buttons {
+  display: grid;
+  gap: 8px;
+}
+
+.board-button,
+.board-confirm-actions button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.board-button {
+  width: 100%;
+}
+
+.board-send {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.board-toggle:disabled,
+.board-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.board-confirm {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--ok);
+  border-radius: var(--radius);
+}
+
+.board-confirm p,
+.board-refusal {
+  margin: 0;
+  font-size: 14px;
+}
+
+.board-unsent {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.board-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.board-confirm-actions .board-confirm-accept {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.board-refusal {
+  padding: 8px 10px;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
