@@ -1407,6 +1407,103 @@ details:not([open]) .t-hide {
   line-height: 1.45;
 }
 
+.image-window {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.iw-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.iw-title {
+  margin: 0;
+  font: 700 13px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.iw-count {
+  font: 500 12px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.iw-grow {
+  flex: 1;
+}
+
+.iw-where {
+  font: 400 12px var(--font-mono);
+  color: var(--muted);
+}
+
+/* Scrolls inside on purpose (breaks ui-direction §8): the ticket view keeps its size. */
+.iw-body {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 12px 14px;
+}
+
+.iw-body > ul {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.img-tile {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  min-height: 48px;
+  padding: 4px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: zoom-in;
+}
+
+.img-tile:hover,
+.img-tile:focus-visible {
+  border-color: var(--border-strong);
+}
+
+.img-thumb {
+  display: block;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.img-thumb > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.img-name {
+  font: 400 12px/1.35 var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
 .inline-banner {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
