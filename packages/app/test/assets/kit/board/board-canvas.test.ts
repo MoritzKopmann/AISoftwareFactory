@@ -225,14 +225,26 @@ describe('board canvas', () => {
     expect(markers('settings', 'light').map((marker) => marker.dataset['tone'])).toEqual(['muted']);
   });
 
-  it('should mute earlier-round markers when it is your turn', async () => {
-    const earlierPin = { ...thisRoundPin, n: 2, theme: 'dark', round: 1 };
-    aisf.draft = { rounds: {}, board: { pins: [thisRoundPin], earlier: [earlierPin] } };
+  it('should draw no marker for an earlier-round pin when the page loads', async () => {
+    const earlierPin = { ...thisRoundPin, theme: 'dark', round: 1 };
+    aisf.draft = { rounds: {}, board: { pins: [], earlier: [earlierPin] } };
 
     await load();
 
-    expect(markers('settings', 'light').map((marker) => marker.dataset['tone'])).toEqual(['hitl']);
-    expect(markers('settings', 'dark').map((marker) => marker.dataset['tone'])).toEqual(['muted']);
+    expect(markers('settings', 'dark')).toEqual([]);
+  });
+
+  it('should clear the markers when the index round rises past the sent round', async () => {
+    aisf.draft = { rounds: {}, board: { pins: [thisRoundPin], sentRound: 1 } };
+    server.index = { ...twoBoards, round: 1 };
+    await load();
+    expect(markers('settings', 'light')).toHaveLength(1);
+
+    server.index = { ...twoBoards, round: 2 };
+    server.reload('index.json');
+    await settle();
+
+    expect(markers('settings', 'light')).toEqual([]);
   });
 
   it('should reload both frames of a board and show Updated when its file changes', async () => {

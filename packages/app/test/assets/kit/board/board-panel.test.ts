@@ -305,7 +305,7 @@ describe('board panel', () => {
     expect(store.get()).toMatchObject({ acceptedRound: null, pins: [buildPin()] });
   });
 
-  it('should list earlier pins read-only with their round and no Remove', async () => {
+  it('should list earlier pins read-only with their round, marked done, and no Remove', async () => {
     await load();
 
     store.update({ earlier: [{ ...buildPin({ x: 440, y: 300, text: 'Add a way' }), round: 1 }] });
@@ -313,7 +313,7 @@ describe('board panel', () => {
     const earlier = $$('.board-pin-earlier');
     expect($('.board-earlier-heading').textContent).toBe('Earlier rounds');
     expect(earlier.map((row) => $('.board-pin-where', row).textContent)).toEqual([
-      'Round 1 · Default · light · 440, 300',
+      'Round 1 · Default · light · 440, 300 · Done',
     ]);
     expect($('.board-pin-read', earlier[0]).textContent).toBe('Add a way');
     expect($$('textarea, button', earlier[0])).toEqual([]);

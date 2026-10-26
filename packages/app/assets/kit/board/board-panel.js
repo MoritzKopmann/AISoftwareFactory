@@ -275,7 +275,9 @@ function fillList(list, { index, pins, earlier, earlierMessages, buildRow }) {
   if (earlier.length + earlierMessages.length > 0) {
     children.push(buildElement('h3', 'board-earlier-heading', 'Earlier rounds'));
     for (const pin of earlier) {
-      children.push(buildEarlierRow(pin, `Round ${pin.round} · ${describeWhere(index, pin)}`));
+      children.push(
+        buildEarlierRow(pin, `Round ${pin.round} · ${describeWhere(index, pin)} · Done`),
+      );
     }
     for (const { round, text } of earlierMessages) {
       children.push(buildEarlierMessageRow(`Round ${round} · Whole design`, text));
