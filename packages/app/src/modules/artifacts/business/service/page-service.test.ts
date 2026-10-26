@@ -96,6 +96,7 @@ describe('PageService', () => {
     it('should report the decided status and the version when the token is known', async () => {
       runPort.latestRun = {
         id: 'r1',
+        worktreePath: '/w',
         state: 'running',
         waitingFor: { artifactId: 'plan' },
       };
@@ -116,6 +117,7 @@ describe('PageService', () => {
     it('should deliver the tagged text to the run when the run waits on the page', async () => {
       runPort.latestRun = {
         id: 'r1',
+        worktreePath: '/w',
         state: 'running',
         waitingFor: { artifactId: 'plan' },
       };
@@ -128,6 +130,7 @@ describe('PageService', () => {
     it('should deliver when the run ended at a checkpoint on the page', async () => {
       runPort.latestRun = {
         id: 'r1',
+        worktreePath: '/w',
         state: 'ended',
         ending: { kind: 'checkpoint', artifactId: 'plan' },
       };
@@ -138,14 +141,14 @@ describe('PageService', () => {
     });
 
     it('should throw closed and deliver nothing when the run does not wait', async () => {
-      runPort.latestRun = { id: 'r1', state: 'running' };
+      runPort.latestRun = { id: 'r1', worktreePath: '/w', state: 'running' };
 
       await expect(service.submitEvent('T', event)).rejects.toThrow(PageClosedError);
       expect(schedulerPort.calls).toEqual([]);
     });
 
     it('should throw busy and deliver nothing when another run is running', async () => {
-      runPort.latestRun = { id: 'r2', state: 'running' };
+      runPort.latestRun = { id: 'r2', worktreePath: '/w', state: 'running' };
 
       await expect(service.submitEvent('T', event)).rejects.toThrow(PageBusyError);
       expect(schedulerPort.calls).toEqual([]);
@@ -154,6 +157,7 @@ describe('PageService', () => {
     it('should pass on busy when the scheduler refuses the answer', async () => {
       runPort.latestRun = {
         id: 'r1',
+        worktreePath: '/w',
         state: 'running',
         waitingFor: { artifactId: 'plan' },
       };
@@ -183,7 +187,12 @@ describe('PageService', () => {
     });
 
     it('should deliver the tagged feedback when a board gets design-feedback', async () => {
-      runPort.latestRun = { id: 'r1', state: 'running', waitingFor: { artifactId: 'design' } };
+      runPort.latestRun = {
+        id: 'r1',
+        worktreePath: '/w',
+        state: 'running',
+        waitingFor: { artifactId: 'design' },
+      };
       const payload = { round: 2, comments: [], message: 'm' };
 
       await service.submitEvent('B', { kind: 'design-feedback', round: 2, payload });
@@ -199,6 +208,7 @@ describe('PageService', () => {
     it('should report open when the run ended at a checkpoint on the board', async () => {
       runPort.latestRun = {
         id: 'r1',
+        worktreePath: '/w',
         state: 'ended',
         ending: { kind: 'checkpoint', artifactId: 'design' },
       };

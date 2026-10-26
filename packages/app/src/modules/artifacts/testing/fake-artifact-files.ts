@@ -26,6 +26,15 @@ export class FakeArtifactFiles implements ArtifactFiles {
     return content === undefined ? undefined : new TextEncoder().encode(content);
   }
 
+  async listImages(directory: string): Promise<ReadonlyArray<string>> {
+    const prefix = `${directory}/`;
+    return [...this.files.keys()]
+      .filter((key) => key.startsWith(prefix))
+      .map((key) => key.slice(prefix.length))
+      .filter((name) => !name.includes('/') && /.\.(png|jpe?g|webp|svg)$/i.test(name))
+      .sort();
+  }
+
   async readUserInputState(directory: string): Promise<string | undefined> {
     return this.files.get(`${directory}/user-input-state.json`);
   }

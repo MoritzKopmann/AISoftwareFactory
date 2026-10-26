@@ -113,5 +113,10 @@ describe('a republished page', () => {
 });
 
 function buildWaiting(): TicketLatestRun {
-  return { id: 'r1', state: 'running', waitingFor: { artifactId: 'plan-round' } };
+  return {
+    id: 'r1',
+    worktreePath: '/w',
+    state: 'running',
+    waitingFor: { artifactId: 'plan-round' },
+  };
 }

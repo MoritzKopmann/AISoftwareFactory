@@ -132,7 +132,12 @@ describe('ArtifactService.listForTicket', () => {
     artifactRepository.add(buildArtifact({ token: 'U', artifactId: 'notes', title: 'Notes' }));
     artifactRepository.add(buildArtifact({ token: 'V', ticketNumber: 8 }));
     const runPort = new FakeRunPort();
-    runPort.latestRun = { id: 'r1', state: 'running', waitingFor: { artifactId: 'plan' } };
+    runPort.latestRun = {
+      id: 'r1',
+      worktreePath: '/w',
+      state: 'running',
+      waitingFor: { artifactId: 'plan' },
+    };
 
     const artifacts = await new ArtifactService({
       artifactRepository,

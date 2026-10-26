@@ -19,6 +19,7 @@ describe('decidePageStatus', () => {
     expect(
       decidePageStatus(artifact, {
         id: 'r1',
+        worktreePath: '/w',
         state: 'running',
         waitingFor: { artifactId: 'plan' },
       }),
@@ -31,6 +32,7 @@ describe('decidePageStatus', () => {
       expect(
         decidePageStatus(artifact, {
           id: 'r1',
+          worktreePath: '/w',
           state,
           ending: { kind: 'checkpoint', artifactId: 'plan' },
         }),
@@ -39,15 +41,21 @@ describe('decidePageStatus', () => {
   );
 
   it('should be closed when the publishing run waits on a plain checkpoint', () => {
-    expect(decidePageStatus(artifact, { id: 'r1', state: 'running', waitingFor: {} })).toBe(
-      'closed',
-    );
+    expect(
+      decidePageStatus(artifact, {
+        id: 'r1',
+        worktreePath: '/w',
+        state: 'running',
+        waitingFor: {},
+      }),
+    ).toBe('closed');
   });
 
   it('should be closed when the publishing run waits on another artifact', () => {
     expect(
       decidePageStatus(artifact, {
         id: 'r1',
+        worktreePath: '/w',
         state: 'running',
         waitingFor: { artifactId: 'notes' },
       }),
@@ -56,7 +64,12 @@ describe('decidePageStatus', () => {
 
   it('should be closed when the checkpoint ending has no artifact', () => {
     expect(
-      decidePageStatus(artifact, { id: 'r1', state: 'ended', ending: { kind: 'checkpoint' } }),
+      decidePageStatus(artifact, {
+        id: 'r1',
+        worktreePath: '/w',
+        state: 'ended',
+        ending: { kind: 'checkpoint' },
+      }),
     ).toBe('closed');
   });
 
@@ -64,6 +77,7 @@ describe('decidePageStatus', () => {
     expect(
       decidePageStatus(artifact, {
         id: 'r2',
+        worktreePath: '/w',
         state: 'running',
         ...(waiting ? { waitingFor: { artifactId: 'plan' } } : {}),
       }),
@@ -71,15 +85,27 @@ describe('decidePageStatus', () => {
   });
 
   it('should be closed when the publishing run works without waiting', () => {
-    expect(decidePageStatus(artifact, { id: 'r1', state: 'running' })).toBe('closed');
+    expect(decidePageStatus(artifact, { id: 'r1', worktreePath: '/w', state: 'running' })).toBe(
+      'closed',
+    );
   });
 
   it('should be closed when the latest run ended with any other ending', () => {
     expect(
-      decidePageStatus(artifact, { id: 'r1', state: 'ended', ending: { kind: 'finished' } }),
+      decidePageStatus(artifact, {
+        id: 'r1',
+        worktreePath: '/w',
+        state: 'ended',
+        ending: { kind: 'finished' },
+      }),
     ).toBe('closed');
     expect(
-      decidePageStatus(artifact, { id: 'r2', state: 'ended', ending: { kind: 'finished' } }),
+      decidePageStatus(artifact, {
+        id: 'r2',
+        worktreePath: '/w',
+        state: 'ended',
+        ending: { kind: 'finished' },
+      }),
     ).toBe('closed');
   });
 

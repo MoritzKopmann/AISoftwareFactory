@@ -18,7 +18,12 @@ describe('createTicketArtifactsRoutes', () => {
     artifactRepository.add(buildArtifact({ token: 'T', artifactId: 'plan', title: 'Plan' }));
     artifactRepository.add(buildArtifact({ token: 'U', artifactId: 'notes', title: 'Notes' }));
     const runPort = new FakeRunPort();
-    runPort.latestRun = { id: 'r1', state: 'running', waitingFor: { artifactId: 'plan' } };
+    runPort.latestRun = {
+      id: 'r1',
+      worktreePath: '/w',
+      state: 'running',
+      waitingFor: { artifactId: 'plan' },
+    };
     app = new Hono().route(
       '/projects',
       createTicketArtifactsRoutes(
