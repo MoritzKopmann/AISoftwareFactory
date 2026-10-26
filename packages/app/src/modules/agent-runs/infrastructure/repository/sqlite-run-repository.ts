@@ -13,6 +13,7 @@ type RunRow = {
   readonly project_id: string;
   readonly ticket_number: number;
   readonly stage: string;
+  readonly skill: string | null;
   readonly mode: string;
   readonly session_id: string;
   readonly worktree_path: string;
@@ -41,6 +42,7 @@ const selectRunColumns = `
     project_id,
     ticket_number,
     stage,
+    skill,
     mode,
     session_id,
     worktree_path,
@@ -140,6 +142,7 @@ function toRun(row: RunRow): Run {
     projectId: row.project_id,
     ticketNumber: row.ticket_number,
     stage: row.stage as RunStage,
+    ...(row.skill === null ? {} : { skill: row.skill }),
     mode: row.mode as RunMode,
     sessionId: row.session_id,
     worktreePath: row.worktree_path,
@@ -171,6 +174,7 @@ export class SqliteRunRepository implements RunRepository {
             project_id,
             ticket_number,
             stage,
+            skill,
             mode,
             session_id,
             worktree_path,
@@ -178,7 +182,7 @@ export class SqliteRunRepository implements RunRepository {
             state,
             started_at
           )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         )
         .run(
@@ -186,6 +190,7 @@ export class SqliteRunRepository implements RunRepository {
           run.projectId,
           run.ticketNumber,
           run.stage,
+          run.skill ?? null,
           run.mode,
           run.sessionId,
           run.worktreePath,

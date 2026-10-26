@@ -9,4 +9,5 @@ export type StartRunRequest = {
   readonly ticketTitle: string;
   readonly status: TicketStatus;
   readonly types: ReadonlyArray<TicketType>;
+  readonly parentNumber?: number;
 };

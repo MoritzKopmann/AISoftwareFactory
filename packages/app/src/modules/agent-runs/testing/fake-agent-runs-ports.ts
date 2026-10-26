@@ -24,6 +24,7 @@ import type { RunTranscripts } from '../business/port/transcript/run-transcripts
 import type { CommandLabeler } from '../business/port/label/command-labeler.js';
 import type { CommandLabelRepository } from '../business/port/repository/command-label-repository.js';
 import type { Worktrees } from '../business/port/worktree/worktrees.js';
+import type { DesignCopier } from '../business/port/design/design-copier.js';
 
 function withoutWait(run: Run): Run {
   const copy: { -readonly [Key in keyof Run]: Run[Key] } = { ...run };
@@ -441,5 +442,18 @@ export class FakeCommandLabeler implements CommandLabeler {
       throw answer;
     }
     return answer;
+  }
+}
+
+export class FakeDesignCopier implements DesignCopier {
+  readonly copies: Array<{ readonly from: string; readonly to: string }> = [];
+
+  failure: Error | undefined;
+
+  async copy(paths: { readonly from: string; readonly to: string }): Promise<void> {
+    if (this.failure !== undefined) {
+      throw this.failure;
+    }
+    this.copies.push(paths);
   }
 }

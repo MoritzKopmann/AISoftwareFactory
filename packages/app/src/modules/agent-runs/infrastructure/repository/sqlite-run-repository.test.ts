@@ -37,6 +37,12 @@ describe('SqliteRunRepository', () => {
       expect(await repository.findById('run-1')).toEqual(run);
     });
 
+    it('should keep the skill when a run is read back', async () => {
+      await repository.insert(buildRun({ skill: 'aisf:ui-implement-ticket' }));
+
+      expect((await repository.findById('run-1'))?.skill).toBe('aisf:ui-implement-ticket');
+    });
+
     it('should throw RunAlreadyActiveError when the ticket already has a running run', async () => {
       await repository.insert(buildRun());
 
