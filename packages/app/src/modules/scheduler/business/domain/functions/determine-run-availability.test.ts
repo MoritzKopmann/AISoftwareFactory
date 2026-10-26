@@ -61,7 +61,6 @@ describe('determineRunAvailability', () => {
   });
 
   it.each<[string, Partial<SchedulableTicket>]>([
-    ['is a ui ticket and not a spike', { types: ['ui'] }],
     ['has an open blocker', { hasOpenBlocker: true }],
     ['is not a leaf', { isLeaf: false }],
     ['is in-progress', { status: 'in-progress' }],
@@ -380,14 +379,39 @@ describe('determineRunAvailability', () => {
   });
 
   it.each(['auto', 'manual'] as const)(
-    'should be disabled until the UI split when a ui ticket is at plan and the trigger is %s',
+    'should be available when a ui ticket is at plan and the trigger is %s',
     (trigger) => {
       const ticket: SchedulableTicket = { ...readyLeaf, status: 'plan', types: ['ui'] };
 
       expect(determineRunAvailability(buildInput({ trigger, ticket }))).toEqual({
-        kind: 'disabled',
-        reason: 'Waiting for the UI split (#689)',
+        kind: 'available',
       });
     },
   );
+
+  it('should be available when a ui leaf is ready with no open blocker', () => {
+    const ticket: SchedulableTicket = { ...readyLeaf, types: ['ui'] };
+
+    expect(determineRunAvailability(buildInput({ ticket }))).toEqual({ kind: 'available' });
+  });
+
+  it('should be available for rework when a ui leaf is in review with new review activity', () => {
+    const ticket: SchedulableTicket = {
+      ...readyLeaf,
+      status: 'in-review',
+      types: ['ui'],
+      openPullRequest: {
+        approved: false,
+        mergeable: 'mergeable',
+        lastReviewActivityAt: '2026-10-18T10:00:00Z',
+      },
+      snapshotTakenAt: '2026-10-18T11:00:00.000Z',
+    };
+
+    expect(
+      determineRunAvailability(
+        buildInput({ ticket, lastRunEndedAt: '2026-10-18T09:00:00.000Z', trigger: 'auto' }),
+      ),
+    ).toEqual({ kind: 'available' });
+  });
 });

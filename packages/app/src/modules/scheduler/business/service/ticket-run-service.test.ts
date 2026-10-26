@@ -378,14 +378,13 @@ describe('TicketRunService', () => {
       expect(runPort.calls).toEqual([]);
     });
 
-    it('should throw RunNotAvailableError and start nothing when the ticket is a ui ticket and not a spike', async () => {
+    it('should pass the parent number to agent runs when the ticket has a parent', async () => {
       const runPort = new FakeRunPort();
-      const ticketPort = new FakeTicketPort({ ...readyLeaf, types: ['ui'] });
+      const ticketPort = new FakeTicketPort({ ...readyLeaf, number: 41, parentNumber: 40 });
 
-      await expect(
-        buildSubject({ runPort, ticketPort }).service.start('moritz/aisf', 138),
-      ).rejects.toThrow(RunNotAvailableError);
-      expect(runPort.calls).toEqual([]);
+      await buildSubject({ runPort, ticketPort }).service.start('moritz/aisf', 41);
+
+      expect(runPort.startRequests).toEqual([expect.objectContaining({ parentNumber: 40 })]);
     });
 
     it('should throw RunNotAvailableError and start nothing when the ticket is not runnable', async () => {

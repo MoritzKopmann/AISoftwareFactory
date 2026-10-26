@@ -168,6 +168,7 @@ export class TicketRunService {
       ticketTitle: ticket.title,
       status: ticket.status,
       types: ticket.types,
+      ...(ticket.parentNumber === undefined ? {} : { parentNumber: ticket.parentNumber }),
     });
   }
 
