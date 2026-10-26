@@ -5,6 +5,7 @@ import type { TicketImageService } from '../../business/service/ticket-image-ser
 import { createKitRoutes } from './create-kit-routes.js';
 import { createPageRoutes } from './create-page-routes.js';
 import { createTicketArtifactsRoutes } from './create-ticket-artifacts-routes.js';
+import { createTicketImagesRoutes } from './create-ticket-images-routes.js';
 
 export type ArtifactsRoutesOptions = {
   readonly kitDirectory: string;
@@ -18,5 +19,6 @@ export function createArtifactsRoutes(options: ArtifactsRoutesOptions): Hono {
   return new Hono()
     .route('/aisf', createKitRoutes({ kitDirectory: options.kitDirectory }))
     .route('/a', createPageRoutes(options.pageService))
-    .route('/api/projects', createTicketArtifactsRoutes(options.artifactService));
+    .route('/api/projects', createTicketArtifactsRoutes(options.artifactService))
+    .route('/api/projects', createTicketImagesRoutes(options.ticketImageService));
 }

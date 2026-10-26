@@ -15,6 +15,7 @@
     "./api-schemas/session-stream-schemas.js": "./src/modules/agent-runs/presentation/dto/api/session-stream-schemas.ts",
     "./api-schemas/findings-schemas.js": "./src/modules/findings/presentation/dto/api/findings-schemas.ts",
     "./api-schemas/artifacts-schemas.js": "./src/modules/artifacts/presentation/dto/api/artifacts-schemas.ts",
+    "./api-schemas/images-schemas.js": "./src/modules/artifacts/presentation/dto/api/images-schemas.ts",
     "./api-schemas/page-events-schemas.js": "./src/modules/artifacts/presentation/dto/api/page-events-schemas.ts",
     "./api-schemas/live-notice-schemas.js": "./src/modules/live/presentation/dto/api/live-notice-schemas.ts",
     "./api-schemas/usage-schemas.js": "./src/modules/usage/presentation/dto/api/usage-schemas.ts"
