@@ -164,4 +164,11 @@ export const migrations: ReadonlyArray<Migration> = [
       ALTER TABLE runs ADD COLUMN held_answer TEXT;
     `,
   },
+  {
+    version: 13,
+    name: 'runs-skill',
+    sql: `
+      ALTER TABLE runs ADD COLUMN skill TEXT;
+    `,
+  },
 ];

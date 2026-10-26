@@ -112,6 +112,7 @@ export function createAgentRunsModule(
   const runStartService = new RunStartService({
     runRepository,
     worktrees: infrastructure.worktrees,
+    designCopier: infrastructure.designCopier,
     projectPort: infrastructure.projectPort,
     agentSessions,
     runTranscripts: infrastructure.runTranscripts,

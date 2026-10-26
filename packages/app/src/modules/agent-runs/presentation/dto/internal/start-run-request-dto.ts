@@ -14,4 +14,5 @@ export type StartRunRequestDto = {
     | 'conflict'
     | 'closed';
   readonly types: ReadonlyArray<'bug' | 'enhancement' | 'task' | 'spike' | 'ui' | 'onboard'>;
+  readonly parentNumber?: number;
 };

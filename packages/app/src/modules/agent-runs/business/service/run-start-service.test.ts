@@ -11,6 +11,7 @@ import {
   buildRun,
   FakeAgentSessions,
   FakeCommandLabeler,
+  FakeDesignCopier,
   FakeCommandLabelRepository,
   FakeRunAnswerWaits,
   FakeRunRepository,
@@ -53,6 +54,7 @@ function buildService(options: BuildOptions = {}) {
   const agentSessions = new FakeAgentSessions();
   const worktrees = new FakeWorktrees();
   const runAnswerWaits = new FakeRunAnswerWaits();
+  const designCopier = new FakeDesignCopier();
   const runTranscripts = new FakeRunTranscripts();
   const sessionFeed = new FakeSessionFeed();
   const events = new FakeEventPublisher();
@@ -73,6 +75,7 @@ function buildService(options: BuildOptions = {}) {
     }),
     runRepository,
     worktrees,
+    designCopier,
     projectPort: options.projectPort ?? new FakeProjectPort(defaultTarget),
     agentSessions,
     runTranscripts,
@@ -92,6 +95,7 @@ function buildService(options: BuildOptions = {}) {
     runRepository,
     agentSessions,
     worktrees,
+    designCopier,
     runTranscripts,
     sessionFeed,
     runAnswerWaits,
@@ -151,6 +155,7 @@ describe('RunStartService', () => {
         stage: 'implement',
         mode: 'afk',
         sessionId: 'id-2',
+        skill: 'aisf:implement-ticket',
         worktreePath: '/worktrees/aisf/137',
         branchName: 'aisf/137-the-runner-takes-a-ticket',
         state: 'running',
@@ -265,6 +270,89 @@ describe('RunStartService', () => {
         expect(agentSessions.startedSpecs[0]).toMatchObject({ prompt, model });
       },
     );
+
+    it('should start aisf:ui-ticket in the authoring worktree and save the skill when a ui ticket is in plan', async () => {
+      const { service, agentSessions, runRepository } = buildStartSubject();
+
+      const run = await service.start({ ...startRequest, status: 'plan', types: ['ui'] });
+
+      expect(agentSessions.startedSpecs[0]?.prompt).toBe('/aisf:ui-ticket 137');
+      expect(run.skill).toBe('aisf:ui-ticket');
+      expect(run.worktreePath).toMatch(/-authoring$/);
+      expect(runRepository.runs.get(run.id)?.skill).toBe('aisf:ui-ticket');
+    });
+
+    it('should start aisf:ui-implement-ticket and copy the parent design when a ui leaf has a parent', async () => {
+      const { service, agentSessions, designCopier } = buildStartSubject();
+
+      await service.start({ ...startRequest, types: ['ui'], parentNumber: 40 });
+
+      expect(agentSessions.startedSpecs[0]?.prompt).toBe('/aisf:ui-implement-ticket 137');
+      expect(designCopier.copies).toEqual([
+        {
+          from: '/worktrees/aisf/40-authoring/.aisf/artifacts/design',
+          to: '/worktrees/aisf/137/.aisf/design',
+        },
+      ]);
+    });
+
+    it('should keep --since when a ui ticket is reworked', async () => {
+      const { service, agentSessions, runRepository } = buildStartSubject();
+      runRepository.runs.set(
+        'earlier',
+        buildRun({
+          id: 'earlier',
+          state: 'settled',
+          startedAt: '2026-10-18T08:00:00.000Z',
+          endedAt: '2026-10-18T09:00:00.000Z',
+        }),
+      );
+
+      await service.start({ ...startRequest, status: 'in-review', types: ['ui'] });
+
+      expect(agentSessions.startedSpecs[0]?.prompt).toBe(
+        '/aisf:ui-implement-ticket 137 --since 2026-10-18T09:00:00.000Z',
+      );
+    });
+
+    it('should keep the plan skill and copy no design when a non-ui ticket is in plan', async () => {
+      const { service, agentSessions, designCopier } = buildStartSubject();
+
+      await service.start({
+        ...startRequest,
+        status: 'plan',
+        types: ['enhancement'],
+        parentNumber: 40,
+      });
+
+      expect(agentSessions.startedSpecs[0]?.prompt).toBe('/aisf:plan-ticket 137');
+      expect(designCopier.copies).toEqual([]);
+    });
+
+    it('should end the run as crashed and throw when the design copy fails', async () => {
+      const { service, designCopier, finishCalls, agentSessions } = buildStartSubject();
+      designCopier.failure = new Error('disk full');
+
+      await expect(
+        service.start({ ...startRequest, types: ['ui'], parentNumber: 40 }),
+      ).rejects.toThrow('disk full');
+
+      expect(finishCalls).toEqual([
+        {
+          runId: 'id-1',
+          ending: { kind: 'crashed', reason: expect.stringContaining('disk full') },
+        },
+      ]);
+      expect(agentSessions.startedSpecs).toEqual([]);
+    });
+
+    it('should copy no design when a ui leaf has no parent', async () => {
+      const { service, designCopier } = buildStartSubject();
+
+      await service.start({ ...startRequest, types: ['ui'] });
+
+      expect(designCopier.copies).toEqual([]);
+    });
 
     it('should start aisf:design in the authoring worktree without a branch when a ui idea starts', async () => {
       const { service, agentSessions } = buildStartSubject();
@@ -905,6 +993,26 @@ describe('RunStartService', () => {
           expect(agentSessions.resumedSpecs[0]).not.toHaveProperty('allowedCall');
         },
       );
+
+      it('should name the stored skill when a ui run resumes after a checkpoint', async () => {
+        const { service, agentSessions, insertEndedRun } = buildResumeSubject();
+        await insertEndedRun({ stage: 'plan', skill: 'aisf:ui-ticket', ending: checkpointEnding });
+
+        await service.resume('run-1', answer);
+
+        expect(agentSessions.resumedSpecs[0]?.prompt).toContain(
+          'Carry on with aisf:ui-ticket for #137 from its human checkpoint.',
+        );
+      });
+
+      it('should keep the stored skill on the new run when a run resumes', async () => {
+        const { service, insertEndedRun } = buildResumeSubject();
+        await insertEndedRun({ skill: 'aisf:ui-implement-ticket', ending: checkpointEnding });
+
+        const resumed = await service.resume('run-1', answer);
+
+        expect(resumed.skill).toBe('aisf:ui-implement-ticket');
+      });
 
       it('should tell a spike run to carry on with aisf:spike when it resumes after a checkpoint', async () => {
         const { service, agentSessions, insertEndedRun } = buildResumeSubject();

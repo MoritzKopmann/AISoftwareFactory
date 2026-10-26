@@ -4,6 +4,7 @@ import type { EventPublisher } from '../../../../shared/event-bus.js';
 import type { Identifiers } from '../../../../shared/identifiers/identifiers.js';
 import type { Logger } from '../../../../shared/logger/create-logger.js';
 import { stageModels } from '../domain/constants/stage-models.js';
+import { uiImplementSkill } from '../domain/constants/ui-skills.js';
 import { stageSkills } from '../domain/constants/stage-skills.js';
 import { authoringWorktreePathFor } from '../domain/functions/authoring-worktree-path-for.js';
 import { branchNameFor } from '../domain/functions/branch-name-for.js';
@@ -12,6 +13,7 @@ import { buildResumePrompt } from '../domain/functions/build-resume-prompt.js';
 import { buildStartPrompt } from '../domain/functions/build-start-prompt.js';
 import { commandToLabel } from '../domain/functions/command-to-label.js';
 import { describeError } from '../domain/functions/describe-error.js';
+import { skillFor } from '../domain/functions/skill-for.js';
 import { isAuthoringStage } from '../domain/functions/is-authoring-stage.js';
 import { runStageFor } from '../domain/functions/run-stage-for.js';
 import { worktreePathFor } from '../domain/functions/worktree-path-for.js';
@@ -35,6 +37,7 @@ import type { AgentSessions } from '../port/session/agent-sessions.js';
 import type { SessionFeed } from '../port/session/session-feed.js';
 import type { RunTranscripts } from '../port/transcript/run-transcripts.js';
 import type { ProjectPort } from '../port/project/project-port.js';
+import type { DesignCopier } from '../port/design/design-copier.js';
 import type { Worktrees } from '../port/worktree/worktrees.js';
 import type { CommandLabelService } from './command-label-service.js';
 import type { RunEndService } from './run-end-service.js';
@@ -42,6 +45,7 @@ import type { RunEndService } from './run-end-service.js';
 export type RunStartServiceDependencies = {
   readonly runRepository: RunRepository;
   readonly worktrees: Worktrees;
+  readonly designCopier: DesignCopier;
   readonly projectPort: ProjectPort;
   readonly agentSessions: AgentSessions;
   readonly runTranscripts: RunTranscripts;
@@ -94,11 +98,13 @@ export class RunStartService {
       target.repositoryName,
       request.ticketNumber,
     );
+    const skill = skillFor(stage, request.types);
     const run: Run = {
       id: identifiers.next(),
       projectId: request.projectId,
       ticketNumber: request.ticketNumber,
       stage,
+      skill,
       mode: request.mode,
       sessionId: identifiers.next(),
       worktreePath,
@@ -127,6 +133,16 @@ export class RunStartService {
           branchName: run.branchName,
         });
       }
+      if (skill === uiImplementSkill && request.parentNumber !== undefined) {
+        await this.dependencies.designCopier.copy({
+          from: `${authoringWorktreePathFor(
+            this.dependencies.worktreesDirectory,
+            target.repositoryName,
+            request.parentNumber,
+          )}/.aisf/artifacts/design`,
+          to: `${run.worktreePath}/.aisf/design`,
+        });
+      }
     } catch (error) {
       await runEndService.finish(run.id, { kind: 'crashed', reason: describeError(error) });
       throw error;
@@ -141,6 +157,7 @@ export class RunStartService {
       kind: 'start',
       prompt: buildStartPrompt({
         stage,
+        skill,
         status: request.status,
         ticketNumber: run.ticketNumber,
         latestRunEndedAt: latestRun?.endedAt,
@@ -172,7 +189,7 @@ export class RunStartService {
           previousRun.ticketNumber,
           ending.request,
           answer.text,
-          stageSkills[previousRun.stage],
+          previousRun.skill ?? stageSkills[previousRun.stage],
         ),
       };
     } else {
@@ -208,6 +225,7 @@ export class RunStartService {
       projectId: previousRun.projectId,
       ticketNumber: previousRun.ticketNumber,
       stage: previousRun.stage,
+      ...(previousRun.skill === undefined ? {} : { skill: previousRun.skill }),
       mode: previousRun.mode,
       sessionId: previousRun.sessionId,
       worktreePath: previousRun.worktreePath,

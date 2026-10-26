@@ -9,6 +9,7 @@ export type Run = {
   readonly projectId: string;
   readonly ticketNumber: number;
   readonly stage: RunStage;
+  readonly skill?: string;
   readonly mode: RunMode;
   readonly sessionId: string;
   readonly worktreePath: string;
