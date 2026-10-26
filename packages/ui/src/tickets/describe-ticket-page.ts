@@ -50,8 +50,9 @@ export type TicketPageDescription =
 function runSkillFor(ticket: TicketResponse): RunSkill {
   // Mirrors the agent-runs module's runStageFor.
   if (ticket.status === 'idea') return ticket.types.includes('ui') ? 'design' : 'create-ticket';
-  if (ticket.status === 'plan') return 'plan-ticket';
+  if (ticket.status === 'plan') return ticket.types.includes('ui') ? 'ui-ticket' : 'plan-ticket';
   if (ticket.types.includes('onboard')) return 'onboard-project';
+  if (ticket.types.includes('ui')) return 'ui-implement-ticket';
   return ticket.types.includes('spike') ? 'spike' : 'implement-ticket';
 }
 

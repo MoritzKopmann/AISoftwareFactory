@@ -390,4 +390,20 @@ describe('describeRunBar for idea and plan tickets', () => {
       reason: 'Waiting for spike #417',
     });
   });
+
+  it.each(['ui-ticket', 'ui-implement-ticket'] as const)(
+    'should give a non-empty label when the skill is %s',
+    (skill) => {
+      const bar = describeRunBar(
+        available,
+        { status: 'ready', stuck: false },
+        { kind: 'idle' },
+        7,
+        skill,
+      );
+
+      expect(bar).toMatchObject({ kind: 'shown' });
+      expect((bar as { label?: string }).label?.length).toBeGreaterThan(0);
+    },
+  );
 });
