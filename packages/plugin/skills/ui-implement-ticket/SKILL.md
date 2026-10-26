@@ -1,143 +1,129 @@
 ---
 name: ui-implement-ticket
 description: >
-  Drive a UI component leaf from aisf:ui-ticket to a PR: build the component against its
-  mock through a render, look, adjust loop using headless-Chrome screenshots in both themes,
-  test behaviour with TDD, verify acceptance criteria, commit, open the PR. Use when the
-  ticket's work is visual and carries a design mock. Triggers: "implement the ui ticket #N",
-  "build component #N".
-disable-model-invocation: true
+  Drive a ready type: ui leaf to a PR by render and compare: build against the mock in
+  .aisf/design/mocks, render with the project's own recipe, look at the PNG, adjust, and leave
+  the images in .aisf/images for the ticket page. Test behaviour with TDD, never geometry. Also
+  resumes an in-progress leaf and reworks an in-review one. Use when the user wants to
+  implement a UI leaf. Triggers: "implement the ui ticket #N", "build component #N".
 ---
 
 # ui-implement-ticket
 
-Drive a component ticket to a PR. Argument: ticket number. If none, ask.
+Drive a `type: ui` leaf to a PR. Argument: `<n> [--since <ISO time>]`. `<n>` is the ticket
+number; if none, ask. `--since` is when the app's last run ended; only rework uses it.
 
-**Why this is separate from `aisf:implement-ticket`:** TDD has no grip on geometry. A ticket
-whose criteria are `16px padding`, `12px radius`, `var(--surface)` yields assertions like
-`expect(padding).toBe('16px')`: the implementation restated in a test, which can only fail when
-someone deliberately changes the value and updates the test. It looks like verification and is
-really transcription.
-
-The oracle for visual work is the mock, so the loop here is **render, look, adjust**. TDD keeps
-the job it is good at: behaviour and the `describe-*` view models.
+**Why this is separate from `aisf:implement-ticket`:** TDD has no grip on geometry. A criterion
+like `16px padding` becomes `expect(padding).toBe('16px')`: the code restated in a test. The
+oracle for visual work is the mock, so the loop is **render, look, compare, adjust**. TDD keeps
+the job it is good at: behaviour.
 
 **This skill follows `aisf:implement-ticket` for everything not visual.** Read it and apply
-these sections as written there: Guard rails, Stop points (with mode), §0 Precondition
-(project slots, status rules), §1 Identify (blocked, rework), §3 Claim and branch, §5 Green
-(five fix attempts, never weaken a test), §8 Simplicity review, §9 Commit, §10 PR (body, base check, `in-progress → in-review`),
-and never merge. The sections below replace §2, §4 and §7, and add the render loop.
+these sections as written there: Guard rails, Stop points (mode: AFK when `aisf_escalate` is
+present, hand-run otherwise), §1 Identify (parent, blocked, in-review and rework with
+`aisf:implement-ticket`'s `rework.md`), §3 Claim and branch, §5 Green, §6 Code review, §8 Simplicity review, §9 Commit and §10 PR. It
+never merges. The sections below replace §0, §2, §4 and §7.
 
-`gh` infers the repository from the current checkout. Never pass `-R`. Every status change and
-issue write goes through `aisf:github-issue`.
+`gh` infers the repository from the checkout. Never pass `-R`. Every status change and issue
+write goes through `aisf:github-issue`.
 
-## 1. Pick the ticket
+## 0. Precondition
 
-The number you were given may be a parent (`status: planned`). Parents are never implemented:
-list its open children that are `status: ready` and unblocked, report them and stop, as
-`aisf:implement-ticket` §1 does.
+```bash
+gh issue view <n> --json title,body,labels,state,parent,subIssues,blockedBy
+```
 
-Then one check:
+1. A leaf with `type: ui`, `status: ready` (new), `in-progress` (resume) or `in-review`
+   (rework). Without `type: ui` → stop, name `aisf:implement-ticket`, write nothing. A
+   `planned` parent → §1 of `aisf:implement-ticket`. The `waiting` label → stop.
+2. `project-design` loads. `Unknown skill` → escalate `spec`, naming `project-design`.
+3. `project-testing` has `## Visual rendering`. Missing → escalate `spec`, naming
+   `## Visual rendering`.
+4. `.aisf/design/mocks/<part>.html` exists in this worktree, with `<part>` named in the leaf
+   body. Missing → escalate `spec`, naming `.aisf/design/` or the mock path.
 
-- **Blocked?** An open `blockedBy` issue → stop and name it.
+Every failure of 2 to 4 happens **before the claim**. Escalate `spec` in AFK; in hand-run, say
+what is missing and ask. Then load `project-toolchain` (`Unknown skill` → stop: "project not onboarded"). It gives
+`format`, `analyze`, `test`, `test_file`.
 
-Name `<n>` and the mode before touching a file.
+Say `<n>` and the mode (new / resume / rework, AFK / hand-run).
 
 ## 2. Understand
 
-- Read the ticket: `gh issue view <n> --json title,body,labels,state,parent,blockedBy`.
-- **Open the mock** (`Artifact` action `read` on the URL in the ticket). It holds the render
-  _and_ the spec table, and it is what you build against. A component ticket without one is
-  missing its spec: escalate `spec` rather than inventing it.
-- Load `aisf:tdd`, `project-architecture`, `project-testing` and `project-toolchain`, plus each
-  skill they name under `## Load also`.
-- List the exact files, the states, the behaviours and which test proves each. No code first.
+- Read the leaf body and the mock `.aisf/design/mocks/<part>.html`. It is what you build
+  against. Read `.aisf/design/tokens.css`.
+- Load `aisf:tdd`, `project-design` and `project-testing`, plus each skill they name under
+  `## Load also`. Never `project-architecture`: `aisf:review-code` checks it (Guard rails).
+- List the files, the states, the behaviours and which test proves each. No code first.
 
-If it replaces a component, deleting that is part of the job, not a follow-up.
+If the leaf replaces a component, deleting it is part of the job.
 
-## 3. Render loop
+## 3. Claim and branch
 
-Start the Vite app (the `packages/ui` dev server, per `project-toolchain`) and keep it running.
-Take a headless-Chrome screenshot of the page showing the component in **both themes**, every
-time:
+As `aisf:implement-ticket` §3: guarded `ready → in-progress` first (resume: nothing; rework:
+per `aisf:implement-ticket`'s `rework.md`), then the branch.
 
-    google-chrome --headless --hide-scrollbars --window-size=<width>,<height> \
-      --virtual-time-budget=5000 --screenshot=<tmp>/<component>-light.png <url>
+## 4. Build
 
-    google-chrome --headless --hide-scrollbars --window-size=<width>,<height> \
-      --virtual-time-budget=5000 --screenshot=<tmp>/<component>-dark.png <url-with-dark>
-
-`kit.css` themes through `prefers-color-scheme` and a `data-theme` attribute. Headless Chrome has
-no flag for the colour scheme, so get dark by loading a page that sets `data-theme="dark"` on
-`<html>`: a query parameter the render page reads, or a small wrapper page under `<tmp>`. Give
-the loop a render page that shows every state of the component side by side, so one shot covers
-them all.
-
-Screenshots go under `<tmp>`. Nothing visual is versioned, and no new dependency is added.
-
-**Render, look at the PNG (Read it), compare against the mock, adjust, render again.**
-
-Actually look at it, beside the mock's render. Then walk the ticket's checklist (anatomy,
-layout, dimensions, spacing, colour, typography, shape, iconography, states) and decide per
-line: matches or doesn't. A line you did not check is a line you did not build.
-
-Use the token, not the literal. The ticket gives every colour as hex _and_ `kit.css` token: the
-token goes in the code so the component follows the theme instead of freezing one palette. A
-colour with no token: follow what the ticket decided instead of approximating.
-
-**Stop when every checklist item matches or has a stated reason it can't.** Pixel-perfect is not
-the goal. An unresolvable difference is not a failure: carry it to the PR as a known deviation.
-Swallowing it silently is the only wrong move, and quitting at the first render because it looks
-roughly right is the same mistake in the other direction.
-
-## 4. Behaviour, with TDD
+### Behaviour, with TDD
 
 Per `aisf:tdd`, one behaviour per Red-Green-Refactor cycle: what a click or key does, which
-state the view model describes for each input (the `describe-*` functions), callbacks and
-navigation.
+state a view model describes for each input, callbacks, navigation. **Never assert geometry**:
+no padding, radius or colour equality, no counting wrapper elements. Test layout follows
+`project-testing`.
 
-**Never assert geometry**: no padding, radius or colour equality, no counting wrapper elements.
-Those restate the code, break on every legitimate tweak and teach the next person to update tests
-without thinking. Geometry is what the render is for.
+**Stay inside Scope.** What the leaf lists under **Out** belongs to a sibling. A hidden
+dependency, or needed work outside Scope: as `aisf:implement-ticket` §4 (park, or escalate
+`spec`).
 
-Placement and wiring follow `project-architecture`, test layout follows `project-testing`.
+### Render loop
 
-**Stay inside Scope.** What the ticket lists under **Out** belongs to a sibling. Editing their
-files creates a conflict in their PR.
+Render with the `## Visual rendering` recipe in `project-testing`, once per state the leaf
+lists, in light and dark. Write the PNGs to `.aisf/images/` in this worktree, named
+`<part>-<state>-light.png` and `<part>-<state>-dark.png`.
 
-## 5. Verify acceptance criteria
+**Render, Read the PNG, compare it with the mock, adjust, render again.** Then walk the leaf's
+checklist line by line and decide per line: matches or doesn't. A line not checked is a line
+not built.
 
-Every criterion gets evidence, by kind:
+Use tokens from `.aisf/design/tokens.css`, never literals. A colour with no token: follow what
+the leaf decided.
 
-- **Behavioural**: the passing test that asserts it, named.
-- **A command**: run it verbatim and show the output.
-- **Visual**: the render plus your verdict on that criterion. "Matches the mock" is not
-  evidence. "16px padding, radius 12, `var(--surface)`: matches; dark `--accent` reads heavier
-  than the mock, noted as a deviation" is.
+**Stop when every line matches or has a stated reason it can't.** Pixel-perfect is not the
+goal. An unresolved difference goes to the PR as a known deviation. Swallowing it is the only
+wrong move.
 
-Vague or unprovable as written → escalate `spec`, never quietly rate it green.
+Images are never committed or uploaded. `.aisf/` is gitignored: never `git add -f` an image.
 
-## 6. Publish the render
+## 5. Green
 
-Publish the final light and dark PNGs as an `Artifact` and keep the URL. Nothing visual is
-committed, so this is the only durable record of what was built: it puts mock and result side by
-side in the PR without anyone checking out the branch. Stop the dev server.
+As `aisf:implement-ticket` §5.
 
-## 7. The PR
+## 6. Code review
 
-The PR body follows `aisf:implement-ticket` §10. Evidence shows Before = the ticket's mock URL,
-After = the render URL from step 6. Merge danger lists every unresolved difference from the mock,
-and why. Report as §10 does, plus the render URL.
+As `aisf:implement-ticket` §6. The prompt is the leaf's spec, verbatim.
 
-**What you are giving up.** There is no visual regression net, and nothing checks the
-assembled page against the design once the components land.
+## 7. Verify AC
 
-## Left to Epic: Design path (#34)
+Every criterion gets evidence:
 
-This is the bare-bones version. It does not handle:
+- **Behaviour** → the passing test that asserts it, by name.
+- **A command** → run it verbatim, show the output.
+- **Visual** → a per-line verdict as text, with the image file named.
+  "Matches the mock" is not evidence. "16px padding, `var(--surface)`: matches; dark `--accent`
+  reads heavier than the mock" is.
 
-- `aisf:design` and the local design canvas.
-- The `## Design tokens` and `## Visual rendering` project slots: the loop is fixed to
-  `kit.css` and headless Chrome.
-- Gating on `type: ui` and `## UI: yes`.
-- The Design this and Attach design entry points.
+A fixable gap → back to §4. A vague or unprovable criterion → escalate `spec`. The leaf has no `hitl` and no
+`aisf_checkpoint`: the PR review is the human check. No Artifact tool call is made.
+
+## 8. to 10.
+
+§8 Simplicity review, §9 Commit and §10 PR as `aisf:implement-ticket`. PR Evidence:
+
+- Names the mock path and each image file in `.aisf/images/`, and says the images show on the
+  ticket page.
+- Gives the per-line verdict as text.
+- Merge danger lists every unresolved difference from the mock, and why.
+- No image is uploaded or committed.
+
+Rework (`--since`) re-renders and replaces the images.
