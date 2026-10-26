@@ -2,21 +2,35 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Boards</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Design</title>
+    <link rel="stylesheet" href="/aisf/styles/board.css" />
+    <script type="module" src="/aisf/board/board-shell.js"></script>
   </head>
-  <body>
-    <ul id="boards"></ul>
-    <script>
-      fetch('./index.json')
-        .then((response) => response.json())
-        .then((index) => {
-          const list = document.getElementById('boards');
-          for (const board of index.boards ?? []) {
-            const item = document.createElement('li');
-            item.textContent = board.title ?? board.file ?? String(board);
-            list.append(item);
-          }
-        });
-    </script>
+  <body class="board">
+    <header class="board-header">
+      <div class="board-title-group">
+        <h1 class="board-title">Design</h1>
+        <span class="board-round" hidden></span>
+      </div>
+      <button type="button" class="board-zoom" title="Reset to 100%" hidden></button>
+      <span class="board-chip" role="status" hidden></span>
+    </header>
+    <p class="board-banner" role="status" hidden>This page is closed. Input is off.</p>
+    <div class="board-loading">
+      <p class="board-loading-label" role="status">Loading design…</p>
+      <div class="board-skeletons">
+        <div class="board-skeleton"></div>
+        <div class="board-skeleton"></div>
+      </div>
+    </div>
+    <div class="board-missing" hidden>
+      <h2>Design folder missing</h2>
+      <p>No design found here. <code>index.json</code> returned 404.</p>
+    </div>
+    <div class="board-body" hidden>
+      <main id="board-canvas"></main>
+      <aside id="board-panel"></aside>
+    </div>
   </body>
 </html>

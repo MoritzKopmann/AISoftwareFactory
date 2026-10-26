@@ -1,0 +1,149 @@
+/* The board page's frame. Linked from board.html only. Colours are kit tokens, never literals. */
+
+.board [hidden] {
+  display: none !important;
+}
+
+/* Background, text colour and font come from the kit's body rule. */
+body.board {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  padding: 0;
+}
+
+.board-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.board-title-group {
+  display: flex;
+  flex: 1 1 240px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  min-width: 0;
+}
+
+.board-title {
+  margin: 0;
+  font: 700 18px / 1.3 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+
+.board-round,
+.board-loading-label {
+  font: 500 11px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.board-zoom {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--text);
+  font: 500 11px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.board-chip {
+  padding: 4px 8px;
+  border: 1px solid currentcolor;
+  font: 700 11px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+}
+
+.board-chip[data-tone='hitl'] {
+  color: var(--hitl);
+}
+
+.board-chip[data-tone='warn'] {
+  color: var(--warn);
+}
+
+.board-chip[data-tone='ok'] {
+  color: var(--ok);
+}
+
+.board-chip[data-tone='muted'] {
+  color: var(--muted);
+}
+
+.board-banner {
+  padding: 10px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-strong);
+  font-weight: 600;
+}
+
+.board-loading {
+  display: grid;
+  gap: 20px;
+  padding: 24px 16px;
+}
+
+.board-skeletons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.board-skeleton {
+  width: 440px;
+  max-width: 100%;
+  height: 280px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.board-missing {
+  display: grid;
+  gap: 8px;
+  max-width: 560px;
+  padding: 48px 16px;
+}
+
+.board-missing h2 {
+  margin: 0;
+  font: 700 16px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--danger);
+}
+
+.board-missing p {
+  color: var(--muted);
+}
+
+.board-body {
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+#board-canvas {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+#board-panel {
+  flex: 0 0 360px;
+}
