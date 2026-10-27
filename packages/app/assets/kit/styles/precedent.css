@@ -50,7 +50,17 @@ aisf-precedent > [vetoed] .aisf-precedent-text {
   text-decoration-color: var(--danger);
 }
 
-.aisf-precedent-source {
+.aisf-precedent-toggle {
+  justify-self: start;
+}
+
+.aisf-precedent-body[hidden] {
+  display: none;
+}
+
+.aisf-precedent-source,
+.aisf-precedent-how {
+  margin: 0;
   color: var(--muted);
   font: 400 12px var(--font-mono);
 }

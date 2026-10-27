@@ -42,9 +42,9 @@ describe('AisfRoundElement', () => {
     });
   });
 
-  it('should save once with the final text when the human types quickly into Other', async () => {
+  it('should save once with the final text when the human types quickly into the text field', async () => {
     await mount(round(1, questions(1)));
-    const text = $<HTMLInputElement>('.aisf-other-text');
+    const text = $<HTMLTextAreaElement>('.aisf-text-answer');
 
     for (const value of ['a', 'ab', 'abc']) {
       await type(text, value);
@@ -54,7 +54,7 @@ describe('AisfRoundElement', () => {
 
     expect(aisf.saves).toHaveLength(1);
     expect(aisf.lastSave).toMatchObject({
-      rounds: { '1': { answers: { q0: { choice: 'other', text: 'abc' } } } },
+      rounds: { '1': { answers: { q0: { choice: 'text', text: 'abc' } } } },
     });
   });
 
@@ -74,27 +74,25 @@ describe('AisfRoundElement', () => {
     expect(document.querySelector('.aisf-notice-unsaved')).toBeNull();
   });
 
-  it('should restore choice, text and note and mark each answered when a draft is loaded', async () => {
+  it('should restore choice and text and mark each answered when a draft is loaded', async () => {
     aisf.draft = {
       rounds: {
         '1': {
           answers: {
             q0: { choice: 'two' },
-            q1: { choice: 'other', text: 'mine' },
-            q2: { choice: 'discuss', note: 'talk' },
+            q1: { choice: 'text', text: 'mine' },
           },
         },
       },
     };
 
-    await mount(round(1, questions(3)));
+    await mount(round(1, questions(2)));
 
     expect($<HTMLInputElement>('aisf-question[name=q0] aisf-card[value=two] input').checked).toBe(
       true,
     );
-    expect($<HTMLInputElement>('aisf-question[name=q1] .aisf-other-text').value).toBe('mine');
-    expect($<HTMLInputElement>('aisf-question[name=q2] .aisf-discuss-note').value).toBe('talk');
-    expect($$('aisf-question[answered]')).toHaveLength(3);
+    expect($<HTMLTextAreaElement>('aisf-question[name=q1] .aisf-text-answer').value).toBe('mine');
+    expect($$('aisf-question[answered]')).toHaveLength(2);
   });
 
   it('should start empty with Submit locked when there is no draft', async () => {
@@ -104,21 +102,36 @@ describe('AisfRoundElement', () => {
     expect($<HTMLButtonElement>('.aisf-submit').disabled).toBe(true);
   });
 
-  it('should not count Other as answered when its text is empty', async () => {
+  it('should keep Submit locked when the text field holds only spaces', async () => {
     await mount(round(1, questions(1)));
 
-    await click($('.aisf-other-radio'));
+    await type($('.aisf-text-answer'), '  ');
 
     expect($('aisf-question').hasAttribute('answered')).toBe(false);
     expect($<HTMLButtonElement>('.aisf-submit').disabled).toBe(true);
   });
 
-  it('should count Discuss as answered when it has no note', async () => {
+  it('should restore the text and no card when a saved draft holds a text answer', async () => {
+    aisf.draft = {
+      rounds: { '1': { answers: { q0: { choice: 'text', text: 'use a queue' } } } },
+    };
+
     await mount(round(1, questions(1)));
 
-    await click($('.aisf-discuss-radio'));
+    expect($<HTMLTextAreaElement>('.aisf-text-answer').value).toBe('use a queue');
+    expect($$('aisf-card[selected]')).toHaveLength(0);
+  });
 
-    expect($('aisf-question').hasAttribute('answered')).toBe(true);
+  it('should send the text answer and freeze it as an own answer when submitted', async () => {
+    await mount(round(1, questions(1)));
+    await type($('.aisf-text-answer'), 'use a queue');
+
+    await click($('.aisf-submit'));
+
+    expect(aisf.sent[0]?.payload).toEqual({
+      answers: [{ question: 'q0', choice: 'text', text: 'use a queue' }],
+    });
+    expect($('.aisf-summary-answer').textContent).toBe('Own answer: use a queue');
   });
 
   it('should unlock Submit and count answers when every question is answered', async () => {
@@ -304,5 +317,46 @@ describe('AisfRoundElement', () => {
 
     expect($('aisf-round').hasAttribute('frozen')).toBe(true);
     expect($('.aisf-frozen-summary')).toBeTruthy();
+  });
+
+  it('should submit one answer per question when a create-ticket style round is answered by card or text', async () => {
+    await mount(
+      round(
+        1,
+        `<aisf-question name="a" heading="A?"><aisf-card value="x" suggested>X</aisf-card><aisf-card value="y">Y</aisf-card><aisf-context kind="mockup"><div>m</div></aisf-context></aisf-question>
+        <aisf-question name="b" heading="B?"><aisf-card value="x">X</aisf-card></aisf-question>`,
+      ),
+    );
+    await pick('a', 'x');
+    await type($('aisf-question[name=b] .aisf-text-answer'), 'own');
+
+    await click($('.aisf-submit'));
+
+    expect(aisf.sent[0]).toMatchObject({
+      kind: 'submit',
+      payload: {
+        answers: [
+          { question: 'a', choice: 'x' },
+          { question: 'b', choice: 'text', text: 'own' },
+        ],
+      },
+    });
+  });
+
+  it('should submit one answer per question when an onboard style round is answered', async () => {
+    await mount(
+      round(
+        1,
+        `<aisf-question name="c" heading="C?"><aisf-meta label="Source">scanned</aisf-meta><aisf-card value="confirm">Confirm</aisf-card></aisf-question>`,
+      ),
+    );
+    await pick('c', 'confirm');
+
+    await click($('.aisf-submit'));
+
+    expect(aisf.sent[0]).toMatchObject({
+      kind: 'submit',
+      payload: { answers: [{ question: 'c', choice: 'confirm' }] },
+    });
   });
 });

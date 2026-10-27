@@ -11,7 +11,7 @@ Build it with `aisf:artifacts` (read it and `references/elements.md` first) and 
 - **One `<aisf-round>` per grilling round.** Each question is an `<aisf-question>` with one
   `<aisf-card>` per option, the suggestion marked `suggested`.
 - **Settled by precedent** is an `<aisf-precedent>` under the round's questions, one child per
-  decision. The answer is `{answers, vetoes}`. A veto turns that decision into a question in
+  decision. Each row carries `source` (what settled it) and `how` (how it settled it). The answer is `{answers, vetoes}`. A veto turns that decision into a question in
   the next round.
 - **A question a step 7 spec subagent returns** goes on the same page as a further round.
 - **Confirm** is the last `<aisf-confirm>` round: one `<aisf-task>` per sub-issue with its
@@ -100,7 +100,7 @@ the context is your job, never the human's.
 ```
 
 - `problem` holds the problem, `gain`, `cost` and `effect` each option's consequence,
-  `<aisf-more>` the depth. The kit adds Other and Discuss.
+  `<aisf-more>` the depth. The kit adds one free text field.
 
 - **A figure is the default.** It shows each option, not only today's state: comparing the
   options is what the human decides on. Only a pure naming or wording choice goes without, and
@@ -133,7 +133,7 @@ the context is your job, never the human's.
 
 ## Reading the answer
 
-Read it as `aisf:artifacts` says (_Reading the answer_). Answer Discuss notes briefly in chat.
+Read it as `aisf:artifacts` says (_Reading the answer_). Answer a free text answer (`choice` is `text`) briefly in chat.
 Earlier rounds freeze into read-only summaries: decision · answer · `assumes:`.
 
 The page is a decision device: disposable, and never linked from GitHub.

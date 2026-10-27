@@ -196,11 +196,11 @@ per-criterion questions. One
   from `<n>`'s text, and its criteria numbered (A1, A2, B1 …).
 - **Part criteria:** `<n>`'s criteria regrouped verbatim. A criterion touching several parts goes
   to each. New criteria only from the human's note.
-- Cards: accept (`suggested`) and reject. The card tells the human to use Discuss for long edits.
+- Cards: accept (`suggested`) and reject. The card tells the human to use the text field for long edits.
 
 **Answers.**
 
-- **Other or Discuss** → the next round redraws the revised split. Nothing is posted. Only a
+- **Text answer** → the next round redraws the revised split. Nothing is posted. Only a
   clean accept posts.
 - **Reject** → the next round asks today's round-1 questions. Steps 4–8 run as today.
 - **Accept** → check each part body against the Spec check and `aisf:github-issue`'s cold-read

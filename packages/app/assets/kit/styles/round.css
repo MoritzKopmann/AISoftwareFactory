@@ -127,8 +127,7 @@ aisf-round[frozen]:has(aisf-confirm)::before {
   }
 }
 
-.aisf-other-text,
-.aisf-discuss-note,
+.aisf-text-answer,
 .aisf-confirm-note {
   min-width: 0;
   width: 100%;

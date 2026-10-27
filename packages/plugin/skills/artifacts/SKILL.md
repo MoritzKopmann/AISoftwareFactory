@@ -85,7 +85,8 @@ arrives later in the resume prompt. Read it the same way.
 Every element is in `references/elements.md`.
 
 - `<aisf-round>`: one round of questions or one confirm. Sends the event.
-- `<aisf-question>`: one question. Holds cards, plus Other and Discuss.
+- `<aisf-question>`: one question. Holds cards, optional definitions, and one free text field.
+- `<aisf-definitions>`: terms a question uses, explained, collapsed.
 - `<aisf-card>`: one choice. May be `suggested`.
 - `<aisf-context>`: code, mockup or diagram shown with a question.
 - `<aisf-confirm>`: note, Confirm and Reopen for a round.

@@ -2,7 +2,7 @@ import { announceChange, buildElement, isRecord, setPart } from '../support/dom.
 
 /**
  * Decisions settled by precedent, each with a veto switch and an optional note. Items are the
- * element's children carrying a `name` and optionally a `source` attribute; their text is the
+ * element's children carrying a `name` and optionally `source` and `how` attributes; their text is the
  * decision.
  */
 export class AisfPrecedentElement extends HTMLElement {
@@ -71,6 +71,29 @@ export class AisfPrecedentElement extends HTMLElement {
     /** @type {HTMLLabelElement} */ (item.querySelector('.aisf-veto-note-label')).hidden = !vetoed;
   }
 
+  /**
+   * @param {HTMLElement} item
+   * @returns {HTMLElement[] | undefined} the toggle and its hidden body, none without source and how
+   */
+  foldOut(item) {
+    const source = item.getAttribute('source');
+    const how = item.getAttribute('how');
+    if (source === null && how === null) return undefined;
+    const body = buildElement('div', 'aisf-precedent-body');
+    body.hidden = true;
+    if (source !== null)
+      body.append(buildElement('p', 'aisf-precedent-source', `Source: ${source}`));
+    if (how !== null) body.append(buildElement('p', 'aisf-precedent-how', `How: ${how}`));
+    const toggle = buildElement('button', 'aisf-precedent-toggle', 'Details');
+    toggle.type = 'button';
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.addEventListener('click', () => {
+      body.hidden = !body.hidden;
+      toggle.setAttribute('aria-expanded', String(!body.hidden));
+    });
+    return [toggle, body];
+  }
+
   /** Internal. Builds the heading, and each item's text, source, veto switch and note once. */
   render() {
     setPart(
@@ -83,9 +106,8 @@ export class AisfPrecedentElement extends HTMLElement {
       if (item.querySelector('.aisf-veto-switch') !== null) continue;
       const text = buildElement('span', 'aisf-precedent-text', item.textContent ?? '');
       item.replaceChildren(text);
-      const source = item.getAttribute('source');
-      if (source !== null)
-        item.append(buildElement('span', 'aisf-precedent-source', `Source: ${source}`));
+      const fold = this.foldOut(item);
+      if (fold !== undefined) item.append(...fold);
       const box = buildElement('span', 'aisf-veto-box');
       box.setAttribute('aria-hidden', 'true');
       const toggle = buildElement('button', 'aisf-veto-switch');

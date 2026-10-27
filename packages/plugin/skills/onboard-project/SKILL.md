@@ -119,7 +119,7 @@ confirmed. Each shows:
 
 - a source badge as `<aisf-meta label="Source">`: `migrated`, `scanned`, `suggested` or `you said`;
 - the draft as `<aisf-context kind="code">`;
-- cards `confirm` and, via Other, the edit text.
+- cards `confirm` and, via the text field, the edit text.
 
 Submit needs every question answered: that is the explicit confirm or edit. Apply edits, update
 the ledger, re-show only what changed or is still open. Repeat until every section is

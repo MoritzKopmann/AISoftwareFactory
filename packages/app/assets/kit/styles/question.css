@@ -69,9 +69,7 @@ aisf-question[answered]::after {
   display: none;
 }
 
-.aisf-card-radio,
-.aisf-other-radio,
-.aisf-discuss-radio {
+.aisf-card-radio {
   appearance: none;
   flex: none;
   display: grid;
@@ -85,11 +83,11 @@ aisf-question[answered]::after {
   cursor: pointer;
 }
 
-:is(.aisf-card-radio, .aisf-other-radio, .aisf-discuss-radio):checked {
+.aisf-card-radio:checked {
   border-color: var(--accent);
 }
 
-:is(.aisf-card-radio, .aisf-other-radio, .aisf-discuss-radio):checked::before {
+.aisf-card-radio:checked::before {
   content: '';
   width: 8px;
   height: 8px;
@@ -290,44 +288,60 @@ aisf-more {
   display: none;
 }
 
-/* Other and Discuss are dashed, so the human's own answer reads apart from the proposals. */
-.aisf-choice {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 10px;
-  align-items: center;
+/* The one free text field: dashed, so the human's own answer reads apart from the proposals. */
+.aisf-text-field {
+  display: grid;
+  gap: 4px;
   min-width: 0;
-  min-height: 44px;
   padding: 9px 12px;
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius);
-  cursor: pointer;
 }
 
-.aisf-choice:has(input[type='radio']:checked) {
+.aisf-text-field:focus-within {
   background: var(--accent-soft);
   border-style: solid;
   border-color: var(--accent);
 }
 
-.aisf-choice-label {
+.aisf-text-label {
   font-weight: 600;
 }
 
-.aisf-other-text {
-  flex: 1 1 200px;
-  width: auto;
-  min-height: 32px;
-}
-
-.aisf-discuss-note {
-  flex: 1 1 100%;
+.aisf-text-answer {
   min-height: 72px;
   resize: vertical;
 }
 
-.aisf-choice-discuss:not(:has(.aisf-discuss-radio:checked)) .aisf-discuss-note {
+aisf-definitions {
+  display: block;
+  min-width: 0;
+}
+
+.aisf-definitions-toggle,
+.aisf-precedent-toggle {
+  min-height: 32px;
+  padding: 0 10px;
+  background: var(--surface);
+  color: var(--muted);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font: var(--label-weight) var(--label-size) var(--label-font);
+  text-transform: var(--label-transform);
+  letter-spacing: var(--label-spacing);
+  cursor: pointer;
+}
+
+.aisf-definitions-body[hidden] {
   display: none;
+}
+
+.aisf-definitions-body dt {
+  font-weight: 600;
+}
+
+.aisf-definitions-body dd {
+  margin: 0 0 6px;
 }
 
 /* Locked: the element disables every input while saving, busy or closed. */
@@ -335,7 +349,7 @@ aisf-more {
   opacity: 0.6;
 }
 
-.aisf-choices:has(input:disabled) :is(.aisf-card-choice, .aisf-choice, input) {
+.aisf-choices:has(input:disabled) :is(.aisf-card-choice, input) {
   cursor: not-allowed;
 }
 
