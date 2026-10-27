@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { registry } from '../../../assets/kit/kit.js';
@@ -24,7 +24,7 @@ describe('specimens page', () => {
     expect(source).toContain('data-theme');
   });
 
-  it('should keep the chip rules in context.css and import figures.css when read', () => {
+  it('should keep the chip rules in context.css and the playback shapes in figures.css when read', () => {
     const styles = resolve(import.meta.dirname, '../../../assets/kit');
     const context = readFileSync(resolve(styles, 'styles/context.css'), 'utf8');
     const kitCss = readFileSync(resolve(styles, 'kit.css'), 'utf8');
@@ -36,6 +36,7 @@ describe('specimens page', () => {
       expect(context).toContain(`.aisf-${chip}`);
     }
     expect(kitCss).toContain("@import './styles/figures.css';");
+    expect(kitCss).toContain('--figure-grid');
   });
 
   it('should show every element, figure class and state when mounted', async () => {
@@ -62,27 +63,6 @@ describe('specimens page', () => {
     ]) {
       expect($$(`.${figureClass}`).length, figureClass).toBeGreaterThan(0);
     }
-    for (const pieceClass of [
-      'aisf-compare',
-      'aisf-panel',
-      'aisf-panel-now',
-      'aisf-panel-suggested',
-      'aisf-diff',
-      'aisf-table',
-      'aisf-scope',
-      'aisf-scope-in',
-      'aisf-scope-out',
-      'aisf-shape',
-      'aisf-shape-new',
-      'aisf-shape-changed',
-      'aisf-shape-untouched',
-      'aisf-label',
-      'aisf-edge',
-    ]) {
-      expect($$(`.${pieceClass}`).length, pieceClass).toBeGreaterThan(0);
-    }
-    expect($$('svg.aisf-computed[role="img"]').length).toBeGreaterThanOrEqual(3);
-    expect($$('.aisf-shape-flagged').length).toBeGreaterThan(0);
     // The playback map brings its own switches; these two count the static specimen.
     const staticSwitches = $$('.aisf-switch').filter(
       (entry) => entry.closest('aisf-playback') === null,
@@ -109,5 +89,21 @@ describe('specimens page', () => {
     expect($$('aisf-round[frozen] aisf-confirm .aisf-frozen-summary').length).toBeGreaterThan(0);
     expect($$('aisf-question').length).toBeGreaterThanOrEqual(10);
     expect($$('aisf-task').length).toBeGreaterThanOrEqual(12);
+  });
+
+  it('should name no deleted prefab piece anywhere in the kit, its tests or the skills when scanned', () => {
+    const root = resolve(import.meta.dirname, '../../../../..');
+    const deleted =
+      /aisf-(sequence|actor|step|state|modmap|unit|compare|panel|diff|table|scope|label|edge|lifeline|arrowhead)\b/;
+    const folders = ['packages/app/assets/kit', 'packages/plugin/skills'];
+    const hits = folders
+      .flatMap((folder) =>
+        readdirSync(resolve(root, folder), { recursive: true, withFileTypes: true })
+          .filter((entry) => entry.isFile() && /\.(js|css|html|md)$/.test(entry.name))
+          .map((entry) => resolve(entry.parentPath, entry.name)),
+      )
+      .filter((file) => deleted.test(readFileSync(file, 'utf8')));
+
+    expect(hits).toEqual([]);
   });
 });

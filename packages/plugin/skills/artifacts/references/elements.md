@@ -225,65 +225,6 @@ and `fact` give the premise. Nest nodes to show what depends on what. Sends noth
 </aisf-tree-node>
 ```
 
-## `<aisf-sequence>`
-
-Attributes: none
-
-A sequence diagram, drawn for you. Holds `<aisf-actor>` (one lifeline column each, in order) and
-`<aisf-step>` (one arrow row each, in order). A step naming an actor you did not list adds it
-as the last column, with a warning outline. Sends nothing.
-
-```html
-<aisf-sequence>
-  <aisf-actor name="scheduler"></aisf-actor>
-  <aisf-actor name="runner"></aisf-actor>
-  <aisf-step from="scheduler" to="runner" mark="new">start(run)</aisf-step>
-</aisf-sequence>
-```
-
-## `<aisf-actor>`
-
-Attributes: `name`
-
-One column of `<aisf-sequence>`. `name` is its heading and the value `from` and `to` use.
-Draws nothing itself.
-
-## `<aisf-step>`
-
-Attributes: `from`, `to`, `mark`
-
-One arrow, inside `<aisf-sequence>` or `<aisf-state>`. `from` and `to` name the ends. The body
-is the label. `mark` is `new`, `changed` or `untouched`; leave it out for a plain arrow. Draws
-nothing itself.
-
-## `<aisf-state>`
-
-Attributes: none
-
-A lifecycle, drawn for you. Holds `<aisf-step>`. The states are the distinct `from` and `to`
-values, in order of first appearance. Sends nothing.
-
-```html
-<aisf-state>
-  <aisf-step from="ready" to="in-progress">claim</aisf-step>
-  <aisf-step from="in-progress" to="ready">reset</aisf-step>
-</aisf-state>
-```
-
-## `<aisf-modmap>`
-
-Attributes: `layers`
-
-A module × layer grid, drawn for you. `layers` lists the rows, space separated. Holds
-`<aisf-unit>`. Modules are the columns, in order of first appearance. A unit naming a layer not
-in `layers` adds a last row, with a warning outline. Sends nothing.
-
-```html
-<aisf-modmap layers="presentation business">
-  <aisf-unit module="runs" layer="business" mark="changed">RunService</aisf-unit>
-</aisf-modmap>
-```
-
 ## `<aisf-playback>`
 
 Attributes: none
@@ -318,10 +259,3 @@ Sends nothing.
 - `pending: "Q3"` makes the block read "pending Q3".
 - Bad JSON draws one warning box and nothing else.
 - **Write every `<` in a JSON string as `\u003c`.** A raw `</script` ends the script tag early.
-
-## `<aisf-unit>`
-
-Attributes: `module`, `layer`, `mark`
-
-One box of `<aisf-modmap>`. `module` picks the column, `layer` the row. The body is the label.
-`mark` is `new`, `changed` or `untouched`. Draws nothing itself.

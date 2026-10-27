@@ -78,7 +78,6 @@ arrives later in the resume prompt. Read it the same way.
   font stacks and inline `style=""`.
 - **Graphics carry the page.** Prose only captions them.
 - **One short card per question.**
-- **Narrow width works,** with no horizontal scroll.
 
 ## Index
 
@@ -95,11 +94,7 @@ Every element is in `references/elements.md`.
 - `<aisf-figure>`: a captioned figure.
 - `<aisf-tree-node>`: one row of the decision tree.
 - `<aisf-more>`: longer detail for a question, collapsed.
-- `<aisf-sequence>`, `<aisf-actor>`, `<aisf-step>`: a sequence diagram.
-- `<aisf-state>`: a lifecycle, from `<aisf-step>`.
-- `<aisf-modmap>`, `<aisf-unit>`: a module × layer grid.
 - `<aisf-playback>`: the playback map, drawn from one JSON object: a box per class, a block per public function, wires between them.
 
-Layout pieces (`.aisf-compare`, `.aisf-diff`, `table.aisf-table`, `.aisf-scope`) and free-SVG
-classes (`aisf-shape*`, `aisf-label`, `aisf-edge`) have a full example each in
-`references/figures.md`.
+Free visuals are plain HTML and SVG in `<aisf-figure>`. The rules, the kept classes and the
+honesty rules are in `references/figures.md`.

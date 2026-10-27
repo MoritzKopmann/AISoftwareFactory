@@ -19,12 +19,6 @@ const documented: Record<string, string[]> = {
   'aisf-tree-node': ['round', 'question', 'resolution', 'rejected', 'assumes', 'fact'],
   'aisf-task': ['number', 'heading', 'blocked-by', 'files', 'risk', 'hitl'],
   'aisf-precedent': [],
-  'aisf-actor': ['name'],
-  'aisf-step': ['from', 'to', 'mark'],
-  'aisf-unit': ['module', 'layer', 'mark'],
-  'aisf-sequence': [],
-  'aisf-state': [],
-  'aisf-modmap': ['layers'],
   'aisf-playback': [],
 };
 
@@ -44,10 +38,10 @@ describe('kit', () => {
     expect(document.querySelector('aisf-question .aisf-choices aisf-card')).not.toBeNull();
   });
 
-  it('should hold exactly one arrowhead marker in a hidden svg when the kit loads', () => {
-    const markers = document.querySelectorAll('#aisf-arrowhead');
-
-    expect(markers).toHaveLength(1);
-    expect(markers[0]?.closest('svg')?.getAttribute('aria-hidden')).toBe('true');
+  it('should leave the removed prefab tags undefined and add no arrowhead marker when the kit loads', () => {
+    for (const tag of ['sequence', 'actor', 'step', 'state', 'modmap', 'unit']) {
+      expect(customElements.get(`aisf-${tag}`), tag).toBeUndefined();
+    }
+    expect(document.getElementById('aisf-arrowhead')).toBeNull();
   });
 });
