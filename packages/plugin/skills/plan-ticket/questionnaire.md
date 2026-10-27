@@ -119,13 +119,13 @@ the context is your job, never the human's.
 | Decision about           | Figure                                                                          |
 | ------------------------ | ------------------------------------------------------------------------------- |
 | UI / UX                  | low-fi mockup, one per option (`aisf-context kind="mockup"`)                    |
-| Flow, order of calls     | `aisf-sequence`                                                                 |
-| State, lifecycle         | `aisf-state`                                                                    |
-| Where code lives         | `aisf-modmap`, new and changed units marked                                     |
-| Data shape, API, storage | `.aisf-diff`, before → after, by path                                           |
-| Library                  | `table.aisf-table`: fit, size, upkeep, precedent                                |
-| Options side by side     | `.aisf-compare` with one `.aisf-panel` per option                               |
-| Anything else            | free SVG with `aisf-shape*`, `aisf-label`, `aisf-edge`                          |
+| Flow, order of calls     | call order, new calls marked                                                    |
+| State, lifecycle         | states and the moves between them, new moves marked                             |
+| Where code lives         | modules and layers, new and changed units marked                                |
+| Data shape, API, storage | before → after, by path                                                         |
+| Library                  | a table: fit, size, upkeep, precedent                                           |
+| Options side by side     | one panel per option, side by side                                              |
+| Anything else            | a free drawing of the mechanism                                                 |
 | Necessary extension      | the criterion's path, with the forced extra work marked                         |
 | Playback                 | the playback map (_The playback map_)                                           |
 | Split proposal           | each part as a box: title, Context, Scope, its numbered criteria (A1, A2, B1 …) |
