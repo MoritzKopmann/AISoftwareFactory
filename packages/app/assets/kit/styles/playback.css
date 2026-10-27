@@ -1,0 +1,413 @@
+/* <aisf-playback>: the map is one svg; the controls and the route sheet are html. */
+aisf-playback {
+  display: block;
+  min-width: 0;
+}
+
+aisf-playback > script {
+  display: none;
+}
+
+.aisf-pb {
+  display: grid;
+  gap: var(--gap);
+  min-width: 0;
+}
+
+.aisf-pb-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+}
+
+.aisf-pb-switches,
+.aisf-pb-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.aisf-pb-criterion {
+  display: grid;
+  gap: 4px;
+  font-size: var(--text-size-sm);
+}
+
+.aisf-pb-criterion-row {
+  display: flex;
+  gap: 10px;
+}
+
+.aisf-pb-criterion-key {
+  flex: none;
+  font: 700 12px/1.4 var(--font-mono);
+  color: var(--info);
+}
+
+.aisf-pb-map {
+  min-width: 0;
+  padding: 4px;
+  background-color: var(--figure-bg);
+  background-image:
+    linear-gradient(var(--figure-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--figure-grid) 1px, transparent 1px);
+  background-size: 16px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.aisf-pb-svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Text: every label is a plain fill, never the stroke of its shape. */
+.aisf-pb-svg text {
+  stroke: none;
+  fill: var(--text);
+  font-family: var(--font-ui);
+}
+
+.aisf-pb-module-frame {
+  fill: color-mix(in srgb, var(--surface) 70%, transparent);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.aisf-pb-module[data-folded] .aisf-pb-module-frame {
+  stroke-dasharray: 5 3;
+}
+
+.aisf-pb-svg .aisf-pb-module-name,
+.aisf-pb-svg .aisf-pb-screen-name {
+  font: 700 13px var(--font-mono);
+  fill: var(--text);
+}
+
+.aisf-pb-svg :is(.aisf-pb-module-tag, .aisf-pb-screen-role, .aisf-pb-axis) {
+  font: 500 13px var(--font-mono);
+  fill: var(--muted);
+}
+
+.aisf-pb-svg .aisf-pb-note {
+  fill: var(--muted);
+}
+
+.aisf-pb-svg .aisf-pb-fold-word {
+  font: 600 13px var(--font-mono);
+  fill: var(--info);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.aisf-pb-screen-frame {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
+/* A box: the header is plain; the blocks carry the marks. */
+.aisf-pb-box-shape {
+  fill: var(--surface);
+}
+
+.aisf-pb-svg .aisf-pb-file {
+  font: 400 13px var(--font-mono);
+  fill: var(--muted);
+}
+
+.aisf-pb-svg .aisf-pb-class-name {
+  font: 700 13px var(--font-mono);
+}
+
+.aisf-pb-svg .aisf-pb-kind {
+  font: 500 13px var(--font-mono);
+  fill: var(--muted);
+}
+
+/* The group of a removed box or a flagged block must not paint its children. */
+g.aisf-pb-box.aisf-shape-removed,
+g.aisf-pb-block.aisf-shape-flagged {
+  fill: none;
+  stroke: none;
+  stroke-dasharray: none;
+}
+
+.aisf-pb-block-shape {
+  stroke-dasharray: none;
+  stroke-width: 1.5;
+}
+
+.aisf-pb-block-shape.aisf-shape-untouched {
+  stroke-dasharray: 5 3;
+}
+
+.aisf-pb-block-shape.aisf-shape-flagged {
+  stroke-dasharray: 4 3;
+}
+
+.aisf-pb-box-shape.aisf-shape-removed {
+  stroke-dasharray: 2 3;
+}
+
+.aisf-pb-block {
+  cursor: pointer;
+}
+
+.aisf-pb-svg .aisf-pb-sig {
+  font: 600 13px var(--font-mono);
+}
+
+.aisf-pb-svg .aisf-pb-mark {
+  font: 500 13px var(--font-mono);
+  fill: var(--muted);
+}
+
+.aisf-pb-svg .aisf-pb-does {
+  font: 400 13px var(--font-ui);
+}
+
+.aisf-pb-block-muted .aisf-pb-does,
+.aisf-pb-block-muted .aisf-pb-sig {
+  fill: var(--muted);
+  font-weight: 400;
+}
+
+.aisf-pb-divider {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.aisf-pb-block[data-off] {
+  opacity: 0.4;
+}
+
+.aisf-pb-map[data-focus] .aisf-pb-block:not([data-focus], [data-near]) {
+  opacity: 0.2;
+}
+
+.aisf-pb-block:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.aisf-pb-end {
+  fill: var(--danger);
+}
+
+/* Wires: right edge to left edge. Path B has its own ink. */
+.aisf-pb-wire {
+  fill: none;
+  stroke: var(--info);
+  stroke-width: 2.25;
+  marker-end: url(#aisf-pb-head);
+}
+
+.aisf-pb-wire[data-kind='event'] {
+  stroke-dasharray: 7 4;
+}
+
+.aisf-pb-wire[data-run='B'] {
+  stroke: var(--path-b);
+  marker-end: url(#aisf-pb-head-b);
+}
+
+.aisf-pb-wire[data-hot],
+.aisf-pb-wire[data-near] {
+  stroke: var(--accent);
+  stroke-width: 3.25;
+  marker-end: url(#aisf-pb-head-hot);
+}
+
+.aisf-pb-head {
+  fill: var(--info);
+}
+
+.aisf-pb-head-b {
+  fill: var(--path-b);
+}
+
+.aisf-pb-head-hot {
+  fill: var(--accent);
+}
+
+.aisf-pb-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.aisf-pb-start {
+  fill: var(--surface);
+  stroke: var(--info);
+  stroke-width: 2;
+}
+
+.aisf-pb-start[data-run='B'] {
+  stroke: var(--path-b);
+}
+
+.aisf-pb-svg .aisf-pb-start-label {
+  font: 700 13px var(--font-mono);
+  fill: var(--info);
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 3px;
+}
+
+.aisf-pb-svg .aisf-pb-start-label[data-run='B'] {
+  fill: var(--path-b);
+}
+
+.aisf-pb-map[data-focus] :is(.aisf-pb-wire, .aisf-pb-start, .aisf-pb-start-label):not([data-near]) {
+  opacity: 0.12;
+}
+
+.aisf-pb-badge-mark rect {
+  fill: var(--info);
+}
+
+.aisf-pb-badge-mark[data-run='B'] rect {
+  fill: var(--path-b);
+}
+
+.aisf-pb-svg .aisf-pb-badge-text {
+  font: 700 13px var(--font-mono);
+  fill: var(--surface);
+}
+
+.aisf-pb-wires[data-drawing] .aisf-pb-wire {
+  stroke-dasharray: var(--len) var(--len);
+  stroke-dashoffset: var(--len);
+  animation: aisf-pb-draw 0.28s ease-out forwards;
+  animation-delay: calc(var(--i) * 55ms);
+}
+
+@keyframes aisf-pb-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aisf-pb-wires[data-drawing] .aisf-pb-wire {
+    animation: none;
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+.aisf-pb-error {
+  stroke-width: 2;
+}
+
+/* Route sheet. */
+.aisf-pb-route {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 2px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-size-sm);
+}
+
+.aisf-pb-route-head {
+  grid-column: 1 / -1;
+  padding: 10px 4px 4px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.aisf-pb-route-all {
+  grid-column: 1 / -1;
+  color: var(--muted);
+}
+
+.aisf-pb-route-path {
+  font: 700 12px/1.4 var(--font-mono);
+  text-transform: var(--label-transform);
+  letter-spacing: 0.04em;
+  color: var(--info);
+}
+
+[data-run='B'] > .aisf-pb-route-path {
+  color: var(--path-b);
+}
+
+.aisf-pb-step {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 0 8px;
+  padding: 4px;
+  overflow-wrap: anywhere;
+}
+
+.aisf-pb-step > :is(.aisf-pb-step-hop, .aisf-pb-step-call, .aisf-pb-step-source) {
+  grid-column: 2;
+}
+
+.aisf-pb-step > .aisf-pb-badge {
+  grid-row: 1 / span 2;
+}
+
+.aisf-pb-step-hop {
+  font-family: var(--font-mono);
+}
+
+.aisf-pb-step-call,
+.aisf-pb-step-source {
+  color: var(--muted);
+}
+
+.aisf-pb-step-source {
+  font-family: var(--font-mono);
+}
+
+.aisf-pb-via {
+  margin-left: 8px;
+  padding: 0 5px;
+  font: 500 12px/1.4 var(--font-mono);
+  border: 1px solid var(--border-strong);
+}
+
+.aisf-pb-step[data-near] {
+  background: var(--accent-soft);
+}
+
+.aisf-pb-route[data-focus] .aisf-pb-step[data-step]:not([data-near]) {
+  opacity: 0.35;
+}
+
+.aisf-pb-step.aisf-shape-flagged {
+  outline: 2px dashed var(--danger);
+  fill: none;
+  stroke: none;
+}
+
+.aisf-pb-badge {
+  display: grid;
+  place-content: center;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 5px;
+  font: 700 12px/1 var(--font-mono);
+  color: var(--surface);
+  background: var(--info);
+  border-radius: 11px;
+}
+
+.aisf-pb-badge[data-run='B'] {
+  background: var(--path-b);
+}
+
+.aisf-pb-step-end {
+  grid-template-columns: 34px minmax(0, 1fr);
+}

@@ -97,6 +97,7 @@ Every element is in `references/elements.md`.
 - `<aisf-sequence>`, `<aisf-actor>`, `<aisf-step>`: a sequence diagram.
 - `<aisf-state>`: a lifecycle, from `<aisf-step>`.
 - `<aisf-modmap>`, `<aisf-unit>`: a module × layer grid.
+- `<aisf-playback>`: the playback map, drawn from one JSON object: a box per class, a block per public function, wires between them.
 
 Layout pieces (`.aisf-compare`, `.aisf-diff`, `table.aisf-table`, `.aisf-scope`) and free-SVG
 classes (`aisf-shape*`, `aisf-label`, `aisf-edge`) have a full example each in

@@ -6,6 +6,7 @@
 @import './styles/task.css';
 @import './styles/precedent.css';
 @import './styles/figures.css';
+@import './styles/playback.css';
 
 @font-face {
   font-family: 'Atkinson Hyperlegible Next';
@@ -69,6 +70,7 @@
   --info: #2d5f93;
   --hitl: #6b47c2;
   --ui: #0b7a75;
+  --path-b: #0b7a75;
 
   --font-ui: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
@@ -127,6 +129,7 @@
     --info: #7cb4ea;
     --hitl: #baa0ff;
     --ui: #4fd1c5;
+    --path-b: #4fd1c5;
 
     color-scheme: dark;
   }
@@ -151,6 +154,7 @@
   --info: #7cb4ea;
   --hitl: #baa0ff;
   --ui: #4fd1c5;
+  --path-b: #4fd1c5;
 
   color-scheme: dark;
 }

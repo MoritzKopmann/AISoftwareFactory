@@ -7,6 +7,7 @@ import { AisfFigureElement } from './elements/aisf-figure-element.js';
 import { AisfMetaElement } from './elements/aisf-meta-element.js';
 import { AisfMoreElement } from './elements/aisf-more-element.js';
 import { AisfModmapElement } from './elements/aisf-modmap-element.js';
+import { AisfPlaybackElement } from './elements/aisf-playback-element.js';
 import { AisfPrecedentElement } from './elements/aisf-precedent-element.js';
 import { AisfQuestionElement } from './elements/aisf-question-element.js';
 import { AisfRoundElement } from './elements/aisf-round-element.js';
@@ -39,6 +40,7 @@ export const registry = {
   'aisf-sequence': AisfSequenceElement,
   'aisf-state': AisfStateElement,
   'aisf-modmap': AisfModmapElement,
+  'aisf-playback': AisfPlaybackElement,
 };
 
 const ARROWHEAD_ID = 'aisf-arrowhead';

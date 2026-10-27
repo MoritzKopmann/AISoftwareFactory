@@ -73,6 +73,62 @@ Two `<aisf-context kind="code">`, before then after, by path.
 </aisf-modmap>
 ```
 
+## Playback
+
+One JSON object; the kit draws the map. See `<aisf-playback>` in `references/elements.md` for the full shape.
+
+```html
+<aisf-playback>
+  <script type="application/json">
+    {
+      "modules": [{ "id": "runs", "mark": "changed", "tag": "changed" }],
+      "screens": [],
+      "classes": [
+        {
+          "id": "useCase",
+          "module": "runs",
+          "layer": "business",
+          "file": "retry-run.ts",
+          "name": "RetryRun",
+          "kind": "use case",
+          "mark": "changed",
+          "fns": [
+            {
+              "id": "execute",
+              "sig": "execute(runId)",
+              "mark": "new",
+              "does": "Queues the run again."
+            },
+            {
+              "id": "load",
+              "sig": "load(runId)",
+              "mark": "changed",
+              "source": "src/run.ts",
+              "does": "Reads one run."
+            }
+          ]
+        }
+      ],
+      "criteria": {
+        "AC1": {
+          "title": "a failed run can be retried",
+          "paths": [
+            {
+              "actor": "owner",
+              "steps": [
+                [null, "useCase.execute", "POST /runs/:id/retry", "entry"],
+                ["useCase.execute", "useCase.load", "load(runId)"]
+              ],
+              "end": ["useCase.execute", "run queued"]
+            }
+          ]
+        }
+      }
+    }
+  </script>
+</aisf-playback>
+```
+
 ## Table
 
 `table.aisf-table`. A cell takes `aisf-node-new`, `aisf-node-changed` or `aisf-node-untouched`.
