@@ -8,8 +8,8 @@ Build it with `aisf:artifacts` (read it and `references/elements.md` first) and 
   findings log (`findings.md`) live in the same folder.
 - **The playback map sits above the first round**, the one element outside a round. See
   _The playback map_.
-- **One `<aisf-round>` per grilling round.** Each question is an `<aisf-question>` with one
-  `<aisf-card>` per option, the suggestion marked `suggested`.
+- **One `<aisf-round>` per grilling round.** Each question is an `<aisf-question>` card (_The
+  cards_).
 - **Settled by precedent** is an `<aisf-precedent>` under the round's questions, one child per
   decision. The answer is `{answers, vetoes}`. A veto turns that decision into a question in
   the next round.
@@ -72,64 +72,15 @@ example for each ticket, and show whatever helps the human check the plan.
 - **Under the map, in round 1:** one question per criterion, `Correct` (`suggested`) or
   `Wrong path`, with its `assumes`.
 
-## The card
+## The cards
 
-One question per card. Each card is **self-contained**: someone who never saw the ticket answers
-it without scrolling elsewhere. Every term is defined on the card or common knowledge. Supplying
-the context is your job, never the human's.
+Every question card comes from `aisf:build-question`, one file per question in `questions/`.
+Insert each file into its round as is. Two exceptions you build yourself, with the same
+`<aisf-question>` element:
 
-```html
-<aisf-question
-  name="q3"
-  heading="<title, phrased as the question>"
-  problem="one line: what is decided, what goes wrong if decided badly"
->
-  <aisf-context kind="diagram">…figure: one panel per option, changes marked…</aisf-context>
-  <aisf-card
-    value="a"
-    suggested
-    why="one line of why"
-    gain="its gain"
-    cost="its cost"
-    effect="what it builds or changes: module · layer, table, sub-issues added"
-    >Option A</aisf-card
-  >
-  <aisf-card value="b" gain="its gain" cost="its cost" effect="its effect">Option B</aisf-card>
-  <aisf-more>code excerpt by path, edge cases, research findings</aisf-more>
-</aisf-question>
-```
-
-- `problem` holds the problem, `gain`, `cost` and `effect` each option's consequence,
-  `<aisf-more>` the depth. The kit adds Other and Discuss.
-
-- **A figure is the default.** It shows each option, not only today's state: comparing the
-  options is what the human decides on. Only a pure naming or wording choice goes without, and
-  the card says why.
-- **About 50 words of prose** outside the figure, the effect lines and **More**. Depth goes
-  into **More**.
-- **Every option carries its consequence**: one gain, one cost (`gain`, `cost`), and its
-  effect (`effect`). The effect is fact only: what gets built or changed (module, layer,
-  table), and how many sub-issues it adds or removes. A scope-extending option shows the added
-  work there.
-- **A necessary extension** opens its heading with `Extends scope:` and names the criterion
-  that needs it in `problem` ("AC2 fails without it").
-
-**Pick the figure by what is decided:**
-
-| Decision about           | Figure                                                                          |
-| ------------------------ | ------------------------------------------------------------------------------- |
-| UI / UX                  | low-fi mockup, one per option (`aisf-context kind="mockup"`)                    |
-| Flow, order of calls     | `aisf-sequence`                                                                 |
-| State, lifecycle         | `aisf-state`                                                                    |
-| Where code lives         | `aisf-modmap`, new and changed units marked                                     |
-| Data shape, API, storage | `.aisf-diff`, before → after, by path                                           |
-| Library                  | `table.aisf-table`: fit, size, upkeep, precedent                                |
-| Options side by side     | `.aisf-compare` with one `.aisf-panel` per option                               |
-| Anything else            | free SVG with `aisf-shape*`, `aisf-label`, `aisf-edge`                          |
-| Necessary extension      | the criterion's path, with the forced extra work marked                         |
-| Playback                 | the playback map (_The playback map_)                                           |
-| Split proposal           | each part as a box: title, Context, Scope, its numbered criteria (A1, A2, B1 …) |
-| `hitl` checkpoint        | the full checkpoint: what is set up, what the human does                        |
+- **Playback questions**: one per criterion under the map (_The playback map_).
+- **The split question**: each part as a box: title, Context, Scope, its numbered criteria
+  (A1, A2, B1 …). See `SKILL.md` (_Too big: split the ticket_).
 
 ## Reading the answer
 

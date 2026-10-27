@@ -83,9 +83,10 @@ Skip every module, layer and phase the criteria need no change in.
 
 State the desired end state in a few sentences. It decides what to research.
 
-**Facts are the agents' job.** Dispatch read-only research agents whenever a fact is missing,
-before or between rounds, as many as the ticket needs. Sources: the codebase, the web (high-trust
-primary sources), and any project the human names. Each agent gets **one specific question**,
+**Facts are the agents' job.** Dispatch read-only research agents whenever a fact is missing to
+find the decisions, before or between rounds, as many as the ticket needs. Facts for one
+question are its builder's job (_Build the questions_). Sources: the codebase, the web
+(high-trust primary sources), and any project the human names. Each agent gets **one specific question**,
 and every prompt says: _"Do not edit files, commit, or open PRs — report findings only."_
 
 **Pattern research.** For each module with non-trivial business logic, one research agent asks
@@ -121,16 +122,30 @@ view.
 
 Sort every decision in scope:
 
-- **Question**: expensive to change, or open to real opinion. It carries **Problem** (what is
-  decided, what goes wrong if decided badly) · **Now** (where it lives today, by path) ·
-  **Options**, each with one gain, one cost and one effect (see `questionnaire.md`) ·
-  **Suggestion** (one option plus one line of why, never "it depends") · **Assumes** (what the
-  suggestion rests on) · **Figure** (what to draw, see `questionnaire.md`).
+- **Question**: expensive to change, or open to real opinion. You name it in one line; its
+  builder researches and writes it (_Build the questions_).
 - **Settled by precedent**: the project already does it one way, and nobody would argue. One
   line: decision · source. The human sees it and may veto it.
 
 **Spike call.** A decision that needs real experience first gets a spike: the options, what
 result settles them, and whether the human has to judge that result.
+
+### Build the questions
+
+You pick the questions. Builders research and write them.
+
+- **One builder per question**, all of a round dispatched at once. Each is a subagent whose
+  prompt says _"Load `aisf:build-question` and follow it."_, plus the brief that skill names.
+  Ids run on across the session (`q1`, `q2`, …).
+- **Every question goes this way**: round questions, vetoes, reopened decisions, critic
+  objections, `hitl` checkpoints, questions step 7 raises. Only the playback questions and
+  the split question are yours (`questionnaire.md`).
+- **On return**, append its `findings` lines to the findings log. Then by `result`:
+  - `card` → check `suggestion` and `assumes` against the ledger and your seat. A conflict →
+    dispatch again with the conflict named.
+  - `precedent` → it moves to Settled by precedent.
+  - `blocked` → it waits for the round after the decision it names.
+  - `split` → brief each decision on its own.
 
 ## 3. Interview
 
@@ -149,9 +164,10 @@ means every branch the criteria need. Specific to planning:
 - **Group the frontier.** Every question whose answer does not depend on another open one goes
   in the same round. Research for the questions downstream runs meanwhile.
 - **Rounds go on the bridge page.** With `aisf_show_artifact` present, read `questionnaire.md`
-  (this folder) and ask every round there: one page per session, id `plan-<n>`, each round one
-  `<aisf-round>`. A veto in a round's `vetoes` turns that decision into a question in the next
-  round. Without the tool, interview and Confirm run in chat, each question self-contained.
+  (this folder) and ask every round there, from the builders' cards: one page per session, id
+  `plan-<n>`, each round one `<aisf-round>`. A veto in a round's `vetoes` turns that decision into a question in the next
+  round. Without the tool, interview and Confirm run in chat: builders get `mode: chat`, and
+  you post their question files as the round.
 - **Object immediately** to an answer breaking a hard ban or placement rule: one sentence, naming
   the rule and the legal alternative. If the human reaffirms, comply and record it under Risks
   as a knowing override.
