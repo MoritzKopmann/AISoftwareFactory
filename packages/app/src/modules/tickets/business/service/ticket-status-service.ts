@@ -88,9 +88,10 @@ export class TicketStatusService {
       throw new TicketNotResettableError(`#${ticketNumber} is not stuck or in progress`);
     }
 
-    // An authoring ticket keeps its status: a failed create or plan run changed nothing.
-    const status = live.status === 'idea' || live.status === 'plan' ? live.status : 'ready';
-    if (status === 'ready') {
+    // A ticket keeps its status. The scheduler never runs an in-progress ticket, so it goes back to ready.
+    const isInProgress = live.status === 'in-progress';
+    const status = isInProgress ? 'ready' : live.status;
+    if (isInProgress) {
       await ticketStatusWrites.setStatus(project.repository, ticketNumber, 'ready');
     }
     for (const state of ['waiting', 'stuck'] as const) {
