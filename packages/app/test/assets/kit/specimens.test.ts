@@ -87,6 +87,10 @@ describe('specimens page', () => {
     expect($$('.aisf-switch[aria-pressed="false"]')).toHaveLength(1);
     expect($$('aisf-card[gain][cost]').length).toBeGreaterThan(0);
     expect($$('aisf-card[effect] .aisf-card-effect').length).toBeGreaterThan(0);
+    expect($$('aisf-question aisf-definitions .aisf-definitions-toggle').length).toBeGreaterThan(0);
+    expect($$('aisf-precedent .aisf-precedent-toggle').length).toBeGreaterThan(0);
+    expect($$('.aisf-text-answer').length).toBeGreaterThan(0);
+    expect(source).not.toMatch(/aisf-other|aisf-discuss/);
     expect($$('aisf-question[problem]').length).toBeGreaterThan(0);
     expect($$('aisf-round[saving]').length).toBeGreaterThan(0);
     expect($$('[data-aisf-status="busy"] .aisf-notice-busy').length).toBeGreaterThan(0);

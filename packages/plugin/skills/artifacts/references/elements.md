@@ -19,8 +19,10 @@ one event it sends.
 Events sent, one per round:
 
 - **Submit** (a round of questions): `kind=submit`, payload
-  `{"answers":[{"question":"<name>","choice":"<value>|other|discuss","text":"…","note":"…"}]}`.
-  `text` is set for `other`. `note` is set for `discuss`, when typed.
+  `{"answers":[{"question":"<name>","choice":"<card value>"}]}`, or for a typed answer
+  `{"question":"<name>","choice":"text","text":"<the text>"}`. `text` is a reserved choice
+  value: a card must not use it. The text counts as an answer only when its trimmed text is
+  not empty.
 - **Confirm** or **Reopen** (a round holding `<aisf-confirm>`): `kind=confirm` or
   `kind=reopen`, payload `{"note":"…","hitl":{"<task number>":true}}`. `note` is left out when
   empty. A Reopen needs a note.
@@ -42,8 +44,13 @@ Attributes: `name`, `heading`, `assumes`, `problem`
 
 One question. `name` is the key in the answer. `heading` is the question text. `assumes` names
 what the question rests on. `problem` is one short line shown under the heading: what is
-wrong today. Holds `<aisf-card>`, optional `<aisf-context>` and optional `<aisf-more>`. The kit adds an
-Other choice with a text field and a Discuss choice with a note.
+wrong today. Holds `<aisf-card>`, optional `<aisf-definitions>`, optional `<aisf-context>` and
+optional `<aisf-more>`. The kit adds one free text field after the cards. Card and text are
+exclusive: typing clears the card, picking a card clears the text.
+
+Part order, whatever the written order: heading, `problem`, definitions, the other children in
+written order (1–3 free visuals; a doc rule, the kit does not count them), cards, text field.
+`assumes` keeps its place.
 
 Sends no event itself. Its answer joins the round's Submit payload.
 
@@ -72,6 +79,22 @@ cost. They never change the label or the answer. The body is the label: keep it 
   cost="more code"
   effect="adds a worker in runs · infrastructure, one more sub-issue"
   >Queue the work</aisf-card
+>
+```
+
+## `<aisf-definitions>`
+
+Attributes: none
+
+Terms the question uses, explained. A child of `<aisf-question>`. Holds one `<dl>`. Starts
+collapsed behind a toggle. Its text is never part of the answer or the frozen summary.
+
+```html
+<aisf-definitions
+  ><dl>
+    <dt>Facade</dt>
+    <dd>The one entry a module offers others.</dd>
+  </dl></aisf-definitions
 >
 ```
 
@@ -140,7 +163,8 @@ goes into the Confirm payload under `hitl`.
 Attributes: none
 
 Decisions settled by precedent, inside a round of questions. Each child with a `name` is one
-decision: its text is the decision, `source` is its source line. Each gets a veto switch and,
+decision: its text is the decision. `source` is what settled it, `how` is how it settled it;
+both sit in a collapsed fold-out, and a row with neither has no fold-out. Each gets a veto switch and,
 once vetoed, an optional note. The round sends `vetoes` next to `answers`, only for vetoed
 decisions, the note being `""` when none was typed. A round without this element sends no
 `vetoes` key.
@@ -149,7 +173,7 @@ Submit payload: `{"answers":[…],"vetoes":{"<name>":"<note>"}}`.
 
 ```html
 <aisf-precedent>
-  <div name="p1" source="#12">Keep the old name</div>
+  <div name="p1" source="#12" how="same name kept in #12">Keep the old name</div>
 </aisf-precedent>
 ```
 

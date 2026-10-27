@@ -3,6 +3,7 @@ import { AisfActorElement } from './elements/aisf-actor-element.js';
 import { AisfCardElement } from './elements/aisf-card-element.js';
 import { AisfConfirmElement } from './elements/aisf-confirm-element.js';
 import { AisfContextElement } from './elements/aisf-context-element.js';
+import { AisfDefinitionsElement } from './elements/aisf-definitions-element.js';
 import { AisfFigureElement } from './elements/aisf-figure-element.js';
 import { AisfMetaElement } from './elements/aisf-meta-element.js';
 import { AisfMoreElement } from './elements/aisf-more-element.js';
@@ -18,12 +19,13 @@ import { AisfTreeNodeElement } from './elements/aisf-tree-node-element.js';
 import { AisfUnitElement } from './elements/aisf-unit-element.js';
 
 /**
- * Tag name to element class. A card comes before its question: the question renders its cards
- * on upgrade. Actors, steps and units come before the pieces that draw them.
+ * Tag name to element class. A card and a definitions list come before their question: the question
+ * renders its cards on upgrade. Actors, steps and units come before the pieces that draw them.
  */
 export const registry = {
   'aisf-round': AisfRoundElement,
   'aisf-card': AisfCardElement,
+  'aisf-definitions': AisfDefinitionsElement,
   'aisf-question': AisfQuestionElement,
   'aisf-context': AisfContextElement,
   'aisf-confirm': AisfConfirmElement,

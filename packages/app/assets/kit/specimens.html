@@ -44,17 +44,29 @@
       >
     </section>
     <section class="specimen">
-      <h2>Answered (card, Other text, Discuss note)</h2>
+      <h2>Answered (card, own text)</h2>
       <aisf-round number="2"
         ><aisf-question name="card" heading="Picked a card" assumes="a1"
           ><aisf-card selected value="one" suggested why="Smallest change">Option one</aisf-card
           ><aisf-card value="two">Option two</aisf-card></aisf-question
-        ><aisf-question name="other" heading="Typed an Other answer"
+        ><aisf-question name="text" heading="Typed an own answer"
           ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
           ><aisf-card value="two">Option two</aisf-card></aisf-question
-        ><aisf-question name="discuss" heading="Wants to discuss"
-          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
-          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
+      <h2>Question with terms explained and a figure</h2>
+      <aisf-round number="2"
+        ><aisf-question name="defs" heading="Which queue?" problem="Jobs run inline today."
+          ><aisf-card value="one">Option one</aisf-card
+          ><aisf-figure caption="Free visual"><p>figure</p></aisf-figure
+          ><aisf-definitions
+            ><dl>
+              <dt>Queue</dt>
+              <dd>Jobs wait here until a worker takes them.</dd>
+            </dl></aisf-definitions
+          ></aisf-question
         ></aisf-round
       >
     </section>
@@ -342,7 +354,7 @@ return run;</aisf-context>
               fact="It is slow"
             ></aisf-tree-node></aisf-tree-node
           ><aisf-precedent
-            ><div name="p1" source="#12">Keep the old name.</div>
+            ><div name="p1" source="#12" how="same name kept in #12">Keep the old name.</div>
             <div name="p2">Use a map.</div></aisf-precedent
           ><aisf-task number="1" heading="Plan one" files="a.ts" risk="low" hitl
             >Scope. Human checks it.</aisf-task
@@ -593,7 +605,7 @@ const line80 = 80;</aisf-context>
         .addEventListener('click', () =>
           document.documentElement.setAttribute('data-theme', 'dark'),
         );
-      // Other text, Discuss note and a frozen note cannot be written in markup: fill them as a human would.
+      // The own text and a frozen note cannot be written in markup: fill them as a human would.
       function fill(name, selector, value) {
         const field = document.querySelector('aisf-question[name="' + name + '"] ' + selector);
         field.value = value;
@@ -601,8 +613,7 @@ const line80 = 80;</aisf-context>
       }
       customElements.whenDefined('aisf-round').then(() =>
         queueMicrotask(() => {
-          fill('other', '.aisf-other-text', 'Something else entirely');
-          fill('discuss', '.aisf-discuss-note', 'Let us talk about the trade-off');
+          fill('text', '.aisf-text-answer', 'Something else entirely');
           const reopened = document.querySelector('aisf-round[frozen="reopen"]');
           reopened.querySelector('.aisf-confirm-note').value = 'Split task 4 first';
           reopened.freeze('reopen');

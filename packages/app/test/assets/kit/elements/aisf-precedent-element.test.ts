@@ -84,10 +84,33 @@ describe('AisfPrecedentElement', () => {
     ).toEqual(['Settled by precedent']);
   });
 
-  it('should prefix the source when the decision has a source', async () => {
-    await mount(precedentRound);
+  it('should hold source and how in a collapsed fold-out when the row has them', async () => {
+    await mount(
+      `<aisf-precedent><div name="p" source="#12" how="same name kept in #12">Keep</div></aisf-precedent>`,
+    );
 
-    expect($('[name="p1"] .aisf-precedent-source').textContent).toBe('Source: #12');
+    expect($('[name="p"] .aisf-precedent-text').textContent).toBe('Keep');
+    expect($('[name="p"] .aisf-veto-switch')).toBeTruthy();
+    expect($('[name="p"] .aisf-precedent-body').hidden).toBe(true);
+    expect($('[name="p"] .aisf-precedent-toggle').getAttribute('aria-expanded')).toBe('false');
+    expect($('[name="p"] .aisf-precedent-body').textContent).toContain('#12');
+    expect($('[name="p"] .aisf-precedent-body').textContent).toContain('same name kept in #12');
+  });
+
+  it('should open the fold-out when the human clicks its toggle', async () => {
+    await mount(`<aisf-precedent><div name="p" source="#12">Keep</div></aisf-precedent>`);
+
+    await click($('[name="p"] .aisf-precedent-toggle'));
+
+    expect($('[name="p"] .aisf-precedent-body').hidden).toBe(false);
+    expect($('[name="p"] .aisf-precedent-toggle').getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('should have no fold-out when the row has neither source nor how', async () => {
+    await mount(`<aisf-precedent><div name="p">Keep</div></aisf-precedent>`);
+
+    expect($$('[name="p"] .aisf-precedent-toggle')).toHaveLength(0);
+    expect($$('[name="p"] .aisf-precedent-body')).toHaveLength(0);
   });
 
   it('should show no source line when the decision has no source', async () => {

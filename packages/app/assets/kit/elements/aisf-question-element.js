@@ -2,7 +2,9 @@ import { announceChange, buildElement, setPart } from '../support/dom.js';
 
 let nextQuestionId = 0;
 
-/** @typedef {{ question: string, choice: string, text?: string, note?: string }} Answer */
+const TEXT_CHOICE = 'text';
+
+/** @typedef {{ question: string, choice: string, text?: string }} Answer */
 
 export class AisfQuestionElement extends HTMLElement {
   static observedAttributes = ['name', 'heading', 'assumes', 'problem'];
@@ -42,23 +44,14 @@ export class AisfQuestionElement extends HTMLElement {
       const radio = /** @type {any} */ (card).radio;
       if (radio?.checked) return { question: name, choice: card.getAttribute('value') ?? '' };
     }
-    if (this.field('.aisf-other-radio')?.checked) {
-      return { question: name, choice: 'other', text: this.field('.aisf-other-text').value };
-    }
-    if (this.field('.aisf-discuss-radio')?.checked) {
-      const note = this.field('.aisf-discuss-note').value;
-      return note === ''
-        ? { question: name, choice: 'discuss' }
-        : { question: name, choice: 'discuss', note };
-    }
+    const text = this.field('.aisf-text-answer')?.value ?? '';
+    if (text.trim() !== '') return { question: name, choice: TEXT_CHOICE, text };
     return undefined;
   }
 
   /** @returns {boolean} whether the question has a complete answer */
   get isAnswered() {
-    const answer = this.answer;
-    if (answer === undefined) return false;
-    return answer.choice !== 'other' || (answer.text ?? '').trim() !== '';
+    return this.answer !== undefined;
   }
 
   /** @returns {Element | undefined} the card marked `suggested` */
@@ -74,13 +67,13 @@ export class AisfQuestionElement extends HTMLElement {
     for (const card of this.cards) {
       const radio = /** @type {any} */ (card).radio;
       if (radio)
-        radio.checked = answer !== undefined && card.getAttribute('value') === answer.choice;
+        radio.checked =
+          answer !== undefined &&
+          answer.choice !== TEXT_CHOICE &&
+          card.getAttribute('value') === answer.choice;
     }
-    this.field('.aisf-other-radio').checked = answer?.choice === 'other';
-    this.field('.aisf-other-text').value = answer?.choice === 'other' ? (answer.text ?? '') : '';
-    this.field('.aisf-discuss-radio').checked = answer?.choice === 'discuss';
-    this.field('.aisf-discuss-note').value =
-      answer?.choice === 'discuss' ? (answer.note ?? '') : '';
+    this.field('.aisf-text-answer').value =
+      answer?.choice === TEXT_CHOICE ? (answer.text ?? '') : '';
     this.sync();
   }
 
@@ -124,14 +117,12 @@ export class AisfQuestionElement extends HTMLElement {
   answerLabel() {
     const answer = this.answer;
     if (answer === undefined) return '';
-    if (answer.choice === 'other') return `Other: ${answer.text ?? ''}`;
-    if (answer.choice === 'discuss')
-      return answer.note === undefined ? 'Discuss' : `Discuss: ${answer.note}`;
+    if (answer.choice === TEXT_CHOICE) return `Own answer: ${answer.text ?? ''}`;
     const card = this.cards.find((candidate) => candidate.getAttribute('value') === answer.choice);
     return /** @type {any} */ (card)?.label || answer.choice;
   }
 
-  /** Internal. Builds the heading, the choice group and the Other and Discuss choices once. */
+  /** Internal. Builds the heading, the choice group and the text field once; places the parts in order. */
   render() {
     const heading = this.getAttribute('heading');
     setPart(
@@ -146,6 +137,7 @@ export class AisfQuestionElement extends HTMLElement {
       problem === null ? undefined : buildElement('p', 'aisf-question-problem', problem);
     setPart(this, 'aisf-question-problem', problemPart, 'start');
     if (problemPart !== undefined) headingPart?.after(problemPart);
+    this.placeDefinitions(problemPart ?? headingPart);
     const assumes = this.getAttribute('assumes');
     setPart(
       this,
@@ -162,10 +154,7 @@ export class AisfQuestionElement extends HTMLElement {
       group.append(card);
       /** @type {any} */ (card).render();
     }
-    group.append(
-      this.extraChoice('other', 'Other', 'input'),
-      this.extraChoice('discuss', 'Discuss', 'textarea'),
-    );
+    group.append(this.textField());
     for (const radio of group.querySelectorAll('input[type=radio]')) {
       /** @type {HTMLInputElement} */ (radio).name = groupName;
     }
@@ -173,21 +162,19 @@ export class AisfQuestionElement extends HTMLElement {
     this.initialFromMarkup();
   }
 
-  /**
-   * @param {'other' | 'discuss'} kind
-   * @param {string} label
-   * @param {'input' | 'textarea'} fieldTag
-   */
-  extraChoice(kind, label, fieldTag) {
-    const wrapper = buildElement('label', `aisf-choice aisf-choice-${kind}`);
-    const radio = buildElement('input', `aisf-${kind}-radio`);
-    radio.type = 'radio';
-    const field = buildElement(
-      fieldTag,
-      kind === 'other' ? 'aisf-other-text' : 'aisf-discuss-note',
-    );
-    field.setAttribute('aria-label', kind === 'other' ? 'Other answer' : 'Note for the discussion');
-    wrapper.append(radio, buildElement('span', 'aisf-choice-label', label), field);
+  /** @param {Element | null | undefined} precedingPart the problem or heading, if the question has one */
+  placeDefinitions(precedingPart) {
+    const definitions = this.querySelector(':scope > aisf-definitions');
+    if (definitions === null) return;
+    if (precedingPart === null || precedingPart === undefined) this.prepend(definitions);
+    else precedingPart.after(definitions);
+  }
+
+  /** @returns {HTMLLabelElement} the one free text field */
+  textField() {
+    const wrapper = buildElement('label', 'aisf-text-field');
+    const field = buildElement('textarea', 'aisf-text-answer');
+    wrapper.append(buildElement('span', 'aisf-text-label', 'Or write your own answer'), field);
     return wrapper;
   }
 
@@ -204,10 +191,14 @@ export class AisfQuestionElement extends HTMLElement {
   onEdit = (event) => {
     if (event.type === 'change' && event.target instanceof HTMLTextAreaElement) return;
     const target = /** @type {Element} */ (event.target);
-    if (target.classList.contains('aisf-other-text'))
-      this.field('.aisf-other-radio').checked = true;
-    if (target.classList.contains('aisf-discuss-note'))
-      this.field('.aisf-discuss-radio').checked = true;
+    if (target.classList.contains('aisf-text-answer')) {
+      for (const card of this.cards) {
+        const radio = /** @type {any} */ (card).radio;
+        if (radio) radio.checked = false;
+      }
+    } else if (target.classList.contains('aisf-card-radio')) {
+      this.field('.aisf-text-answer').value = '';
+    }
     this.sync();
     announceChange(this);
   };

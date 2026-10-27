@@ -67,7 +67,7 @@ Load `aisf:grilling` and follow it. Specific to create-ticket:
    in the same round, across track areas. No cap on the count. The track lists the areas to
    cover, in its order. Cover every area. Skip one an earlier answer settled.
 3. **Every question** has answer cards pre-drafted from the issue text and, when the slot
-   exists, from `project-index`. Plus free text (the kit's Other). Mark a `suggested` card.
+   exists, from `project-index`. Plus free text (the kit's text field). Mark a `suggested` card.
    Cards never offer an implementation choice.
 4. **Stop when** the ticket passes the cold-read test. An unknown the human cannot settle goes
    into the ticket as an open question. Never omit it.
