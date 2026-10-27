@@ -1,0 +1,2953 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Plan 214, round 1 playback (interface mock)</title>
+    <!-- MOCK HARNESS ONLY. The app injects kit.css, bridge.js and kit.js itself; a real page never
+         includes them. Here they come from ./aisf (a copy of packages/app/assets/kit). -->
+    <link rel="stylesheet" href="aisf/kit.css" />
+    <script src="aisf/bridge.js"></script>
+    <script type="module" src="aisf/kit.js"></script>
+    <script>
+      // Harness: ?theme=dark|light and ?ac=AC1|AC2|AC3|All for screenshots.
+      (() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('theme')) document.documentElement.dataset.theme = params.get('theme');
+      })();
+    </script>
+    <!-- The page's one figure style: kit tokens and kit figure classes only. -->
+    <style>
+      .pb-playback {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+        min-width: 0;
+        max-width: 760px;
+        margin: 0 auto 32px;
+      }
+
+      .pb-intro {
+        display: grid;
+        gap: 6px;
+      }
+
+      .pb-end {
+        font-size: 17px;
+        line-height: 1.5;
+        max-width: 64ch;
+        text-wrap: pretty;
+      }
+
+      .pb-figure {
+        gap: 14px;
+      }
+
+      .pb-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px 16px;
+      }
+
+      .pb-pick {
+        display: grid;
+        gap: 10px;
+        flex: 1 1 320px;
+        min-width: 0;
+      }
+
+      .pb-criterion {
+        display: grid;
+        gap: 6px;
+        max-width: 80ch;
+        margin: 0;
+        padding: 8px 12px;
+        border-left: 3px solid var(--info);
+        background: var(--surface);
+      }
+
+      .pb-criterion-row {
+        display: grid;
+        grid-template-columns: 40px minmax(0, 1fr);
+        column-gap: 8px;
+        align-items: baseline;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .pb-criterion-key {
+        font: 700 12px / 1.4 var(--font-mono);
+        letter-spacing: var(--label-spacing);
+        color: var(--info);
+      }
+
+      .pb-criterion-text {
+        min-width: 0;
+        font: 600 var(--text-size) / 1.4 var(--font-ui);
+        text-wrap: pretty;
+      }
+
+      .pb-criterion-list {
+        display: grid;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+      }
+
+      .pb-criterion-list .pb-criterion-text {
+        font-weight: 400;
+        font-size: var(--text-size-sm);
+      }
+
+      .pb-wiring {
+        margin: 0;
+        font-size: var(--text-size-sm);
+        color: var(--muted);
+      }
+
+      .pb-switches {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .pb-switches .aisf-switch {
+        min-width: 52px;
+        min-height: 36px;
+      }
+
+      .pb-key {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        font-size: var(--text-size-sm);
+      }
+
+      .pb-key .aisf-node {
+        min-height: 24px;
+        padding: 2px 8px;
+        font-size: 12px;
+      }
+
+      .pb-key-path {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: 4px;
+        color: var(--muted);
+      }
+
+      .pb-key-path svg {
+        width: 34px;
+        height: 12px;
+      }
+
+      /* ---- The map: modules × layers. ---- */
+      .pb-map {
+        position: relative;
+        isolation: isolate;
+        display: grid;
+        gap: 14px;
+        min-width: 0;
+      }
+
+      .pb-wires {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+        pointer-events: none;
+      }
+
+      .pb-module {
+        display: grid;
+        align-content: start;
+        min-width: 0;
+        padding: 0 var(--pb-gutter, 30px) 6px;
+        background: color-mix(in srgb, var(--surface) 70%, transparent);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius);
+      }
+
+      .pb-module[data-mark='new'] {
+        border-color: var(--ok);
+        box-shadow: inset 0 3px 0 var(--ok);
+      }
+
+      .pb-module[data-mark='changed'] {
+        border-color: var(--accent);
+        box-shadow: inset 0 3px 0 var(--accent);
+      }
+
+      .pb-module[data-mark='untouched'] {
+        background: transparent;
+        border-style: dashed;
+      }
+
+      .pb-module[data-mark='untouched'] .pb-module-name {
+        color: var(--muted);
+      }
+
+      .pb-module-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 2px 8px;
+        margin-inline: calc(10px - var(--pb-gutter, 30px));
+        padding: 10px 0 8px;
+        position: relative;
+        z-index: 2;
+      }
+
+      .pb-module-name {
+        font: 700 15px/1.3 var(--font-mono);
+        color: var(--text);
+      }
+
+      .pb-module-tag {
+        font: 500 12px / 18px var(--font-mono);
+        text-transform: var(--label-transform);
+        letter-spacing: var(--label-spacing);
+        white-space: nowrap;
+      }
+
+      .pb-module[data-mark='new'] .pb-module-tag {
+        color: var(--ok);
+      }
+
+      .pb-module[data-mark='changed'] .pb-module-tag {
+        color: var(--accent);
+      }
+
+      .pb-module[data-mark='untouched'] .pb-module-tag,
+      .pb-bus .pb-module-tag {
+        color: var(--muted);
+      }
+
+      .pb-module-note {
+        flex: 1 1 100%;
+        font-size: 12px;
+        line-height: 1.35;
+        color: var(--muted);
+      }
+
+      .pb-bus {
+        background: transparent;
+        border: 1px dashed var(--border);
+      }
+
+      /* Frontend: no layers. A screen is a frame; its touched parts sit inside it. */
+      .pb-module.pb-frontend {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+        padding-bottom: 14px;
+      }
+
+      .pb-frontend .pb-module-head {
+        margin-bottom: -14px;
+      }
+
+      .pb-screen {
+        display: grid;
+        gap: 28px;
+        min-width: 0;
+        margin-inline: calc(14px - var(--pb-gutter, 30px));
+        padding: 8px calc(var(--pb-gutter, 30px) - 14px) 18px;
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius);
+        transition: opacity 0.2s;
+      }
+
+      .pb-screen[data-mark='changed'] {
+        border-color: var(--accent);
+      }
+
+      .pb-screen[data-mark='new'] {
+        border-color: var(--ok);
+      }
+
+      .pb-screen[data-off] {
+        opacity: 0.35;
+      }
+
+      .pb-screen-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 2px 8px;
+        position: relative;
+        z-index: 2;
+        margin-inline: calc(14px - var(--pb-gutter, 30px));
+        padding-inline: 10px;
+      }
+
+      .pb-screen-name {
+        font: 700 13px/1.35 var(--font-mono);
+      }
+
+      .pb-screen-role {
+        flex: 1 1 100%;
+        font: 400 12px/1.35 var(--font-ui);
+        color: var(--muted);
+      }
+
+      .pb-screen[data-mark='changed'] .pb-module-tag {
+        color: var(--accent);
+      }
+
+      .pb-layer {
+        display: grid;
+        align-content: start;
+        gap: 34px;
+        min-width: 0;
+        padding: 14px 0 30px;
+        border-top: 1px dashed var(--border);
+      }
+
+      /* ---- One class: a kit node with the file / class header and one block per function. ---- */
+      .pb-class.aisf-node {
+        position: relative;
+        z-index: 2;
+        display: grid;
+        align-content: start;
+        gap: 0;
+        width: 100%;
+        min-height: 0;
+        padding: 0;
+        font-weight: 400;
+        color: var(--text);
+        background: var(--surface);
+        border-width: 1.5px;
+        transition: opacity 0.2s;
+      }
+
+      .pb-class.aisf-node::before {
+        display: none;
+      }
+
+      .pb-class-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0 5px;
+        padding: 6px 8px 6px;
+      }
+
+      .pb-class.aisf-node-new .pb-class-head {
+        background: color-mix(in srgb, var(--ok) 14%, var(--surface));
+      }
+
+      .pb-class.aisf-node-changed .pb-class-head {
+        background: var(--accent-soft);
+      }
+
+      .pb-file {
+        min-width: 0;
+        font: 400 12px/1.35 var(--font-mono);
+        color: var(--muted);
+        overflow-wrap: anywhere;
+      }
+
+      .pb-cname {
+        min-width: 0;
+        font: 700 13px/1.35 var(--font-mono);
+        color: var(--text);
+      }
+
+      .pb-kind {
+        flex-basis: 100%;
+        font: 400 12px/1.35 var(--font-ui);
+        color: var(--muted);
+      }
+
+      .pb-kind b {
+        font: 500 12px/1.35 var(--font-mono);
+        text-transform: var(--label-transform);
+        letter-spacing: 0.04em;
+      }
+
+      .pb-class.aisf-node-new .pb-kind b {
+        color: var(--ok);
+      }
+
+      .pb-class.aisf-node-changed .pb-kind b {
+        color: var(--accent);
+      }
+
+      /* One affected public function: name, dashed divider, what must happen in it. */
+      .pb-fn {
+        position: relative;
+        display: grid;
+        gap: 4px;
+        padding: 6px 8px 8px;
+        border-top: 1px solid var(--border);
+        transition: opacity 0.2s;
+        cursor: pointer;
+      }
+
+      .pb-fn[data-mark='new'] {
+        background: color-mix(in srgb, var(--ok) 8%, var(--surface));
+      }
+
+      .pb-fn[data-mark='changed'] {
+        background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+      }
+
+      .pb-fn-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 2px 6px;
+        padding-bottom: 4px;
+        border-bottom: 1px dashed var(--border-strong);
+      }
+
+      .pb-fn-name {
+        min-width: 0;
+        font: 600 13px/1.35 var(--font-mono);
+        overflow-wrap: anywhere;
+      }
+
+      .pb-fn-mark {
+        margin-left: auto;
+        font: 500 12px/1.35 var(--font-mono);
+        text-transform: var(--label-transform);
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+      }
+
+      .pb-fn[data-mark='new'] .pb-fn-mark {
+        color: var(--ok);
+      }
+
+      .pb-fn[data-mark='changed'] .pb-fn-mark {
+        color: var(--accent);
+      }
+
+      .pb-fn[data-mark='untouched'] .pb-fn-mark,
+      .pb-fn[data-mark='untouched'] .pb-fn-does {
+        color: var(--muted);
+      }
+
+      .pb-fn[data-mark='untouched'] .pb-fn-name {
+        font-weight: 500;
+      }
+
+      .pb-fn-does {
+        margin: 0;
+        font: 400 12.5px/1.4 var(--font-ui);
+        text-wrap: pretty;
+      }
+
+      .pb-fn .aisf-stop {
+        justify-self: start;
+        max-width: 100%;
+        white-space: normal;
+        margin-top: 2px;
+        font-size: 12px;
+        background: var(--surface);
+      }
+
+      .pb-badges {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 3px;
+      }
+
+      .pb-badges:empty {
+        display: none;
+      }
+
+      .pb-badge {
+        display: grid;
+        place-content: center;
+        min-width: 21px;
+        height: 21px;
+        padding: 0 5px;
+        font: 700 12px/1 var(--font-mono);
+        font-variant-numeric: tabular-nums;
+        color: var(--surface);
+        background: var(--info);
+        border-radius: 11px;
+      }
+
+      .pb-badge-ac {
+        color: var(--info);
+        background: var(--surface);
+        border: 1px solid var(--info);
+      }
+
+      .pb-class:not([data-off]) .pb-fn[data-off],
+      .pb-class[data-off] {
+        opacity: 0.35;
+      }
+
+      /* ---- Fold: a whole untouched module as one box. ---- */
+      .pb-fold-toggle {
+        min-height: 24px;
+        padding: 2px 8px;
+        font-size: 12px;
+      }
+
+      .pb-class.pb-fold {
+        border-style: dashed;
+      }
+
+      .pb-via-fold {
+        color: var(--muted);
+        border-style: dashed;
+        border-color: var(--border-strong);
+      }
+
+      /* ---- Focus ---- */
+      .pb-fn:focus-visible,
+      .pb-fn[data-focus] {
+        outline: 2px solid var(--info);
+        outline-offset: -2px;
+      }
+
+      .pb-fn[aria-pressed='true'] {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+      }
+
+      .pb-map[data-focus] .pb-fn:not([data-focus], [data-near]) {
+        opacity: 0.2;
+      }
+
+      .pb-map[data-focus] .pb-casing:not([data-near]) {
+        opacity: 0;
+      }
+
+      .pb-map[data-focus] .pb-wire:not([data-near]),
+      .pb-map[data-focus] .pb-lane-badge:not([data-near]),
+      .pb-map[data-focus] .pb-start:not([data-near]),
+      .pb-map[data-focus] .pb-start-label:not([data-near]),
+      .pb-map[data-focus] .pb-port:not([data-near]) {
+        opacity: 0.12;
+      }
+
+      .pb-map[data-focus] .pb-wire[data-near][data-on] {
+        stroke-width: 3;
+      }
+
+      .pb-route[data-focus] .pb-step:not([data-near]) {
+        opacity: 0.35;
+      }
+
+      .pb-step[data-near] {
+        background: var(--accent-soft);
+      }
+
+      /* Path B of a criterion with two starting points: its own ink, everywhere it shows. */
+      .pb-wire[data-on][data-run='B'] {
+        stroke: var(--ui);
+        marker-end: url(#pb-head-b);
+      }
+
+      .pb-head-b {
+        fill: var(--ui);
+      }
+
+      .pb-port[data-run='B'],
+      .pb-start[data-run='B'] {
+        stroke: var(--ui);
+      }
+
+      .pb-lane-badge[data-run='B'] rect,
+      .pb-badge[data-run='B'] {
+        fill: var(--ui);
+        background: var(--ui);
+      }
+
+      .pb-start-label {
+        font: 700 12px var(--font-mono);
+        text-anchor: middle;
+        dominant-baseline: central;
+        fill: var(--info);
+        paint-order: stroke;
+        stroke: var(--surface);
+        stroke-width: 3px;
+      }
+
+      .pb-start-label[data-run='B'] {
+        fill: var(--ui);
+      }
+
+      .pb-paths {
+        display: grid;
+        gap: 2px;
+        margin: 0 0 0 48px;
+        padding: 0;
+        list-style: none;
+        font-size: var(--text-size-sm);
+      }
+
+      .pb-route-path {
+        font: 700 12px/1.4 var(--font-mono);
+        text-transform: var(--label-transform);
+        letter-spacing: 0.04em;
+        color: var(--info);
+      }
+
+      [data-run='B'] > .pb-route-path {
+        color: var(--ui);
+      }
+
+      .pb-split-note {
+        margin-left: 48px;
+        font-size: var(--text-size-sm);
+        color: var(--warn);
+      }
+
+      .pb-route-head {
+        grid-column: 1 / -1;
+        padding: 10px 4px 4px;
+        font-size: var(--text-size-sm);
+        color: var(--muted);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .pb-casing {
+        fill: none;
+        stroke: var(--surface);
+        stroke-width: 7;
+      }
+
+      .pb-hit {
+        fill: none;
+        stroke: transparent;
+        stroke-width: 12;
+        pointer-events: stroke;
+        cursor: pointer;
+      }
+
+      .pb-lane-badge rect {
+        fill: var(--info);
+        stroke: var(--surface);
+        stroke-width: 2;
+      }
+
+      .pb-lane-badge text {
+        font: 700 12px var(--font-mono);
+        text-anchor: middle;
+        dominant-baseline: central;
+        fill: var(--surface);
+      }
+
+      .pb-lane-badge[data-hot] rect {
+        fill: var(--accent);
+      }
+
+      .pb-wire {
+        fill: none;
+        stroke: var(--border);
+        stroke-width: 1.25;
+        stroke-dasharray: 3 4;
+      }
+
+      .pb-wire[data-on] {
+        stroke: var(--info);
+        stroke-width: 2.25;
+        stroke-dasharray: none;
+        marker-end: url(#pb-head);
+      }
+
+      .pb-wire[data-kind='event'][data-on] {
+        stroke-dasharray: 7 4;
+      }
+
+      .pb-wire[data-hot] {
+        stroke: var(--accent);
+        stroke-width: 3.5;
+        marker-end: url(#pb-head-hot);
+      }
+
+      .pb-head {
+        fill: var(--info);
+      }
+
+      .pb-head-hot {
+        fill: var(--accent);
+      }
+
+      .pb-port {
+        stroke: var(--info);
+        stroke-width: 4;
+        stroke-linecap: round;
+      }
+
+      .pb-start {
+        fill: var(--surface);
+        stroke: var(--info);
+        stroke-width: 2;
+      }
+
+      .pb-wires[data-drawing] .pb-casing,
+      .pb-wires[data-drawing] .pb-wire[data-on] {
+        stroke-dasharray: var(--len) var(--len);
+        stroke-dashoffset: var(--len);
+        animation: pb-draw 0.28s ease-out forwards;
+        animation-delay: calc(var(--i) * 55ms);
+      }
+
+      @keyframes pb-draw {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .pb-wires[data-drawing] .pb-casing,
+        .pb-wires[data-drawing] .pb-wire[data-on] {
+          animation: none;
+          stroke-dasharray: none;
+          stroke-dashoffset: 0;
+        }
+      }
+
+      /* ---- Route sheet ---- */
+      .pb-route {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        column-gap: 24px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border-top: 1px solid var(--border-strong);
+      }
+
+      .pb-step {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        column-gap: 10px;
+        row-gap: 2px;
+        align-items: baseline;
+        padding: 7px 4px;
+        border-bottom: 1px dashed var(--border);
+      }
+
+      .pb-step:hover,
+      .pb-step:focus-visible {
+        background: var(--accent-soft);
+      }
+
+      .pb-step .pb-badge {
+        grid-row: 1 / span 2;
+        align-self: start;
+      }
+
+      .pb-step-hop {
+        min-width: 0;
+        font: 500 13px/1.4 var(--font-mono);
+        overflow-wrap: anywhere;
+      }
+
+      .pb-step-hop .pb-sep {
+        color: var(--muted);
+        font-weight: 400;
+      }
+
+      .pb-step-hop .pb-cls {
+        color: var(--muted);
+        font-weight: 400;
+      }
+
+      .pb-step-call {
+        min-width: 0;
+        font: 400 12.5px/1.4 var(--font-mono);
+        color: var(--muted);
+        overflow-wrap: anywhere;
+      }
+
+      .pb-via {
+        display: inline-block;
+        margin-left: 6px;
+        padding: 0 5px;
+        font: 500 12px/16px var(--font-mono);
+        text-transform: var(--label-transform);
+        letter-spacing: 0.04em;
+        color: var(--info);
+        border: 1px solid var(--info);
+        vertical-align: 1px;
+      }
+
+      .pb-step-end .aisf-stop {
+        justify-self: start;
+        font-size: 12px;
+      }
+
+      .pb-route-all {
+        padding: 10px 0 4px;
+        color: var(--muted);
+        font-size: var(--text-size-sm);
+      }
+
+      .pb-foot {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        padding-bottom: 12px;
+      }
+
+      /* ---- Grid: modules × layers. The script writes grid-template-columns from the data. ---- */
+      .pb-map[data-grid] {
+        grid-template-rows: auto auto auto auto;
+        padding-right: 30px;
+        column-gap: 8px;
+        row-gap: 0;
+      }
+
+      .pb-map[data-grid] :is(.pb-axis, .pb-module:not(.pb-frontend)) {
+        display: grid;
+        grid-row: 1 / span 4;
+        grid-template-rows: subgrid;
+      }
+
+      .pb-map[data-grid] .pb-frontend {
+        grid-row: 1 / span 4;
+      }
+
+      .pb-axis > * {
+        padding: 14px 0;
+        writing-mode: vertical-rl;
+        border-top: 1px dashed var(--border);
+        font: 500 12px / 1.4 var(--label-font);
+        text-transform: var(--label-transform);
+        letter-spacing: var(--label-spacing);
+        color: var(--muted);
+      }
+
+      .pb-axis > :first-child {
+        border-top: 0;
+      }
+
+      /* ---- MOCK: the new question card layout. ---- */
+      .pbq {
+        display: grid;
+        gap: 12px;
+        margin: 16px 0;
+        padding: 16px;
+        background: var(--surface);
+        border: var(--card-border);
+        border-radius: var(--radius);
+      }
+
+      .pbq-heading {
+        font-size: 15px;
+      }
+
+      .pbq-problem {
+        font-size: var(--text-size-sm);
+        line-height: var(--line-sm);
+        color: var(--muted);
+      }
+
+      .pbq-defs {
+        border-top: 1px dashed var(--border);
+        border-bottom: 1px dashed var(--border);
+        padding: 6px 0;
+        font-size: var(--text-size-sm);
+      }
+
+      .pbq-defs summary {
+        cursor: pointer;
+        font: 500 12px/1.6 var(--label-font);
+        text-transform: var(--label-transform);
+        letter-spacing: var(--label-spacing);
+        color: var(--muted);
+      }
+
+      .pbq-defs dl {
+        display: grid;
+        grid-template-columns: max-content minmax(0, 1fr);
+        gap: 4px 12px;
+        margin: 8px 0 2px;
+      }
+
+      .pbq-defs dt {
+        font-weight: 600;
+      }
+
+      .pbq-defs dd {
+        margin: 0;
+      }
+
+      .pbq-defs code {
+        font-size: 12px;
+      }
+
+      .pbq-visual {
+        gap: 10px;
+      }
+
+      .pbq-visual .aisf-panel {
+        display: grid;
+        align-content: start;
+        gap: 6px;
+        min-width: 0;
+        padding: 8px 10px;
+      }
+
+      .pbq-visual .aisf-lane {
+        gap: 4px;
+        padding: 0;
+        border: 0;
+      }
+
+      .pbq-visual .aisf-node {
+        min-height: 22px;
+        padding: 1px 6px;
+        font: 500 12px/1.3 var(--font-mono);
+      }
+
+      .pbq-visual .aisf-arrow {
+        font-size: 12px;
+      }
+
+      .pbq-visual .aisf-stop {
+        font-size: 12px;
+      }
+
+      .pbq-visual .aisf-node::before {
+        display: none;
+      }
+
+      .pbq-visual .pb-badge {
+        min-width: 0;
+        height: 18px;
+        padding: 0 5px;
+        font-size: 12px;
+      }
+
+      .pbq-actor {
+        font: 600 12px/1.3 var(--font-mono);
+      }
+
+      .pbq-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 10px;
+      }
+
+      .pbq-card {
+        display: grid;
+        grid-template-columns: 20px minmax(0, 1fr);
+        align-content: start;
+        gap: 6px 8px;
+        padding: 10px 12px;
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+      }
+
+      .pbq-card:has(input:checked) {
+        border-color: var(--text);
+        box-shadow: inset 0 0 0 1px var(--text);
+      }
+
+      .pbq-card input {
+        margin: 3px 0 0;
+        accent-color: var(--text);
+      }
+
+      .pbq-title {
+        font-weight: 600;
+      }
+
+      .pbq-criteria,
+      .pbq-lines {
+        grid-column: 2;
+        margin: 0;
+        padding: 0;
+        font-size: var(--text-size-sm);
+        line-height: var(--line-sm);
+      }
+
+      .pbq-criteria {
+        display: grid;
+        gap: 2px;
+        list-style: none;
+        padding: 6px 8px;
+        background: var(--surface-sunken);
+      }
+
+      .pbq-criteria b {
+        font: 700 12px/1.4 var(--font-mono);
+        color: var(--info);
+        margin-right: 6px;
+      }
+
+      .pbq-lines {
+        display: grid;
+        grid-template-columns: max-content minmax(0, 1fr);
+        gap: 3px 10px;
+      }
+
+      .pbq-lines dt {
+        font: 500 12px/1.45 var(--label-font);
+        text-transform: var(--label-transform);
+        letter-spacing: 0.04em;
+        color: var(--muted);
+      }
+
+      .pbq-lines dd {
+        margin: 0;
+      }
+
+      .pbq-free {
+        display: grid;
+        gap: 4px;
+      }
+
+      .pbq-free-label {
+        font: 500 12px/1.4 var(--label-font);
+        text-transform: var(--label-transform);
+        letter-spacing: var(--label-spacing);
+        color: var(--muted);
+      }
+
+      .pbq-free textarea {
+        width: 100%;
+        padding: 6px 8px;
+        font: inherit;
+        font-size: var(--text-size-sm);
+        color: var(--text);
+        background: var(--bg);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        resize: vertical;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="pb-playback">
+      <section class="pb-intro">
+        <span class="label">End state</span>
+        <p class="pb-end">
+          Merging a pull request that closes a ticket emails the ticket's owner once, with the
+          ticket title and a link to the PR. A redelivered webhook never sends a second email.
+          Owners can switch these emails off in their profile.
+        </p>
+      </section>
+
+      <aisf-figure
+        class="pb-figure"
+        wide
+        caption="One box per class, one block per public function the path calls. Pick a criterion to trace its path; numbers are call order."
+      >
+        <div class="pb-controls">
+          <div class="pb-pick">
+            <div class="pb-switches" role="group" aria-label="Path to show"></div>
+            <div class="pb-criterion" id="pb-criterion" aria-live="polite"></div>
+          </div>
+          <div class="pb-key" aria-label="Key">
+            <span class="aisf-node aisf-node-new">new</span>
+            <span class="aisf-node aisf-node-changed">changed</span>
+            <span class="aisf-node aisf-node-untouched">unchanged</span>
+            <span class="pb-key-path">
+              <svg viewBox="0 0 34 12" aria-hidden="true">
+                <path class="pb-wire" data-on d="M2 6 H26" />
+              </svg>
+              call
+            </span>
+          </div>
+        </div>
+        <div class="pb-map" id="pb-map"></div>
+        <ol class="pb-route" id="pb-route"></ol>
+        <div class="pb-foot"><output class="aisf-readout" id="pb-readout"></output></div>
+      </aisf-figure>
+    </div>
+
+    <aisf-round number="1">
+      <aisf-question
+        name="ac1-path"
+        heading="AC1: the owner gets one email when the PR merges, with the ticket title and a link to the PR"
+        assumes="the PR body names its ticket (Closes #n)"
+      >
+        <aisf-card value="correct" why="Each step is a call that exists or is planned"
+          >Correct</aisf-card
+        >
+        <aisf-card value="wrong-path" why="Names no step. To name one, use Other: “step 9 should …”"
+          >Wrong path</aisf-card
+        >
+      </aisf-question>
+      <aisf-question
+        name="ac2-path"
+        heading="AC2: a redelivered merge webhook sends no second email"
+        assumes="GitHub redelivers with the same PR id"
+      >
+        <aisf-card value="correct" why="The claim row is the only guard">Correct</aisf-card>
+        <aisf-card value="wrong-path" why="Names no step. To name one, use Other: “step 7 should …”"
+          >Wrong path</aisf-card
+        >
+      </aisf-question>
+
+      <!-- MOCK of the new card layout (kit element comes later): question, Definitions,
+           scene-setting visuals, option cards with pros / cons / effect, one free-text field,
+           no suggested option. The criterion texts and the visual come from PATHS.AC3. -->
+      <section class="pbq" data-ac="AC3" aria-labelledby="pbq-ac3-heading">
+        <h3 class="pbq-heading" id="pbq-ac3-heading">Split AC3 into AC3a and AC3b?</h3>
+        <p class="pbq-problem">
+          AC3 has two starting points: the owner's profile toggle and GitHub's merge webhook. One
+          criterion then needs two separate checks.
+        </p>
+        <details class="pbq-defs">
+          <summary>Definitions</summary>
+          <dl>
+            <dt>Starting point</dt>
+            <dd>
+              Who or what starts a chain of calls: an owner action in the UI, a GitHub webhook, a
+              cron job.
+            </dd>
+            <dt>Path</dt>
+            <dd>
+              The calls from one starting point to its end. An <code>if</code> inside a function is
+              not a second path.
+            </dd>
+            <dt>Split</dt>
+            <dd>Replace one acceptance criterion in the ticket body with two, one per path.</dd>
+          </dl>
+        </details>
+        <div class="pbq-visual aisf-compare" id="pbq-visual-AC3"></div>
+        <div class="pbq-options" role="radiogroup" aria-labelledby="pbq-ac3-heading">
+          <label class="pbq-card">
+            <input type="radio" name="ac3-split" value="split" />
+            <span class="pbq-title">Split into AC3a and AC3b</span>
+            <ol class="pbq-criteria" id="pbq-criteria-AC3"></ol>
+            <dl class="pbq-lines">
+              <dt>Pros</dt>
+              <dd>Each criterion has one path, one check and one Correct / Wrong question.</dd>
+              <dt>Cons</dt>
+              <dd>One more criterion to read and keep in sync.</dd>
+              <dt>Effect</dt>
+              <dd>
+                Rewrites the ticket body's criteria: AC3 becomes AC3a and AC3b. Sub-issues
+                unchanged.
+              </dd>
+            </dl>
+          </label>
+          <label class="pbq-card">
+            <input type="radio" name="ac3-split" value="keep" />
+            <span class="pbq-title">Keep AC3 as one criterion</span>
+            <dl class="pbq-lines">
+              <dt>Pros</dt>
+              <dd>Ticket body stays as written.</dd>
+              <dt>Cons</dt>
+              <dd>One criterion covers two starting points; its check must drive both.</dd>
+              <dt>Effect</dt>
+              <dd>No change to the ticket body. Next round asks Correct / Wrong for both paths.</dd>
+            </dl>
+          </label>
+        </div>
+        <label class="pbq-free">
+          <span class="pbq-free-label">Anything else</span>
+          <textarea rows="2" placeholder="A different answer, or a point to discuss"></textarea>
+        </label>
+      </section>
+    </aisf-round>
+
+    <script>
+      // Figure only: draws the interface map and the paths from one plan object.
+      (() => {
+        const LAYERS = ['presentation', 'business', 'infrastructure'];
+
+        // ======================= THE PLAN DATA (the only part to rewrite per ticket) ==========
+        // Modules, left to right. kind 'frontend' has no layers: its classes carry layer null and
+        // may sit in a screen frame. A module whose classes are ALL untouched starts folded.
+        const MODULES = [
+          { id: 'web', kind: 'frontend', name: 'frontend', mark: 'changed', tag: 'changed' },
+          { id: 'pull-requests', mark: 'changed', tag: 'changed' },
+          { id: 'bus', bus: true, tag: 'shared', name: 'event bus' },
+          { id: 'notifications', mark: 'new', tag: 'new module' },
+          {
+            id: 'tickets',
+            mark: 'untouched',
+            tag: 'untouched',
+            does: 'reads ticket',
+            note: 'Only read, through its facade.',
+          },
+          { id: 'users', mark: 'changed', tag: 'changed' },
+        ];
+
+        const SCREENS = [
+          {
+            id: 'profileSettings',
+            module: 'web',
+            file: 'ProfileSettingsPage.tsx',
+            role: 'screen · /profile/settings',
+            mark: 'changed',
+          },
+        ];
+
+        // One entry per class (or file) that defines an interface the paths call.
+        // fns: ONLY the public functions a path calls. Never private methods or helpers.
+        //   sig   the call as written in code
+        //   mark  new | changed | untouched (untouched reads "unchanged")
+        //   does  1–3 short lines: what must happen / change in it for this ticket
+        const CLASSES = [
+          {
+            id: 'toggle',
+            module: 'web',
+            screen: 'profileSettings',
+            file: 'EmailOnMergeToggle.tsx',
+            name: 'EmailOnMergeToggle',
+            kind: 'component',
+            mark: 'new',
+            fns: [
+              {
+                id: 'onChange',
+                sig: 'onChange(enabled)',
+                mark: 'new',
+                does: 'New switch under “Notifications”. Flips at once, calls updateSettings, flips back on error.',
+              },
+            ],
+          },
+          {
+            id: 'usersApi',
+            module: 'web',
+            file: 'users-api.ts',
+            name: 'usersApi',
+            kind: 'API client',
+            mark: 'changed',
+            fns: [
+              {
+                id: 'updateSettings',
+                sig: 'updateSettings(patch)',
+                mark: 'changed',
+                does: 'Patch type gains emailOnMerge?: boolean. Sent as is.',
+              },
+            ],
+          },
+          {
+            id: 'prCtrl',
+            module: 'pull-requests',
+            layer: 'presentation',
+            file: 'github-webhook.controller.ts',
+            name: 'GithubWebhookController',
+            kind: 'controller',
+            mark: 'untouched',
+            fns: [
+              {
+                id: 'handlePullRequest',
+                sig: 'handlePullRequest(req)',
+                mark: 'untouched',
+                does: 'Checks the signature. On closed + merged calls markMerged.',
+              },
+            ],
+          },
+          {
+            id: 'prSvc',
+            module: 'pull-requests',
+            layer: 'business',
+            file: 'pull-request.service.ts',
+            name: 'PullRequestService',
+            kind: 'service',
+            mark: 'changed',
+            fns: [
+              {
+                id: 'markMerged',
+                sig: 'markMerged(prId)',
+                mark: 'changed',
+                does: 'After save, publishes pullRequest.merged with prId and ticketId. Skips a PR that names no ticket.',
+              },
+            ],
+          },
+          {
+            id: 'prRepo',
+            module: 'pull-requests',
+            layer: 'infrastructure',
+            file: 'pull-request.repository.ts',
+            name: 'PullRequestRepository',
+            kind: 'repository',
+            mark: 'untouched',
+            fns: [{ id: 'save', sig: 'save(pr)', mark: 'untouched', does: 'Upserts the PR row.' }],
+          },
+          {
+            id: 'evt',
+            module: 'bus',
+            layer: 'business',
+            file: 'domain-events.ts',
+            name: 'DomainEvents',
+            kind: 'event map',
+            mark: 'changed',
+            fns: [
+              {
+                id: 'merged',
+                sig: 'pullRequest.merged',
+                mark: 'new',
+                does: 'New event { prId, ticketId }. One per markMerged call.',
+              },
+            ],
+          },
+          {
+            id: 'handler',
+            module: 'notifications',
+            layer: 'presentation',
+            file: 'pull-request-merged.handler.ts',
+            name: 'PullRequestMergedHandler',
+            kind: 'event handler',
+            mark: 'new',
+            fns: [
+              {
+                id: 'handle',
+                sig: 'handle(event)',
+                mark: 'new',
+                does: 'Subscribes to pullRequest.merged. Calls execute. Logs errors, never rethrows.',
+              },
+            ],
+          },
+          {
+            id: 'useCase',
+            module: 'notifications',
+            layer: 'business',
+            file: 'notify-owner-on-merge.ts',
+            name: 'NotifyOwnerOnMerge',
+            kind: 'use case',
+            mark: 'new',
+            fns: [
+              {
+                id: 'execute',
+                sig: 'execute(prId, ticketId)',
+                mark: 'new',
+                does: 'Claims the PR; stops if taken. Loads ticket and owner. Sends the email only if emailOnMerge is on.',
+              },
+            ],
+          },
+          {
+            id: 'logRepo',
+            module: 'notifications',
+            layer: 'infrastructure',
+            file: 'sql-notification-log.repository.ts',
+            name: 'SqlNotificationLogRepository',
+            kind: 'repository',
+            mark: 'new',
+            fns: [
+              {
+                id: 'tryClaim',
+                sig: 'tryClaim(prId)',
+                mark: 'new',
+                does: 'Inserts into new table notification_log, unique on pr_id. False when the row exists.',
+              },
+            ],
+          },
+          {
+            id: 'ticketsAdapter',
+            module: 'notifications',
+            layer: 'infrastructure',
+            file: 'tickets.adapter.ts',
+            name: 'TicketsAdapter',
+            kind: 'adapter',
+            mark: 'new',
+            fns: [
+              {
+                id: 'getTicket',
+                sig: 'getTicket(ticketId)',
+                mark: 'new',
+                does: 'Calls TicketsFacade.getTicket. Maps to { title, ownerId }.',
+              },
+            ],
+          },
+          {
+            id: 'usersAdapter',
+            module: 'notifications',
+            layer: 'infrastructure',
+            file: 'users.adapter.ts',
+            name: 'UsersAdapter',
+            kind: 'adapter',
+            mark: 'new',
+            fns: [
+              {
+                id: 'getContact',
+                sig: 'getContact(ownerId)',
+                mark: 'new',
+                does: 'Calls UsersFacade.getContact. Maps to { email, name, emailOnMerge }.',
+              },
+            ],
+          },
+          {
+            id: 'mailer',
+            module: 'notifications',
+            layer: 'infrastructure',
+            file: 'smtp.mailer.ts',
+            name: 'SmtpMailer',
+            kind: 'adapter',
+            mark: 'new',
+            fns: [
+              {
+                id: 'send',
+                sig: 'send(message)',
+                mark: 'new',
+                does: 'Sends “PR #n merged: <title>” with the PR link to one address.',
+              },
+            ],
+          },
+          {
+            id: 'ticketsFacade',
+            module: 'tickets',
+            layer: 'presentation',
+            file: 'tickets.facade.ts',
+            name: 'TicketsFacade',
+            kind: 'facade',
+            mark: 'untouched',
+            fns: [
+              {
+                id: 'getTicket',
+                sig: 'getTicket(id)',
+                mark: 'untouched',
+                does: 'Returns the ticket DTO, or null.',
+              },
+            ],
+          },
+          {
+            id: 'ticketSvc',
+            module: 'tickets',
+            layer: 'business',
+            file: 'ticket.service.ts',
+            name: 'TicketService',
+            kind: 'service',
+            mark: 'untouched',
+            fns: [{ id: 'get', sig: 'get(id)', mark: 'untouched', does: 'Loads one ticket.' }],
+          },
+          {
+            id: 'ticketRepo',
+            module: 'tickets',
+            layer: 'infrastructure',
+            file: 'ticket.repository.ts',
+            name: 'TicketRepository',
+            kind: 'repository',
+            mark: 'untouched',
+            fns: [
+              { id: 'findById', sig: 'findById(id)', mark: 'untouched', does: 'Reads one row.' },
+            ],
+          },
+          {
+            id: 'settingsCtrl',
+            module: 'users',
+            layer: 'presentation',
+            file: 'user-settings.controller.ts',
+            name: 'UserSettingsController',
+            kind: 'controller',
+            mark: 'changed',
+            fns: [
+              {
+                id: 'patchSettings',
+                sig: 'patchSettings(req)',
+                mark: 'changed',
+                does: 'Body accepts emailOnMerge. 400 when it is not a boolean.',
+              },
+            ],
+          },
+          {
+            id: 'usersFacade',
+            module: 'users',
+            layer: 'presentation',
+            file: 'users.facade.ts',
+            name: 'UsersFacade',
+            kind: 'facade',
+            mark: 'changed',
+            fns: [
+              {
+                id: 'getContact',
+                sig: 'getContact(id)',
+                mark: 'new',
+                does: 'Returns { email, name, emailOnMerge } for one user, or null.',
+              },
+            ],
+          },
+          {
+            id: 'userSvc',
+            module: 'users',
+            layer: 'business',
+            file: 'user.service.ts',
+            name: 'UserService',
+            kind: 'service',
+            mark: 'changed',
+            fns: [
+              { id: 'get', sig: 'get(id)', mark: 'untouched', does: 'Loads one user.' },
+              {
+                id: 'updateSettings',
+                sig: 'updateSettings(userId, settings)',
+                mark: 'changed',
+                does: 'Settings gain emailOnMerge. Merged into the user, then saved.',
+              },
+            ],
+          },
+          {
+            id: 'userRepo',
+            module: 'users',
+            layer: 'infrastructure',
+            file: 'user.repository.ts',
+            name: 'UserRepository',
+            kind: 'repository',
+            mark: 'changed',
+            fns: [
+              {
+                id: 'findById',
+                sig: 'findById(id)',
+                mark: 'changed',
+                does: 'Reads new column email_on_merge, default true.',
+              },
+              { id: 'save', sig: 'save(user)', mark: 'changed', does: 'Writes email_on_merge.' },
+            ],
+          },
+        ];
+
+        // Criteria. Each holds one or more paths; a path starts at ONE starting point (`actor`:
+        // an owner action in the UI, a GitHub webhook, a cron job …) and lists its calls as
+        // [from, to, call, via], ends 'classId.fnId', `null` from = the entry.
+        // A branch inside a function (an if) is not a second path: it goes in that function's text.
+        // Two or more paths = two starting points = the criterion may need a split; `split` holds
+        // the proposed criterion texts, one per path, for the split question under the map.
+        const PATHS = {
+          AC1: {
+            title:
+              'the owner gets one email when the PR merges, with the ticket title and a link to the PR',
+            paths: [
+              {
+                actor: 'GitHub',
+                steps: [
+                  [
+                    null,
+                    'prCtrl.handlePullRequest',
+                    'POST /webhooks/github · closed, merged',
+                    'entry',
+                  ],
+                  ['prCtrl.handlePullRequest', 'prSvc.markMerged', 'markMerged(prId)'],
+                  ['prSvc.markMerged', 'prRepo.save', 'save(pr)'],
+                  ['prSvc.markMerged', 'evt.merged', 'publish({ prId, ticketId })', 'event'],
+                  ['evt.merged', 'handler.handle', 'delivers pullRequest.merged', 'event'],
+                  ['handler.handle', 'useCase.execute', 'execute(prId, ticketId)'],
+                  ['useCase.execute', 'logRepo.tryClaim', 'tryClaim(prId) → true'],
+                  ['useCase.execute', 'ticketsAdapter.getTicket', 'ticketPort.getTicket(ticketId)'],
+                  [
+                    'ticketsAdapter.getTicket',
+                    'ticketsFacade.getTicket',
+                    'getTicket(id)',
+                    'facade',
+                  ],
+                  ['ticketsFacade.getTicket', 'ticketSvc.get', 'get(id)'],
+                  ['ticketSvc.get', 'ticketRepo.findById', 'findById(id)'],
+                  ['useCase.execute', 'usersAdapter.getContact', 'userPort.getContact(ownerId)'],
+                  ['usersAdapter.getContact', 'usersFacade.getContact', 'getContact(id)', 'facade'],
+                  ['usersFacade.getContact', 'userSvc.get', 'get(id)'],
+                  ['userSvc.get', 'userRepo.findById', 'findById(id)'],
+                  ['useCase.execute', 'mailer.send', 'mailer.send(prMergedEmail)'],
+                ],
+                end: ['mailer.send', 'email sent'],
+              },
+            ],
+          },
+          AC2: {
+            title: 'a redelivered merge webhook sends no second email',
+            paths: [
+              {
+                actor: 'GitHub',
+                steps: [
+                  [
+                    null,
+                    'prCtrl.handlePullRequest',
+                    'POST /webhooks/github · same delivery',
+                    'entry',
+                  ],
+                  ['prCtrl.handlePullRequest', 'prSvc.markMerged', 'markMerged(prId)'],
+                  ['prSvc.markMerged', 'prRepo.save', 'save(pr)'],
+                  ['prSvc.markMerged', 'evt.merged', 'publish({ prId, ticketId })', 'event'],
+                  ['evt.merged', 'handler.handle', 'delivers pullRequest.merged', 'event'],
+                  ['handler.handle', 'useCase.execute', 'execute(prId, ticketId)'],
+                  ['useCase.execute', 'logRepo.tryClaim', 'tryClaim(prId) → false, row exists'],
+                ],
+                end: ['useCase.execute', 'stops, no email'],
+              },
+            ],
+          },
+          AC3: {
+            title:
+              'an owner can switch merge emails off in their profile, and then gets no merge email',
+            paths: [
+              {
+                label: 'A',
+                actor: 'owner',
+                start: 'profile toggle',
+                steps: [
+                  [null, 'toggle.onChange', 'toggles “Email me when a PR merges” off', 'entry'],
+                  [
+                    'toggle.onChange',
+                    'usersApi.updateSettings',
+                    'updateSettings({ emailOnMerge: false })',
+                  ],
+                  [
+                    'usersApi.updateSettings',
+                    'settingsCtrl.patchSettings',
+                    'PATCH /me/settings · { emailOnMerge: false }',
+                    'http',
+                  ],
+                  [
+                    'settingsCtrl.patchSettings',
+                    'userSvc.updateSettings',
+                    'updateSettings(userId, settings)',
+                  ],
+                  ['userSvc.updateSettings', 'userRepo.save', 'save(user)'],
+                ],
+                end: ['userRepo.save', 'setting saved'],
+              },
+              {
+                label: 'B',
+                actor: 'GitHub',
+                start: 'merge webhook',
+                steps: [
+                  [
+                    null,
+                    'prCtrl.handlePullRequest',
+                    'POST /webhooks/github · closed, merged',
+                    'entry',
+                  ],
+                  ['prCtrl.handlePullRequest', 'prSvc.markMerged', 'markMerged(prId)'],
+                  ['prSvc.markMerged', 'prRepo.save', 'save(pr)'],
+                  ['prSvc.markMerged', 'evt.merged', 'publish({ prId, ticketId })', 'event'],
+                  ['evt.merged', 'handler.handle', 'delivers pullRequest.merged', 'event'],
+                  ['handler.handle', 'useCase.execute', 'execute(prId, ticketId)'],
+                  ['useCase.execute', 'logRepo.tryClaim', 'tryClaim(prId) → true'],
+                  ['useCase.execute', 'ticketsAdapter.getTicket', 'ticketPort.getTicket(ticketId)'],
+                  [
+                    'ticketsAdapter.getTicket',
+                    'ticketsFacade.getTicket',
+                    'getTicket(id)',
+                    'facade',
+                  ],
+                  ['ticketsFacade.getTicket', 'ticketSvc.get', 'get(id)'],
+                  ['ticketSvc.get', 'ticketRepo.findById', 'findById(id)'],
+                  [
+                    'useCase.execute',
+                    'usersAdapter.getContact',
+                    'userPort.getContact(ownerId) → emailOnMerge false',
+                  ],
+                  ['usersAdapter.getContact', 'usersFacade.getContact', 'getContact(id)', 'facade'],
+                  ['usersFacade.getContact', 'userSvc.get', 'get(id)'],
+                  ['userSvc.get', 'userRepo.findById', 'findById(id)'],
+                ],
+                end: ['useCase.execute', 'switched off: no email'],
+              },
+            ],
+            split: [
+              ['AC3a', 'an owner can switch merge emails off in their profile'],
+              ['AC3b', 'a merged PR sends no email to an owner who switched merge emails off'],
+            ],
+          },
+        };
+
+        // Classes left off the map. Empty: every interface is drawn. Put a class id here to hide
+        // it again; a call through it then becomes one arrow that names it.
+        const HIDE = new Set([]);
+        // ======================= END OF PLAN DATA =============================================
+
+        const AC_KEYS = Object.keys(PATHS);
+        const moduleOf = new Map(MODULES.map((module) => [module.id, module]));
+        const classOf = new Map(CLASSES.map((item) => [item.id, item]));
+        const fnOf = new Map(
+          CLASSES.flatMap((item) =>
+            item.fns.map((fn) => [`${item.id}.${fn.id}`, { ...fn, cls: item }]),
+          ),
+        );
+        const classIdOf = (ref) => ref.slice(0, ref.lastIndexOf('.'));
+
+        // A hop into a hidden class waits for the hop out of it; the two become one step.
+        function unhide(steps) {
+          const through = new Map();
+          const out = [];
+          for (const [rawFrom, to, call, via] of steps) {
+            const hop = through.get(rawFrom) ?? { from: rawFrom, call, via, notes: [] };
+            const merged = { ...hop, via: hop.via ?? via };
+            if (HIDE.has(classIdOf(to))) {
+              const item = classOf.get(classIdOf(to));
+              const note = item.mark === 'untouched' ? [] : [`${item.name} ${item.mark}`];
+              through.set(to, { ...merged, notes: [...merged.notes, ...note] });
+              continue;
+            }
+            out.push([merged.from, to, [merged.call, ...merged.notes].join(' · '), merged.via]);
+          }
+          return out;
+        }
+
+        // Behaviour text is capped: a block says what must happen, in at most 100 characters.
+        const DOES_MAX = 100;
+        for (const item of CLASSES)
+          for (const fn of item.fns)
+            if (fn.does.length > DOES_MAX)
+              console.warn(
+                `${item.name}.${fn.sig}: behaviour text is ${fn.does.length} characters, max ${DOES_MAX}`,
+              );
+
+        // Every step of a criterion, all its paths in order; the 5th field is the path label.
+        const STEPS = Object.fromEntries(
+          AC_KEYS.map((ac) => [
+            ac,
+            PATHS[ac].paths.flatMap((run) =>
+              unhide(run.steps).map((step) => [...step, run.label ?? '']),
+            ),
+          ]),
+        );
+        const MULTI = (ac) => PATHS[ac].paths.length > 1;
+        const drawnIn = (moduleId) =>
+          CLASSES.filter((item) => item.module === moduleId && !HIDE.has(item.id));
+        const isFrontend = (ref) =>
+          ref !== null && moduleOf.get(fnOf.get(ref).cls.module).kind === 'frontend';
+        const UI_TOUCHED = AC_KEYS.some((ac) =>
+          STEPS[ac].some(([from, to]) => isFrontend(from) || isFrontend(to)),
+        );
+        const SHOWN_MODULES = MODULES.filter(
+          (module) => (module.kind !== 'frontend' || UI_TOUCHED) && drawnIn(module.id).length > 0,
+        );
+
+        // Foldable: a layered module whose classes are all untouched. Each gets one stand-in box
+        // with one block, `fold:<module>.in`.
+        const FOLDABLE = new Set(
+          MODULES.filter((module) => {
+            const items = drawnIn(module.id);
+            return (
+              !module.bus &&
+              module.kind !== 'frontend' &&
+              items.length > 0 &&
+              items.every((item) => item.mark === 'untouched')
+            );
+          }).map((module) => module.id),
+        );
+        const folded = new Set(FOLDABLE);
+        for (const moduleId of FOLDABLE) {
+          const inModule = (ref) => ref !== null && fnOf.get(ref).cls.module === moduleId;
+          const allSteps = AC_KEYS.flatMap((ac) => STEPS[ac]);
+          const entry = allSteps.find(([from, to]) => inModule(to) && !inModule(from));
+          const module = moduleOf.get(moduleId);
+          const inner = new Set(
+            allSteps.filter(([, to]) => inModule(to)).map(([from, to]) => `${from}>${to}`),
+          ).size;
+          const stand = {
+            id: `fold:${moduleId}`,
+            module: moduleId,
+            layer: entry ? fnOf.get(entry[1]).cls.layer : LAYERS[0],
+            file: module.name ?? module.id,
+            name: '',
+            kind: 'folded module',
+            mark: 'untouched',
+            fold: true,
+            fns: [
+              {
+                id: 'in',
+                sig: module.does ?? 'existing code',
+                mark: 'untouched',
+                does: `Unchanged. ${inner} steps inside. Click to unfold.`,
+              },
+            ],
+          };
+          classOf.set(stand.id, stand);
+          fnOf.set(`${stand.id}.in`, { ...stand.fns[0], cls: stand });
+        }
+
+        const SVG_NS = 'http://www.w3.org/2000/svg';
+        const map = document.getElementById('pb-map');
+        const route = document.getElementById('pb-route');
+        const criterion = document.getElementById('pb-criterion');
+        const readout = document.getElementById('pb-readout');
+        const switches = document.querySelector('.pb-switches');
+        /** @type {Map<string, HTMLElement>} class boxes */
+        const boxEls = new Map();
+        /** @type {Map<string, HTMLElement>} function blocks by ref */
+        const fnEls = new Map();
+        /** @type {Map<string, HTMLElement>} */
+        const screenEls = new Map();
+        let selected = new URLSearchParams(location.search).get('ac') ?? 'AC1';
+        if (!AC_KEYS.includes(selected) && selected !== 'All') selected = 'AC1';
+        let hotKey = null;
+        let pinned = null;
+        let hovered = null;
+        let view = computeView();
+
+        // The block a hop is drawn to: a folded module's stand-in, or the function itself.
+        function shown(ref) {
+          if (ref === null) return null;
+          const item = fnOf.get(ref).cls;
+          return folded.has(item.module) ? `fold:${item.module}.in` : ref;
+        }
+
+        function computeView() {
+          const paths = {};
+          const wires = new Map();
+          for (const ac of AC_KEYS) {
+            const steps = [];
+            const ends = [];
+            for (const run of PATHS[ac].paths) {
+              const label = run.label ?? '';
+              const lastEntry = new Map();
+              let n = 0;
+              for (const [rawFrom, rawTo, call, via] of unhide(run.steps)) {
+                const from = shown(rawFrom);
+                const to = shown(rawTo);
+                if (from !== null && from === to) {
+                  const entry = lastEntry.get(to);
+                  if (entry) entry.folded += 1;
+                  continue;
+                }
+                const isFold = fnOf.get(to).cls.fold === true;
+                n += 1;
+                const step = {
+                  from,
+                  to,
+                  call,
+                  via,
+                  run: label,
+                  actor: run.actor,
+                  num: `${label}${n}`,
+                  key: `${from ?? 'entry'}>${to}`,
+                  folded: isFold ? 1 : 0,
+                };
+                if (isFold) lastEntry.set(to, step);
+                steps.push(step);
+              }
+              ends.push({ ref: shown(run.end[0]), text: run.end[1], run: label });
+            }
+            paths[ac] = { ...PATHS[ac], steps, ends };
+            for (const step of steps) {
+              if (!wires.has(step.key))
+                wires.set(step.key, {
+                  key: step.key,
+                  from: step.from,
+                  to: step.to,
+                  via: step.via,
+                  acs: new Set(),
+                  runs: new Map(),
+                });
+              wires.get(step.key).acs.add(ac);
+              if (!wires.get(step.key).runs.has(ac)) wires.get(step.key).runs.set(ac, step.run);
+            }
+          }
+          return { paths, wires };
+        }
+
+        function el(tag, className, text) {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (text !== undefined) node.textContent = text;
+          return node;
+        }
+
+        function svg(tag, attributes = {}) {
+          const node = document.createElementNS(SVG_NS, tag);
+          for (const [name, value] of Object.entries(attributes))
+            node.setAttribute(name, String(value));
+          return node;
+        }
+
+        // Identifiers break at word joins, never mid-word.
+        function identifier(text, className) {
+          const span = el('span', className);
+          const parts = text.split(/(?<=[a-z.])(?=[A-Z])|(?<=[.(,/-])/);
+          parts.forEach((part, index) => {
+            if (index > 0) span.append(document.createElement('wbr'));
+            span.append(part);
+          });
+          return span;
+        }
+
+        function buildMap() {
+          const wires = svg('svg', { class: 'pb-wires', 'aria-hidden': 'true' });
+          const defs = svg('defs');
+          for (const [id, cls] of [
+            ['pb-head', 'pb-head'],
+            ['pb-head-hot', 'pb-head-hot'],
+            ['pb-head-b', 'pb-head-b'],
+          ]) {
+            const marker = svg('marker', {
+              id,
+              viewBox: '0 0 10 10',
+              refX: 9,
+              refY: 5,
+              markerWidth: 9,
+              markerHeight: 9,
+              markerUnits: 'userSpaceOnUse',
+              orient: 'auto',
+            });
+            marker.append(svg('path', { d: 'M0 0 L10 5 L0 10 z', class: cls }));
+            defs.append(marker);
+          }
+          wires.append(defs);
+          map.append(wires);
+
+          const axis = el('div', 'pb-axis');
+          axis.setAttribute('aria-hidden', 'true');
+          axis.append(el('span', '', ''), ...LAYERS.map((layer) => el('span', '', layer)));
+
+          for (const module of SHOWN_MODULES) {
+            const kindClass = module.bus
+              ? ' pb-bus'
+              : module.kind === 'frontend'
+                ? ' pb-frontend'
+                : '';
+            const card = el('section', `pb-module${kindClass}`);
+            card.dataset.module = module.id;
+            if (module.mark) card.dataset.mark = module.mark;
+            card.setAttribute('aria-label', `${module.name ?? module.id}, ${module.tag}`);
+            const head = el('header', 'pb-module-head');
+            head.append(el('span', 'pb-module-name', module.name ?? module.id));
+            head.append(el('span', 'pb-module-tag', module.tag));
+            if (FOLDABLE.has(module.id)) head.append(foldToggle(module.id));
+            if (module.note) head.append(el('span', 'pb-module-note', module.note));
+            card.append(head);
+            if (module.kind === 'frontend') {
+              for (const screen of SCREENS.filter((item) => item.module === module.id))
+                card.append(buildScreen(screen));
+              for (const item of drawnIn(module.id).filter((c) => !c.screen))
+                card.append(buildClass(item));
+              map.append(card);
+              map.append(axis);
+              continue;
+            }
+            const isFolded = folded.has(module.id);
+            if (isFolded) card.dataset.folded = '';
+            const items = isFolded ? [classOf.get(`fold:${module.id}`)] : drawnIn(module.id);
+            for (const layer of LAYERS) {
+              const row = el('div', 'pb-layer');
+              for (const item of items.filter((c) => c.layer === layer))
+                row.append(buildClass(item));
+              card.append(row);
+            }
+            map.append(card);
+          }
+          if (!axis.isConnected) map.insertBefore(axis, map.children[1]);
+          placeColumns();
+        }
+
+        // Columns from the data: each module's share follows its longest function text and
+        // class name; a folded module or the bus gets a thin column.
+        const COLUMN_FLOOR = 150;
+        const THIN_FLOOR = 150;
+        const BUS_FLOOR = 190;
+        function columnShare(module) {
+          if (folded.has(module.id)) return 0.55;
+          const items = drawnIn(module.id);
+          const longest = Math.max(
+            ...items.map((c) => c.name.length * 1.4),
+            ...items.flatMap((c) => c.fns.map((fn) => fn.does.length / 3)),
+          );
+          return Math.min(1.25, Math.max(0.6, longest / 30));
+        }
+
+        function placeColumns() {
+          const columns = [...map.querySelectorAll(':scope > .pb-axis, :scope > .pb-module')];
+          map.toggleAttribute('data-grid', true);
+          map.style.gridTemplateColumns = columns
+            .map((column) => {
+              if (column.matches('.pb-axis')) return 'auto';
+              const module = moduleOf.get(column.dataset.module);
+              const floor = module.bus
+                ? BUS_FLOOR
+                : folded.has(module.id)
+                  ? THIN_FLOOR
+                  : COLUMN_FLOOR;
+              return `minmax(${floor}px, ${columnShare(module)}fr)`;
+            })
+            .join(' ');
+        }
+
+        function foldToggle(moduleId) {
+          const button = el(
+            'button',
+            'aisf-switch pb-fold-toggle',
+            folded.has(moduleId) ? 'unfold' : 'fold',
+          );
+          button.type = 'button';
+          button.dataset.module = moduleId;
+          button.setAttribute('aria-expanded', String(!folded.has(moduleId)));
+          button.addEventListener('click', () => toggleFold(moduleId));
+          return button;
+        }
+
+        function buildClass(item) {
+          const node = el(
+            'div',
+            `pb-class aisf-node aisf-node-${item.mark}${item.fold ? ' pb-fold' : ''}`,
+          );
+          node.dataset.id = item.id;
+          const head = el('header', 'pb-class-head');
+          if (item.fold) {
+            head.append(el('span', 'pb-cname', item.file));
+          } else {
+            head.append(identifier(`${item.file} /`, 'pb-file'), identifier(item.name, 'pb-cname'));
+          }
+          const kind = el('span', 'pb-kind', `${item.kind} · `);
+          kind.append(el('b', '', item.mark === 'untouched' ? 'unchanged' : item.mark));
+          head.append(kind);
+          node.append(head);
+          for (const fn of item.fns) node.append(buildFn(item, fn));
+          boxEls.set(item.id, node);
+          return node;
+        }
+
+        function buildFn(item, fn) {
+          const ref = `${item.id}.${fn.id}`;
+          const block = el('div', 'pb-fn');
+          block.dataset.ref = ref;
+          block.dataset.mark = fn.mark;
+          block.tabIndex = 0;
+          block.setAttribute('role', 'button');
+          const head = el('div', 'pb-fn-head');
+          head.append(el('span', 'pb-badges'), identifier(fn.sig, 'pb-fn-name'));
+          head.append(el('span', 'pb-fn-mark', fn.mark === 'untouched' ? 'unchanged' : fn.mark));
+          block.append(head, el('p', 'pb-fn-does', fn.does));
+          block.addEventListener('pointerenter', (event) => {
+            if (event.pointerType === 'mouse') setHover(`fn:${ref}`);
+          });
+          block.addEventListener('pointerleave', (event) => {
+            if (event.pointerType === 'mouse') setHover(null);
+          });
+          block.addEventListener('click', () =>
+            item.fold ? toggleFold(item.module) : togglePin(`fn:${ref}`),
+          );
+          block.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            block.click();
+          });
+          fnEls.set(ref, block);
+          return block;
+        }
+
+        function buildScreen(screen) {
+          const frame = el('div', 'pb-screen');
+          frame.dataset.mark = screen.mark;
+          const head = el('div', 'pb-screen-head');
+          head.append(
+            identifier(screen.file, 'pb-screen-name'),
+            el('span', 'pb-module-tag', screen.mark),
+            el('span', 'pb-screen-role', screen.role),
+          );
+          frame.append(head);
+          for (const item of CLASSES.filter((c) => c.screen === screen.id))
+            frame.append(buildClass(item));
+          screenEls.set(screen.id, frame);
+          return frame;
+        }
+
+        function buildSwitches() {
+          for (const key of [...AC_KEYS, 'All']) {
+            const button = el('button', 'aisf-switch', key);
+            button.type = 'button';
+            button.dataset.ac = key;
+            button.addEventListener('click', () => select(key));
+            switches.append(button);
+          }
+        }
+
+        // ---------------- Routing ----------------
+        // Every arrow leaves the RIGHT edge of its source function block and enters the LEFT edge
+        // of its target function block. Wires run on a 10px grid: one wire per grid line and
+        // direction, so neighbours keep 10px apart and never share a segment or an endpoint.
+        // Class boxes are walls (plus a 5px margin), so no segment crosses a box.
+        const GRID = 10;
+        const BOX_PAD = 5;
+        const BEND = 8;
+        const CROSS = 4;
+        const SOFT = 6;
+        const CLASH = 600;
+        const SLOT_TOP = 12;
+        const SLOT_BOTTOM = 6;
+        const LONG_RUN = 110;
+
+        function relativeRect(node) {
+          const base = map.getBoundingClientRect();
+          const r = node.getBoundingClientRect();
+          return {
+            left: r.left - base.left,
+            right: r.right - base.left,
+            top: r.top - base.top,
+            bottom: r.bottom - base.top,
+          };
+        }
+
+        function roundedPath(points) {
+          let d = `M${points[0].x} ${points[0].y}`;
+          for (let i = 1; i < points.length - 1; i += 1) {
+            const prev = points[i - 1];
+            const here = points[i];
+            const next = points[i + 1];
+            const r = Math.min(
+              4,
+              Math.hypot(here.x - prev.x, here.y - prev.y) / 2,
+              Math.hypot(next.x - here.x, next.y - here.y) / 2,
+            );
+            if (r < 0.5) {
+              d += ` L${here.x} ${here.y}`;
+              continue;
+            }
+            const inX = here.x - Math.sign(here.x - prev.x) * r;
+            const inY = here.y - Math.sign(here.y - prev.y) * r;
+            const outX = here.x + Math.sign(next.x - here.x) * r;
+            const outY = here.y + Math.sign(next.y - here.y) * r;
+            d += ` L${inX} ${inY} Q${here.x} ${here.y} ${outX} ${outY}`;
+          }
+          const last = points[points.length - 1];
+          return `${d} L${last.x} ${last.y}`;
+        }
+
+        // A small binary heap of [cost, state].
+        class Heap {
+          constructor() {
+            this.items = [];
+          }
+          push(cost, state) {
+            const a = this.items;
+            a.push([cost, state]);
+            let i = a.length - 1;
+            while (i > 0) {
+              const p = (i - 1) >> 1;
+              if (a[p][0] <= a[i][0]) break;
+              [a[p], a[i]] = [a[i], a[p]];
+              i = p;
+            }
+          }
+          pop() {
+            const a = this.items;
+            const top = a[0];
+            const last = a.pop();
+            if (a.length > 0) {
+              a[0] = last;
+              let i = 0;
+              for (;;) {
+                const l = i * 2 + 1;
+                const r = l + 1;
+                let m = i;
+                if (l < a.length && a[l][0] < a[m][0]) m = l;
+                if (r < a.length && a[r][0] < a[m][0]) m = r;
+                if (m === i) break;
+                [a[m], a[i]] = [a[i], a[m]];
+                i = m;
+              }
+            }
+            return top;
+          }
+          get size() {
+            return this.items.length;
+          }
+        }
+
+        function routeWires() {
+          const width = map.clientWidth;
+          const height = map.clientHeight;
+          const cols = Math.ceil(width / GRID) + 1;
+          const rows = Math.ceil(height / GRID) + 1;
+          const at = (i, j) => j * cols + i;
+          const blocked = new Uint8Array(cols * rows);
+          const soft = new Uint8Array(cols * rows);
+          const occH = new Uint8Array(cols * rows);
+          const occV = new Uint8Array(cols * rows);
+          const owner = new Int16Array(cols * rows).fill(-1);
+          const rects = new Map([...boxEls].map(([id, node]) => [id, relativeRect(node)]));
+          const fill = (r, pad, grid, value) => {
+            const i0 = Math.max(0, Math.ceil((r.left - pad) / GRID));
+            const i1 = Math.min(cols - 1, Math.floor((r.right + pad) / GRID));
+            const j0 = Math.max(0, Math.ceil((r.top - pad) / GRID));
+            const j1 = Math.min(rows - 1, Math.floor((r.bottom + pad) / GRID));
+            for (let j = j0; j <= j1; j += 1)
+              for (let i = i0; i <= i1; i += 1) grid[at(i, j)] = value;
+          };
+          for (const r of rects.values()) fill(r, BOX_PAD, blocked, 1);
+          // Text the wires should not run over: module and screen names, layer labels.
+          for (const node of map.querySelectorAll(
+            '.pb-module-head > *, .pb-screen-head > *, .pb-axis > *',
+          ))
+            fill(relativeRect(node), 3, soft, 1);
+          // Frame edges (modules, screens) and the map's own edges: a wire may cross them, never run along them.
+          const edge = (r) => {
+            fill({ left: r.left, right: r.left, top: r.top, bottom: r.bottom }, 6, soft, 1);
+            fill({ left: r.right, right: r.right, top: r.top, bottom: r.bottom }, 6, soft, 1);
+            fill({ left: r.left, right: r.right, top: r.top, bottom: r.top }, 6, soft, 1);
+            fill({ left: r.left, right: r.right, top: r.bottom, bottom: r.bottom }, 6, soft, 1);
+          };
+          for (const node of map.querySelectorAll('.pb-module, .pb-screen'))
+            edge(relativeRect(node));
+          edge({ left: 0, right: width, top: 0, bottom: height });
+
+          // Only the selected criterion's wires take lanes; All routes every wire.
+          const wires = [...view.wires.values()]
+            .filter(isOn)
+            .map((wire, index) => ({ wire, index }));
+
+          // Slots: grid lines inside a function block. Outgoing on the right, incoming on the left.
+          const slotLines = (ref) => {
+            const r = relativeRect(fnEls.get(ref));
+            const lines = [];
+            for (
+              let y = Math.ceil((r.top + SLOT_TOP) / GRID) * GRID;
+              y <= r.bottom - SLOT_BOTTOM;
+              y += GRID
+            )
+              lines.push(y);
+            return lines.length > 0 ? lines : [Math.round((r.top + r.bottom) / 2 / GRID) * GRID];
+          };
+          const centreY = (ref) => {
+            const r = relativeRect(fnEls.get(ref));
+            return (r.top + r.bottom) / 2;
+          };
+          const group = (pick) => {
+            const groups = new Map();
+            for (const item of wires) {
+              const key = pick(item);
+              if (key === null) continue;
+              if (!groups.has(key)) groups.set(key, []);
+              groups.get(key).push(item);
+            }
+            return groups;
+          };
+          for (const [ref, list] of group((item) => item.wire.from)) {
+            // Calls upward take the top slots, nearest last; calls downward the lower slots,
+            // farthest first. So a fan-out nests without crossing itself.
+            const here = centreY(ref);
+            const rank = (item) => {
+              const y = centreY(item.wire.to);
+              return y < here ? y : 1e6 - y;
+            };
+            list.sort((p, q) => rank(p) - rank(q));
+            const lines = slotLines(ref);
+            const offset = Math.max(0, Math.floor((lines.length - list.length) / 2) - 1);
+            list.forEach((item, n) => (item.outY = lines[Math.min(lines.length - 1, n + offset)]));
+          }
+          for (const [ref, list] of group((item) => item.wire.to)) {
+            list.sort(
+              (p, q) =>
+                (p.wire.from === null ? -1 : centreY(p.wire.from)) -
+                (q.wire.from === null ? -1 : centreY(q.wire.from)),
+            );
+            const lines = slotLines(ref);
+            list.forEach((item, n) => (item.inY = lines[Math.min(lines.length - 1, n)]));
+          }
+          const boxOf = (ref) => rects.get(classIdOf(ref));
+          for (const item of wires) {
+            const target = boxOf(item.wire.to);
+            item.end = { x: target.left, y: item.inY };
+            item.goal = {
+              i: Math.floor((target.left - BOX_PAD - 0.01) / GRID),
+              j: item.inY / GRID,
+            };
+            if (item.wire.from !== null) {
+              const source = boxOf(item.wire.from);
+              item.begin = { x: source.right, y: item.outY };
+              item.start = {
+                i: Math.ceil((source.right + BOX_PAD + 0.01) / GRID),
+                j: item.outY / GRID,
+              };
+            }
+          }
+          // Reserve every port point, so no other wire runs through it.
+          // Two cells in front of each port, so the first and last runs stay straight.
+          const portCells = (item) => [
+            at(item.goal.i, item.goal.j),
+            at(item.goal.i - 1, item.goal.j),
+            ...(item.start
+              ? [at(item.start.i, item.start.j), at(item.start.i + 1, item.start.j)]
+              : []),
+          ];
+          for (const item of wires) for (const cell of portCells(item)) owner[cell] = item.index;
+
+          const mark = (points, index) => {
+            for (let k = 1; k < points.length; k += 1) {
+              const a = points[k - 1];
+              const b = points[k];
+              const horizontal = a.j === b.j;
+              const n = Math.max(Math.abs(b.i - a.i), Math.abs(b.j - a.j));
+              for (let s = 0; s <= n; s += 1) {
+                const i = a.i + Math.sign(b.i - a.i) * s;
+                const j = a.j + Math.sign(b.j - a.j) * s;
+                (horizontal ? occH : occV)[at(i, j)] = 1;
+                owner[at(i, j)] = index;
+              }
+            }
+            for (let k = 1; k < points.length - 1; k += 1) {
+              occH[at(points[k].i, points[k].j)] = 1;
+              occV[at(points[k].i, points[k].j)] = 1;
+            }
+          };
+
+          const DI = [1, 0, -1, 0];
+          const DJ = [0, 1, 0, -1];
+          const search = (item) => {
+            const { start, goal, index } = item;
+            const best = new Float64Array(cols * rows * 4).fill(Infinity);
+            const prev = new Int32Array(cols * rows * 4).fill(-1);
+            const closed = new Uint8Array(cols * rows * 4);
+            const heap = new Heap();
+            const s0 = at(start.i, start.j) * 4;
+            best[s0] = 0;
+            heap.push(0, s0);
+            const h = (i, j) => Math.abs(i - goal.i) + Math.abs(j - goal.j);
+            let found = -1;
+            while (heap.size > 0) {
+              const [, state] = heap.pop();
+              if (closed[state]) continue;
+              closed[state] = 1;
+              const cell = state >> 2;
+              const d = state & 3;
+              const i = cell % cols;
+              const j = (cell - i) / cols;
+              if (i === goal.i && j === goal.j && d === 0) {
+                found = state;
+                break;
+              }
+              const g = best[state];
+              for (let nd = 0; nd < 4; nd += 1) {
+                if (nd === (d + 2) % 4) continue;
+                const ni = i + DI[nd];
+                const nj = j + DJ[nd];
+                if (ni < 0 || nj < 0 || ni >= cols || nj >= rows) continue;
+                const next = at(ni, nj);
+                if (blocked[next]) continue;
+                let c = 1 + soft[next] * SOFT;
+                if (nd !== d) {
+                  c += BEND;
+                  if ((occH[cell] || occV[cell]) && !(i === start.i && j === start.j)) c += CLASH;
+                }
+                const horizontal = nd % 2 === 0;
+                if ((horizontal ? occH : occV)[next]) c += CLASH;
+                else if ((horizontal ? occV : occH)[next]) c += CROSS;
+                if (isPort(next) && owner[next] !== index) c += CLASH;
+                // The last run into a block is straight: arrive at the goal moving right.
+                if (ni === goal.i && nj === goal.j && nd !== 0) c += CLASH;
+                const ns = next * 4 + nd;
+                const total = g + c;
+                if (total < best[ns]) {
+                  best[ns] = total;
+                  prev[ns] = state;
+                  heap.push(total + h(ni, nj), ns);
+                }
+              }
+            }
+            if (found < 0) return null;
+            const cells = [];
+            for (let state = found; state >= 0; state = prev[state]) {
+              const cell = state >> 2;
+              cells.push({ i: cell % cols, j: Math.floor(cell / cols) });
+            }
+            cells.reverse();
+            return { cells, cost: best[found] };
+          };
+          const ports = new Set();
+          for (const item of wires) for (const cell of portCells(item)) ports.add(cell);
+          const isPort = (cell) => ports.has(cell);
+
+          const corners = (cells) =>
+            cells.filter((c, k) => {
+              if (k === 0 || k === cells.length - 1) return true;
+              const a = cells[k - 1];
+              const b = cells[k + 1];
+              return !((a.i === c.i && c.i === b.i) || (a.j === c.j && c.j === b.j));
+            });
+
+          // Short wires first: they have the fewest ways round.
+          const span = (item) =>
+            item.start
+              ? Math.abs(item.start.i - item.goal.i) + Math.abs(item.start.j - item.goal.j)
+              : 0;
+          const order = [...wires].sort((p, q) => span(p) - span(q));
+          let clashes = 0;
+          const clashKeys = [];
+          for (const item of order) {
+            if (!item.start) {
+              // Entry: a start dot three grid steps left of the block, straight in.
+              const s = { i: item.goal.i - 2, j: item.goal.j };
+              const cells = [s, item.goal];
+              mark(cells, item.index);
+              item.points = [{ x: s.i * GRID, y: item.inY }, item.end];
+              item.dot = item.points[0];
+              continue;
+            }
+            const found = search(item);
+            if (!found) {
+              clashes += 1;
+              item.points = [item.begin, item.end];
+              continue;
+            }
+            if (found.cost >= CLASH) {
+              clashes += 1;
+              const why = [];
+              const cs = found.cells;
+              for (let k = 1; k < cs.length; k += 1) {
+                const c = at(cs[k].i, cs[k].j);
+                const hz = cs[k].j === cs[k - 1].j;
+                if ((hz ? occH : occV)[c]) why.push(`par@${cs[k].i * GRID},${cs[k].j * GRID}`);
+                if (isPort(c) && owner[c] !== item.index)
+                  why.push(`own${owner[c]}@${cs[k].i * GRID},${cs[k].j * GRID}`);
+              }
+              clashKeys.push(item.wire.key + ' ' + why.slice(0, 4).join(' '));
+            }
+            const pts = corners(found.cells);
+            mark(pts, item.index);
+            item.points = [
+              item.begin,
+              ...pts.map((c) => ({ x: c.i * GRID, y: c.j * GRID })),
+              item.end,
+            ];
+          }
+          return { routed: wires, clashes, clashKeys, rects };
+        }
+
+        function isOn(wire) {
+          return selected === 'All' || wire.acs.has(selected);
+        }
+
+        let gutter = 34;
+        map.style.setProperty('--pb-gutter', `${gutter}px`);
+        let lastRoute = null;
+        function drawWires() {
+          const layer = map.querySelector('.pb-wires');
+          layer
+            .querySelectorAll(
+              '.pb-casing, .pb-wire, .pb-hit, .pb-lane-badge, .pb-start, .pb-start-label, .pb-port',
+            )
+            .forEach((n) => n.remove());
+          const order =
+            selected === 'All' ? [] : view.paths[selected].steps.map((step) => step.key);
+          const numOf = new Map(
+            selected === 'All'
+              ? []
+              : view.paths[selected].steps.map((step) => [step.key, step.num]),
+          );
+          let result = routeWires();
+          // Too little room between boxes: widen every routing strip and route again.
+          while (result.clashes > 0 && gutter < (window.__maxG ?? 70)) {
+            gutter += 10;
+            map.style.setProperty('--pb-gutter', `${gutter}px`);
+            result = routeWires();
+          }
+          lastRoute = result;
+          const routed = result.routed;
+          for (const item of routed) {
+            item.on = true;
+            item.run = selected === 'All' ? '' : (item.wire.runs.get(selected) ?? '');
+          }
+          routed.sort((p, q) => p.on - q.on);
+          for (const item of routed) {
+            const d = roundedPath(item.points);
+            const index = String(Math.max(order.indexOf(item.wire.key), 0));
+            if (item.on) {
+              const casing = svg('path', { class: 'pb-casing', d });
+              casing.dataset.key = item.wire.key;
+              if (item.run) casing.dataset.run = item.run;
+              casing.style.setProperty('--i', index);
+              layer.append(casing);
+              casing.style.setProperty('--len', String(Math.ceil(casing.getTotalLength())));
+            }
+            const path = svg('path', { class: 'pb-wire', d });
+            path.dataset.key = item.wire.key;
+            if (item.wire.via === 'event') path.dataset.kind = 'event';
+            if (item.run) path.dataset.run = item.run;
+            if (item.on) path.toggleAttribute('data-on', true);
+            if (item.wire.key === hotKey) path.toggleAttribute('data-hot', true);
+            path.style.setProperty('--i', index);
+            layer.append(path);
+            path.style.setProperty('--len', String(Math.ceil(path.getTotalLength())));
+            if (item.dot && item.on) {
+              const start = svg('circle', {
+                class: 'pb-start',
+                cx: item.dot.x,
+                cy: item.dot.y,
+                r: 4,
+              });
+              start.dataset.key = item.wire.key;
+              if (item.run) start.dataset.run = item.run;
+              layer.append(start);
+              // Two paths in one criterion: name each starting point.
+              if (item.run) {
+                const label = svg('text', {
+                  class: 'pb-start-label',
+                  x: item.dot.x,
+                  y: item.dot.y - 13,
+                });
+                label.dataset.key = item.wire.key;
+                label.dataset.run = item.run;
+                label.textContent = item.run;
+                layer.append(label);
+              }
+            }
+          }
+          drawPorts(layer, routed);
+          drawLaneBadges(layer, routed, order, numOf, result.rects);
+          for (const item of routed) if (item.on) layer.append(hitArea(item));
+          applyFocus();
+        }
+
+        function hitArea(item) {
+          const hit = svg('path', { class: 'pb-hit', d: roundedPath(item.points) });
+          hit.dataset.key = item.wire.key;
+          hit.addEventListener('pointerenter', (event) => {
+            if (event.pointerType === 'mouse') setHover(`wire:${item.wire.key}`);
+          });
+          hit.addEventListener('pointerleave', (event) => {
+            if (event.pointerType === 'mouse') setHover(null);
+          });
+          hit.addEventListener('click', () => togglePin(`wire:${item.wire.key}`));
+          return hit;
+        }
+
+        // The step number midway along each long vertical run, clear of boxes and other runs.
+        function drawLaneBadges(layer, routed, order, numOf, rects) {
+          if (selected === 'All') return;
+          const grow = (r, by) => ({
+            left: r.left - by,
+            right: r.right + by,
+            top: r.top - by,
+            bottom: r.bottom + by,
+          });
+          const taken = [...rects.values()].map((r) => grow(r, 6));
+          const lit = routed.filter((item) => item.on && order.includes(item.wire.key));
+          const runsOf = (item) => item.points.slice(1).map((b, i) => ({ a: item.points[i], b }));
+          for (const item of lit) {
+            const others = lit.filter((other) => other !== item).flatMap(runsOf);
+            const obstacles = [
+              ...taken,
+              ...others.map((run) => ({
+                left: Math.min(run.a.x, run.b.x) - 3,
+                right: Math.max(run.a.x, run.b.x) + 3,
+                top: Math.min(run.a.y, run.b.y) - 3,
+                bottom: Math.max(run.a.y, run.b.y) + 3,
+              })),
+            ];
+            const lane = runsOf(item)
+              .filter((run) => Math.abs(run.a.x - run.b.x) < 0.5)
+              .sort((p, q) => Math.abs(q.b.y - q.a.y) - Math.abs(p.b.y - p.a.y))[0];
+            if (!lane || Math.abs(lane.b.y - lane.a.y) < LONG_RUN) continue;
+            const top = Math.min(lane.a.y, lane.b.y) + 20;
+            const bottom = Math.max(lane.a.y, lane.b.y) - 20;
+            const middle = (top + bottom) / 2;
+            const x = lane.a.x;
+            const w = Math.max(9, 4 + numOf.get(item.wire.key).length * 3.8);
+            const fits = (y) =>
+              !obstacles.some(
+                (r) => x + w > r.left && x - w < r.right && y + 9 > r.top && y - 9 < r.bottom,
+              );
+            let spot = null;
+            for (let offset = 0; offset <= (bottom - top) / 2 && spot === null; offset += 4)
+              spot = [middle + offset, middle - offset].find(fits) ?? null;
+            if (spot === null) continue;
+            const badge = svg('g', { class: 'pb-lane-badge' });
+            badge.dataset.key = item.wire.key;
+            const text = numOf.get(item.wire.key);
+            const half = Math.max(9, 4 + text.length * 3.8);
+            if (item.run) badge.dataset.run = item.run;
+            badge.append(
+              svg('rect', { x: x - half, y: spot - 9, width: half * 2, height: 18, rx: 9 }),
+            );
+            const number = svg('text', { x, y: spot });
+            number.textContent = text;
+            badge.append(number);
+            if (item.wire.key === hotKey) badge.toggleAttribute('data-hot', true);
+            layer.append(badge);
+            taken.push({ left: x - w - 2, right: x + w + 2, top: spot - 11, bottom: spot + 11 });
+          }
+        }
+
+        // Port bars on a class box edge, at the lit function's rows: left = in, right = out.
+        function drawPorts(layer, routed) {
+          const bars = new Map();
+          let item = null;
+          const add = (ref, side, x, y) => {
+            const key = `${ref}|${side}`;
+            if (!bars.has(key)) bars.set(key, { ref, x, ys: [], run: item.run });
+            bars.get(key).ys.push(y);
+          };
+          for (item of routed) {
+            if (!item.on) continue;
+            add(item.wire.to, 'in', item.end.x, item.end.y);
+            if (item.begin) add(item.wire.from, 'out', item.begin.x, item.begin.y);
+          }
+          for (const { ref, x, ys, run } of bars.values()) {
+            const port = svg('line', {
+              class: 'pb-port',
+              x1: x,
+              x2: x,
+              y1: Math.min(...ys) - 5,
+              y2: Math.max(...ys) + 5,
+            });
+            port.dataset.fn = ref;
+            if (run) port.dataset.run = run;
+            layer.append(port);
+          }
+        }
+
+        // ---- Focus: one function, its calls in and out, and their route rows. ----
+        function setHover(id) {
+          hovered = id;
+          applyFocus();
+        }
+
+        function togglePin(id) {
+          pinned = id === null || pinned === id ? null : id;
+          hovered = null;
+          applyFocus();
+        }
+
+        function applyFocus() {
+          const token = pinned ?? hovered;
+          const near = new Set();
+          const neighbours = new Set();
+          let id = null;
+          if (token?.startsWith('wire:')) {
+            const wire = view.wires.get(token.slice(5));
+            if (wire && isOn(wire)) {
+              near.add(wire.key);
+              if (wire.from !== null) neighbours.add(wire.from);
+              neighbours.add(wire.to);
+            }
+          } else if (token?.startsWith('fn:')) {
+            id = token.slice(3);
+            for (const wire of view.wires.values()) {
+              if (!isOn(wire) || (wire.from !== id && wire.to !== id)) continue;
+              near.add(wire.key);
+              if (wire.from !== null) neighbours.add(wire.from);
+              neighbours.add(wire.to);
+            }
+          }
+          neighbours.delete(id);
+          const active = near.size > 0;
+          map.toggleAttribute('data-focus', active);
+          route.toggleAttribute(
+            'data-focus',
+            active && route.querySelector('.pb-step[data-key]') !== null,
+          );
+          for (const [ref, node] of fnEls) {
+            node.toggleAttribute('data-focus', active && ref === id);
+            node.toggleAttribute('data-near', active && neighbours.has(ref));
+            node.setAttribute('aria-pressed', String(pinned === `fn:${ref}`));
+          }
+          for (const node of map.querySelectorAll(
+            '.pb-casing, .pb-wire, .pb-lane-badge, .pb-start, .pb-start-label',
+          ))
+            node.toggleAttribute('data-near', active && near.has(node.dataset.key));
+          for (const node of map.querySelectorAll('.pb-port'))
+            node.toggleAttribute(
+              'data-near',
+              active && (node.dataset.fn === id || neighbours.has(node.dataset.fn)),
+            );
+          for (const row of route.querySelectorAll('.pb-step[data-key]'))
+            row.toggleAttribute('data-near', active && near.has(row.dataset.key));
+        }
+
+        function toggleFold(moduleId) {
+          if (folded.has(moduleId)) folded.delete(moduleId);
+          else folded.add(moduleId);
+          view = computeView();
+          hovered = null;
+          pinned = null;
+          map.replaceChildren();
+          boxEls.clear();
+          fnEls.clear();
+          screenEls.clear();
+          buildMap();
+          select(selected);
+          map
+            .querySelector(`.pb-fold-toggle[data-module="${moduleId}"]`)
+            ?.focus({ preventScroll: true });
+        }
+
+        function markBlocks() {
+          const showAll = selected === 'All';
+          const plan = view.paths[selected];
+          for (const [ref, node] of fnEls) {
+            node.querySelector('.aisf-stop')?.remove();
+            const badges = node.querySelector('.pb-badges');
+            badges.replaceChildren();
+            if (showAll) {
+              for (const ac of AC_KEYS)
+                if (view.paths[ac].steps.some((step) => step.to === ref))
+                  badges.append(el('span', 'pb-badge pb-badge-ac', ac));
+              node.toggleAttribute('data-off', badges.childElementCount === 0);
+            } else {
+              for (const step of plan.steps)
+                if (step.to === ref) badges.append(badge(step.num, step.run));
+              const ends = plan.ends.filter((end) => end.ref === ref);
+              const calls = plan.steps.some((step) => step.from === ref);
+              node.toggleAttribute(
+                'data-off',
+                badges.childElementCount === 0 && !calls && ends.length === 0,
+              );
+              for (const end of ends)
+                node.append(
+                  el('span', 'aisf-stop', MULTI(selected) ? `${end.run}: ${end.text}` : end.text),
+                );
+            }
+          }
+          for (const [id, box] of boxEls) {
+            const blocks = [...box.querySelectorAll('.pb-fn')];
+            box.toggleAttribute(
+              'data-off',
+              blocks.every((block) => block.hasAttribute('data-off')),
+            );
+          }
+          for (const [id, frame] of screenEls) {
+            const boxes = [...frame.querySelectorAll('.pb-class')];
+            frame.toggleAttribute(
+              'data-off',
+              boxes.every((box) => box.hasAttribute('data-off')),
+            );
+          }
+        }
+
+        function badge(text, run) {
+          const node = el('span', 'pb-badge', text);
+          if (run) node.dataset.run = run;
+          return node;
+        }
+
+        function fnLabel(ref) {
+          const fn = fnOf.get(ref);
+          const span = el('span', '');
+          if (fn.cls.fold) {
+            span.append(`${fn.cls.file} (folded)`);
+            return span;
+          }
+          span.append(el('span', 'pb-cls', `${fn.cls.name}.`), fn.sig);
+          return span;
+        }
+
+        function buildRoute() {
+          route.replaceChildren();
+          if (selected === 'All') {
+            route.append(
+              el(
+                'li',
+                'pb-route-all',
+                `Pick ${AC_KEYS.join(', ')} to read one path step by step. Badges show which criteria call each function.`,
+              ),
+            );
+            return;
+          }
+          const plan = view.paths[selected];
+          for (const run of plan.paths) {
+            const label = run.label ?? '';
+            if (label) {
+              const head = el('li', 'pb-route-head');
+              head.dataset.run = label;
+              head.append(
+                el('span', 'pb-route-path', `Path ${label}`),
+                ` starts at ${run.actor} · ${run.start}`,
+              );
+              route.append(head);
+            }
+            for (const step of plan.steps.filter((item) => item.run === label)) {
+              const row = el('li', 'pb-step');
+              row.tabIndex = 0;
+              row.dataset.key = step.key;
+              const hop = el('span', 'pb-step-hop');
+              hop.append(
+                step.from === null ? step.actor : fnLabel(step.from),
+                el('span', 'pb-sep', ' → '),
+                fnLabel(step.to),
+              );
+              row.append(badge(step.num, step.run), hop);
+              const callLine = el('span', 'pb-step-call', step.call);
+              const via = { facade: 'facade', event: 'event bus', http: 'http' }[step.via];
+              if (via) callLine.append(el('span', 'pb-via', via));
+              if (step.folded > 0)
+                callLine.append(el('span', 'pb-via pb-via-fold', `folded · ${step.folded} steps`));
+              row.append(callLine);
+              for (const type of ['mouseenter', 'focus'])
+                row.addEventListener(type, () => setHot(row.dataset.key));
+              for (const type of ['mouseleave', 'blur'])
+                row.addEventListener(type, () => setHot(null));
+              route.append(row);
+            }
+            const endText = plan.ends.find((item) => item.run === label).text;
+            const end = el('li', 'pb-step pb-step-end');
+            end.append(el('span', ''), el('span', 'aisf-stop', endText));
+            route.append(end);
+          }
+        }
+
+        function criterionRow(tag, ac) {
+          const row = el(tag, 'pb-criterion-row');
+          row.append(
+            el('span', 'pb-criterion-key', ac),
+            el('span', 'pb-criterion-text', PATHS[ac].title),
+          );
+          return row;
+        }
+
+        function showCriterion() {
+          if (selected === 'All') {
+            const list = el('ol', 'pb-criterion-list');
+            list.setAttribute('aria-label', 'Acceptance criteria');
+            list.append(...AC_KEYS.map((ac) => criterionRow('li', ac)));
+            criterion.replaceChildren(list);
+            return;
+          }
+          criterion.replaceChildren(criterionRow('p', selected));
+          if (!MULTI(selected)) return;
+          // Two starting points in one criterion: name both, and point at the split question.
+          const legend = el('ul', 'pb-paths');
+          for (const run of PATHS[selected].paths) {
+            const item = el('li', '');
+            item.dataset.run = run.label;
+            item.append(
+              el('span', 'pb-route-path', `Path ${run.label}`),
+              ` starts at ${run.actor} · ${run.start}`,
+            );
+            legend.append(item);
+          }
+          criterion.append(
+            legend,
+            el(
+              'p',
+              'pb-split-note',
+              `${PATHS[selected].paths.length} starting points in one criterion. The ${selected} question below asks whether to split it.`,
+            ),
+          );
+        }
+
+        function setHot(key) {
+          hotKey = key;
+          for (const path of map.querySelectorAll('.pb-wire, .pb-lane-badge'))
+            path.toggleAttribute('data-hot', key !== null && path.dataset.key === key);
+        }
+
+        // Counts measure the drawing.
+        function moduleSummary(refs) {
+          const kinds = new Set(refs.map((ref) => fnOf.get(ref).cls.module));
+          const backend = [...kinds].filter(
+            (m) => !moduleOf.get(m).bus && moduleOf.get(m).kind !== 'frontend',
+          ).length;
+          let text = `${backend} ${backend === 1 ? 'module' : 'modules'}`;
+          if ([...kinds].some((m) => moduleOf.get(m).kind === 'frontend')) text += ' + frontend';
+          if ([...kinds].some((m) => moduleOf.get(m).bus)) text += ' + event bus';
+          const names = [...kinds].filter((m) => folded.has(m));
+          if (names.length > 0) text += ` · ${names.join(', ')} folded`;
+          return text;
+        }
+
+        function updateReadout() {
+          const total = fnEls.size;
+          if (selected === 'All') {
+            const refs = [...new Set([...view.wires.values()].map((w) => w.to))];
+            const pathTotal = AC_KEYS.reduce((sum, ac) => sum + PATHS[ac].paths.length, 0);
+            readout.textContent = `${AC_KEYS.length} criteria · ${pathTotal} paths · ${refs.length} function blocks in ${boxEls.size} class boxes drawn · ${moduleSummary(refs)}`;
+            return;
+          }
+          const steps = view.paths[selected].steps;
+          const pathCount = view.paths[selected].paths.length;
+          const refs = [...new Set(steps.map((step) => step.to))];
+          readout.textContent = `${selected}: ${pathCount} ${pathCount === 1 ? 'path' : 'paths'} · ${steps.length} steps · ${refs.length} of ${total} function blocks · ${moduleSummary(refs)}`;
+        }
+
+        function select(key) {
+          selected = key;
+          for (const button of switches.querySelectorAll('.aisf-switch'))
+            button.setAttribute('aria-pressed', String(button.dataset.ac === key));
+          showCriterion();
+          markBlocks();
+          buildRoute();
+          updateReadout();
+          drawWires();
+          const layer = map.querySelector('.pb-wires');
+          layer.removeAttribute('data-drawing');
+          void layer.getBoundingClientRect();
+          if (key !== 'All') layer.setAttribute('data-drawing', '');
+        }
+
+        // The split question's criteria and its two small path panels come from the data.
+        function buildSplitQuestions() {
+          for (const ac of AC_KEYS.filter(MULTI)) {
+            const list = document.getElementById(`pbq-criteria-${ac}`);
+            for (const [key, text] of PATHS[ac].split ?? []) {
+              const row = el('li', '');
+              row.append(el('b', '', key), text);
+              list?.append(row);
+            }
+            const visual = document.getElementById(`pbq-visual-${ac}`);
+            if (!visual) continue;
+            for (const run of view.paths[ac].paths) {
+              const panel = el('div', 'aisf-panel');
+              const head = el('div', '');
+              head.dataset.run = run.label;
+              head.append(
+                el('span', 'pb-route-path', `Path ${run.label}`),
+                ` · starts at ${run.actor}, ${run.start}`,
+              );
+              const lane = el('div', 'aisf-lane');
+              lane.append(el('span', 'pbq-actor', run.actor));
+              // Each step's target, numbered as on the map: order, not a call chain.
+              for (const step of view.paths[ac].steps.filter((item) => item.run === run.label)) {
+                const fn = fnOf.get(step.to);
+                const chip = el('span', `aisf-node aisf-node-${fn.cls.mark}`);
+                chip.append(badge(step.num, step.run), fn.cls.fold ? fn.cls.file : fn.cls.name);
+                lane.append(chip);
+              }
+              lane.append(
+                el(
+                  'span',
+                  'aisf-stop',
+                  view.paths[ac].ends.find((end) => end.run === run.label).text,
+                ),
+              );
+              panel.append(head, lane);
+              visual.append(panel);
+            }
+          }
+        }
+
+        buildMap();
+        buildSwitches();
+        buildSplitQuestions();
+        criterion.after(
+          el(
+            'p',
+            'pb-wiring',
+            'Every box is an interface: controller, facade, use case, event, handler or an adapter for a port. Each block is one public function the path calls.',
+          ),
+        );
+        map.addEventListener('click', (event) => {
+          if (!event.target.closest('.pb-fn, button, .pb-hit')) togglePin(null);
+        });
+        select(selected);
+        let frame = 0;
+        let lastWidth = 0;
+        new ResizeObserver(() => {
+          if (map.clientWidth === lastWidth) return;
+          lastWidth = map.clientWidth;
+          cancelAnimationFrame(frame);
+          frame = requestAnimationFrame(drawWires);
+        }).observe(map);
+        document.fonts?.ready.then(drawWires);
+
+        // Harness hook for the screenshot checks: wire segments that cross a class box.
+        window.__pbCheck = () => {
+          const rects = [...boxEls].map(([id, node]) => [id, relativeRect(node)]);
+          const bad = [];
+          for (const path of map.querySelectorAll('.pb-wire')) {
+            const d = path.getAttribute('d');
+            const nums = [...d.matchAll(/[ML]([\d.-]+) ([\d.-]+)/g)].map((m) => ({
+              x: +m[1],
+              y: +m[2],
+            }));
+            for (let k = 1; k < nums.length; k += 1) {
+              const a = nums[k - 1];
+              const b = nums[k];
+              for (const [id, r] of rects) {
+                const x1 = Math.min(a.x, b.x);
+                const x2 = Math.max(a.x, b.x);
+                const y1 = Math.min(a.y, b.y);
+                const y2 = Math.max(a.y, b.y);
+                if (x2 > r.left + 1 && x1 < r.right - 1 && y2 > r.top + 1 && y1 < r.bottom - 1)
+                  bad.push(`${path.dataset.key} crosses ${id}`);
+              }
+            }
+          }
+          return { clashes: lastRoute?.clashes, keys: lastRoute?.clashKeys, gutter, bad };
+        };
+      })();
+    </script>
+  </body>
+</html>

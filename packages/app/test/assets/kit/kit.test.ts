@@ -25,6 +25,7 @@ const documented: Record<string, string[]> = {
   'aisf-sequence': [],
   'aisf-state': [],
   'aisf-modmap': ['layers'],
+  'aisf-playback': [],
 };
 
 describe('kit', () => {

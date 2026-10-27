@@ -1,6 +1,6 @@
 // SVG helpers shared by the kit's computed pieces (sequence, state, module map).
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
-const MARKS = ['new', 'changed', 'untouched'];
+const MARKS = ['new', 'changed', 'untouched', 'removed'];
 
 /** Font size in user units. The svg is never scaled up, so text stays at least this big. */
 export const TEXT_SIZE = 13;
@@ -68,7 +68,7 @@ export function figureSvg(width, height, title, children) {
 }
 
 /**
- * `new`, `changed` or `untouched` from the element's `mark`; anything else is plain.
+ * `new`, `changed`, `untouched` or `removed` from the element's `mark`; anything else is plain.
  * @param {Element} element
  * @returns {string | undefined}
  */

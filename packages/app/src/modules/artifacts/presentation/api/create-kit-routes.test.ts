@@ -66,6 +66,7 @@ describe('kit.css', () => {
     '--danger': '#b8322f',
     '--info': '#2d5f93',
     '--hitl': '#6b47c2',
+    '--path-b': '#0b7a75',
   };
   const darkPalette = {
     '--bg': '#0d1924',
@@ -84,6 +85,7 @@ describe('kit.css', () => {
     '--danger': '#ff8f84',
     '--info': '#7cb4ea',
     '--hitl': '#baa0ff',
+    '--path-b': '#4fd1c5',
   };
 
   function declarationsOf(block: string): ReadonlyMap<string, string> {

@@ -83,8 +83,17 @@ describe('specimens page', () => {
     }
     expect($$('svg.aisf-computed[role="img"]').length).toBeGreaterThanOrEqual(3);
     expect($$('.aisf-shape-flagged').length).toBeGreaterThan(0);
-    expect($$('.aisf-switch[aria-pressed="true"]')).toHaveLength(1);
-    expect($$('.aisf-switch[aria-pressed="false"]')).toHaveLength(1);
+    // The playback map brings its own switches; these two count the static specimen.
+    const staticSwitches = $$('.aisf-switch').filter(
+      (entry) => entry.closest('aisf-playback') === null,
+    );
+    expect(
+      staticSwitches.filter((entry) => entry.getAttribute('aria-pressed') === 'true'),
+    ).toHaveLength(1);
+    expect(
+      staticSwitches.filter((entry) => entry.getAttribute('aria-pressed') === 'false'),
+    ).toHaveLength(1);
+    expect($$('aisf-playback .aisf-switch[aria-pressed="true"]')).toHaveLength(1);
     expect($$('aisf-card[gain][cost]').length).toBeGreaterThan(0);
     expect($$('aisf-card[effect] .aisf-card-effect').length).toBeGreaterThan(0);
     expect($$('aisf-question aisf-definitions .aisf-definitions-toggle').length).toBeGreaterThan(0);
