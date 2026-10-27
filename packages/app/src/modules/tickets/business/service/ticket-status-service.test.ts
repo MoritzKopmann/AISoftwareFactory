@@ -174,14 +174,6 @@ describe('TicketStatusService', () => {
       expect(ticketStatusWrites.calls).toEqual(['readState', 'setStatus #138 -> ready']);
     });
 
-    it('should reset a ready ticket when it carries the stuck label', async () => {
-      const { useCase, ticketStatusWrites } = buildSubject('ready', { stuck: true });
-
-      await useCase.reset('moritz/aisf', 138);
-
-      expect(ticketStatusWrites.calls).toContain('setSecondaryState #138 stuck off');
-    });
-
     it('should set the ticket ready when the active run is on another ticket', async () => {
       const { useCase, ticketStatusWrites, runPort } = buildSubject('in-progress', {
         stuck: true,
@@ -268,8 +260,32 @@ describe('TicketStatusService', () => {
       expect(events.emittedEvents).toEqual([]);
     });
 
-    it.each(['idea', 'plan'] as const)(
-      'should clear the stuck label and keep the status when an authoring ticket at %s is reset',
+    it('should clear both labels and write no status when an in-review ticket is waiting and stuck', async () => {
+      const { useCase, ticketStatusWrites } = buildSubject('in-review', {
+        waiting: true,
+        stuck: true,
+      });
+
+      await useCase.reset('moritz/aisf', 9);
+
+      expect(ticketStatusWrites.calls).toEqual([
+        'readState',
+        'setSecondaryState #9 waiting off',
+        'setSecondaryState #9 stuck off',
+      ]);
+    });
+
+    it.each([
+      'idea',
+      'backlog',
+      'plan',
+      'planned',
+      'ready',
+      'in-review',
+      'conflict',
+      'closed',
+    ] as const)(
+      'should clear the stuck label and keep the status when a ticket at %s is reset',
       async (status) => {
         const { useCase, ticketStatusWrites, events } = buildSubject(status, { stuck: true });
 
