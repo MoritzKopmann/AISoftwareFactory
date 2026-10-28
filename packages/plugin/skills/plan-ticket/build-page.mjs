@@ -31,10 +31,15 @@ function buildPage(ticketNumber, roundNumber) {
     join(planDirectory, `round-${roundNumber}.json`),
     `round-${roundNumber}.json`,
   );
+  if (plan.confirm && (plan.cards || plan.rows)) {
+    throw new BuildError(`round-${roundNumber}.json mixes confirm with cards or rows`);
+  }
   const rows = plan.rows ?? [];
   const cards = readCards(planDirectory, plan.cards ?? []);
   const playback = readJson(join(planDirectory, 'playback.json'), 'playback.json');
-  const round = roundElement(roundNumber, cards, rows);
+  const round = plan.confirm
+    ? confirmRoundElement(roundNumber, plan.confirm.tasks ?? [])
+    : roundElement(roundNumber, cards, rows);
 
   const html = existsSync(pagePath)
     ? updatePage(pagePath, roundNumber, round, playback)
@@ -94,6 +99,21 @@ function roundElement(roundNumber, cards, rows) {
   const precedent =
     rows.length > 0 ? `<aisf-precedent>\n${rows.join('\n')}\n</aisf-precedent>\n` : '';
   return `<aisf-round number="${roundNumber}">\n${cards.join('')}${precedent}</aisf-round>`;
+}
+
+function confirmRoundElement(roundNumber, tasks) {
+  const lines = tasks.map(taskElement).join('\n');
+  return `<aisf-round number="${roundNumber}">\n<aisf-confirm>\n${lines}\n</aisf-confirm>\n</aisf-round>`;
+}
+
+function taskElement(task) {
+  const blockedBy = task.blockedBy?.length > 0 ? ` blocked-by="${task.blockedBy.join(', ')}"` : '';
+  const hitl = task.hitl === true ? ' hitl' : '';
+  return `<aisf-task number="${task.number}" heading="${escapeAttribute(task.heading)}"${blockedBy}${hitl}></aisf-task>`;
+}
+
+function escapeAttribute(value) {
+  return String(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;');
 }
 
 function readCards(planDirectory, names) {

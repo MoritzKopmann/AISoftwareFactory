@@ -1,7 +1,7 @@
 ---
 name: page-builder
 description: >
-  Assembles one planning round on the plan page. Given a ticket number, a round number and the path
+  Assembles one planning round, or the Confirm round, on the plan page. Given a ticket number, a round number and the path
   of build-page.mjs, it keeps the playback data in line with the ledger, then runs the script that
   builds the HTML. Never shows the page. Never edits code.
 model: sonnet
@@ -41,6 +41,8 @@ Round 1 only. Write `end-state.html`: one `<p>` of two or three sentences, from 
 and criteria. Later rounds leave it alone.
 
 ## 3. Build
+
+A Confirm round (`round-<N>.json` holds `confirm.tasks`) is built the same way: step 1 still refreshes `playback.json`, and the same script renders it.
 
 From the worktree root:
 

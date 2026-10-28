@@ -4,8 +4,8 @@ description: >
   Turn a settled GitHub ticket (status: plan) into a technical plan on the ticket and one spec
   per sub-issue, each buildable on its own by aisf:implement-ticket. UI work is split off as one
   type: ui sub-issue for the design path. A ticket holding several independent features can be
-  split into smaller tickets at the round-1 playback. Interviews the human, always with a recommendation,
-  until nothing is left open. Use when the user wants to plan a ticket or epic. Triggers:
+  split into smaller tickets at the round-1 playback. Interviews the human in rounds, without
+  recommending an answer, and pushes back once after an answer, until nothing is left open. Use when the user wants to plan a ticket or epic. Triggers:
   "plan #N", "plan ticket N", "plan this epic".
 ---
 
@@ -32,6 +32,8 @@ that holds several independent features may instead be split into smaller ticket
 the Skill tool (bare names), then every skill they name under `## Load also`. Any
 `Unknown skill` → stop and report "project not onboarded". Every project fact used below comes
 from these slots, never from memory of another project.
+
+**Bridge page.** No `aisf_show_artifact` tool → stop: "plan-ticket needs the bridge page".
 
 **Status.**
 
@@ -121,11 +123,9 @@ view.
 
 Sort every decision in scope:
 
-- **Question**: expensive to change, or open to real opinion. It carries **Problem** (what is
-  decided, what goes wrong if decided badly) · **Now** (where it lives today, by path) ·
-  **Options**, each with one gain, one cost and one effect (see `questionnaire.md`) ·
-  **Suggestion** (one option plus one line of why, never "it depends") · **Assumes** (what the
-  suggestion rests on) · **Figure** (what to draw, see `questionnaire.md`).
+- **Question**: expensive to change, or open to real opinion. You give it the decision and
+  **rough options**; its `build-question` agent builds the card (problem, options with gain, cost
+  and effect, figure). No option is recommended, on any card.
 - **Settled by precedent**: the project already does it one way, and nobody would argue. One
   line: decision · source. The human sees it and may veto it.
 
@@ -134,32 +134,54 @@ result settles them, and whether the human has to judge that result.
 
 ## 3. Interview
 
-Load `aisf:grilling` and follow it. Its design tree is the decisions in scope: "every branch"
-means every branch the criteria need. Specific to planning:
+Your own process. The design tree is the decisions in scope: every branch the criteria need.
+Facts come from agents (step 1). **No card recommends an answer.** Specific to planning:
 
+- **Per round:**
+  1. Pick the **frontier**: every question whose answer does not depend on another open one. Give
+     each rough options.
+  2. Run one `build-question` agent per question, in parallel. Every question card comes from
+     one: interview questions, the ticket-split question, AC-split questions, `hitl`
+     checkpoints, accepted critic objections, questions from step 7.
+  3. Read the results. `card` → it goes in the round. `settled` → a precedent row. `split` →
+     split the question and send the parts out again in the same round; a part that depends on
+     another waits a round.
+  4. Write `.aisf/artifacts/plan-<n>/round-<N>.json` (contract in `questionnaire.md`).
+  5. Run `page-builder` (`n`, `N`, the absolute path of `build-page.mjs` in this folder).
+  6. Call `aisf_show_artifact` yourself (id `plan-<n>`) and read the answers. Never show the
+     page from an agent.
+  7. Update the ledger, run the reopen check, decide pushback.
 - **Start with a playback.** Round 1 opens with the playback map (`questionnaire.md`): each
   acceptance criterion as a path through the touched UI and modules, by layer, new and changed
-  parts marked. Under the map, one question per criterion: **Correct** (`suggested`) or **Wrong
-  path**. Its other first questions are the ones that picture raises.
-- **The map stays current.** It sits above every round. After each round, update the playback data to
-  match the decisions made, before republishing. A changed path is not asked again: the answer that
-  changed it already decided it.
+  parts marked. There is no Correct / Wrong path question. Round 1's questions are the ones that
+  picture raises.
+- **AC split.** A criterion whose playback needs two or more starting points gets a split
+  question in round 1, built by `build-question` as a split proposal that shows the proposed
+  criteria. Accepted → right after the round, rewrite the criteria in the ticket body through
+  `aisf:github-issue` (Posting + Read back, as step 8.1 edits the body). When the ticket-split
+  rule fires, round 1 holds only that question; AC-split questions come in the round after a
+  Reject.
+- **The map stays current.** It sits above every round. `page-builder` updates the playback data to
+  match the ledger each round. A changed path is not asked again: the answer that changed it
+  already decided it.
 - **Phases shape the rounds.** Early rounds hold the early phases. A question from a later
   phase whose answer depends on nothing open may come early.
-- **Group the frontier.** Every question whose answer does not depend on another open one goes
-  in the same round. Research for the questions downstream runs meanwhile.
-- **Rounds go on the bridge page.** With `aisf_show_artifact` present, read `questionnaire.md`
-  (this folder) and ask every round there: one page per session, id `plan-<n>`, each round one
-  `<aisf-round>`. A veto in a round's `vetoes` turns that decision into a question in the next
-  round. Without the tool, interview and Confirm run in chat, each question self-contained.
-- **Object immediately** to an answer breaking a hard ban or placement rule: one sentence, naming
-  the rule and the legal alternative. If the human reaffirms, comply and record it under Risks
-  as a knowing override.
+- **Settled rows** are confirmed by submitting the round. A veto turns one into a question in the
+  next round.
+- **Free text** you cannot read clearly leads to a follow-up question in the next round.
+- **Pushback.** You may push back on an answer when you can cite one ground: a hard ban or
+  placement rule breach, a second way to do what the project already does, more than the
+  criteria need, or a named failure mode. At most once per answer, as a pushback card in the next
+  round (`build-question` pushback input: the human's answer and the case against it). The human
+  reaffirms → the answer stands, its ledger line gets `· pushback: round M, reaffirmed`, it is
+  never pushed back again, and step 7 lists it under Risks as a knowing override.
 - **Reopen what a later answer breaks.** An answer contradicting a settled decision's
-  `assumes:`, or changing a layer an earlier phase settled, reopens that decision: it returns as
-  a question in the next round, naming the answer that reopened it. Re-scan once per round.
+  `assumes:` in the ledger, or changing a layer an earlier phase settled, reopens that decision: it
+  returns as a question in the next round, naming the answer that reopened it. Re-scan once per
+  round.
 - **Ledger.** `.aisf/artifacts/plan-<n>/ledger.md`, appended each round:
-  `decision · resolution · assumes: … · round N`, precedent decisions included.
+  `decision · answer · assumes: … · round N`, precedent decisions included. You write `assumes`
+  here only, never on a card.
 - **Files are the memory.** After each round, the ledger and the findings log hold everything
   later steps need. Later steps read them, not the scrollback, so a compacted context loses
   nothing.
@@ -189,14 +211,14 @@ big feature is never split here. No token or count threshold. Rule does not fire
 above, no split question.
 
 **Round 1 when it fires:** the playback map and one split question, nothing else: no
-per-criterion questions. One
+AC-split questions. One
 `<aisf-question>`:
 
 - An `<aisf-context kind="mockup">` shows each part: title, drafted Context and Scope written
   from `<n>`'s text, and its criteria numbered (A1, A2, B1 …).
 - **Part criteria:** `<n>`'s criteria regrouped verbatim. A criterion touching several parts goes
   to each. New criteria only from the human's note.
-- Cards: accept (`suggested`) and reject. The card tells the human to use the text field for long edits.
+- Cards: accept and reject. The card tells the human to use the text field for long edits. `build-question` builds it as a split proposal.
 
 **Answers.**
 
@@ -258,16 +280,14 @@ ban or placement rule, a second way to do what the project already does, an acce
 criterion no sub-issue proves, a flow step ending nowhere, a decision taken without the human,
 and work no criterion needs.
 
-Each objection you share becomes a question in the next round (step 3). One you reject is listed
-at Confirm with the reason, and goes to Risks.
+Each objection you share becomes a question in the next round (step 3), built by `build-question`. One you reject goes to Risks with the reason.
 
 ## 6. Confirm
 
-Show the split as a table: **Title** · **Module** · **Layer** · **Blocked-by** · **Proposed
-`hitl`** and its checkpoint. On the bridge page it is the last round: an `<aisf-confirm>` with
-one `<aisf-task>` per sub-issue, `heading="<Title> · <module> · <layer>"`, and its `hitl`
-switch, plus the decision tree from the ledger as `<aisf-tree-node>`
-rows. Without `aisf_show_artifact`, the table goes in chat. Confirm locks the `hitl` flags.
+Show the split: **Title** · **Module** · **Layer** · **Blocked-by** · **Proposed `hitl`** and its
+checkpoint. It is the last round: write `round-<N>.json` with `confirm.tasks` (one task per
+sub-issue, `heading` `<Title> · <module> · <layer>`, `blockedBy`, `hitl`), run `page-builder`, and
+show it with `aisf_show_artifact`. Tasks only, no decision tree. Confirm locks the `hitl` flags.
 
 **This is the only gate** (besides an accepted split, which is its own gate). Confirmed → the rest runs without further approval. Not confirmed →
 reopen that decision and go back to step 3.
@@ -311,7 +331,7 @@ spec**.
 - **A broken flow is a defect, not a footnote.** A step ending nowhere, a piece nothing calls:
   fix it here.
 - **A decision the plan leaves open comes back as a question**, never as a guess: put it to the
-  human (on the same page, as a further round), record the answer in the ledger, then go on.
+  human (on the same page, as a further round, built by `build-question`), record the answer in the ledger, then go on.
 
 **Three checks, once, on this document.** A failure is a defect in the split, not a note on the
 ticket: resplit or add a sub-issue, and take a changed split back to step 6.
