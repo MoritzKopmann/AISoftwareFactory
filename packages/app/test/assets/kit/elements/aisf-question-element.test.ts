@@ -91,6 +91,48 @@ describe('AisfQuestionElement', () => {
     expect($('aisf-question').hasAttribute('answered')).toBe(false);
   });
 
+  it('should put a radio mark before the label when rendered', async () => {
+    await mount('<aisf-question name="q"><aisf-card value="a">A</aisf-card></aisf-question>');
+
+    const label = $('.aisf-text-label');
+    expect(label.firstElementChild?.classList.contains('aisf-text-radio')).toBe(true);
+    expect(label.textContent).toBe('Or write your own answer');
+  });
+
+  it('should focus the text box and leave the question unanswered when the human clicks the radio mark', async () => {
+    await mount('<aisf-question name="q"><aisf-card value="a">A</aisf-card></aisf-question>');
+
+    await click($('.aisf-text-radio'));
+
+    expect(document.activeElement).toBe($('.aisf-text-answer'));
+    expect($('aisf-question').hasAttribute('answered')).toBe(false);
+  });
+
+  it('should mark the text field selected when the text is the answer', async () => {
+    await mount('<aisf-question name="q"><aisf-card value="a">A</aisf-card></aisf-question>');
+
+    await type($<HTMLTextAreaElement>('.aisf-text-answer'), 'use a queue');
+
+    expect($('.aisf-text-field').hasAttribute('selected')).toBe(true);
+  });
+
+  it('should keep the text field unselected when the text is only spaces', async () => {
+    await mount('<aisf-question name="q"><aisf-card value="a">A</aisf-card></aisf-question>');
+
+    await type($<HTMLTextAreaElement>('.aisf-text-answer'), '   ');
+
+    expect($('.aisf-text-field').hasAttribute('selected')).toBe(false);
+  });
+
+  it('should unselect the text field when the human picks a card', async () => {
+    await mount('<aisf-question name="q"><aisf-card value="a">A</aisf-card></aisf-question>');
+    await type($<HTMLTextAreaElement>('.aisf-text-answer'), 'use a queue');
+
+    await click($('aisf-card[value=a] input'));
+
+    expect($('.aisf-text-field').hasAttribute('selected')).toBe(false);
+  });
+
   it('should show the problem after the heading when the question has one', async () => {
     await mount(
       '<aisf-question name="q" heading="H" problem="P"><aisf-card value="x">X</aisf-card></aisf-question>',
