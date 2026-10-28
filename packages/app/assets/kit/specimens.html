@@ -119,6 +119,54 @@
       >
     </section>
     <section class="specimen">
+      <h2>Question, full order with 2 visuals</h2>
+      <aisf-round number="2"
+        ><aisf-question
+          name="full"
+          heading="Which queue?"
+          problem="Jobs run inline today and block the request."
+          assumes="a single worker"
+          ><aisf-definitions
+            ><dl>
+              <dt>Queue</dt>
+              <dd>Jobs wait here until a worker takes them.</dd>
+            </dl></aisf-definitions
+          ><aisf-figure caption="Today"
+            ><div class="aisf-lane">
+              <span class="aisf-node">Request</span><span class="aisf-arrow">→</span
+              ><span class="aisf-node">Job</span>
+            </div></aisf-figure
+          ><aisf-figure
+            ><div class="aisf-lane">
+              <span class="aisf-node aisf-node-new">Queue</span>
+            </div></aisf-figure
+          ><aisf-card value="one" suggested why="Smallest change">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card
+          ><aisf-card value="three">Option three</aisf-card></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
+      <h2>Question, no definitions and no visuals</h2>
+      <aisf-round number="3"
+        ><aisf-question name="bare" heading="Which queue?" problem="Jobs run inline today."
+          ><aisf-card value="one">Option one</aisf-card
+          ><aisf-card value="two">Option two</aisf-card></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
+      <h2>Frozen round, own answer and assumes</h2>
+      <aisf-round number="4" frozen
+        ><aisf-question
+          name="own"
+          heading="How does the scheduler pick the next ticket?"
+          assumes="one project per slot"
+          ><aisf-card value="one">Oldest first</aisf-card></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
       <h2>Confirm, empty</h2>
       <aisf-round number="7"
         ><aisf-confirm
@@ -969,6 +1017,12 @@ const line80 = 80;</aisf-context>
       customElements.whenDefined('aisf-round').then(() =>
         queueMicrotask(() => {
           fill('text', '.aisf-text-answer', 'Something else entirely');
+          fill(
+            'own',
+            '.aisf-text-answer',
+            'Oldest ready first, but never two runs for one project while another project waits.',
+          );
+          document.querySelector('aisf-round[number="4"]').freeze('');
           const reopened = document.querySelector('aisf-round[frozen="reopen"]');
           reopened.querySelector('.aisf-confirm-note').value = 'Split task 4 first';
           reopened.freeze('reopen');

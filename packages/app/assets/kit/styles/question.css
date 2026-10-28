@@ -1,11 +1,11 @@
 aisf-question {
   position: relative;
   display: grid;
-  gap: 12px;
+  gap: 16px;
   min-width: 0;
   padding: 16px;
   background: var(--surface);
-  border: 1px solid var(--border-strong);
+  border: var(--card-border);
   border-radius: var(--radius);
 }
 
@@ -16,7 +16,7 @@ aisf-question > p {
 
 /* Leaves room for the answered mark. */
 .aisf-question-heading {
-  padding-right: 96px;
+  padding-right: 112px;
   line-height: 1.35;
 }
 
@@ -363,6 +363,10 @@ aisf-round[frozen] aisf-question {
 aisf-round[frozen] aisf-question > :not(.aisf-frozen-summary),
 aisf-round[frozen] aisf-question::after {
   display: none;
+}
+
+aisf-question .aisf-frozen-summary {
+  gap: 4px 16px;
 }
 
 .aisf-summary-decision {
