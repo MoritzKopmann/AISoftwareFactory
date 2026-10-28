@@ -141,8 +141,8 @@ means every branch the criteria need. Specific to planning:
   acceptance criterion as a path through the touched UI and modules, by layer, new and changed
   parts marked. Under the map, one question per criterion: **Correct** (`suggested`) or **Wrong
   path**. Its other first questions are the ones that picture raises.
-- **The map stays current.** It sits above every round. After each round, redraw it to match
-  the decisions made, before republishing. A changed path is not asked again: the answer that
+- **The map stays current.** It sits above every round. After each round, update the playback data to
+  match the decisions made, before republishing. A changed path is not asked again: the answer that
   changed it already decided it.
 - **Phases shape the rounds.** Early rounds hold the early phases. A question from a later
   phase whose answer depends on nothing open may come early.
