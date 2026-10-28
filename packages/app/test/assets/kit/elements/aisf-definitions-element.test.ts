@@ -23,6 +23,22 @@ describe('AisfDefinitionsElement', () => {
     expect($('.aisf-definitions-body dt').textContent).toBe('Term');
   });
 
+  it('should show the muted term count in the toggle when connected', async () => {
+    await mount(`<aisf-question name="q" heading="H">
+      <aisf-definitions><dl><dt>A</dt><dd>a</dd><dt>B</dt><dd>b</dd><dt>C</dt><dd>c</dd></dl></aisf-definitions>
+      <aisf-card value="a">A</aisf-card>
+    </aisf-question>`);
+
+    expect($('.aisf-definitions-toggle').textContent).toBe('Terms explained · 3 terms');
+    expect($('.aisf-definitions-toggle .count').textContent).toBe('· 3 terms');
+  });
+
+  it('should say "1 term" when the list holds one term', async () => {
+    await mount(question);
+
+    expect($('.aisf-definitions-toggle .count').textContent).toBe('· 1 term');
+  });
+
   it('should show the list when the human opens the toggle', async () => {
     await mount(question);
 

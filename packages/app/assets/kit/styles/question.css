@@ -314,7 +314,8 @@ aisf-more {
 }
 
 aisf-definitions {
-  display: block;
+  display: grid;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -366,12 +367,29 @@ aisf-definitions {
   display: none;
 }
 
+.aisf-definitions-body {
+  margin-top: 4px;
+  padding: 10px 12px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.aisf-definitions-body dl {
+  display: grid;
+  grid-template-columns: 136px minmax(0, 1fr);
+  gap: 6px 16px;
+  margin: 0;
+  font-size: var(--text-size-sm);
+  line-height: var(--line-sm);
+}
+
 .aisf-definitions-body dt {
   font-weight: 600;
 }
 
 .aisf-definitions-body dd {
-  margin: 0 0 6px;
+  margin: 0;
 }
 
 /* Locked: the element disables every input while saving, busy or closed. */
