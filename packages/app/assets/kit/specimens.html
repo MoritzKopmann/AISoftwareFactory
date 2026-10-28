@@ -65,6 +65,13 @@
             ><dl>
               <dt>Queue</dt>
               <dd>Jobs wait here until a worker takes them.</dd>
+              <dt>Worker</dt>
+              <dd>
+                A process that takes one job from the queue, runs it to the end and then asks for
+                the next one, so a long meaning wraps inside its column.
+              </dd>
+              <dt>Retry</dt>
+              <dd>Running a failed job again.</dd>
             </dl></aisf-definitions
           ></aisf-question
         ></aisf-round

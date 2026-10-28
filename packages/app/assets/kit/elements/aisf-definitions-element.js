@@ -17,6 +17,11 @@ export class AisfDefinitionsElement extends HTMLElement {
     body.append(...this.childNodes);
     const toggle = buildElement('button', 'aisf-definitions-toggle', 'Terms explained');
     toggle.type = 'button';
+    const termCount = body.querySelectorAll('dt').length;
+    toggle.append(
+      ' ',
+      buildElement('span', 'count', `· ${termCount} ${termCount === 1 ? 'term' : 'terms'}`),
+    );
     toggle.setAttribute('aria-expanded', 'false');
     toggle.addEventListener('click', () => {
       body.hidden = !body.hidden;
