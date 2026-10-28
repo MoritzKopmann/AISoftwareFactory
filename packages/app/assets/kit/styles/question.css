@@ -318,18 +318,48 @@ aisf-definitions {
   min-width: 0;
 }
 
+/* The negative margin pulls the 48px hit area back in, so the layout keeps the visible size. */
 .aisf-definitions-toggle,
 .aisf-precedent-toggle {
-  min-height: 32px;
-  padding: 0 10px;
-  background: var(--surface);
-  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+  min-height: 48px;
+  margin-block: -12px;
+  padding: 0 4px 0 0;
+  color: var(--text);
+  font: 500 12px/1 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: var(--label-spacing);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.aisf-definitions-toggle::before,
+.aisf-precedent-toggle::before {
+  content: '+';
+  box-sizing: border-box;
+  display: grid;
+  place-content: center;
+  width: 18px;
+  height: 18px;
+  font: 700 13px/1 var(--font-mono);
+  color: var(--text);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
-  font: var(--label-weight) var(--label-size) var(--label-font);
-  text-transform: var(--label-transform);
-  letter-spacing: var(--label-spacing);
-  cursor: pointer;
+}
+
+.aisf-definitions-toggle[aria-expanded='true']::before,
+.aisf-precedent-toggle[aria-expanded='true']::before {
+  content: '−';
+}
+
+.aisf-definitions-toggle .count,
+.aisf-precedent-toggle .count {
+  color: var(--muted);
+  font-weight: 400;
 }
 
 .aisf-definitions-body[hidden] {
