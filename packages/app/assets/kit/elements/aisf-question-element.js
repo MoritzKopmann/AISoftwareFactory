@@ -174,7 +174,12 @@ export class AisfQuestionElement extends HTMLElement {
   textField() {
     const wrapper = buildElement('label', 'aisf-text-field');
     const field = buildElement('textarea', 'aisf-text-answer');
-    wrapper.append(buildElement('span', 'aisf-text-label', 'Or write your own answer'), field);
+    const mark = buildElement('span', 'aisf-text-radio');
+    mark.setAttribute('aria-hidden', 'true');
+    mark.addEventListener('click', () => field.focus());
+    const label = buildElement('span', 'aisf-text-label');
+    label.append(mark, 'Or write your own answer');
+    wrapper.append(label, field);
     return wrapper;
   }
 
@@ -209,6 +214,10 @@ export class AisfQuestionElement extends HTMLElement {
     for (const card of this.cards) {
       card.toggleAttribute('selected', answer?.choice === card.getAttribute('value'));
     }
+    this.querySelector('.aisf-text-field')?.toggleAttribute(
+      'selected',
+      answer?.choice === TEXT_CHOICE,
+    );
     this.toggleAttribute('answered', this.isAnswered);
   }
 }

@@ -304,26 +304,61 @@ aisf-more {
 /* The one free text field: dashed, so the human's own answer reads apart from the proposals. */
 .aisf-text-field {
   display: grid;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
-  padding: 9px 12px;
+  padding: 10px 12px 12px;
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius);
 }
 
-.aisf-text-field:focus-within {
+.aisf-text-field[selected] {
   background: var(--accent-soft);
-  border-style: solid;
-  border-color: var(--accent);
+  border: 1px solid var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 .aisf-text-label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
   font-weight: 600;
 }
 
-.aisf-text-answer {
+/* Same look as the card radio, drawn on a span: the text box is the real input. */
+.aisf-text-radio {
+  flex: none;
+  display: grid;
+  place-content: center;
+  width: 18px;
+  height: 18px;
+  background: var(--surface);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.aisf-text-field[selected] .aisf-text-radio {
+  border-color: var(--accent);
+}
+
+.aisf-text-field[selected] .aisf-text-radio::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+/* 28px lines the box up with the card text. It grows with its text, no inner scroll. */
+.aisf-text-field .aisf-text-answer {
+  width: calc(100% - 28px);
   min-height: 72px;
-  resize: vertical;
+  margin-left: 28px;
+  padding: 8px 10px;
+  field-sizing: content;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  resize: none;
 }
 
 aisf-definitions {
@@ -412,6 +447,41 @@ aisf-definitions {
 }
 
 .aisf-choices:has(input:disabled) :is(.aisf-card-choice, input) {
+  cursor: not-allowed;
+}
+
+/* Locked: even a typed answer loses the selected look. */
+.aisf-text-field:has(.aisf-text-answer:disabled) {
+  background: var(--surface-2);
+  border: 1px dashed var(--border);
+  box-shadow: none;
+}
+
+.aisf-text-field:has(.aisf-text-answer:disabled) .aisf-text-label::after {
+  content: '■ Locked';
+  font: 500 11px/18px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: var(--label-spacing);
+  color: var(--muted);
+}
+
+.aisf-text-field:has(.aisf-text-answer:disabled) .aisf-text-radio {
+  background: var(--surface-sunken);
+  border-color: var(--border);
+}
+
+.aisf-text-field[selected]:has(.aisf-text-answer:disabled) .aisf-text-radio {
+  border-color: var(--muted);
+}
+
+.aisf-text-field[selected]:has(.aisf-text-answer:disabled) .aisf-text-radio::before {
+  background: var(--muted);
+}
+
+.aisf-text-field .aisf-text-answer:disabled {
+  color: var(--muted);
+  background: var(--surface-sunken);
+  border-color: var(--border);
   cursor: not-allowed;
 }
 

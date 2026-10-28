@@ -272,6 +272,32 @@
       >
     </section>
     <section class="specimen">
+      <h2>Free text field, typed (cards cleared)</h2>
+      <aisf-round number="9"
+        ><aisf-question name="tf-typed" heading="Which order should ready tickets run in?"
+          ><aisf-card value="one">Oldest ready first</aisf-card
+          ><aisf-card value="two">Round-robin per project</aisf-card></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
+      <h2>Free text field, long text</h2>
+      <aisf-round number="9"
+        ><aisf-question name="tf-long" heading="Which order should ready tickets run in?"
+          ><aisf-card value="one">Oldest ready first</aisf-card></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
+      <h2>Free text field, locked with a typed answer</h2>
+      <aisf-round number="9" saving
+        ><aisf-question name="tf-locked" heading="Which order should ready tickets run in?"
+          ><aisf-card value="one">Oldest ready first</aisf-card
+          ><aisf-card value="two">Round-robin per project</aisf-card></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
       <h2>Frozen round, own answer and assumes</h2>
       <aisf-round number="4" frozen
         ><aisf-question
@@ -1145,6 +1171,21 @@ const line80 = 80;</aisf-context>
             'own',
             '.aisf-text-answer',
             'Oldest ready first, but never two runs for one project while another project waits.',
+          );
+          fill(
+            'tf-typed',
+            '.aisf-text-answer',
+            'Oldest first, but never two runs for one project while another project waits.',
+          );
+          fill(
+            'tf-long',
+            '.aisf-text-answer',
+            'Oldest ready first, but cap each project at one running slot while another project has a ready ticket. When only one project has work, let it take both slots. I want this because the test-project checks are short and should never sit behind a long AISF implement run; the cap keeps that true without a saved cursor. Priority can come later as a tie-break once we see real queues.',
+          );
+          fill(
+            'tf-locked',
+            '.aisf-text-answer',
+            'Oldest first, but never two runs for one project while another project waits.',
           );
           // Precedent: one row open, one vetoed with a note.
           document.querySelector('[name="p2"] .aisf-precedent-toggle').click();
