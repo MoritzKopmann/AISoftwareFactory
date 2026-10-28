@@ -187,4 +187,50 @@ describe('build-page', () => {
     expect(result.status).toBe(1);
     expect(result.stdout + result.stderr).toContain('end-state.html');
   });
+
+  describe('confirm round', () => {
+    const confirm = (roundNumber, tasks) =>
+      write(`round-${roundNumber}.json`, JSON.stringify({ confirm: { tasks } }));
+
+    it('should render one task each with blocked-by and hitl when the round holds confirm.tasks', () => {
+      confirm(3, [
+        { number: 1, heading: 'First', blockedBy: [], hitl: false },
+        { number: 2, heading: 'Second', blockedBy: [1, 4], hitl: true },
+      ]);
+
+      const result = run(3);
+
+      const html = page();
+      const tasks = html.match(/<aisf-task[^>]*>/g);
+      expect(result.status).toBe(0);
+      expect(html).toContain('<aisf-round number="3">');
+      expect(html.match(/<aisf-confirm>/g)).toHaveLength(1);
+      expect(tasks).toHaveLength(2);
+      expect(tasks[0]).not.toContain('blocked-by');
+      expect(tasks[0]).not.toContain('hitl');
+      expect(tasks[1]).toContain('blocked-by="1, 4"');
+      expect(tasks[1]).toContain('hitl');
+    });
+
+    it('should escape & " and < in the heading when a task heading holds them', () => {
+      confirm(3, [{ number: 1, heading: 'A & "B" <C>', blockedBy: [], hitl: false }]);
+
+      run(3);
+
+      const html = page();
+      expect(html).toContain('heading="A &amp; &quot;B&quot; &lt;C>"');
+      expect(html.match(/<aisf-task/g)).toHaveLength(1);
+    });
+
+    it('should exit 1 naming the mix and write nothing when the round holds confirm and cards', () => {
+      write('round-4.json', JSON.stringify({ confirm: { tasks: [] }, cards: ['ac1'] }));
+
+      const result = run(4);
+
+      expect(result.status).toBe(1);
+      expect(result.stdout.trim().split('\n')).toHaveLength(1);
+      expect(result.stdout).toContain('confirm');
+      expect(() => page()).toThrow();
+    });
+  });
 });

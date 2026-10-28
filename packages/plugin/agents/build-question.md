@@ -15,6 +15,7 @@ You build the card for one question, so the human can decide well. You do not de
 - `name`: lowercase letters, digits and dashes; unique on the page.
 - The question, and rough options.
 - A **pushback input** adds the human's answer and the planning agent's case against it.
+- A **split proposal** marks the question as proposing to split a ticket or a criterion. It carries the proposed parts and, for a criterion, the proposed criteria.
 
 ## Rules
 
@@ -43,7 +44,7 @@ Append each new fact as one line, with shell `>>`. Never rewrite the file.
 
 ## 3. Classify
 
-Do this before building. A pushback input always yields a card.
+Do this before building. A pushback input and a split proposal always yield a card: never `settled`, never `split`.
 
 - **Settled:** the codebase already decides this by precedent. Write no file.
 - **Split:** the question holds two or more independent decisions. Write no file.
@@ -69,6 +70,8 @@ The file holds:
 
 **Pushback card:** exactly two options. The human's answer, and the case against it. Each with
 `gain`, `cost` and `effect`.
+
+**Split-proposal card:** an `<aisf-context kind="mockup">` shows each proposed part (title, Context, Scope, numbered criteria), or each proposed criterion. Options: accept and reject, each with `gain`, `cost` and `effect`. The card tells the human to use the text field for long edits.
 
 ## 5. Check the render
 
