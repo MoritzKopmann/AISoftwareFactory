@@ -1,4 +1,12 @@
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -144,6 +152,37 @@ describe('FileSystemArtifactFiles', () => {
       symlinkSync(join(root, 'outside.png'), join(directory, 'link.png'));
 
       expect(await files.listImages(directory)).toEqual(['in.png']);
+    });
+  });
+  describe('readDesignRound and writeDesignRound', () => {
+    it('should read the round when index.json has a numeric round', async () => {
+      writeFileSync(join(directory, 'index.json'), '{"round":3}');
+
+      expect(await files.readDesignRound(directory)).toBe(3);
+    });
+
+    it('should read undefined when index.json is missing, not JSON or has no numeric round', async () => {
+      expect(await files.readDesignRound(directory)).toBeUndefined();
+      writeFileSync(join(directory, 'index.json'), 'nope');
+      expect(await files.readDesignRound(directory)).toBeUndefined();
+      writeFileSync(join(directory, 'index.json'), '{"round":"3"}');
+      expect(await files.readDesignRound(directory)).toBeUndefined();
+      writeFileSync(join(directory, 'index.json'), 'null');
+      expect(await files.readDesignRound(directory)).toBeUndefined();
+    });
+
+    it('should keep the boards and leave no temp file when the round is written', async () => {
+      const boards = [{ id: 'settings', title: 'Settings' }];
+      writeFileSync(
+        join(directory, 'index.json'),
+        JSON.stringify({ title: 'D', round: 3, boards }),
+      );
+
+      await files.writeDesignRound(directory, 4);
+
+      const written: unknown = JSON.parse(readFileSync(join(directory, 'index.json'), 'utf8'));
+      expect(written).toEqual({ title: 'D', round: 4, boards });
+      expect(readdirSync(directory)).toEqual(['index.json']);
     });
   });
 });

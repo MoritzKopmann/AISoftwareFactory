@@ -42,4 +42,24 @@ export class FakeArtifactFiles implements ArtifactFiles {
   async writeUserInputState(directory: string, userInputState: string): Promise<void> {
     this.files.set(`${directory}/user-input-state.json`, userInputState);
   }
+
+  async readDesignRound(directory: string): Promise<number | undefined> {
+    const text = this.files.get(`${directory}/index.json`);
+    if (text === undefined) {
+      return undefined;
+    }
+    try {
+      const round: unknown = (JSON.parse(text) as { round?: unknown } | null)?.round;
+      return typeof round === 'number' ? round : undefined;
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw error;
+      return undefined;
+    }
+  }
+
+  async writeDesignRound(directory: string, round: number): Promise<void> {
+    const text = this.files.get(`${directory}/index.json`) ?? '{}';
+    const index = JSON.parse(text) as Record<string, unknown>;
+    this.files.set(`${directory}/index.json`, JSON.stringify({ ...index, round }));
+  }
 }

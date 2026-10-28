@@ -4,6 +4,8 @@ import type { Identifiers } from '../../../../shared/identifiers/identifiers.js'
 import { artifactDirectoryFor } from '../domain/functions/artifact-directory-for.js';
 import { artifactKindFor } from '../domain/functions/artifact-kind-for.js';
 import { decidePageStatus } from '../domain/functions/decide-page-status.js';
+import { decideRoundAfterFeedback } from '../domain/functions/decide-round-after-feedback.js';
+import { readSentBoardRound } from '../domain/functions/read-sent-board-round.js';
 import type { Artifact } from '../domain/types/artifact.js';
 import type { ListedArtifact } from '../domain/types/listed-artifact.js';
 import type { PublishRequest } from '../domain/types/publish-request.js';
@@ -37,6 +39,9 @@ export class ArtifactService {
         `The artifact "${request.artifactId}" has no ${indexName} in .aisf/artifacts/${request.artifactId}/`,
       );
     }
+    if (isBoard) {
+      await this.raiseRoundAfterFeedback(directory);
+    }
     const artifact = await artifactRepository.publish({
       token: identifiers.next(),
       projectId: request.projectId,
@@ -53,6 +58,17 @@ export class ArtifactService {
       artifactId: request.artifactId,
     });
     return artifact;
+  }
+
+  /** Gives the human the turn: a board whose feedback went out for the current round moves to the next one. */
+  private async raiseRoundAfterFeedback(directory: string): Promise<void> {
+    const { artifactFiles } = this.dependencies;
+    const round = await artifactFiles.readDesignRound(directory);
+    const sentRound = readSentBoardRound(await artifactFiles.readUserInputState(directory));
+    const nextRound = decideRoundAfterFeedback(round, sentRound);
+    if (nextRound !== undefined) {
+      await artifactFiles.writeDesignRound(directory, nextRound);
+    }
   }
 
   async listForTicket(
