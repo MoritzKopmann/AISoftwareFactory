@@ -35,4 +35,47 @@ describe('AisfFigureElement', () => {
     expect($('.aisf-figure-caption').textContent).toBe('Two');
     expect(document.querySelectorAll('.aisf-figure-caption')).toHaveLength(1);
   });
+
+  describe('inside a question', () => {
+    it('should place the caption before a framed content box when the figure is in a question', async () => {
+      await mount(
+        '<aisf-question name="q" heading="H"><aisf-figure caption="How it behaves"><p>content</p></aisf-figure></aisf-question>',
+      );
+
+      const children = [...$('aisf-figure').children];
+      expect(children.map((child) => child.className)).toEqual([
+        'aisf-figure-caption',
+        'aisf-figure-frame',
+      ]);
+      expect($('aisf-figure .aisf-figure-frame > p').textContent).toBe('content');
+    });
+
+    it('should show only the framed box when the figure in a question has no caption', async () => {
+      await mount(
+        '<aisf-question name="q" heading="H"><aisf-figure><p>content</p></aisf-figure></aisf-question>',
+      );
+
+      expect([...$('aisf-figure').children].map((child) => child.className)).toEqual([
+        'aisf-figure-frame',
+      ]);
+    });
+
+    it('should keep one frame and replace the caption when the caption changes', async () => {
+      await mount(
+        '<aisf-question name="q" heading="H"><aisf-figure caption="One"><p>content</p></aisf-figure></aisf-question>',
+      );
+
+      $('aisf-figure').setAttribute('caption', 'Two');
+
+      expect($('.aisf-figure-caption').textContent).toBe('Two');
+      expect(document.querySelectorAll('.aisf-figure-frame')).toHaveLength(1);
+      expect($('aisf-figure').firstElementChild?.className).toBe('aisf-figure-caption');
+    });
+
+    it('should not frame the content when the figure is outside a question', async () => {
+      await mount('<aisf-figure caption="One"><p>content</p></aisf-figure>');
+
+      expect(document.querySelector('.aisf-figure-frame')).toBeNull();
+    });
+  });
 });

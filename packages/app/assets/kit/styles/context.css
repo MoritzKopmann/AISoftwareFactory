@@ -121,6 +121,39 @@ aisf-figure[wide] {
   margin-left: calc((100% - var(--figure-width)) / 2);
 }
 
+/* In a question: caption above, the content alone in a framed box. */
+aisf-question aisf-figure {
+  display: grid;
+  gap: 6px;
+  padding: 0;
+  overflow: visible;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+aisf-question .aisf-figure-frame {
+  min-width: 0;
+  padding: 12px;
+  overflow-x: auto;
+  background: var(--figure-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+aisf-question .aisf-figure-caption {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: 400 var(--text-size-sm) / var(--line-sm) var(--font-ui);
+}
+
+aisf-question .aisf-figure-caption::before {
+  content: none;
+}
+
 .aisf-figure-caption {
   margin: 0 -12px;
   padding: 6px 12px;

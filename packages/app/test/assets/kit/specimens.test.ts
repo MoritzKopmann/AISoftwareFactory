@@ -87,6 +87,13 @@ describe('specimens page', () => {
     expect($$('.aisf-notice-unsaved').length).toBeGreaterThan(0);
     expect($$('aisf-round[frozen] aisf-question .aisf-frozen-summary').length).toBeGreaterThan(0);
     expect($$('aisf-round[frozen] aisf-confirm .aisf-frozen-summary').length).toBeGreaterThan(0);
+    expect($$('aisf-question[name="full"] aisf-figure .aisf-figure-frame')).toHaveLength(2);
+    expect(
+      $$('aisf-question[name="bare"] aisf-definitions, aisf-question[name="bare"] aisf-figure'),
+    ).toHaveLength(0);
+    expect($$('aisf-round[frozen] aisf-question[name="own"] .aisf-summary-assumes')).toHaveLength(
+      1,
+    );
     expect($$('aisf-question').length).toBeGreaterThanOrEqual(10);
     expect($$('aisf-task').length).toBeGreaterThanOrEqual(12);
   });
