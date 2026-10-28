@@ -193,8 +193,16 @@
               fact="It is slow"
             ></aisf-tree-node></aisf-tree-node
           ><aisf-precedent
-            ><div name="p1" source="#12" how="same name kept in #12">Keep the old name.</div>
-            <div name="p2">Use a map.</div></aisf-precedent
+            ><div name="p1" source="#12">Keep the scheduler in-process; no external queue.</div>
+            <div
+              name="p2"
+              source="#741 Stuck tickets keep their status on reset"
+              how="Rule written in aisf:github-issue, Guarded transitions"
+            >
+              A run that ends red moves its ticket to stuck.
+            </div>
+            <div name="p3" source="#12">Two runs at once, at most.</div>
+            <div name="p4">Tickets of a closed parent never run.</div></aisf-precedent
           ><aisf-task number="1" heading="Plan one" files="a.ts" risk="low" hitl
             >Scope. Human checks it.</aisf-task
           ><aisf-task number="2" heading="Plan two" blocked-by="1">Scope.</aisf-task>
@@ -1022,6 +1030,11 @@ const line80 = 80;</aisf-context>
             '.aisf-text-answer',
             'Oldest ready first, but never two runs for one project while another project waits.',
           );
+          // Precedent: one row open, one vetoed with a note.
+          document.querySelector('[name="p2"] .aisf-precedent-toggle').click();
+          document
+            .querySelector('aisf-precedent')
+            .restore({ p3: 'Raise to three once test-project runs are short.' });
           document.querySelector('aisf-round[number="4"]').freeze('');
           const reopened = document.querySelector('aisf-round[frozen="reopen"]');
           reopened.querySelector('.aisf-confirm-note').value = 'Split task 4 first';

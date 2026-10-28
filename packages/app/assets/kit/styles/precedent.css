@@ -10,7 +10,8 @@ aisf-precedent > [name] {
   display: grid;
   gap: 4px;
   min-width: 0;
-  padding: 12px 120px 12px 14px;
+  min-height: 72px;
+  padding: 12px 124px 12px 14px;
   background: var(--surface);
   border: 1px solid var(--border);
   overflow-wrap: anywhere;
@@ -51,31 +52,42 @@ aisf-precedent > [vetoed] .aisf-precedent-text {
 }
 
 .aisf-precedent-toggle {
-  justify-self: start;
+  margin-block: -6px -12px;
 }
 
 .aisf-precedent-body[hidden] {
   display: none;
 }
 
-.aisf-precedent-source,
-.aisf-precedent-how {
-  margin: 0;
+.aisf-precedent-body {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 4px 12px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-size-sm);
+  line-height: var(--line-sm);
+}
+
+.aisf-precedent-body > .label {
   color: var(--muted);
-  font: 400 12px var(--font-mono);
+  line-height: 1.7;
 }
 
 .aisf-veto-switch {
   position: absolute;
-  top: 10px;
+  top: 12px;
   right: 12px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 32px;
-  padding: 0 10px;
+  min-height: 48px;
+  padding: 0 12px;
   background: var(--surface);
-  color: var(--muted);
+  color: var(--text);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   font: var(--label-weight) var(--label-size) var(--label-font);
@@ -114,7 +126,7 @@ aisf-precedent > [vetoed] .aisf-precedent-text {
 .aisf-veto-note-label {
   display: grid;
   gap: 4px;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 .aisf-veto-note-label > .label {
