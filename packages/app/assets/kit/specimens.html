@@ -71,6 +71,122 @@
       >
     </section>
     <section class="specimen">
+      <h2>Option cards, 3 in a row (one selected suggested, one without gain)</h2>
+      <aisf-round number="9"
+        ><aisf-question name="c3" heading="Which order should ready tickets run in?"
+          ><aisf-card
+            selected
+            value="one"
+            suggested
+            gain="No ready ticket waits forever."
+            cost="A project with many old tickets still fills both slots."
+            effect="scheduler sorts by ready-since."
+            why="Fair with no new state to keep."
+            >Oldest ready first, across projects</aisf-card
+          ><aisf-card
+            value="two"
+            cost="Needs a cursor saved between runs."
+            effect="Adds last_project to scheduler state."
+            >Round-robin per project</aisf-card
+          ><aisf-card
+            value="three"
+            gain="Urgent work runs first."
+            cost="Low priority tickets can starve."
+            effect="Sorts by priority label, then age."
+            >Highest priority first</aisf-card
+          ></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
+      <h2>Option cards, 2 (unselected suggested, selected plain)</h2>
+      <aisf-round number="9"
+        ><aisf-question name="c2" heading="Which order should ready tickets run in?"
+          ><aisf-card
+            value="one"
+            suggested
+            gain="No ready ticket waits forever."
+            cost="A project with many old tickets still fills both slots."
+            effect="scheduler sorts by ready-since."
+            why="Fair with no new state to keep."
+            >Oldest ready first, across projects</aisf-card
+          ><aisf-card
+            selected
+            value="two"
+            gain="Each project gets the next turn."
+            cost="Needs a cursor saved between runs."
+            effect="Adds last_project to scheduler state."
+            >Round-robin per project</aisf-card
+          ></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
+      <h2>Option cards, 4 in 2×2 with a long label</h2>
+      <aisf-round number="9"
+        ><aisf-question name="c4" heading="Which order should ready tickets run in?"
+          ><aisf-card
+            value="a"
+            suggested
+            gain="No new storage."
+            cost="Gone when the worktree is cleaned."
+            effect="Writes .aisf/logs/run.ndjson."
+            why="Matches how images are kept today."
+            >In the worktree, under .aisf/logs, kept until the branch is deleted</aisf-card
+          ><aisf-card
+            value="b"
+            gain="No new storage."
+            cost="Gone when the worktree is cleaned."
+            effect="Writes .aisf/logs/run.ndjson."
+            why="Matches how images are kept today."
+            >In the app’s SQLite</aisf-card
+          ><aisf-card
+            value="c"
+            gain="No new storage."
+            cost="Gone when the worktree is cleaned."
+            effect="Writes .aisf/logs/run.ndjson."
+            why="Matches how images are kept today."
+            >Posted to the ticket as a comment</aisf-card
+          ><aisf-card
+            value="d"
+            gain="No new storage."
+            cost="Gone when the worktree is cleaned."
+            effect="Writes .aisf/logs/run.ndjson."
+            why="Matches how images are kept today."
+            >Not kept</aisf-card
+          ></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
+      <h2>Option cards, locked</h2>
+      <aisf-round number="9" saving
+        ><aisf-question name="cl" heading="Which order should ready tickets run in?"
+          ><aisf-card
+            selected
+            value="one"
+            suggested
+            gain="No ready ticket waits forever."
+            cost="A project with many old tickets still fills both slots."
+            effect="scheduler sorts by ready-since."
+            why="Fair with no new state to keep."
+            >Oldest ready first, across projects</aisf-card
+          ><aisf-card
+            value="two"
+            cost="Needs a cursor saved between runs."
+            effect="Adds last_project to scheduler state."
+            >Round-robin per project</aisf-card
+          ><aisf-card
+            value="three"
+            gain="Urgent work runs first."
+            cost="Low priority tickets can starve."
+            effect="Sorts by priority label, then age."
+            >Highest priority first</aisf-card
+          ></aisf-question
+        ></aisf-round
+      >
+    </section>
+    <section class="specimen">
       <h2>Saving</h2>
       <aisf-round number="3" saving
         ><aisf-question name="s1" heading="Sending"
