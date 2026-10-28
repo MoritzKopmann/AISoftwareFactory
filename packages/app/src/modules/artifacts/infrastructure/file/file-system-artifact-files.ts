@@ -124,4 +124,36 @@ export class FileSystemArtifactFiles implements ArtifactFiles {
     await writeFile(temporaryPath, userInputState, 'utf8');
     await rename(temporaryPath, join(directory, userInputStateFileName));
   }
+
+  async readDesignRound(directory: string): Promise<number | undefined> {
+    const text = await readTextOrUndefined(join(directory, designIndexName));
+    if (text === undefined) {
+      return undefined;
+    }
+    const round = parseDesignIndex(text)?.['round'];
+    return typeof round === 'number' ? round : undefined;
+  }
+
+  async writeDesignRound(directory: string, round: number): Promise<void> {
+    const text = await readTextOrUndefined(join(directory, designIndexName));
+    const index = text === undefined ? undefined : parseDesignIndex(text);
+    if (index === undefined) {
+      return;
+    }
+    const temporaryPath = join(directory, `.${designIndexName}.${randomUUID()}.tmp`);
+    await writeFile(temporaryPath, JSON.stringify({ ...index, round }, null, 2), 'utf8');
+    await rename(temporaryPath, join(directory, designIndexName));
+  }
+}
+
+function parseDesignIndex(text: string): Record<string, unknown> | undefined {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    return typeof parsed === 'object' && parsed !== null
+      ? (parsed as Record<string, unknown>)
+      : undefined;
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
+    return undefined;
+  }
 }

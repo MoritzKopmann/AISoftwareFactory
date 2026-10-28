@@ -125,6 +125,119 @@ describe('ArtifactService.publish', () => {
   });
 });
 
+describe('ArtifactService.publish design round', () => {
+  const designDirectory = '/worktrees/n/7/.aisf/artifacts/design';
+  let artifactFiles: FakeArtifactFiles;
+  let service: ArtifactService;
+
+  const setIndex = (text: string): void => {
+    artifactFiles.files.set(`${designDirectory}/index.json`, text);
+  };
+  const setDraft = (sentRound: number | null): void => {
+    artifactFiles.files.set(
+      `${designDirectory}/user-input-state.json`,
+      JSON.stringify({ rounds: {}, board: { sentRound } }),
+    );
+  };
+  const publishDesign = (): Promise<unknown> =>
+    service.publish({ ...request, artifactId: 'design' });
+  const indexText = (): string => artifactFiles.files.get(`${designDirectory}/index.json`) ?? '';
+
+  beforeEach(() => {
+    artifactFiles = new FakeArtifactFiles();
+    service = new ArtifactService({
+      artifactRepository: new InMemoryArtifactRepository(),
+      artifactFiles,
+      runPort: new FakeRunPort(),
+      events: new FakeEventPublisher(),
+      identifiers: { next: () => 'T' },
+      clock: new FakeClock('2026-10-06T10:00:00.000Z'),
+    });
+  });
+
+  it('should raise the round and keep other fields when feedback was sent for the current round', async () => {
+    setIndex(JSON.stringify({ title: 'D', brief: 'b', round: 3, boards: [{ id: 'a' }] }));
+    setDraft(3);
+
+    await publishDesign();
+
+    expect(JSON.parse(indexText())).toEqual({
+      title: 'D',
+      brief: 'b',
+      round: 4,
+      boards: [{ id: 'a' }],
+    });
+  });
+
+  it('should keep the round when sentRound is null', async () => {
+    setIndex('{"round":3}');
+    setDraft(null);
+
+    await publishDesign();
+
+    expect(indexText()).toBe('{"round":3}');
+  });
+
+  it('should keep the round when there is no draft', async () => {
+    setIndex('{"round":3}');
+
+    await publishDesign();
+
+    expect(indexText()).toBe('{"round":3}');
+  });
+
+  it('should keep the round when the agent already raised it', async () => {
+    setIndex('{"round":4}');
+    setDraft(3);
+
+    await publishDesign();
+
+    expect(indexText()).toBe('{"round":4}');
+  });
+
+  it('should publish and not write when index.json has no numeric round', async () => {
+    setIndex('{"round":"3"}');
+    setDraft(3);
+
+    await publishDesign();
+
+    expect(indexText()).toBe('{"round":"3"}');
+  });
+
+  it('should publish and not write when index.json is not JSON', async () => {
+    setIndex('nope');
+    setDraft(3);
+
+    await expect(publishDesign()).resolves.toBeDefined();
+
+    expect(indexText()).toBe('nope');
+  });
+
+  it('should publish and not write when the draft is not JSON', async () => {
+    setIndex('{"round":3}');
+    artifactFiles.files.set(`${designDirectory}/user-input-state.json`, 'nope');
+
+    await expect(publishDesign()).resolves.toBeDefined();
+
+    expect(indexText()).toBe('{"round":3}');
+  });
+
+  it('should leave index.json alone when the artifact is another page', async () => {
+    artifactFiles.files.set('/worktrees/n/7/.aisf/artifacts/plan-7/index.html', '<p>x</p>');
+    artifactFiles.files.set(
+      '/worktrees/n/7/.aisf/artifacts/plan-7/user-input-state.json',
+      JSON.stringify({ board: { sentRound: 3 } }),
+    );
+    artifactFiles.files.set('/worktrees/n/7/.aisf/artifacts/plan-7/index.json', '{"round":3}');
+
+    await service.publish({ ...request, artifactId: 'plan-7' });
+
+    expect(artifactFiles.files.get('/worktrees/n/7/.aisf/artifacts/plan-7/index.json')).toBe(
+      '{"round":3}',
+    );
+  });
+});
+
 describe('ArtifactService.listForTicket', () => {
   it('should list the ticket artifacts with their page status when asked', async () => {
     const artifactRepository = new InMemoryArtifactRepository();

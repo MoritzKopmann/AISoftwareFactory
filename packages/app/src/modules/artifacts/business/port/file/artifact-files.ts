@@ -11,4 +11,8 @@ export interface ArtifactFiles {
   listImages(directory: string): Promise<ReadonlyArray<string>>;
   readUserInputState(directory: string): Promise<string | undefined>;
   writeUserInputState(directory: string, userInputState: string): Promise<void>;
+  /** The numeric `round` in `index.json`. Undefined when the file is missing, not JSON, or has no numeric `round`. */
+  readDesignRound(directory: string): Promise<number | undefined>;
+  /** Sets `round` in `index.json`, keeping every other field. Atomic. */
+  writeDesignRound(directory: string, round: number): Promise<void>;
 }
