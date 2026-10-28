@@ -97,6 +97,22 @@ describe('AisfPrecedentElement', () => {
     expect($('[name="p"] .aisf-precedent-body').textContent).toContain('same name kept in #12');
   });
 
+  it('should label source and how as pairs when the row has both', async () => {
+    await mount(
+      `<aisf-precedent><div name="p" source="#12" how="same name">Keep</div></aisf-precedent>`,
+    );
+
+    const cells = $$('[name="p"] .aisf-precedent-body > span').map((cell) => cell.textContent);
+    expect(cells).toEqual(['Source', '#12', 'How', 'same name']);
+  });
+
+  it('should show only the Source pair when the row has no how', async () => {
+    await mount(`<aisf-precedent><div name="p" source="#12">Keep</div></aisf-precedent>`);
+
+    const cells = $$('[name="p"] .aisf-precedent-body > span').map((cell) => cell.textContent);
+    expect(cells).toEqual(['Source', '#12']);
+  });
+
   it('should open the fold-out when the human clicks its toggle', async () => {
     await mount(`<aisf-precedent><div name="p" source="#12">Keep</div></aisf-precedent>`);
 
@@ -111,13 +127,6 @@ describe('AisfPrecedentElement', () => {
 
     expect($$('[name="p"] .aisf-precedent-toggle')).toHaveLength(0);
     expect($$('[name="p"] .aisf-precedent-body')).toHaveLength(0);
-  });
-
-  it('should show no source line when the decision has no source', async () => {
-    await mount(`<aisf-round number="1"><aisf-precedent>
-      <div name="p1">Keep the old name</div></aisf-precedent></aisf-round>`);
-
-    expect($$('[name="p1"] .aisf-precedent-source')).toHaveLength(0);
   });
 
   it('should name the switch Veto beside a hidden indicator box when the element renders', async () => {

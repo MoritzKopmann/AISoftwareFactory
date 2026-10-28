@@ -82,8 +82,9 @@ export class AisfPrecedentElement extends HTMLElement {
     const body = buildElement('div', 'aisf-precedent-body');
     body.hidden = true;
     if (source !== null)
-      body.append(buildElement('p', 'aisf-precedent-source', `Source: ${source}`));
-    if (how !== null) body.append(buildElement('p', 'aisf-precedent-how', `How: ${how}`));
+      body.append(buildElement('span', 'label', 'Source'), buildElement('span', '', source));
+    if (how !== null)
+      body.append(buildElement('span', 'label', 'How'), buildElement('span', '', how));
     const toggle = buildElement('button', 'aisf-precedent-toggle', 'Details');
     toggle.type = 'button';
     toggle.setAttribute('aria-expanded', 'false');
