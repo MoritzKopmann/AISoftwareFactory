@@ -8,8 +8,9 @@ user-invocable: false
 
 ## Mechanics
 
-- **Runner:** vitest, configured at the root (`vitest.config.ts`) with one project per code package: `packages/app` and `packages/ui`. Run a file with `test_file` and the suite with `test` from `project-toolchain`.
+- **Runner:** vitest, configured at the root (`vitest.config.ts`) with one project per code package: `packages/app`, `packages/ui` and `packages/plugin`. Run a file with `test_file` and the suite with `test` from `project-toolchain`.
 - **Imports are explicit:** `import { describe, expect, it } from 'vitest'`. No globals.
+- `packages/plugin` scripts and their tests are plain `.mjs`, named `<subject>.test.mjs` and placed beside the script. They are linted and formatted, not type-checked.
 - Tests are TypeScript under the same strict `tsconfig` as the code they test. `analyze` type-checks them too.
 - **Unit tests never leave the process:** no network, no GitHub, no `gh`, no `claude` subprocess, no real `~/.aisf`. Those sit behind ports and are faked (see `## Fakes and fixtures`).
 - **What gets tested where:**
