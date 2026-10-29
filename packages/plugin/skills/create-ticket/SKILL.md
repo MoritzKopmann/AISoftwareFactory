@@ -2,7 +2,7 @@
 name: create-ticket
 description: >
   Turn an idea issue (open, no status: label) into a ticket. Interviews the human in rounds on a
-  bridge page (chat when no page tool), rewrites the issue in place, and ends at status: backlog
+  bridge page, rewrites the issue in place, and ends at status: backlog
   or status: plan (a type: ui idea stays an idea). Splits surplus scope into bare ideas. Use when the user wants to create,
   refine or shape a ticket. Triggers: "create ticket", "refine #N", "turn #N into a ticket".
 ---
@@ -29,6 +29,9 @@ gh issue view <n> --json title,body,labels,state,comments
 - A gaps comment from `aisf:plan-ticket` (a spec sent back to idea) is ordinary input. It
   seeds the first rounds.
 
+**Bridge page.** No `aisf_show_artifact` tool → stop: "create-ticket needs the bridge page".
+Load `aisf:artifacts`.
+
 **Project slots.** Load `project-toolchain` with the Skill tool (bare name). Load
 `project-architecture` too (it decides a question below). `Unknown skill` → stop:
 "project not onboarded". Load `project-index` if it exists. Skip silently if absent.
@@ -36,40 +39,44 @@ gh issue view <n> --json title,body,labels,state,comments
 **Resume.** `.aisf/artifacts/create-<n>/ledger.md` exists → read it. Continue from it. Never
 ask an answered round again.
 
-## Page or chat
-
-- Tool `aisf_show_artifact` present → every round goes on the page. Load `aisf:artifacts`.
-- Absent → same interview and same summary in chat. One or two lines per question: the
-  question, the drafted answers, your suggestion.
-
 ## Files
 
 For issue `<n>`:
 
 - Page id: `create-<n>`. **One page for the whole session**, at
-  `.aisf/artifacts/create-<n>/index.html`. Each round is edited into the same file and
-  republished with the same id.
+  `.aisf/artifacts/create-<n>/index.html`. `round-builder` adds each round to the same
+  file. Republish with the same id.
 - Ledger: `.aisf/artifacts/create-<n>/ledger.md`. Append after every round:
   `area · answer · round N`, plus open questions. Later steps read the ledger, not the
-  scrollback. Chat mode keeps the ledger too.
+  scrollback.
 - A hand run with no number has no `<n>` yet: ask the summary, create the bare issue first,
   then use its number. Skip the Precondition for that issue.
 
 ## Interview
 
-Load `aisf:grilling` and follow it. Specific to create-ticket:
+Load `aisf:questionnaire` for the pattern, the agents and the page. create-ticket picks each
+round's questions. Specific to create-ticket:
 
-1. **Round 1.** Draft a one-sentence summary from the issue. Ask the human to confirm it and
-   pick the type: `bug`, `enhancement` or `task` (a spike is a task whose deliverable is an
-   answer). Offer `ui` too only when the skill `project-design` exists (try loading it; skip
-   silently if absent). You suggest, the human picks. Hand run with no number: ask for the summary instead.
+1. **Round 1.** Infer the type from the issue text and the gaps comment: `bug`, `enhancement`
+   or `task` (a spike is a task whose deliverable is an answer), or `ui` only when the skill
+   `project-design` exists (try loading it; skip silently if absent). Ask that type's track
+   questions at once. No confirm-the-summary question and no pick-the-type question. Hand run
+   with no number: ask the one-line summary in chat first, before the issue exists.
 2. **Group the frontier.** Every question whose answer does not depend on another open one goes
    in the same round, across track areas. No cap on the count. The track lists the areas to
    cover, in its order. Cover every area. Skip one an earlier answer settled.
-3. **Every question** has answer cards pre-drafted from the issue text and, when the slot
-   exists, from `project-index`. Plus free text (the kit's text field). Mark a `suggested` card.
-   Cards never offer an implementation choice.
-4. **Stop when** the ticket passes the cold-read test. An unknown the human cannot settle goes
+3. **Every question** is built by one `question-builder` agent, in parallel, with: page
+   `create-<n>`, a name, the question, rough options drafted from the issue text and, when the
+   slot exists, from `project-index`, and the stance "what is to be built only; no more technical
+   than the requirement; effects in ticket terms (scope, criteria), never module or layer". Full
+   cards. Plus the kit's free text field. No `suggested` card anywhere. Cards never offer an
+   implementation choice.
+4. **Each round.** Write `.aisf/artifacts/create-<n>/round-<N>.json` (contract in
+   `agents/round-builder.md`). Run `round-builder` (page `create-<n>`, `N`, the absolute path of
+   `skills/questionnaire/build-page.mjs`). Call `aisf_show_artifact` yourself (id `create-<n>`)
+   and read the answers. There is no playback-builder and no `header.html`: the page has no
+   playback and no header section.
+5. **Stop when** the ticket passes the cold-read test. An unknown the human cannot settle goes
    into the ticket as an open question. Never omit it.
 
 ### Tracks
@@ -121,18 +128,29 @@ Answers show the idea is several tickets → one round proposes the split: the f
 
 ## Summary round
 
-The last round. It shows:
+The last round. Write the drafted ticket to `.aisf/artifacts/create-<n>/summary.html`:
 
-- The drafted ticket: title, context, scope, acceptance criteria.
-- The labels: `type:` and the proposed `priority:`. Base the priority on the impact and
-  why-now answers.
-- A **Plan next** switch, **off by default**. On the page it is an `<aisf-task>` with
-  `heading="Plan next"` and `number="1"` inside the `<aisf-confirm>`, with `hitl` off. `"1": true` in
-  the Confirm payload's `hitl` means on. In chat, ask it as a yes/no, default no.
+- Title, context, scope, acceptance criteria.
+- The labels: the inferred `type:` and the proposed `priority:`. Base the priority on the impact
+  and why-now answers.
 - Any proposed split.
 
-**Confirm locks it.** A Reopen with a note → back to the interview on that note. In chat,
-any change request counts as a Reopen.
+Write `round-<N>.json` as:
+
+```json
+{
+  "confirm": {
+    "tasks": [{ "number": 1, "heading": "Plan next", "blockedBy": [], "hitl": false }],
+    "summary": "summary.html"
+  }
+}
+```
+
+Run `round-builder`, then `aisf_show_artifact`. **Plan next** is the one task, **off by
+default**. `"1": true` in the Confirm payload's `hitl` means on.
+
+**Confirm locks it.** A Reopen with a note → back to the interview on that note. The note may
+name another type: rerun that type's track areas.
 
 ## Write
 
@@ -153,9 +171,9 @@ Report the issue number, its status and each spin-off number. **Stop.** The skil
 
 ## Anti-patterns
 
-- Asking a round in chat while `aisf_show_artifact` exists.
 - Chaining into `aisf:plan-ticket`.
 - Writing an umbrella for a split.
 - Offering "how" choices on cards.
 - A second page for the same session.
+- A `suggested` card, a playback or a header on the page.
 - Re-asking a round the ledger already holds.
