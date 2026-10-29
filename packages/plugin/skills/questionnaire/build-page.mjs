@@ -1,22 +1,23 @@
-// Builds one round of the planning page. Usage: node build-page.mjs <ticketNumber> <roundNumber>
-// Run from the worktree root. Writes only .aisf/artifacts/plan-<ticketNumber>/index.html.
+// Builds one round of a bridge page. Usage: node build-page.mjs <page-id> <roundNumber>
+// Run from the worktree root. Writes only .aisf/artifacts/<page-id>/index.html.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ARTIFACTS_DIRECTORY = join('.aisf', 'artifacts');
-const PLAYBACK_OPEN_TAG = '<aisf-playback>';
-const PLAYBACK_PATTERN = /<aisf-playback>[\s\S]*?<\/aisf-playback>/;
+const HEADER_OPEN = '<!-- aisf-header -->';
+const HEADER_CLOSE = '<!-- /aisf-header -->';
+const HEADER_PATTERN = new RegExp(`${HEADER_OPEN}[\\s\\S]*?${HEADER_CLOSE}\\n?`);
+const BODY_OPEN_PATTERN = /<body[^>]*>\n?/;
 const BODY_CLOSE_TAG = '</body>';
 const QUESTION_OPEN_TAG = '<aisf-question';
-const JSON_INDENT = 2;
 
 class BuildError extends Error {}
 
 function main() {
   try {
-    const [ticketNumber, roundNumber] = process.argv.slice(2);
-    if (!ticketNumber || !roundNumber) throw new BuildError('usage: build-page.mjs <n> <N>');
-    console.log(buildPage(ticketNumber, roundNumber));
+    const [pageId, roundNumber] = process.argv.slice(2);
+    if (!pageId || !roundNumber) throw new BuildError('usage: build-page.mjs <page-id> <N>');
+    console.log(buildPage(pageId, roundNumber));
   } catch (error) {
     if (!(error instanceof BuildError)) throw error;
     console.log(error.message);
@@ -24,75 +25,75 @@ function main() {
   }
 }
 
-function buildPage(ticketNumber, roundNumber) {
-  const planDirectory = join(ARTIFACTS_DIRECTORY, `plan-${ticketNumber}`);
-  const pagePath = join(planDirectory, 'index.html');
+function buildPage(pageId, roundNumber) {
+  const pageDirectory = join(ARTIFACTS_DIRECTORY, pageId);
+  const pagePath = join(pageDirectory, 'index.html');
   const plan = readJson(
-    join(planDirectory, `round-${roundNumber}.json`),
+    join(pageDirectory, `round-${roundNumber}.json`),
     `round-${roundNumber}.json`,
   );
-  if (plan.confirm && (plan.cards || plan.rows)) {
+  if (mixesConfirmWithQuestions(plan)) {
     throw new BuildError(`round-${roundNumber}.json mixes confirm with cards or rows`);
   }
   const rows = plan.rows ?? [];
-  const cards = readCards(planDirectory, plan.cards ?? []);
-  const playback = readJson(join(planDirectory, 'playback.json'), 'playback.json');
+  const cards = readCards(pageDirectory, plan.cards ?? []);
+  const header = readHeader(pageDirectory);
   const round = plan.confirm
-    ? confirmRoundElement(roundNumber, plan.confirm.tasks ?? [])
+    ? confirmRoundElement(roundNumber, plan.confirm, pageDirectory)
     : roundElement(roundNumber, cards, rows);
 
   const html = existsSync(pagePath)
-    ? updatePage(pagePath, roundNumber, round, playback)
-    : createPage(planDirectory, ticketNumber, round, playback);
+    ? updatePage(pagePath, roundNumber, round, header)
+    : insertBeforeBodyEnd(shell(pageId, header), round);
 
   writeFileSync(pagePath, html);
   return `page: ${pagePath} · round ${roundNumber} · ${cards.length} cards · ${rows.length} rows`;
 }
 
-function updatePage(pagePath, roundNumber, round, playback) {
+function mixesConfirmWithQuestions(plan) {
+  return Boolean(plan.confirm && (plan.cards || plan.rows));
+}
+
+function readHeader(pageDirectory) {
+  const file = join(pageDirectory, 'header.html');
+  return existsSync(file) ? readFileSync(file, 'utf8').trim() : '';
+}
+
+function headerRegion(header) {
+  return header === '' ? '' : `${HEADER_OPEN}\n${header}\n${HEADER_CLOSE}\n`;
+}
+
+function updatePage(pagePath, roundNumber, round, header) {
   const html = readFileSync(pagePath, 'utf8');
-  if (!html.includes(PLAYBACK_OPEN_TAG))
-    throw new BuildError(`${pagePath} lacks ${PLAYBACK_OPEN_TAG}`);
   if (!html.includes(BODY_CLOSE_TAG)) throw new BuildError(`${pagePath} lacks ${BODY_CLOSE_TAG}`);
 
-  const refreshed = html.replace(PLAYBACK_PATTERN, () => playbackElement(playback));
+  const withoutHeader = html.replace(HEADER_PATTERN, '');
+  const refreshed = withoutHeader.replace(
+    BODY_OPEN_PATTERN,
+    (open) => `${open}${headerRegion(header)}`,
+  );
   const existingRound = new RegExp(`<aisf-round number="${roundNumber}">[\\s\\S]*?</aisf-round>`);
   return existingRound.test(refreshed)
     ? refreshed.replace(existingRound, () => round)
     : insertBeforeBodyEnd(refreshed, round);
 }
 
-function createPage(planDirectory, ticketNumber, round, playback) {
-  const endState = readText(join(planDirectory, 'end-state.html'), 'end-state.html').trim();
-  return insertBeforeBodyEnd(shell(ticketNumber, endState, playback), round);
-}
-
 function insertBeforeBodyEnd(html, round) {
   return html.replace(BODY_CLOSE_TAG, () => `${round}\n${BODY_CLOSE_TAG}`);
 }
 
-function shell(ticketNumber, endState, playback) {
+function shell(pageId, header) {
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Plan ${ticketNumber}</title>
+<title>${pageId}</title>
 </head>
 <body>
-<section><span class="label">End state</span>
-${endState}
-</section>
-
-${playbackElement(playback)}
-${BODY_CLOSE_TAG}
+${headerRegion(header)}${BODY_CLOSE_TAG}
 </html>
 `;
-}
-
-function playbackElement(playback) {
-  const json = JSON.stringify(playback, null, JSON_INDENT).replaceAll('<', '\\u003c');
-  return `${PLAYBACK_OPEN_TAG}\n<script type="application/json">\n${json}\n</script>\n</aisf-playback>`;
 }
 
 function roundElement(roundNumber, cards, rows) {
@@ -101,9 +102,12 @@ function roundElement(roundNumber, cards, rows) {
   return `<aisf-round number="${roundNumber}">\n${cards.join('')}${precedent}</aisf-round>`;
 }
 
-function confirmRoundElement(roundNumber, tasks) {
-  const lines = tasks.map(taskElement).join('\n');
-  return `<aisf-round number="${roundNumber}">\n<aisf-confirm>\n${lines}\n</aisf-confirm>\n</aisf-round>`;
+function confirmRoundElement(roundNumber, confirm, pageDirectory) {
+  const lines = (confirm.tasks ?? []).map(taskElement).join('\n');
+  const summary = confirm.summary
+    ? `${readText(join(pageDirectory, confirm.summary), confirm.summary).trim()}\n`
+    : '';
+  return `<aisf-round number="${roundNumber}">\n${summary}<aisf-confirm>\n${lines}\n</aisf-confirm>\n</aisf-round>`;
 }
 
 function taskElement(task) {
@@ -116,9 +120,9 @@ function escapeAttribute(value) {
   return String(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;');
 }
 
-function readCards(planDirectory, names) {
+function readCards(pageDirectory, names) {
   return names.map((name) => {
-    const file = join(planDirectory, 'questions', `${name}.html`);
+    const file = join(pageDirectory, 'questions', `${name}.html`);
     const html = readText(file, `card "${name}"`);
     if (!html.trimStart().startsWith(QUESTION_OPEN_TAG)) {
       throw new BuildError(`card "${name}" does not start with ${QUESTION_OPEN_TAG}: ${file}`);

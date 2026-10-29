@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const script = join(dirname(fileURLToPath(import.meta.url)), 'build-page.mjs');
-const TICKET_NUMBER = 7;
+const PAGE_ID = 'plan-7';
 
 let root;
 let planDirectory;
@@ -19,23 +19,14 @@ const write = (file, text) => {
 const round = (roundNumber, cards, rows = []) =>
   write(`round-${roundNumber}.json`, JSON.stringify({ cards, rows }));
 const run = (roundNumber) =>
-  spawnSync('node', [script, String(TICKET_NUMBER), String(roundNumber)], {
+  spawnSync('node', [script, PAGE_ID, String(roundNumber)], {
     cwd: root,
     encoding: 'utf8',
   });
 const page = () => readFileSync(join(planDirectory, 'index.html'), 'utf8');
-const playbackJson = (html) => {
-  const match = /<aisf-playback>\s*<script type="application\/json">([\s\S]*?)<\/script>/.exec(
-    html,
-  );
-  return match[1];
-};
-
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'build-page-'));
-  planDirectory = join(root, '.aisf', 'artifacts', `plan-${TICKET_NUMBER}`);
-  write('end-state.html', '<p>The end state.</p>');
-  write('playback.json', JSON.stringify({ modules: [] }));
+  planDirectory = join(root, '.aisf', 'artifacts', PAGE_ID);
   write('questions/ac1.html', card('ac1'));
   write('questions/q-a.html', card('q-a'));
   write('questions/q-b.html', card('q-b'));
@@ -46,7 +37,7 @@ afterEach(() => {
 });
 
 describe('build-page', () => {
-  it('should write the full shell when no page exists', () => {
+  it('should write the shell with the page id as title and no header when header.html is absent', () => {
     round(1, ['ac1']);
 
     const result = run(1);
@@ -54,13 +45,42 @@ describe('build-page', () => {
     const html = page();
     expect(result.status).toBe(0);
     expect(html).toContain('<meta charset="utf-8"');
-    expect(html).toContain('<title>Plan 7</title>');
-    expect(html).toContain('<span class="label">End state</span>');
-    expect(html).toContain('<p>The end state.</p>');
-    expect(html).toContain('<aisf-playback>');
+    expect(html).toContain('<title>plan-7</title>');
     expect(html).toContain('<aisf-round number="1">');
     expect(html).toContain('<aisf-question name="ac1"');
     expect(html).not.toContain('<aisf-precedent>');
+    expect(html).not.toContain('aisf-header');
+    expect(html).not.toContain('<aisf-playback>');
+  });
+
+  it('should hold the new header once and rounds 1 and 2 when header.html changes between rounds', () => {
+    write('header.html', '<p>old header</p>');
+    round(1, ['ac1']);
+    run(1);
+    write('header.html', '<p>new header</p>');
+    round(2, ['q-a']);
+
+    const result = run(2);
+
+    const html = page();
+    expect(result.status).toBe(0);
+    expect(html.match(/new header/g)).toHaveLength(1);
+    expect(html).not.toContain('old header');
+    expect(html.indexOf('new header')).toBeLessThan(html.indexOf('<aisf-round number="1">'));
+    expect(html).toContain('<aisf-round number="1">');
+    expect(html).toContain('<aisf-round number="2">');
+  });
+
+  it('should drop the header when header.html is removed before a later round', () => {
+    write('header.html', '<p>a header</p>');
+    round(1, ['ac1']);
+    run(1);
+    rmSync(join(planDirectory, 'header.html'));
+    round(2, ['q-a']);
+
+    run(2);
+
+    expect(page()).not.toContain('a header');
   });
 
   it('should append the round after earlier rounds when the page has rounds 1 and 2', () => {
@@ -103,29 +123,6 @@ describe('build-page', () => {
     expect(html).not.toContain('name="q-a"');
   });
 
-  it('should keep the playback object and escape < when a does text holds </script>', () => {
-    const data = { modules: [{ id: 'm', does: 'ends </script> early' }] };
-    write('playback.json', JSON.stringify(data));
-    round(1, ['ac1']);
-
-    run(1);
-
-    const json = playbackJson(page());
-    expect(JSON.parse(json)).toEqual(data);
-    expect(json).not.toContain('<');
-  });
-
-  it('should refresh the playback JSON when the page exists and playback changed', () => {
-    round(1, ['ac1']);
-    run(1);
-    write('playback.json', JSON.stringify({ modules: [{ id: 'new' }] }));
-    round(2, ['q-a']);
-
-    run(2);
-
-    expect(JSON.parse(playbackJson(page()))).toEqual({ modules: [{ id: 'new' }] });
-  });
-
   it.each([
     ['is missing', undefined],
     ['does not start with <aisf-question', '<p>nope</p>'],
@@ -146,46 +143,22 @@ describe('build-page', () => {
     },
   );
 
-  it('should exit 1 and write nothing when round-TICKET_NUMBER.json is missing', () => {
+  it('should exit 1 and write nothing when round-1.json is missing', () => {
     const result = run(1);
 
     expect(result.status).toBe(1);
     expect(result.stdout + result.stderr).toContain('round-1.json');
   });
 
-  it('should exit 1 and write nothing when playback.json is unparsable', () => {
-    round(1, ['ac1']);
-    write('playback.json', '{nope');
-
-    const result = run(1);
-
-    expect(result.status).toBe(1);
-    expect(result.stdout + result.stderr).toContain('playback.json');
-    expect(() => page()).toThrow();
-  });
-
-  it.each([
-    ['<aisf-playback>', '<html><body></body></html>'],
-    ['</body>', '<aisf-playback><script type="application/json">{}</script></aisf-playback>'],
-  ])('should exit 1 and keep the page when it lacks %s', (missing, html) => {
-    write('index.html', html);
+  it('should exit 1 and keep the page when it lacks </body>', () => {
+    write('index.html', '<html></html>');
     round(1, ['ac1']);
 
     const result = run(1);
 
     expect(result.status).toBe(1);
-    expect(result.stdout + result.stderr).toContain(missing);
-    expect(page()).toBe(html);
-  });
-
-  it('should exit 1 when the page is missing and end-state.html is missing', () => {
-    rmSync(join(planDirectory, 'end-state.html'));
-    round(1, ['ac1']);
-
-    const result = run(1);
-
-    expect(result.status).toBe(1);
-    expect(result.stdout + result.stderr).toContain('end-state.html');
+    expect(result.stdout + result.stderr).toContain('</body>');
+    expect(page()).toBe('<html></html>');
   });
 
   describe('confirm round', () => {
@@ -220,6 +193,33 @@ describe('build-page', () => {
       const html = page();
       expect(html).toContain('heading="A &amp; &quot;B&quot; &lt;C>"');
       expect(html.match(/<aisf-task/g)).toHaveLength(1);
+    });
+
+    it('should put the summary inside the round above the confirm element when confirm.summary is set', () => {
+      write('summary.html', '<p>the summary</p>');
+      write('round-3.json', JSON.stringify({ confirm: { tasks: [], summary: 'summary.html' } }));
+
+      const result = run(3);
+
+      const html = page();
+      const roundHtml = html.slice(html.indexOf('<aisf-round number="3">'));
+      expect(result.status).toBe(0);
+      expect(roundHtml.indexOf('<p>the summary</p>')).toBeGreaterThan(0);
+      expect(roundHtml.indexOf('<p>the summary</p>')).toBeLessThan(
+        roundHtml.indexOf('<aisf-confirm>'),
+      );
+      expect(roundHtml.indexOf('<aisf-confirm>')).toBeLessThan(roundHtml.indexOf('</aisf-round>'));
+    });
+
+    it('should exit 1 naming the file and write nothing when confirm.summary is missing', () => {
+      write('round-3.json', JSON.stringify({ confirm: { tasks: [], summary: 'gone.html' } }));
+
+      const result = run(3);
+
+      expect(result.status).toBe(1);
+      expect(result.stdout.trim().split('\n')).toHaveLength(1);
+      expect(result.stdout).toContain('gone.html');
+      expect(() => page()).toThrow();
     });
 
     it('should exit 1 naming the mix and write nothing when the round holds confirm and cards', () => {
