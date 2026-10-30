@@ -135,9 +135,10 @@ export class AisfPlaybackElement extends HTMLElement {
     const legend = buildElement('div', 'aisf-pb-key');
     legend.setAttribute('aria-label', 'Key');
     legend.append(
-      buildElement('span', 'aisf-node aisf-node-new', 'new'),
-      buildElement('span', 'aisf-node aisf-node-changed', 'changed'),
-      buildElement('span', 'aisf-node aisf-node-untouched', 'unchanged'),
+      buildElement('span', 'aisf-pb-key-new', 'new'),
+      buildElement('span', 'aisf-pb-key-changed', 'changed'),
+      buildElement('span', 'aisf-pb-key-unchanged', 'unchanged'),
+      buildElement('span', 'aisf-pb-key-removed', 'removed'),
     );
     bar.append(switches, legend);
     return bar;
@@ -612,14 +613,33 @@ function drawBox(box) {
     group.append(textAt(box.x + 10, box.nameBase[index] ?? 0, line, 'aisf-pb-class-name')),
   );
   group.append(textAt(box.x + 10, box.kindBase, box.kindText, 'aisf-pb-kind'));
-  for (const block of box.blocks) group.append(drawBlock(block));
+  box.blocks.forEach((block, index) => {
+    const blockAbove = box.blocks[index - 1];
+    if (blockAbove !== undefined) group.append(drawBlockSeparator(blockAbove, block));
+    group.append(drawBlock(block));
+  });
   return group;
+}
+
+/**
+ * @param {import('../support/playback-layout.js').LayoutBlock} blockAbove
+ * @param {import('../support/playback-layout.js').LayoutBlock} blockBelow
+ */
+function drawBlockSeparator(blockAbove, blockBelow) {
+  const gapMiddleY = (blockAbove.y + blockAbove.h + blockBelow.y) / 2;
+  return svgElement('line', {
+    class: 'aisf-pb-block-sep',
+    x1: blockBelow.x,
+    y1: gapMiddleY,
+    x2: blockBelow.x + blockBelow.w,
+    y2: gapMiddleY,
+  });
 }
 
 /** @param {import('../support/playback-layout.js').LayoutBlock} block */
 function drawBlock(block) {
   const flagged = block.flag !== null;
-  const shapeClass = markedClass('aisf-shape aisf-pb-block-shape', block.mark);
+  const shapeClass = `aisf-shape aisf-pb-block-shape aisf-shape-${block.mark}`;
   const group = svgElement('g', {
     class: `aisf-pb-block${block.mark === 'untouched' ? ' aisf-pb-block-muted' : ''}`,
     'data-fn': block.ref,

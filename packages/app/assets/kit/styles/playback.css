@@ -137,13 +137,70 @@ g.aisf-pb-block.aisf-shape-flagged {
   stroke-dasharray: none;
 }
 
-.aisf-pb-block-shape {
+.aisf-pb-block-shape.aisf-shape {
+  fill: var(--surface);
   stroke-dasharray: none;
   stroke-width: 1.5;
 }
 
 .aisf-pb-block-shape.aisf-shape-untouched {
   stroke-dasharray: 5 3;
+}
+
+.aisf-pb-block-shape.aisf-shape-removed {
+  stroke-dasharray: 2 3;
+}
+
+.aisf-pb-block-sep {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+.aisf-pb-key-new,
+.aisf-pb-key-changed,
+.aisf-pb-key-unchanged,
+.aisf-pb-key-removed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 10px;
+  font: 600 13px/1.2 var(--font-ui);
+  background: var(--surface);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.aisf-pb-key-new::before,
+.aisf-pb-key-changed::before {
+  font: 700 12px/1 var(--font-mono);
+}
+
+.aisf-pb-key-new {
+  border-color: var(--ok);
+}
+
+.aisf-pb-key-new::before {
+  content: '+';
+  color: var(--ok);
+}
+
+.aisf-pb-key-changed {
+  border-color: var(--accent);
+}
+
+.aisf-pb-key-changed::before {
+  content: '~';
+  color: var(--accent);
+}
+
+.aisf-pb-key-unchanged {
+  border-style: dashed;
+}
+
+.aisf-pb-key-removed {
+  border-style: dotted;
+  border-color: var(--danger);
 }
 
 .aisf-pb-block-shape.aisf-shape-flagged {
