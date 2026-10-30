@@ -109,6 +109,63 @@ describe('AisfPlaybackElement', () => {
     expect(retry.textContent).toContain('Tries again.');
   });
 
+  it.each(['new', 'changed', 'untouched', 'removed'])(
+    'should give the block rect the %s mark class when a function has that mark',
+    async (mark) => {
+      await mount(playback(withFns([{ id: 'execute', sig: 'execute(id)', mark, does: 'Runs.' }])));
+
+      const rect = $('[data-fn="useCase.execute"] rect');
+
+      expect(rect.classList.contains(`aisf-shape-${mark}`)).toBe(true);
+    },
+  );
+
+  it('should draw a separator line in each gap when a class has three functions', async () => {
+    const fns = ['a', 'b', 'c'].map((id) => ({ id, sig: `${id}()`, mark: 'new', does: 'Does.' }));
+    await mount(playback(withFns(fns)));
+
+    const box = $('aisf-playback svg [data-class="useCase"]');
+    const lines = $$('line.aisf-pb-block-sep', box);
+    const rects = ['a', 'b', 'c'].map((id) => $('[data-fn="useCase.' + id + '"] rect', box));
+    const num = (element: Element, name: string) => Number(element.getAttribute(name));
+
+    expect(lines).toHaveLength(2);
+    lines.forEach((line, index) => {
+      const above = rects[index] as Element;
+      const below = rects[index + 1] as Element;
+      const mid = (num(above, 'y') + num(above, 'height') + num(below, 'y')) / 2;
+      expect(num(line, 'y1')).toBe(mid);
+      expect(num(line, 'y2')).toBe(mid);
+      expect(num(line, 'x1')).toBe(num(above, 'x'));
+      expect(num(line, 'x2')).toBe(num(above, 'x') + num(above, 'width'));
+    });
+  });
+
+  it('should draw no separator line when a class has one function', async () => {
+    await mount(playback(withFns([{ id: 'a', sig: 'a()', mark: 'new', does: 'Does.' }])));
+
+    expect($$('line.aisf-pb-block-sep')).toHaveLength(0);
+  });
+
+  it('should show one key chip per mark and no node class when mounted', async () => {
+    await mount(playback(data()));
+
+    const chips = $$('.aisf-pb-key > span');
+
+    expect(chips.map((chip) => chip.className)).toEqual([
+      'aisf-pb-key-new',
+      'aisf-pb-key-changed',
+      'aisf-pb-key-unchanged',
+      'aisf-pb-key-removed',
+    ]);
+    expect(chips.map((chip) => chip.textContent)).toEqual([
+      'new',
+      'changed',
+      'unchanged',
+      'removed',
+    ]);
+  });
+
   it('should read the specimen from its own JSON child and no other script when read', () => {
     const source = readFileSync(
       resolve(import.meta.dirname, '../../../../assets/kit/specimens.html'),

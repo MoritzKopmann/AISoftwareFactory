@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { foldableModules } from '../../../../assets/kit/support/playback-data.js';
-import { layoutPlayback, wrapText } from '../../../../assets/kit/support/playback-layout.js';
+import {
+  BLOCK_GAP,
+  layoutPlayback,
+  wrapText,
+} from '../../../../assets/kit/support/playback-layout.js';
 import { mockPlayback } from '../fixtures/playback-mock.js';
 
 describe('wrapText', () => {
@@ -66,5 +70,55 @@ describe('layoutPlayback', () => {
     const layout = layoutPlayback(data, { width: 1100, folded: new Set() });
 
     expect(layout.bands).toBeGreaterThan(1);
+  });
+});
+
+describe('layoutPlayback block gap', () => {
+  function oneClass(count: number) {
+    const fns = Array.from({ length: count }, (_, index) => ({
+      id: `f${index}`,
+      sig: `f${index}()`,
+      mark: 'new',
+      does: 'Does.',
+    }));
+    return {
+      modules: [{ id: 'm', mark: 'changed', tag: 'changed' }],
+      screens: [],
+      classes: [
+        {
+          id: 'c',
+          module: 'm',
+          layer: 'business',
+          file: 'c.ts',
+          name: 'C',
+          kind: 'use case',
+          mark: 'changed',
+          fns,
+        },
+      ],
+      criteria: {},
+    } as never;
+  }
+
+  const options = { width: 1440, folded: new Set<string>() };
+
+  it('should put BLOCK_GAP between blocks when a class has three functions', () => {
+    const blocks = layoutPlayback(oneClass(3), options).boxes[0]?.blocks ?? [];
+
+    expect(BLOCK_GAP).toBe(12);
+    expect(blocks).toHaveLength(3);
+    expect((blocks[1]?.y ?? 0) - ((blocks[0]?.y ?? 0) + (blocks[0]?.h ?? 0))).toBe(BLOCK_GAP);
+    expect((blocks[2]?.y ?? 0) - ((blocks[1]?.y ?? 0) + (blocks[1]?.h ?? 0))).toBe(BLOCK_GAP);
+  });
+
+  it('should count two gaps in the box height when a class has three functions', () => {
+    const box = layoutPlayback(oneClass(3), options).boxes[0];
+
+    const last = box?.blocks[2];
+
+    expect((box?.y ?? 0) + (box?.h ?? 0)).toBe((last?.y ?? 0) + (last?.h ?? 0));
+    const single = layoutPlayback(oneClass(1), options).boxes[0];
+    const first = single?.blocks[0];
+    expect((single?.y ?? 0) + (single?.h ?? 0)).toBe((first?.y ?? 0) + (first?.h ?? 0));
   });
 });

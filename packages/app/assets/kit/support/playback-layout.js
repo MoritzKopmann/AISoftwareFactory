@@ -27,6 +27,7 @@ export const AXIS_WIDTH = 124;
 export const BAND_GAP = 56;
 export const MODULE_PAD = 16;
 const SCREEN_PAD = 8;
+export const BLOCK_GAP = 12;
 const BOX_PAD_X = 10;
 const BOX_GAP = 30;
 const ROW_GAP = 34;
@@ -198,6 +199,7 @@ function boxHeight(item, measured) {
   const head = 6 + measured.headLines * LINE + 8;
   return (
     head +
+    Math.max(0, measured.blocks.length - 1) * BLOCK_GAP +
     measured.blocks.reduce(
       (sum, block) => sum + blockHeight(block.sigLines.length, block.doesLines.length),
       0,
@@ -509,7 +511,8 @@ function placeBox(item, measured, x, y, width) {
   const kindBase = nameTop + measured.nameLines.length * LINE + 13;
   let blockTop = y + 6 + measured.headLines * LINE + 8;
   /** @type {LayoutBlock[]} */
-  const blocks = measured.blocks.map(({ fn, sigLines, doesLines }) => {
+  const blocks = measured.blocks.map(({ fn, sigLines, doesLines }, index) => {
+    if (index > 0) blockTop += BLOCK_GAP;
     const height = blockHeight(sigLines.length, doesLines.length);
     const metaTop = blockTop + 6 + sigLines.length * LINE;
     const dividerY = metaTop + 24;
