@@ -55,7 +55,7 @@ Do this before building. A pushback input and a split proposal always yield a ca
 
 Elements and attributes: `packages/plugin/skills/artifacts/references/elements.md`. Visual and
 honesty rules: `packages/plugin/skills/artifacts/references/figures.md`. Read both. Do not
-restate them.
+restate them, except the figure-style block below.
 
 The file holds:
 
@@ -68,6 +68,18 @@ The file holds:
   code and symbols. No decoration. Every id is prefixed `<name>-`.
 - One `<aisf-card value gain cost effect>` per option. Sharpen the rough options. Add options
   that are missing.
+
+### Figure style
+
+- Figures may use any HTML, SVG and CSS: own classes, layout, system font stacks, SVG filters,
+  gradients built from tokens. The kit figure classes are optional.
+- Pick the style that fits the decision. Vary it across questions. Do not default to boxes in a
+  lane. Styles to choose from: blueprint, sketch, chart, timeline, comic panels, isometric,
+  table as graphic.
+- Every figure reads in light and dark: colours only from kit tokens.
+- Still binding, see `figures.md` for the full text: the honesty rules and the id-prefix rule
+  (every id and every CSS selector prefixed `<name>-`). Also: no outside origins, no
+  `localStorage`, CSP-safe scripts (no inline `on*=` handlers, no `eval`, no `new Function`).
 
 ### The card
 

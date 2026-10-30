@@ -72,10 +72,9 @@ arrives later in the resume prompt. Read it the same way.
 - **No `localStorage`.**
 - **No header, no ticket identity.** The page starts at the current round. The one exception:
   a figure the calling skill places above the rounds.
-- **Styling:** kit elements are styled by the kit alone. A page may add one `<style>` for its
-  figures, using only kit tokens and the kit figure classes: no hex colours, no fonts, no URLs.
-  Content inside `<aisf-context kind="mockup">` is exempt. It may use its own colours, system
-  font stacks and inline `style=""`.
+- **Styling:** kit elements are styled by the kit alone. Figure colours come only from kit
+  tokens: no hex colours, no URLs. Content inside `<aisf-context kind="mockup">` is exempt. It
+  may use its own colours, system font stacks and inline `style=""`.
 - **Graphics carry the page.** Prose only captions them.
 - **One short card per question.**
 
@@ -96,5 +95,5 @@ Every element is in `references/elements.md`.
 - `<aisf-more>`: longer detail for a question, collapsed.
 - `<aisf-playback>`: the playback map, drawn from one JSON object: a box per class, a block per public function, wires between them.
 
-Free visuals are plain HTML and SVG in `<aisf-figure>`. The rules, the kept classes and the
+Free visuals are plain HTML and SVG in `<aisf-figure>`. The contract rules and the
 honesty rules are in `references/figures.md`.
