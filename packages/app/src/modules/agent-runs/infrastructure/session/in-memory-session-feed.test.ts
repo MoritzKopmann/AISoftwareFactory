@@ -65,4 +65,30 @@ describe('InMemorySessionFeed', () => {
     expect(received).toEqual([{ kind: 'entry', entry }, { kind: 'ended' }]);
     expect(feed.entries('r1')).toEqual([]);
   });
+
+  it('should return the last published generating value when the run published one', () => {
+    const feed = new InMemorySessionFeed();
+    feed.publish('r1', { kind: 'generating', active: true });
+
+    expect(feed.generating('r1')).toBe(true);
+
+    feed.publish('r1', { kind: 'generating', active: false });
+
+    expect(feed.generating('r1')).toBe(false);
+  });
+
+  it('should return false from generating when the run ended', () => {
+    const feed = new InMemorySessionFeed();
+    feed.publish('r1', { kind: 'generating', active: true });
+
+    feed.end('r1');
+
+    expect(feed.generating('r1')).toBe(false);
+  });
+
+  it('should return false from generating when nothing was published for the run', () => {
+    const feed = new InMemorySessionFeed();
+
+    expect(feed.generating('r2')).toBe(false);
+  });
 });

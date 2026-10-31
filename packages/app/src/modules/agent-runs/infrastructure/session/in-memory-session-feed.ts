@@ -5,12 +5,16 @@ type Listener = (event: SessionFeedEvent) => void;
 
 export class InMemorySessionFeed implements SessionFeed {
   private readonly entriesByRunId = new Map<string, SessionEntry[]>();
+  private readonly generatingByRunId = new Map<string, boolean>();
   private readonly listenersByRunId = new Map<string, Set<Listener>>();
 
   publish(runId: string, event: SessionFeedEvent): void {
     const entries = this.entriesByRunId.get(runId) ?? [];
     if (event.kind === 'entry') {
       entries.push(event.entry);
+    }
+    if (event.kind === 'generating') {
+      this.generatingByRunId.set(runId, event.active);
     }
     this.entriesByRunId.set(runId, entries);
     for (const listener of [...(this.listenersByRunId.get(runId) ?? [])]) {
@@ -35,11 +39,16 @@ export class InMemorySessionFeed implements SessionFeed {
     return this.entriesByRunId.has(runId);
   }
 
+  generating(runId: string): boolean {
+    return this.generatingByRunId.get(runId) ?? false;
+  }
+
   end(runId: string): void {
     for (const listener of [...(this.listenersByRunId.get(runId) ?? [])]) {
       listener({ kind: 'ended' });
     }
     this.entriesByRunId.delete(runId);
+    this.generatingByRunId.delete(runId);
     this.listenersByRunId.delete(runId);
   }
 }
