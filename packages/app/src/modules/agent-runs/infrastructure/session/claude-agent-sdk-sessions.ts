@@ -51,6 +51,8 @@ export class ClaudeAgentSdkSessions implements AgentSessions {
     let sawSuccessfulResult = false;
     const streamState = createStreamState();
 
+    yield { kind: 'generating', active: true };
+
     try {
       const sdkQuery = query({
         prompt: spec.prompt,

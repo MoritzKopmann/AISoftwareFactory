@@ -3,6 +3,7 @@ import type { SessionEntry } from '../../domain/types/session-entry.js';
 export type SessionFeedEvent =
   | { readonly kind: 'entry'; readonly entry: SessionEntry }
   | { readonly kind: 'text-delta'; readonly opensBlock: boolean; readonly text: string }
+  | { readonly kind: 'generating'; readonly active: boolean }
   | { readonly kind: 'ended' };
 
 /** Live session data of runs, in memory. Keyed by run id. */
@@ -14,6 +15,8 @@ export interface SessionFeed {
   subscribe(runId: string, listener: (event: SessionFeedEvent) => void): () => void;
   /** True from the first publish until `end`. */
   isActive(runId: string): boolean;
+  /** The last published `active` of `generating` for the run. False when none or ended. */
+  generating(runId: string): boolean;
   /** Listeners receive `ended`, then the run's entries and listeners are dropped. */
   end(runId: string): void;
 }

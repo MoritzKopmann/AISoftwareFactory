@@ -210,11 +210,67 @@ export function entriesFromContent(
   return entries;
 }
 
-/** Tracks whether the next text delta opens a new text block. */
-export type StreamState = { opensNextTextBlock: boolean };
+/**
+ * Tracks whether the next text delta opens a new text block, and the main agent's open calls:
+ * the `tool_use` ids of the current reply that have no result yet, and whether the reply stopped.
+ */
+export type StreamState = {
+  opensNextTextBlock: boolean;
+  openToolUseIds: Set<string>;
+  replyStopped: boolean;
+};
 
 export function createStreamState(): StreamState {
-  return { opensNextTextBlock: true };
+  return { opensNextTextBlock: true, openToolUseIds: new Set(), replyStopped: false };
+}
+
+function generatingEvent(active: boolean): SessionEvent {
+  return { kind: 'generating', active };
+}
+
+function trackStreamBoundary(event: StreamEvent, streamState: StreamState): SessionEvent[] {
+  if (event.type === 'message_start') {
+    streamState.openToolUseIds.clear();
+    streamState.replyStopped = false;
+    return [generatingEvent(true)];
+  }
+  if (event.type === 'message_stop') {
+    streamState.replyStopped = true;
+    return [generatingEvent(false)];
+  }
+  return [];
+}
+
+function trackToolCalls(content: unknown, streamState: StreamState): void {
+  if (!Array.isArray(content)) {
+    return;
+  }
+  for (const block of content as ReadonlyArray<unknown>) {
+    if (isRecord(block) && block['type'] === 'tool_use') {
+      streamState.openToolUseIds.add(String(block['id']));
+    }
+  }
+}
+
+function isStoppedWithoutOpenCalls(streamState: StreamState): boolean {
+  return streamState.replyStopped && streamState.openToolUseIds.size === 0;
+}
+
+/** Generating again once a stopped reply's last open call has its result. */
+function closeToolCalls(content: unknown, streamState: StreamState): SessionEvent[] {
+  if (!Array.isArray(content) || streamState.openToolUseIds.size === 0) {
+    return [];
+  }
+  for (const block of content as ReadonlyArray<unknown>) {
+    if (isRecord(block) && block['type'] === 'tool_result') {
+      streamState.openToolUseIds.delete(String(block['tool_use_id']));
+    }
+  }
+  if (!isStoppedWithoutOpenCalls(streamState)) {
+    return [];
+  }
+  streamState.replyStopped = false;
+  return [generatingEvent(true)];
 }
 
 function mapStreamEvent(
@@ -225,6 +281,10 @@ function mapStreamEvent(
     return [];
   }
   const { event } = message;
+  const boundary = trackStreamBoundary(event, streamState);
+  if (boundary.length > 0) {
+    return boundary;
+  }
   if (startsTextBlock(event)) {
     streamState.opensNextTextBlock = true;
   } else if (isTextDelta(event)) {
@@ -292,6 +352,9 @@ export function mapSdkMessage(
   }
 
   if (message.type === 'assistant') {
+    if (isFromMainAgent(message)) {
+      trackToolCalls(message.message.content, streamState);
+    }
     const entries = isFromMainAgent(message)
       ? entriesFromContent(message.uuid, 'assistant', message.message.content, false)
       : [];
@@ -306,13 +369,14 @@ export function mapSdkMessage(
     if (isDroppedSyntheticMessage(message, origin)) {
       return [];
     }
-    return entriesFromContent(
+    const entryEvents = entriesFromContent(
       message.uuid ?? '',
       'user',
       message.message.content,
       false,
       origin,
     ).map((entry): SessionEvent => ({ kind: 'entry', entry }));
+    return [...entryEvents, ...closeToolCalls(message.message.content, streamState)];
   }
 
   if (message.type === 'rate_limit_event') {

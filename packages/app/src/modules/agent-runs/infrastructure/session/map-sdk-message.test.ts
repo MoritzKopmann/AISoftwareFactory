@@ -614,3 +614,119 @@ describe('entriesFromContent agentId on tool results', () => {
     expect(entry).not.toHaveProperty('agentId');
   });
 });
+
+describe('mapSdkMessage generating', () => {
+  const on: SessionEvent = { kind: 'generating', active: true };
+  const off: SessionEvent = { kind: 'generating', active: false };
+
+  function toolUse(id: string) {
+    return { type: 'tool_use', id, name: 'Bash', input: {} };
+  }
+
+  function userResult(parentToolUseId: string | null, ...toolUseIds: string[]) {
+    return message({
+      type: 'user',
+      uuid: 'u1',
+      parent_tool_use_id: parentToolUseId,
+      message: {
+        role: 'user',
+        content: toolUseIds.map((id) => ({ type: 'tool_result', tool_use_id: id, content: 'ok' })),
+      },
+    });
+  }
+
+  function generatingOf(events: ReadonlyArray<SessionEvent>): ReadonlyArray<SessionEvent> {
+    return events.filter((event) => event.kind === 'generating');
+  }
+
+  function stoppedReplyWithCalls(...ids: string[]) {
+    const streamState = createStreamState();
+    mapSdkMessage(streamEvent({ type: 'message_start' }), streamState);
+    mapSdkMessage(assistantMessage(...ids.map(toolUse)), streamState);
+    mapSdkMessage(streamEvent({ type: 'message_stop' }), streamState);
+    return streamState;
+  }
+
+  it('should yield generating on when a main-agent message starts', () => {
+    const events = mapSdkMessage(streamEvent({ type: 'message_start' }));
+
+    expect(generatingOf(events)).toEqual([on]);
+  });
+
+  it('should yield generating off when a main-agent message stops', () => {
+    const events = mapSdkMessage(streamEvent({ type: 'message_stop' }));
+
+    expect(generatingOf(events)).toEqual([off]);
+  });
+
+  it('should yield no generating event when a subagent message starts or stops', () => {
+    const events = [
+      streamEvent({ type: 'message_start' }, 'toolu_sub'),
+      streamEvent({ type: 'message_stop' }, 'toolu_sub'),
+    ].flatMap((streamed) => mapSdkMessage(streamed));
+
+    expect(generatingOf(events)).toEqual([]);
+  });
+
+  it('should yield no generating event when a sibling call still runs', () => {
+    const streamState = stoppedReplyWithCalls('a', 'b');
+
+    const events = mapSdkMessage(userResult(null, 'a'), streamState);
+
+    expect(generatingOf(events)).toEqual([]);
+  });
+
+  it('should yield generating on when the last open call gets its result', () => {
+    const streamState = stoppedReplyWithCalls('a', 'b');
+    mapSdkMessage(userResult(null, 'a'), streamState);
+
+    const events = mapSdkMessage(userResult(null, 'b'), streamState);
+
+    expect(generatingOf(events)).toEqual([on]);
+  });
+
+  it('should yield generating on once when one user message closes every call', () => {
+    const streamState = stoppedReplyWithCalls('a', 'b');
+
+    const events = mapSdkMessage(userResult(null, 'a', 'b'), streamState);
+
+    expect(generatingOf(events)).toEqual([on]);
+  });
+
+  it('should yield no generating event when a subagent user message holds a tool result', () => {
+    const streamState = stoppedReplyWithCalls('a');
+
+    const events = mapSdkMessage(userResult('toolu_sub', 'a'), streamState);
+
+    expect(generatingOf(events)).toEqual([]);
+  });
+
+  it('should leave generating off when a stopped reply has an unanswered call', () => {
+    const streamState = createStreamState();
+    const events = [
+      streamEvent({ type: 'message_start' }),
+      assistantMessage(toolUse('c')),
+      streamEvent({ type: 'message_stop' }),
+    ].flatMap((streamed) => mapSdkMessage(streamed, streamState));
+
+    expect(generatingOf(events).at(-1)).toEqual(off);
+  });
+
+  it('should ignore calls of a subagent reply when the main reply has none open', () => {
+    const streamState = createStreamState();
+    mapSdkMessage(streamEvent({ type: 'message_stop' }), streamState);
+    mapSdkMessage(
+      message({
+        type: 'assistant',
+        uuid: 's1',
+        parent_tool_use_id: 'toolu_sub',
+        message: { role: 'assistant', content: [toolUse('x')] },
+      }),
+      streamState,
+    );
+
+    const events = mapSdkMessage(userResult(null, 'x'), streamState);
+
+    expect(generatingOf(events)).toEqual([]);
+  });
+});

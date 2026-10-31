@@ -398,6 +398,16 @@ export class FakeSessionFeed implements SessionFeed {
     return this.published.some((published) => published.runId === runId);
   }
 
+  generating(runId: string): boolean {
+    if (this.endedRunIds.includes(runId)) {
+      return false;
+    }
+    const last = this.published
+      .filter((published) => published.runId === runId && published.event.kind === 'generating')
+      .at(-1);
+    return last?.event.kind === 'generating' && last.event.active;
+  }
+
   end(runId: string): void {
     this.endedRunIds.push(runId);
     this.notify(runId, { kind: 'ended' });

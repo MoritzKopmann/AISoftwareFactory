@@ -17,5 +17,6 @@ export type SessionEvent =
       readonly sevenDay: ObservedWindow | null;
       readonly refusal: WindowRefusal | null;
     }
+  | { readonly kind: 'generating'; readonly active: boolean }
   | { readonly kind: 'crashed'; readonly reason: string }
   | { readonly kind: 'completed' };
