@@ -5,6 +5,8 @@ import type { SessionSpec } from '../../domain/types/session-spec.js';
 export interface AgentSessions {
   start(spec: SessionSpec): AsyncIterable<SessionEvent>;
   resume(spec: ResumeSessionSpec): AsyncIterable<SessionEvent>;
+  /** `closed` when the session has no open input: unknown, ended, or closing. */
+  send(sessionId: string, messageId: string, text: string): 'pushed' | 'closed';
   stop(sessionId: string): void;
   stopAll(): void;
 }

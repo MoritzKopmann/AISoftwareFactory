@@ -188,6 +188,8 @@ export class FakeAgentSessions implements AgentSessions {
   readonly startedSpecs: SessionSpec[] = [];
   readonly resumedSpecs: ResumeSessionSpec[] = [];
   readonly stoppedSessionIds: string[] = [];
+  readonly sentMessages: Array<{ sessionId: string; messageId: string; text: string }> = [];
+  sendResult: 'pushed' | 'closed' = 'pushed';
   stopAllCalls = 0;
   private readonly queuesBySessionId = new Map<string, SessionQueue>();
 
@@ -205,6 +207,11 @@ export class FakeAgentSessions implements AgentSessions {
     const queue = new SessionQueue();
     this.queuesBySessionId.set(sessionId, queue);
     return queue;
+  }
+
+  send(sessionId: string, messageId: string, text: string): 'pushed' | 'closed' {
+    this.sentMessages.push({ sessionId, messageId, text });
+    return this.sendResult;
   }
 
   stop(sessionId: string): void {
