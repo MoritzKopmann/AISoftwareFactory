@@ -12,6 +12,7 @@ import type { AnswerRunResultDto } from '../dto/internal/answer-run-result-dto.j
 import type { PausedRunDto } from '../dto/internal/paused-run-dto.js';
 import type { RunAnswerDto } from '../dto/internal/run-answer-dto.js';
 import type { RunDto } from '../dto/internal/run-dto.js';
+import type { SendMessageResultDto } from '../dto/internal/send-message-result-dto.js';
 import type { StartRunRequestDto } from '../dto/internal/start-run-request-dto.js';
 import type { StartRunResultDto } from '../dto/internal/start-run-result-dto.js';
 import {
@@ -59,6 +60,29 @@ export class AgentRunsFacade implements AgentRunsApi {
 
   holdAnswer(runId: string, answer: RunAnswerDto): Promise<void> {
     return this.services.runAnswerService.holdAnswer(runId, toRunAnswer(answer));
+  }
+
+  async sendMessage(runId: string, text: string): Promise<SendMessageResultDto> {
+    try {
+      const run = await this.services.runMessageService.send(runId, text);
+      return run === undefined ? { kind: 'pushed' } : { kind: 'resumed', run: toRunDto(run) };
+    } catch (error) {
+      if (error instanceof RunAlreadyActiveError) {
+        return { kind: 'already-active', message: error.message };
+      }
+      if (error instanceof RunNotResumableError) {
+        return { kind: 'not-resumable', message: error.message };
+      }
+      throw error;
+    }
+  }
+
+  holdMessage(runId: string, text: string): Promise<void> {
+    return this.services.runAnswerService.holdMessage(runId, text);
+  }
+
+  async heldMessage(runId: string): Promise<string | null> {
+    return (await this.services.runAnswerService.heldMessage(runId)) ?? null;
   }
 
   async pausedRuns(projectId: string): Promise<ReadonlyArray<PausedRunDto>> {

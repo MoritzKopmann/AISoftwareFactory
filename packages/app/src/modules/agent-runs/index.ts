@@ -51,6 +51,7 @@ export type { PausedRunDto } from './presentation/dto/internal/paused-run-dto.js
 export type { RunAnswerDto } from './presentation/dto/internal/run-answer-dto.js';
 export type { RunDto } from './presentation/dto/internal/run-dto.js';
 export type { RunEndingDto, RunWaitDto } from './presentation/dto/internal/run-ending-dto.js';
+export type { SendMessageResultDto } from './presentation/dto/internal/send-message-result-dto.js';
 export type { StartRunRequestDto } from './presentation/dto/internal/start-run-request-dto.js';
 export type { StartRunResultDto } from './presentation/dto/internal/start-run-result-dto.js';
 
