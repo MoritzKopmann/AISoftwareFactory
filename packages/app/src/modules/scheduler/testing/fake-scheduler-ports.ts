@@ -65,6 +65,7 @@ export class FakeRunPort implements RunPort {
   paused: ReadonlyArray<PausedRun> = [];
   resumeFailureRunId: string | undefined;
   sentMessageResult: StartedRun | undefined;
+  sendMessageFailure: Error | undefined;
   held: string | undefined;
 
   readonly startRequests: Array<Parameters<RunPort['start']>[0]> = [];
@@ -97,6 +98,9 @@ export class FakeRunPort implements RunPort {
 
   async sendMessage(runId: string, text: string): Promise<StartedRun | undefined> {
     this.calls.push(`sendMessage ${runId} ${text}`);
+    if (this.sendMessageFailure !== undefined) {
+      throw this.sendMessageFailure;
+    }
     return this.sentMessageResult;
   }
 
