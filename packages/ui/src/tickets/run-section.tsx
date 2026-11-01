@@ -25,7 +25,13 @@ import {
 } from './describe-run-bar.js';
 import { describeRunPanel, type RunPanelDescription } from './describe-run-panel.js';
 import { describeSessionPanel } from './describe-session-panel.js';
+import {
+  describeMessageField,
+  editMessageDraft,
+  type MessageDraft,
+} from './describe-message-field.js';
 import { editCheckpointDraft } from './edit-checkpoint-draft.js';
+import { MessageField } from './message-field.js';
 import { PermissionPrompt } from './permission-prompt.js';
 import { ResetAction } from './reset-action.js';
 import { rememberRoundRun } from './remember-round-run.js';
@@ -34,6 +40,7 @@ import { RoundPanel } from './round-panel.js';
 import { RunBar } from './run-bar.js';
 import { describeRoundPanel } from './describe-round-panel.js';
 import { RunPanel } from './run-panel.js';
+import { sendMessage } from './send-message.js';
 import { SessionPanel } from './session-panel.js';
 import { SessionViewBody } from './session-view.js';
 import { startTicketRun } from './start-ticket-run.js';
@@ -77,6 +84,7 @@ export function RunSection({
   const [stoppingRunId, setStoppingRunId] = useState<string | undefined>(undefined);
   const [permissionAnswer, setPermissionAnswer] = useState<PermissionAnswer>({ kind: 'idle' });
   const [checkpointAnswer, setCheckpointAnswer] = useState<CheckpointAnswer | undefined>(undefined);
+  const [message, setMessage] = useState<MessageDraft | undefined>(undefined);
   const [reset, setReset] = useState<ResetState>({ kind: 'idle' });
   const [roundRunId, setRoundRunId] = useState<string | undefined>(undefined);
   const activeRunId = ticketRun.response?.activeRun?.id;
@@ -143,6 +151,16 @@ export function RunSection({
     }
   };
 
+  const sendDraftMessage = async (runId: string, draft: string) => {
+    setMessage({ runId, draft, send: { kind: 'sending' } });
+    const outcome = await sendMessage(runId, draft, (url, requestInit) => fetch(url, requestInit));
+    if (outcome.kind === 'failed') setMessage({ runId, draft, send: outcome });
+    if (outcome.kind === 'held') {
+      setMessage({ runId, draft: '', send: { kind: 'held', pausedUntil: outcome.pausedUntil } });
+    }
+    if (outcome.kind === 'sent') setMessage(undefined);
+  };
+
   const resetToReady = async () => {
     setReset({ kind: 'resetting' });
     const outcome = await resetTicket(projectId, number, (url, requestInit) =>
@@ -168,6 +186,8 @@ export function RunSection({
     pausedUntil,
     now,
   );
+
+  const messageField = describeMessageField(activeRunId, message, now);
 
   const stopping = activeRunId !== undefined && activeRunId === stoppingRunId;
 
@@ -251,6 +271,17 @@ export function RunSection({
         onRetry={retryRun}
         onStop={stopActiveRun}
         hidden={!sessionShown}
+        footer={
+          <MessageField
+            {...messageField}
+            onDraftChange={(draft) => {
+              if (activeRunId !== undefined) setMessage(editMessageDraft(activeRunId, draft));
+            }}
+            onSend={() => {
+              if (activeRunId !== undefined) void sendDraftMessage(activeRunId, messageField.draft);
+            }}
+          />
+        }
         runStartedAt={(ticketRun.response?.activeRun ?? ticketRun.response?.lastRun)?.startedAt}
       >
         <SessionViewBody view={session.view} opened={session.opened} onToggle={session.toggle} />
