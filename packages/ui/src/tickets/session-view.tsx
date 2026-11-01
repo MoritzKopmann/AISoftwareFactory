@@ -95,7 +95,7 @@ function SessionTurn({
     <>
       {turn.prompt !== undefined && (
         <div className="sv-prompt">
-          <div className="sv-who">App</div>
+          <div className="sv-who">User</div>
           <div className="sv-prompt-bubble">
             <Markdown>{turn.prompt.text}</Markdown>
           </div>

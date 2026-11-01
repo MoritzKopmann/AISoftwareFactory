@@ -2263,6 +2263,8 @@ details:not([open]) .t-hide {
   --sv-danger-bg: rgba(184, 50, 47, 0.09);
   --sv-app-1: #1f4468;
   --sv-app-2: #13243a;
+  --sv-app-ink: #ffffff;
+  --sv-app-code: rgba(255, 255, 255, 0.2);
   --sv-app-shadow: 0 6px 20px rgba(19, 36, 58, 0.35);
   --sv-read: #1d5f8f;
   --sv-read-bg: rgba(45, 95, 147, 0.1);
@@ -2303,6 +2305,8 @@ details:not([open]) .t-hide {
     --sv-danger-bg: rgba(255, 143, 132, 0.12);
     --sv-app-1: #2f6aa8;
     --sv-app-2: #1b4170;
+    --sv-app-ink: #ffffff;
+    --sv-app-code: rgba(255, 255, 255, 0.2);
     --sv-app-shadow: 0 8px 26px rgba(47, 106, 168, 0.42);
     --sv-read: #7cb4ea;
     --sv-read-bg: rgba(124, 180, 234, 0.13);
@@ -2339,6 +2343,8 @@ details:not([open]) .t-hide {
   --sv-danger-bg: rgba(255, 143, 132, 0.12);
   --sv-app-1: #2f6aa8;
   --sv-app-2: #1b4170;
+  --sv-app-ink: #ffffff;
+  --sv-app-code: rgba(255, 255, 255, 0.2);
   --sv-app-shadow: 0 8px 26px rgba(47, 106, 168, 0.42);
   --sv-read: #7cb4ea;
   --sv-read-bg: rgba(124, 180, 234, 0.13);
@@ -2433,7 +2439,7 @@ details:not([open]) .t-hide {
   min-width: 0;
   padding: 9px 14px;
   background: linear-gradient(135deg, var(--sv-app-1), var(--sv-app-2));
-  color: #fff;
+  color: var(--sv-app-ink);
   border-radius: 16px 16px 4px 16px;
   box-shadow: var(--sv-app-shadow);
   overflow-wrap: anywhere;
@@ -2459,7 +2465,7 @@ details:not([open]) .t-hide {
 
 .sv-prompt-bubble code {
   font: 13px var(--font-mono);
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--sv-app-code);
   padding: 0 5px;
   border-radius: 3px;
 }
