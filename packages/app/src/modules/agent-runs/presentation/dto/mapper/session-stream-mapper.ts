@@ -46,6 +46,8 @@ export function toSessionStreamFrame(event: TicketSessionWatchEvent): SessionStr
       return { kind: 'entry', entry: toSessionEntryResponse(event.entry) };
     case 'delta':
       return { kind: 'delta', opensBlock: event.opensBlock, text: event.text };
+    case 'generating':
+      return { kind: 'generating', active: event.active };
     case 'label':
       return { kind: 'label', toolUseId: event.toolUseId, label: event.label };
     case 'no-session':

@@ -187,7 +187,12 @@ describe('RunQueryService', () => {
       await watch();
 
       expect(events).toEqual([
-        { kind: 'snapshot', entries: [prompt, text, call, result], root: '/w/repo/7' },
+        {
+          kind: 'snapshot',
+          entries: [prompt, text, call, result],
+          root: '/w/repo/7',
+          generating: false,
+        },
         { kind: 'ended' },
       ]);
     });
@@ -227,10 +232,30 @@ describe('RunQueryService', () => {
       sessionFeed.publish('run-1', { kind: 'entry', entry: call });
 
       expect(events).toEqual([
-        { kind: 'snapshot', entries: [prompt, text], root: '/w/repo/7' },
+        { kind: 'snapshot', entries: [prompt, text], root: '/w/repo/7', generating: false },
         { kind: 'delta', opensBlock: true, text: 'Hel' },
         { kind: 'entry', entry: call },
       ]);
+    });
+
+    it('should forward generating and not end when the feed publishes it', async () => {
+      const { sessionFeed, events, watch } = await createWatchSubject();
+      sessionFeed.publish('run-1', { kind: 'text-delta', opensBlock: true, text: 'a' });
+      await watch();
+
+      sessionFeed.publish('run-1', { kind: 'generating', active: false });
+
+      expect(events.at(-1)).toEqual({ kind: 'generating', active: false });
+      expect(events.map(({ kind }) => kind)).not.toContain('ended');
+    });
+
+    it('should put the live generating value in the snapshot when the run is active', async () => {
+      const { sessionFeed, events, watch } = await createWatchSubject();
+      sessionFeed.publish('run-1', { kind: 'generating', active: true });
+
+      await watch();
+
+      expect(events[0]).toMatchObject({ kind: 'snapshot', generating: true });
     });
 
     it('should send an empty snapshot then live events when the transcript is not written yet', async () => {
@@ -242,7 +267,7 @@ describe('RunQueryService', () => {
       sessionFeed.publish('run-1', { kind: 'text-delta', opensBlock: false, text: 'x' });
 
       expect(events).toEqual([
-        { kind: 'snapshot', entries: [prompt], root: '/w/repo/7' },
+        { kind: 'snapshot', entries: [prompt], root: '/w/repo/7', generating: false },
         { kind: 'delta', opensBlock: false, text: 'x' },
       ]);
     });
@@ -259,7 +284,7 @@ describe('RunQueryService', () => {
       await watch();
 
       expect(events).toEqual([
-        { kind: 'snapshot', entries: [prompt, text], root: '/w/repo/7' },
+        { kind: 'snapshot', entries: [prompt, text], root: '/w/repo/7', generating: false },
         { kind: 'delta', opensBlock: true, text: 'a' },
       ]);
     });
@@ -306,7 +331,12 @@ describe('RunQueryService', () => {
         await watch();
 
         expect(events).toEqual([
-          { kind: 'snapshot', entries: [bash('t1', 'npm test')], root: '/w/repo/7' },
+          {
+            kind: 'snapshot',
+            entries: [bash('t1', 'npm test')],
+            root: '/w/repo/7',
+            generating: false,
+          },
           { kind: 'label', toolUseId: 't1', label: 'Runs the tests.' },
           { kind: 'ended' },
         ]);
@@ -330,6 +360,7 @@ describe('RunQueryService', () => {
             kind: 'snapshot',
             entries: [labelled(bash('t1', 'npm test'), 'Runs the tests.')],
             root: '/w/repo/7',
+            generating: false,
           },
           { kind: 'ended' },
         ]);

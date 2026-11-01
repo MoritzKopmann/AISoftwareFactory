@@ -29,6 +29,7 @@ function cardsOf(entries: ReadonlyArray<SessionEntryResponse>) {
     entries,
     ended: false,
     connectionLost: false,
+    generating: false,
   });
   if (shown.kind !== 'entries') throw new Error('expected entries');
   return shown.turns
@@ -48,11 +49,13 @@ describe('describeSessionView', () => {
         openText: 'Hel',
         ended: false,
         connectionLost: false,
+        generating: false,
       }),
     ).toEqual({
       kind: 'entries',
       turns: [{ id: 'p', prompt, items: [], openText: 'Hel' }],
       ended: false,
+      thinking: false,
     });
   });
 
@@ -64,11 +67,13 @@ describe('describeSessionView', () => {
         entries: [prompt],
         ended: true,
         connectionLost: false,
+        generating: false,
       }),
     ).toEqual({
       kind: 'entries',
       turns: [{ id: 'p', prompt, items: [] }],
       ended: true,
+      thinking: false,
     });
   });
 
@@ -84,6 +89,7 @@ describe('describeSessionView', () => {
         entries: [p1, t1, t2, p2, t3],
         ended: false,
         connectionLost: false,
+        generating: false,
       }),
     ).toEqual({
       kind: 'entries',
@@ -92,6 +98,7 @@ describe('describeSessionView', () => {
         { id: 'p2', prompt: p2, items: [textItem(t3)] },
       ],
       ended: false,
+      thinking: false,
     });
   });
 
@@ -104,11 +111,13 @@ describe('describeSessionView', () => {
         openText: 'x',
         ended: false,
         connectionLost: false,
+        generating: false,
       }),
     ).toEqual({
       kind: 'entries',
       turns: [{ id: 'start', items: [textItem(t1)], openText: 'x' }],
       ended: false,
+      thinking: false,
     });
   });
 
@@ -118,6 +127,7 @@ describe('describeSessionView', () => {
       entries: [],
       ended: false,
       connectionLost: false,
+      generating: false,
     });
     expect(shown).toEqual({ kind: 'system-line', message: 'No entries yet.' });
   });
@@ -152,6 +162,7 @@ describe('describeSessionView', () => {
       entries: [c, r],
       ended: false,
       connectionLost: false,
+      generating: false,
     });
     expect(shown).toMatchObject({
       turns: [
@@ -167,6 +178,7 @@ describe('describeSessionView', () => {
       entries: [c],
       ended: false,
       connectionLost: false,
+      generating: false,
     });
     expect(shown).toMatchObject({ turns: [{ items: [{ card: { calls: [{ call: c }] } }] }] });
     expect(JSON.stringify(shown)).not.toContain('"result"');
@@ -242,6 +254,7 @@ function turnsOf(entries: ReadonlyArray<SessionEntryResponse>) {
     entries,
     ended: false,
     connectionLost: false,
+    generating: false,
   });
   if (shown.kind !== 'entries') throw new Error('expected entries');
   return shown.turns;
@@ -312,5 +325,31 @@ describe('describeSessionView handbacks', () => {
     ]);
     expect(turns).toHaveLength(1);
     expect(turns[0]?.items.map((item) => item.kind)).toEqual(['text', 'handback']);
+  });
+
+  describe('thinking', () => {
+    const thinkingOf = (generating: boolean, ended: boolean) => {
+      const shown = describeSessionView({
+        kind: 'entries',
+        entries: [text('a')],
+        ended,
+        connectionLost: false,
+        generating,
+      });
+      if (shown.kind !== 'entries') throw new Error('expected entries');
+      return shown.thinking;
+    };
+
+    it('should be thinking when generating and not ended', () => {
+      expect(thinkingOf(true, false)).toBe(true);
+    });
+
+    it('should not be thinking when generating but ended', () => {
+      expect(thinkingOf(true, true)).toBe(false);
+    });
+
+    it('should not be thinking when the last generating frame was inactive', () => {
+      expect(thinkingOf(false, false)).toBe(false);
+    });
   });
 });

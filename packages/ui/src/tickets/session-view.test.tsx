@@ -55,7 +55,7 @@ function renderEntries(
 ) {
   return renderToStaticMarkup(
     <SessionViewBody
-      view={{ kind: 'entries', entries, ended, connectionLost: false }}
+      view={{ kind: 'entries', entries, ended, connectionLost: false, generating: false }}
       opened={opened}
       onToggle={ignore}
     />,
@@ -203,6 +203,7 @@ describe('SessionViewBody', () => {
           openText: 'typing',
           ended: false,
           connectionLost: false,
+          generating: false,
         }}
         opened={new Set()}
         onToggle={ignore}
@@ -218,6 +219,7 @@ describe('SessionViewBody', () => {
       entries: [{ kind: 'prompt', id: 'p', text: '### Ticket\n\nBuild it.\n\n- one\n- `two`' }],
       ended: false,
       connectionLost: false,
+      generating: false,
     });
     expect(markup).toContain('sv-prompt');
     expect(markup).toContain('>App</');
@@ -232,6 +234,7 @@ describe('SessionViewBody', () => {
       entries: [{ kind: 'text', id: 'x', text: 'hello' }],
       ended: false,
       connectionLost: false,
+      generating: false,
     });
     expect(markup).toMatch(/class="sv-turn"[^>]*><div class="sv-bubble"/);
   });
@@ -248,6 +251,7 @@ describe('SessionViewBody', () => {
       ],
       ended: false,
       connectionLost: false,
+      generating: false,
     });
     expect(markup.match(/class="sv-turn"/g)).toHaveLength(2);
     expect(markup.match(/class="sv-prompt"/g)).toHaveLength(2);
@@ -260,6 +264,7 @@ describe('SessionViewBody', () => {
       openText: 'Hel',
       ended: false,
       connectionLost: false,
+      generating: false,
     });
     expect(markup).toMatch(/Hel<span class="sv-caret" aria-hidden="true">/);
   });
@@ -270,6 +275,7 @@ describe('SessionViewBody', () => {
       entries: [{ kind: 'text', id: 'x', text: 'Hello' }],
       ended: false,
       connectionLost: false,
+      generating: false,
     });
     expect(markup).toContain('Hello');
     expect(markup).not.toContain('sv-caret');
@@ -300,13 +306,20 @@ describe('SessionViewBody', () => {
       entries: [call],
       ended: true,
       connectionLost: false,
+      generating: false,
     });
     expect(markup.indexOf('End of session')).toBeGreaterThan(markup.indexOf('Bash'));
   });
 
   it('should render no end line while the session is live', () => {
     expect(
-      renderSession({ kind: 'entries', entries: [call], ended: false, connectionLost: false }),
+      renderSession({
+        kind: 'entries',
+        entries: [call],
+        ended: false,
+        connectionLost: false,
+        generating: false,
+      }),
     ).not.toContain('End of session');
   });
 });
@@ -334,6 +347,7 @@ describe('SessionViewBody titles', () => {
       ],
       ended: false,
       connectionLost: false,
+      generating: false,
     };
     const markup = renderToStaticMarkup(
       <SessionViewBody view={view} opened={new Set()} onToggle={ignore} />,

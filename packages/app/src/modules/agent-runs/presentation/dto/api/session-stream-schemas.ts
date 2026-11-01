@@ -43,6 +43,7 @@ export const sessionStreamFrameSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('transcript-not-found') }),
   z.object({ kind: z.literal('entry'), entry: sessionEntryResponseSchema }),
   z.object({ kind: z.literal('delta'), opensBlock: z.boolean(), text: z.string() }),
+  z.object({ kind: z.literal('generating'), active: z.boolean() }),
   z.object({ kind: z.literal('label'), toolUseId: z.string(), label: z.string() }),
   z.object({ kind: z.literal('ended') }),
 ]);

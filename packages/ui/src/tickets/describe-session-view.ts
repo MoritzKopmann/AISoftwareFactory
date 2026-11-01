@@ -15,6 +15,7 @@ export type SessionViewDescription =
       readonly turns: ReadonlyArray<SessionTurnDescription>;
       readonly root?: string;
       readonly ended: boolean;
+      readonly thinking: boolean;
     };
 
 type PromptEntry = Extract<SessionEntryResponse, { kind: 'prompt' }>;
@@ -56,6 +57,7 @@ export function describeSessionView(view: SessionView): SessionViewDescription {
         turns: groupIntoTurns(view.entries, view.openText),
         ...(view.root !== undefined && { root: view.root }),
         ended: view.ended,
+        thinking: view.generating && !view.ended,
       };
   }
 }

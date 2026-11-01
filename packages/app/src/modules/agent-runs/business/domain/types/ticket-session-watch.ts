@@ -6,10 +6,12 @@ export type TicketSessionWatchEvent =
       readonly kind: 'snapshot';
       readonly entries: ReadonlyArray<SessionEntry>;
       readonly root: string;
+      readonly generating: boolean;
     }
   | { readonly kind: 'no-session' }
   | { readonly kind: 'transcript-not-found' }
   | { readonly kind: 'entry'; readonly entry: SessionEntry }
   | { readonly kind: 'delta'; readonly opensBlock: boolean; readonly text: string }
+  | { readonly kind: 'generating'; readonly active: boolean }
   | { readonly kind: 'label'; readonly toolUseId: string; readonly label: string }
   | { readonly kind: 'ended' };

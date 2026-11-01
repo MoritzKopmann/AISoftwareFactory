@@ -380,6 +380,7 @@ export class RunStartService {
             sessionFeed.publish(run.id, event);
             break;
           case 'text-delta':
+          case 'generating':
             sessionFeed.publish(run.id, event);
             break;
           case 'completed':
