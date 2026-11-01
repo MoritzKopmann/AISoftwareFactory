@@ -7,6 +7,7 @@ import type { RunRepository } from './business/port/repository/run-repository.js
 import { CommandLabelService } from './business/service/command-label-service.js';
 import { RunAnswerService } from './business/service/run-answer-service.js';
 import { RunEndService } from './business/service/run-end-service.js';
+import { RunMessageService } from './business/service/run-message-service.js';
 import { RunQueryService } from './business/service/run-query-service.js';
 import { RunStartService } from './business/service/run-start-service.js';
 import { WorktreeRemovalService } from './business/service/worktree-removal-service.js';
@@ -129,6 +130,12 @@ export function createAgentRunsModule(
     windowMilliseconds: dependencies.liveAnswerWindowMilliseconds,
   });
   const runAnswerService = new RunAnswerService({ runRepository, runAnswerWaits, runStartService });
+  const runMessageService = new RunMessageService({
+    runRepository,
+    agentSessions,
+    sessionFeed: infrastructure.sessionFeed,
+    runStartService,
+  });
   const worktreeRemovalService = new WorktreeRemovalService({
     runRepository,
     worktrees: infrastructure.worktrees,
@@ -156,6 +163,7 @@ export function createAgentRunsModule(
       runStartService,
       runEndService,
       runAnswerService,
+      runMessageService,
       runQueryService,
     }),
   };

@@ -113,9 +113,14 @@ export function toCheckpointRunAnswer(request: CheckpointAnswerRequest): RunAnsw
 }
 
 export function toRunAnswer(dto: RunAnswerDto): RunAnswer {
-  return dto.kind === 'permission'
-    ? { kind: 'permission', decision: dto.decision }
-    : { kind: 'checkpoint', text: dto.text };
+  switch (dto.kind) {
+    case 'permission':
+      return { kind: 'permission', decision: dto.decision };
+    case 'checkpoint':
+      return { kind: 'checkpoint', text: dto.text };
+    case 'message':
+      return { kind: 'message', text: dto.text };
+  }
 }
 
 export function toStartedRunDto(run: StartedRun): StartedRunDto {

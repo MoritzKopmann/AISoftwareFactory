@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { ConflictError } from '../../../../shared/errors.js';
 import { RunNotResumableError } from '../errors/run-not-resumable-error.js';
 import { RunAnswerService } from './run-answer-service.js';
 import type { RunAnswer } from '../domain/types/run-answer.js';
@@ -184,6 +185,96 @@ describe('RunAnswerService', () => {
       await runAnswerService.deliverAnswer('run-1', yes);
 
       expect(runRepository.runs.get('run-1')?.heldAnswer).toBeUndefined();
+    });
+  });
+
+  describe('holdMessage', () => {
+    const held = () => runRepository.runs.get('run-1')?.heldAnswer;
+
+    it('should hold the message when the slot is empty', async () => {
+      await runRepository.insert(
+        buildRun({ state: 'ended', ending: { kind: 'usage-limit', reason: 'cap' } }),
+      );
+
+      await runAnswerService.holdMessage('run-1', 'a');
+
+      expect(held()).toEqual({ kind: 'message', text: 'a' });
+    });
+
+    it('should join the texts with a blank line when the slot holds a message', async () => {
+      await runRepository.insert(buildRun({ heldAnswer: { kind: 'message', text: 'a' } }));
+
+      await runAnswerService.holdMessage('run-1', 'b');
+
+      expect(held()).toEqual({ kind: 'message', text: 'a\n\nb' });
+    });
+
+    it('should join the texts and keep the kind when the slot holds a checkpoint answer', async () => {
+      await runRepository.insert(buildRun({ heldAnswer: { kind: 'checkpoint', text: 'yes' } }));
+
+      await runAnswerService.holdMessage('run-1', 'and add tests');
+
+      expect(held()).toEqual({
+        kind: 'checkpoint',
+        text: 'yes\n\nand add tests',
+      });
+    });
+
+    it('should hold a joined text of exactly 10000 characters', async () => {
+      await runRepository.insert(
+        buildRun({ heldAnswer: { kind: 'message', text: 'x'.repeat(9992) } }),
+      );
+
+      await runAnswerService.holdMessage('run-1', '123456');
+
+      expect(held()).toEqual({
+        kind: 'message',
+        text: `${'x'.repeat(9992)}\n\n123456`,
+      });
+    });
+
+    it('should throw ConflictError and keep the held value when the joined text is over 10000 characters', async () => {
+      const heldMessage: RunAnswer = { kind: 'message', text: 'x'.repeat(9995) };
+      await runRepository.insert(buildRun({ heldAnswer: heldMessage }));
+
+      await expect(runAnswerService.holdMessage('run-1', '123456')).rejects.toThrow(ConflictError);
+
+      expect(held()).toEqual(heldMessage);
+    });
+
+    it('should throw ConflictError and keep the held value when the slot holds a permission decision', async () => {
+      const decision: RunAnswer = { kind: 'permission', decision: 'allow' };
+      await runRepository.insert(buildRun({ heldAnswer: decision }));
+
+      await expect(runAnswerService.holdMessage('run-1', 'hi')).rejects.toThrow(ConflictError);
+
+      expect(held()).toEqual(decision);
+    });
+
+    it('should throw RunNotResumableError when the run is unknown', async () => {
+      await expect(runAnswerService.holdMessage('missing', 'hi')).rejects.toThrow(
+        RunNotResumableError,
+      );
+    });
+  });
+
+  describe('heldMessage', () => {
+    it('should return the text when the slot holds a message', async () => {
+      await runRepository.insert(buildRun({ heldAnswer: { kind: 'message', text: 'a' } }));
+
+      expect(await runAnswerService.heldMessage('run-1')).toBe('a');
+    });
+
+    it('should return undefined when the slot holds a checkpoint answer', async () => {
+      await runRepository.insert(buildRun({ heldAnswer: { kind: 'checkpoint', text: 'yes' } }));
+
+      expect(await runAnswerService.heldMessage('run-1')).toBeUndefined();
+    });
+
+    it('should return undefined when the slot is empty', async () => {
+      await runRepository.insert(buildRun());
+
+      expect(await runAnswerService.heldMessage('run-1')).toBeUndefined();
     });
   });
 });

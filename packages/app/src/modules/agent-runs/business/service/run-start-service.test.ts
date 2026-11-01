@@ -1095,6 +1095,28 @@ describe('RunStartService', () => {
       },
     );
 
+    it('should resume the session with the message text as the prompt when a run ended escalated and a message arrives', async () => {
+      const { service, agentSessions, insertEndedRun } = buildResumeSubject();
+      await insertEndedRun({ ending: { kind: 'escalated', escalation: 'spec', reason: 'why' } });
+
+      await service.resume('run-1', { kind: 'message', text: 'go on' });
+
+      expect(agentSessions.resumedSpecs).toHaveLength(1);
+      expect(agentSessions.resumedSpecs[0]?.prompt).toBe('go on');
+      expect(agentSessions.resumedSpecs[0]).not.toHaveProperty('allowedCall');
+    });
+
+    it('should throw RunNotResumableError when a message meets a stopped run', async () => {
+      const { service, agentSessions, insertEndedRun } = buildResumeSubject();
+      await insertEndedRun({ ending: { kind: 'stopped' } });
+
+      await expect(service.resume('run-1', { kind: 'message', text: 'go on' })).rejects.toThrow(
+        RunNotResumableError,
+      );
+
+      expect(agentSessions.resumedSpecs).toEqual([]);
+    });
+
     it('should emit run.started for the new run when a run is resumed', async () => {
       const { service, events, insertEndedRun } = buildResumeSubject();
       await insertEndedRun();
