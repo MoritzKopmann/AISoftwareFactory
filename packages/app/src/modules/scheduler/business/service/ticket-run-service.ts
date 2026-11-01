@@ -6,6 +6,7 @@ import { rankDueTickets } from '../domain/functions/rank-due-tickets.js';
 import type { RunAnswerOutcome } from '../domain/types/run-answer-outcome.js';
 import type { RunAnswer } from '../domain/types/run-answer.js';
 import type { RunAvailability } from '../domain/types/run-availability.js';
+import type { SendMessageOutcome } from '../domain/types/send-message-outcome.js';
 import type { StartedRun } from '../domain/types/started-run.js';
 import type { TicketRun } from '../domain/types/ticket-run.js';
 import { IdeaRunNotStartedError } from '../errors/idea-run-not-started-error.js';
@@ -253,6 +254,36 @@ export class TicketRunService {
     };
   }
 
+  async sendMessage(runId: string, text: string): Promise<SendMessageOutcome> {
+    const { runPort, ticketPort, usagePort } = this.dependencies;
+
+    const run = await runPort.findRun(runId);
+    if (run === undefined) {
+      throw new RunNotAnswerableError(`Run ${runId} is unknown`);
+    }
+    if (run.ending?.kind === 'stopped') {
+      throw new RunNotAnswerableError(`Run ${runId} was stopped`);
+    }
+    const { projectId, ticketNumber } = run;
+
+    const latestRun = await runPort.latestRun(projectId, ticketNumber);
+    if (latestRun?.id !== runId) {
+      throw new RunNotAnswerableError(`Run ${runId} is not the latest run of #${ticketNumber}`);
+    }
+    const ticket = await ticketPort.find(projectId, ticketNumber);
+    if (ticket === undefined) {
+      throw new RunNotAnswerableError(`Ticket #${ticketNumber} is closed`);
+    }
+    const pausedUntil = await usagePort.pausedUntil();
+    if (pausedUntil !== undefined) {
+      await runPort.holdMessage(runId, text);
+      return { kind: 'held', pausedUntil };
+    }
+
+    const resumesWaitingTicket = ticket.waiting && run.ending !== undefined;
+    return this.deliverMessage(projectId, ticketNumber, runId, text, resumesWaitingTicket);
+  }
+
   /** At the reset: resume each paused run of the project, then the caller starts due work. */
   async continuePaused(projectId: string): Promise<void> {
     const { runPort, logger } = this.dependencies;
@@ -270,7 +301,10 @@ export class TicketRunService {
         if (await this.isStuck(projectId, ticketNumber)) {
           continue;
         }
-        if (heldAnswer === undefined) {
+        const heldMessage = await runPort.heldMessage(runId);
+        if (heldMessage !== undefined) {
+          await runPort.sendMessage(runId, heldMessage);
+        } else if (heldAnswer === undefined) {
           await runPort.resumePaused(runId);
         } else {
           await this.deliverAnswer(projectId, ticketNumber, runId, heldAnswer);
@@ -282,6 +316,29 @@ export class TicketRunService {
       } finally {
         this.ticketsBeingStarted.delete(key);
       }
+    }
+  }
+
+  private async deliverMessage(
+    projectId: string,
+    ticketNumber: number,
+    runId: string,
+    text: string,
+    resumesWaitingTicket: boolean,
+  ): Promise<SendMessageOutcome> {
+    const { runPort, ticketPort } = this.dependencies;
+
+    if (resumesWaitingTicket) {
+      await ticketPort.begin(projectId, ticketNumber);
+    }
+    try {
+      const resumedRun = await runPort.sendMessage(runId, text);
+      return resumedRun === undefined ? { kind: 'pushed' } : { kind: 'resumed', run: resumedRun };
+    } catch (error) {
+      if (resumesWaitingTicket) {
+        await ticketPort.revert(projectId, ticketNumber);
+      }
+      throw error;
     }
   }
 

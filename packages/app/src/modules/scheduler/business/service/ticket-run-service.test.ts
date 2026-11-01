@@ -836,6 +836,122 @@ describe('TicketRunService', () => {
     });
   });
 
+  describe('sendMessage', () => {
+    const messagePausedUntil = '2026-11-01T12:00:00Z';
+    const openTicket = { ...readyLeaf, number: 147, status: 'in-progress' as const };
+
+    function buildMessageSubject(
+      run: RunRecord,
+      options: {
+        waiting?: boolean;
+        latestId?: string;
+        ticketClosed?: boolean;
+        paused?: string;
+      } = {},
+    ) {
+      const runPort = new FakeRunPort();
+      runPort.record = run;
+      runPort.latest = {
+        answerHeld: false,
+        id: options.latestId ?? run.id,
+        startedAt: run.startedAt,
+        ...(run.endedAt === undefined ? {} : { endedAt: run.endedAt }),
+        ...(run.ending === undefined ? {} : { ending: run.ending }),
+      };
+      const usagePort = new FakeUsagePort();
+      usagePort.pausedUntilValue = options.paused;
+      const ticketPort = new FakeTicketPort(
+        options.ticketClosed === true
+          ? undefined
+          : { ...openTicket, waiting: options.waiting === true },
+      );
+      return { ...buildSubject({ runPort, ticketPort, usagePort }), runPort, ticketPort };
+    }
+
+    it('should push and make no label call when the run is live', async () => {
+      const { service, runPort, ticketPort } = buildMessageSubject(liveRun);
+
+      const outcome = await service.sendMessage('run-1', 'x');
+
+      expect(outcome).toEqual({ kind: 'pushed' });
+      expect(runPort.calls).toContain('sendMessage run-1 x');
+      expect(ticketPort.calls).toEqual([]);
+    });
+
+    it('should begin the gate before sending and resume when the ticket is waiting', async () => {
+      const { service, runPort, ticketPort } = buildMessageSubject(checkpointRun, {
+        waiting: true,
+      });
+      runPort.sentMessageResult = { id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' };
+      const send = runPort.sendMessage.bind(runPort);
+      runPort.sendMessage = async (runId, text) => {
+        ticketPort.calls.push('send reached');
+        return send(runId, text);
+      };
+
+      const outcome = await service.sendMessage('run-1', 'x');
+
+      expect(outcome).toEqual({
+        kind: 'resumed',
+        run: { id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' },
+      });
+      expect(ticketPort.calls).toEqual(['begin moritz/aisf #147', 'send reached']);
+    });
+
+    it('should revert the gate and rethrow when resuming a waiting ticket fails', async () => {
+      const { service, runPort, ticketPort } = buildMessageSubject(checkpointRun, {
+        waiting: true,
+      });
+      runPort.sendMessageFailure = new Error('worktree is gone');
+
+      await expect(service.sendMessage('run-1', 'x')).rejects.toThrow('worktree is gone');
+
+      expect(ticketPort.calls).toEqual(['begin moritz/aisf #147', 'revert moritz/aisf #147']);
+    });
+
+    it('should touch no labels when a non-waiting ticket resumes', async () => {
+      const { service, runPort, ticketPort } = buildMessageSubject({
+        ...permissionRun,
+        ending: { kind: 'finished' },
+      });
+      runPort.sentMessageResult = { id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' };
+
+      const outcome = await service.sendMessage('run-1', 'x');
+
+      expect(outcome.kind).toBe('resumed');
+      expect(ticketPort.calls).toEqual([]);
+    });
+
+    it.each<[string, RunRecord | undefined, { latestId?: string; ticketClosed?: boolean }]>([
+      ['the run is unknown', undefined, {}],
+      ['the run ended stopped', { ...permissionRun, ending: { kind: 'stopped' } }, {}],
+      ['the run is not the latest', liveRun, { latestId: 'run-9' }],
+      ['the ticket is closed', liveRun, { ticketClosed: true }],
+    ])('should throw RunNotAnswerableError when %s', async (_name, run, options) => {
+      const subject = buildMessageSubject(run ?? liveRun, options);
+      subject.runPort.record = run;
+
+      await expect(subject.service.sendMessage('run-1', 'x')).rejects.toThrow(
+        RunNotAnswerableError,
+      );
+
+      expect(subject.runPort.calls.filter((call) => call.startsWith('sendMessage'))).toEqual([]);
+    });
+
+    it('should hold the message and send nothing when usage is paused', async () => {
+      const { service, runPort, ticketPort } = buildMessageSubject(liveRun, {
+        paused: messagePausedUntil,
+      });
+
+      const outcome = await service.sendMessage('run-1', 'x');
+
+      expect(outcome).toEqual({ kind: 'held', pausedUntil: messagePausedUntil });
+      expect(runPort.calls).toContain('holdMessage run-1 x');
+      expect(runPort.calls.filter((call) => call.startsWith('sendMessage'))).toEqual([]);
+      expect(ticketPort.calls).toEqual([]);
+    });
+  });
+
   describe('continuePaused', () => {
     const project = 'moritz/aisf';
 
@@ -862,6 +978,15 @@ describe('TicketRunService', () => {
 
       expect(ticketPort.calls).toEqual([`begin ${project} #7`]);
       expect(runPort.calls).toEqual([`answer run-1 ${JSON.stringify(checkpointAnswer)}`]);
+    });
+
+    it('should send the held message instead of resuming when the run holds one', async () => {
+      const { service, runPort } = buildContinueSubject([{ runId: 'run-1', ticketNumber: 7 }]);
+      runPort.held = 'x';
+
+      await service.continuePaused(project);
+
+      expect(runPort.calls).toEqual(['sendMessage run-1 x']);
     });
 
     it('should resume the run without beginning the gate when the run holds no answer', async () => {
