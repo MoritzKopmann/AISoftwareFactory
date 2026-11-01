@@ -11,6 +11,8 @@ type SessionPanelProps = {
   readonly runStartedAt?: string | undefined;
   /** Hidden panels stay mounted, so live lines keep arriving. */
   readonly hidden?: boolean;
+  /** Pinned under the chat, inside the panel. */
+  readonly footer?: ReactNode;
   readonly children: ReactNode;
 };
 
@@ -20,6 +22,7 @@ export function SessionPanel({
   onRetry,
   runStartedAt,
   hidden = false,
+  footer,
   children,
 }: SessionPanelProps) {
   const { head, connectionBanner } = description;
@@ -81,6 +84,7 @@ export function SessionPanel({
       <div ref={chatRef} className="chat" role="log" aria-label="Session">
         {children}
       </div>
+      {footer}
     </section>
   );
 }
