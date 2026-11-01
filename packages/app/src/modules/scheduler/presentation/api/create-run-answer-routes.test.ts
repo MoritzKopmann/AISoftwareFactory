@@ -6,14 +6,25 @@ import { heldAnswerResponseSchema, startedRunResponseSchema } from '../dto/api/r
 import type { RunAnswerOutcome } from '../../business/domain/types/run-answer-outcome.js';
 import type { RunAnswer } from '../../business/domain/types/run-answer.js';
 import { RunNotAnswerableError } from '../../business/errors/run-not-answerable-error.js';
+import type { SendMessageOutcome } from '../../business/domain/types/send-message-outcome.js';
 import { RunAlreadyActiveError } from '../../business/errors/run-already-active-error.js';
 
-type RunAnswers = Pick<TicketRunService, 'answer'>;
+type RunAnswers = Pick<TicketRunService, 'answer' | 'sendMessage'>;
 
 class FakeRunAnswers implements RunAnswers {
   failure: Error | undefined;
   held = false;
+  messageOutcome: SendMessageOutcome = { kind: 'pushed' };
   readonly calls: string[] = [];
+  readonly messages: string[] = [];
+
+  async sendMessage(runId: string, text: string): Promise<SendMessageOutcome> {
+    this.messages.push(`${runId} ${text}`);
+    if (this.failure !== undefined) {
+      throw this.failure;
+    }
+    return this.messageOutcome;
+  }
 
   async answer(runId: string, answer: RunAnswer): Promise<RunAnswerOutcome> {
     this.calls.push(`${runId} ${JSON.stringify(answer)}`);
@@ -171,6 +182,76 @@ describe('createRunAnswerRoutes', () => {
 
       expect(response.status).toBe(409);
       expect(await response.json()).toEqual({ message: failure.message });
+    });
+  });
+
+  describe('POST /runs/:runId/messages', () => {
+    it('should answer 204 and pass the trimmed text on when the message is pushed', async () => {
+      const runAnswers = new FakeRunAnswers();
+
+      const response = await post(runAnswers, { text: ' hello ' }, 'messages');
+
+      expect(response.status).toBe(204);
+      expect(await response.text()).toBe('');
+      expect(runAnswers.messages).toEqual(['run-1 hello']);
+    });
+
+    it('should answer 201 with the resumed run when the message resumed the run', async () => {
+      const runAnswers = new FakeRunAnswers();
+      runAnswers.messageOutcome = {
+        kind: 'resumed',
+        run: { id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' },
+      };
+
+      const response = await post(runAnswers, { text: 'hello' }, 'messages');
+
+      expect(response.status).toBe(201);
+      expect(startedRunResponseSchema.parse(await response.json())).toEqual({
+        id: 'run-2',
+        startedAt: '2026-09-29T11:00:00.000Z',
+      });
+    });
+
+    it('should answer 202 with the reset time when the message is held', async () => {
+      const runAnswers = new FakeRunAnswers();
+      runAnswers.messageOutcome = { kind: 'held', pausedUntil: '2026-10-18T15:00:00.000Z' };
+
+      const response = await post(runAnswers, { text: 'hello' }, 'messages');
+
+      expect(response.status).toBe(202);
+      expect(heldAnswerResponseSchema.parse(await response.json())).toEqual({
+        held: true,
+        pausedUntil: '2026-10-18T15:00:00.000Z',
+      });
+    });
+
+    it.each([{ text: '   ' }, { text: '' }, { text: 'a'.repeat(10_001) }, {}, { text: 5 }])(
+      'should answer 400 and send nothing when the body is %j',
+      async (body) => {
+        const runAnswers = new FakeRunAnswers();
+
+        const response = await post(runAnswers, body, 'messages');
+
+        expect(response.status).toBe(400);
+        expect(await response.json()).toHaveProperty('message');
+        expect(runAnswers.messages).toEqual([]);
+      },
+    );
+
+    it('should answer 204 when the text is exactly 10000 characters', async () => {
+      const response = await post(new FakeRunAnswers(), { text: 'a'.repeat(10_000) }, 'messages');
+
+      expect(response.status).toBe(204);
+    });
+
+    it('should answer 409 with the message when the run is not answerable', async () => {
+      const runAnswers = new FakeRunAnswers();
+      runAnswers.failure = new RunNotAnswerableError('#147 is not running');
+
+      const response = await post(runAnswers, { text: 'hello' }, 'messages');
+
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ message: '#147 is not running' });
     });
   });
 });

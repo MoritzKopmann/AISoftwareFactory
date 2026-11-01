@@ -55,6 +55,11 @@ export const checkpointAnswerRequestSchema = z.object({
 });
 export type CheckpointAnswerRequest = z.infer<typeof checkpointAnswerRequestSchema>;
 
+export const sendMessageBodySchema = z.object({
+  text: z.string().trim().min(1).max(10_000),
+});
+export type SendMessageBody = z.infer<typeof sendMessageBodySchema>;
+
 export const ticketRunResponseSchema = z.object({
   availability: runAvailabilityResponseSchema,
   activeRun: startedRunResponseSchema
