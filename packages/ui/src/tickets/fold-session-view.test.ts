@@ -30,6 +30,27 @@ describe('foldSessionView', () => {
     expect(view).toMatchObject({ kind: 'entries', root: '/w/repo/7' });
   });
 
+  it('should mark the view generating when the snapshot frame says so', () => {
+    const view = foldSessionView(initialSessionView, {
+      kind: 'snapshot',
+      entries: [prompt],
+      root: '/w/repo/7',
+      generating: true,
+    });
+
+    expect(view).toMatchObject({ kind: 'entries', generating: true });
+  });
+
+  it('should not mark the view generating when the snapshot frame has no generating field', () => {
+    const view = foldSessionView(initialSessionView, {
+      kind: 'snapshot',
+      entries: [prompt],
+      root: '/w/repo/7',
+    });
+
+    expect(view).toMatchObject({ kind: 'entries', generating: false });
+  });
+
   it('should hold the snapshot entries in order when a snapshot arrives', () => {
     const view = foldSessionView(initialSessionView, {
       kind: 'snapshot',

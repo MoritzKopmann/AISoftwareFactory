@@ -38,6 +38,7 @@ export const sessionStreamFrameSchema = z.discriminatedUnion('kind', [
     kind: z.literal('snapshot'),
     entries: z.array(sessionEntryResponseSchema),
     root: z.string(),
+    generating: z.boolean().optional(),
   }),
   z.object({ kind: z.literal('no-session') }),
   z.object({ kind: z.literal('transcript-not-found') }),
