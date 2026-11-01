@@ -4,6 +4,7 @@ import type { AnswerRunResultDto } from '../dto/internal/answer-run-result-dto.j
 import type { PausedRunDto } from '../dto/internal/paused-run-dto.js';
 import type { RunAnswerDto } from '../dto/internal/run-answer-dto.js';
 import type { RunDto } from '../dto/internal/run-dto.js';
+import type { SendMessageResultDto } from '../dto/internal/send-message-result-dto.js';
 import type { StartRunRequestDto } from '../dto/internal/start-run-request-dto.js';
 import type { StartRunResultDto } from '../dto/internal/start-run-result-dto.js';
 
@@ -11,7 +12,8 @@ import type { StartRunResultDto } from '../dto/internal/start-run-result-dto.js'
  * What other modules may ask of agent-runs. Only shared error kinds are thrown (for example a
  * `NotFoundError` when the ticket is unknown). Two conflicts come back as results instead,
  * because the caller tells them apart: `already-active` and `not-resumable`. `holdAnswer` lets
- * `RunNotResumableError`, a shared `ConflictError` kind, through.
+ * `RunNotResumableError`, a shared `ConflictError` kind, through. `holdMessage` lets a
+ * `ConflictError` through.
  */
 export interface AgentRunsApi {
   start(request: StartRunRequestDto): Promise<StartRunResultDto>;
@@ -23,5 +25,8 @@ export interface AgentRunsApi {
   pausedRuns(projectId: string): Promise<ReadonlyArray<PausedRunDto>>;
   holdAnswer(runId: string, answer: RunAnswerDto): Promise<void>;
   resumePaused(runId: string): Promise<AnswerRunResultDto>;
+  sendMessage(runId: string, text: string): Promise<SendMessageResultDto>;
+  holdMessage(runId: string, text: string): Promise<void>;
+  heldMessage(runId: string): Promise<string | null>;
   settle(runId: string): Promise<void>;
 }

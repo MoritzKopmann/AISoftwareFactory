@@ -19,8 +19,18 @@ export function toPausedRunDto(run: Run): PausedRunDto {
   return {
     runId: run.id,
     ticketNumber: run.ticketNumber,
-    heldAnswer: run.heldAnswer === undefined ? null : { ...run.heldAnswer },
+    heldAnswer: toHeldAnswerDto(run.heldAnswer),
   };
+}
+
+function toHeldAnswerDto(heldAnswer: RunAnswer | undefined): RunAnswerDto | null {
+  if (heldAnswer === undefined) return null;
+  if (isHeldMessage(heldAnswer)) return null;
+  return { ...heldAnswer };
+}
+
+function isHeldMessage(heldAnswer: RunAnswer): boolean {
+  return heldAnswer.kind === 'message';
 }
 
 export function toActiveRunDto(activeRun: ActiveRun): ActiveRunDto {
