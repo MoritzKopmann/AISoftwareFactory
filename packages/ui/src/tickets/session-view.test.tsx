@@ -386,4 +386,49 @@ describe('SessionViewBody titles', () => {
       expect(html).toContain('aria-label="Subagent response, scrolls"');
     });
   });
+
+  describe('thinking sign', () => {
+    const sign =
+      '<div class="sv-thinking"><span class="sv-dots" aria-hidden="true"><span class="sv-dot"></span><span class="sv-dot"></span><span class="sv-dot"></span></span><span class="sv-thinking-label">Thinking</span></div>';
+
+    function renderEntries(overrides: Partial<Extract<SessionView, { kind: 'entries' }>>) {
+      return renderSession({
+        kind: 'entries',
+        entries: [{ kind: 'text', id: 'x', text: 'hello' }],
+        ended: false,
+        connectionLost: false,
+        generating: true,
+        ...overrides,
+      });
+    }
+
+    it('should render the sign as the last child after the turns when the model generates', () => {
+      const html = renderEntries({});
+
+      expect(html.endsWith(sign)).toBe(true);
+    });
+
+    it('should render the sign below the open bubble when text streams with the caret', () => {
+      const html = renderEntries({ openText: 'typing' });
+
+      expect(html).toContain('sv-caret');
+      expect(html.endsWith(sign)).toBe(true);
+    });
+
+    it('should render no sign when the model is not generating', () => {
+      expect(renderEntries({ generating: false })).not.toContain('sv-thinking');
+    });
+
+    it('should render no sign when the session ended', () => {
+      expect(renderEntries({ ended: true })).not.toContain('sv-thinking');
+    });
+
+    it.each<SessionView>([
+      { kind: 'waiting' },
+      { kind: 'no-session' },
+      { kind: 'transcript-not-found' },
+    ])('should render no sign when the view is $kind', (view) => {
+      expect(renderSession(view)).not.toContain('sv-thinking');
+    });
+  });
 });

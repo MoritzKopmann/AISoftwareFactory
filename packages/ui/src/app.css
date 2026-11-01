@@ -2820,6 +2820,49 @@ details:not([open]) .t-hide {
   animation: sv-blink 1s steps(2, start) infinite;
 }
 
+.sv-thinking {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 10px;
+  background: var(--sv-glass);
+  border: 1px solid var(--sv-glass-border);
+  border-radius: 16px 16px 16px 4px;
+  box-shadow:
+    0 0 0 1px var(--sv-glass-hi) inset,
+    var(--sv-glow);
+}
+
+.sv-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.sv-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sv-live);
+  box-shadow: 0 0 0 1px var(--sv-live-ring);
+  animation: sv-pulse 1.2s ease-in-out infinite;
+}
+
+.sv-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.sv-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.sv-thinking-label {
+  font: 700 11px var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 @keyframes sv-rise {
   from {
     opacity: 0;
@@ -2828,6 +2871,12 @@ details:not([open]) .t-hide {
 }
 
 @keyframes sv-blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes sv-pulse {
   50% {
     opacity: 0.3;
   }
@@ -2850,6 +2899,7 @@ details:not([open]) .t-hide {
   .sv-prompt,
   .sv-bubble,
   .sv-caret,
+  .sv-dot,
   .tc,
   .tc-pane,
   .tc-frame,

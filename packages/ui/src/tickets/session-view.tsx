@@ -61,6 +61,16 @@ export function SessionViewBody({ view, opened, onToggle }: SessionViewBodyProps
             />
           ))}
           {description.ended && <div className="sv-line">End of session</div>}
+          {description.thinking && (
+            <div className="sv-thinking">
+              <span className="sv-dots" aria-hidden="true">
+                <span className="sv-dot" />
+                <span className="sv-dot" />
+                <span className="sv-dot" />
+              </span>
+              <span className="sv-thinking-label">Thinking</span>
+            </div>
+          )}
         </>
       )}
     </>
