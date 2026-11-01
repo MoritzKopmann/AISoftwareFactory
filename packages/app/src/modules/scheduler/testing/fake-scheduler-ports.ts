@@ -64,6 +64,8 @@ export class FakeRunPort implements RunPort {
   answerFailure: Error | undefined;
   paused: ReadonlyArray<PausedRun> = [];
   resumeFailureRunId: string | undefined;
+  sentMessageResult: StartedRun | undefined;
+  held: string | undefined;
 
   readonly startRequests: Array<Parameters<RunPort['start']>[0]> = [];
 
@@ -91,6 +93,19 @@ export class FakeRunPort implements RunPort {
       throw this.answerFailure;
     }
     return { id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' };
+  }
+
+  async sendMessage(runId: string, text: string): Promise<StartedRun | undefined> {
+    this.calls.push(`sendMessage ${runId} ${text}`);
+    return this.sentMessageResult;
+  }
+
+  async holdMessage(runId: string, text: string): Promise<void> {
+    this.calls.push(`holdMessage ${runId} ${text}`);
+  }
+
+  async heldMessage(): Promise<string | undefined> {
+    return this.held;
   }
 
   async pausedRuns(): Promise<ReadonlyArray<PausedRun>> {

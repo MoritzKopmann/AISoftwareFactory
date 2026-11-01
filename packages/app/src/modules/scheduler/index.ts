@@ -53,6 +53,9 @@ export function createSchedulerModule(
       | 'pausedRuns'
       | 'holdAnswer'
       | 'resumePaused'
+      | 'sendMessage'
+      | 'holdMessage'
+      | 'heldMessage'
     >;
     readonly usage: Pick<UsageApi, 'status'>;
   },

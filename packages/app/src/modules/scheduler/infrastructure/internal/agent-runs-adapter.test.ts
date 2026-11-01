@@ -66,6 +66,60 @@ describe('AgentRunsAdapter', () => {
     });
   });
 
+  describe('sendMessage', () => {
+    it('should return undefined when agent runs pushed the message', async () => {
+      const port = new AgentRunsAdapter(new FakeAgentRunsApi());
+
+      expect(await port.sendMessage('run-1', 'x')).toBeUndefined();
+    });
+
+    it('should return the started run when agent runs resumed the run', async () => {
+      const agentRuns = new FakeAgentRunsApi();
+      agentRuns.sendMessageResult = {
+        kind: 'resumed',
+        run: buildRunDto({ id: 'run-2', startedAt: '2026-09-29T11:00:00.000Z' }),
+      };
+
+      expect(await new AgentRunsAdapter(agentRuns).sendMessage('run-1', 'x')).toEqual({
+        id: 'run-2',
+        startedAt: '2026-09-29T11:00:00.000Z',
+      });
+    });
+
+    it('should throw RunNotAnswerableError when agent runs finds the run not resumable', async () => {
+      const agentRuns = new FakeAgentRunsApi();
+      agentRuns.sendMessageResult = { kind: 'not-resumable', message: 'gone' };
+
+      await expect(new AgentRunsAdapter(agentRuns).sendMessage('run-1', 'x')).rejects.toThrow(
+        new RunNotAnswerableError('gone'),
+      );
+    });
+
+    it('should throw RunAlreadyActiveError when agent runs reports a run already active', async () => {
+      const agentRuns = new FakeAgentRunsApi();
+      agentRuns.sendMessageResult = { kind: 'already-active', message: 'busy' };
+
+      await expect(new AgentRunsAdapter(agentRuns).sendMessage('run-1', 'x')).rejects.toThrow(
+        new RunAlreadyActiveError('busy'),
+      );
+    });
+  });
+
+  describe('heldMessage', () => {
+    it('should return undefined when agent runs holds no message', async () => {
+      const port = new AgentRunsAdapter(new FakeAgentRunsApi());
+
+      expect(await port.heldMessage('run-1')).toBeUndefined();
+    });
+
+    it('should return the text when agent runs holds a message', async () => {
+      const agentRuns = new FakeAgentRunsApi();
+      agentRuns.held = 'hello';
+
+      expect(await new AgentRunsAdapter(agentRuns).heldMessage('run-1')).toBe('hello');
+    });
+  });
+
   describe('pausedRuns', () => {
     it('should carry the held answer when the paused run has one', async () => {
       const agentRuns = new FakeAgentRunsApi();

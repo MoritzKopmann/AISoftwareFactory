@@ -6,6 +6,7 @@ import type {
   RunAnswerDto,
   RunDto,
   AgentRunsApi,
+  SendMessageResultDto,
   StartRunRequestDto,
   StartRunResultDto,
 } from '../../agent-runs/index.js';
@@ -160,8 +161,13 @@ export class FakeAgentRunsApi implements Pick<
   | 'pausedRuns'
   | 'holdAnswer'
   | 'resumePaused'
+  | 'sendMessage'
+  | 'holdMessage'
+  | 'heldMessage'
 > {
   readonly calls: string[] = [];
+  sendMessageResult: SendMessageResultDto = { kind: 'pushed' };
+  held: string | null = null;
   readonly startRequests: StartRunRequestDto[] = [];
   paused: ReadonlyArray<PausedRunDto> = [];
   resumeResult: AnswerRunResultDto = {
@@ -200,6 +206,19 @@ export class FakeAgentRunsApi implements Pick<
   async resumePaused(runId: string): Promise<AnswerRunResultDto> {
     this.calls.push(`resumePaused ${runId}`);
     return this.resumeResult;
+  }
+
+  async sendMessage(runId: string, text: string): Promise<SendMessageResultDto> {
+    this.calls.push(`sendMessage ${runId} ${text}`);
+    return this.sendMessageResult;
+  }
+
+  async holdMessage(runId: string, text: string): Promise<void> {
+    this.calls.push(`holdMessage ${runId} ${text}`);
+  }
+
+  async heldMessage(): Promise<string | null> {
+    return this.held;
   }
 
   async findRun(): Promise<RunDto | undefined> {

@@ -17,6 +17,9 @@ export interface RunPort {
     readonly parentNumber?: number;
   }): Promise<StartedRun>;
   answer(runId: string, answer: RunAnswer): Promise<StartedRun>;
+  sendMessage(runId: string, text: string): Promise<StartedRun | undefined>;
+  holdMessage(runId: string, text: string): Promise<void>;
+  heldMessage(runId: string): Promise<string | undefined>;
   pausedRuns(projectId: string): Promise<ReadonlyArray<PausedRun>>;
   holdAnswer(runId: string, answer: RunAnswer): Promise<void>;
   resumePaused(runId: string): Promise<StartedRun>;
