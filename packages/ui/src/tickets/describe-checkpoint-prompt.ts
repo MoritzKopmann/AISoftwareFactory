@@ -50,7 +50,7 @@ function describeFailedSend(send: FailedSend): CheckpointPromptError {
   };
 }
 
-function groupThousands(count: number): string {
+export function groupThousands(count: number): string {
   return String(count).replace(/\B(?=(\d{3})+$)/g, ' ');
 }
 

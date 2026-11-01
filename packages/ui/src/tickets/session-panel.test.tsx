@@ -179,4 +179,20 @@ describe('SessionPanel visibility', () => {
     expect(markup).not.toMatch(/<section[^>]* hidden/);
     expect(markup).toContain('id="ticket-session"');
   });
+
+  it('should render the footer slot after the chat inside the section when one is given', () => {
+    const markup = renderToStaticMarkup(
+      <SessionPanel
+        description={liveDescription(liveRun)}
+        onStop={ignore}
+        onRetry={ignore}
+        footer={<form className="mf" />}
+      >
+        <p>CONTENT</p>
+      </SessionPanel>,
+    );
+
+    expect(markup.indexOf('<form class="mf"')).toBeGreaterThan(markup.indexOf('CONTENT'));
+    expect(markup.endsWith('<form class="mf"></form></section>')).toBe(true);
+  });
 });
