@@ -21,6 +21,9 @@ export class AgentRunsAdapter implements RunPort {
       | 'pausedRuns'
       | 'holdAnswer'
       | 'resumePaused'
+      | 'sendMessage'
+      | 'holdMessage'
+      | 'heldMessage'
     >,
   ) {}
 
@@ -51,6 +54,25 @@ export class AgentRunsAdapter implements RunPort {
 
   async resumePaused(runId: string): Promise<StartedRun> {
     return this.startedRunOf(await this.agentRuns.resumePaused(runId));
+  }
+
+  async sendMessage(runId: string, text: string): Promise<StartedRun | undefined> {
+    const result = await this.agentRuns.sendMessage(runId, text);
+    if (result.kind === 'pushed') {
+      return undefined;
+    }
+    const { id, startedAt } = this.startedRunOf(
+      result.kind === 'resumed' ? { kind: 'answered', run: result.run } : result,
+    );
+    return { id, startedAt };
+  }
+
+  holdMessage(runId: string, text: string): Promise<void> {
+    return this.agentRuns.holdMessage(runId, text);
+  }
+
+  async heldMessage(runId: string): Promise<string | undefined> {
+    return (await this.agentRuns.heldMessage(runId)) ?? undefined;
   }
 
   private startedRunOf(result: Awaited<ReturnType<AgentRunsApi['answer']>>): StartedRun {
