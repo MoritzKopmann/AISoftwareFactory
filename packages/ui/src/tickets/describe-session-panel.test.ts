@@ -10,12 +10,19 @@ const live: Extract<RunPanelDescription, { kind: 'live' }> = {
   stop: { label: 'Stop', pressable: true },
 };
 const hidden: RunPanelDescription = { kind: 'hidden' };
-const entries: SessionView = { kind: 'entries', entries: [], ended: false, connectionLost: false };
+const entries: SessionView = {
+  kind: 'entries',
+  entries: [],
+  ended: false,
+  connectionLost: false,
+  generating: false,
+};
 const endedEntries: SessionView = {
   kind: 'entries',
   entries: [],
   ended: true,
   connectionLost: false,
+  generating: false,
 };
 const lastRun = {
   startedAt: new Date(2026, 9, 17, 14, 2).toISOString(),

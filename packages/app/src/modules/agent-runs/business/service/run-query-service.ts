@@ -163,7 +163,12 @@ export class RunQueryService {
         return { ...entry, label };
       }),
     );
-    emit({ kind: 'snapshot', entries, root: run.worktreePath });
+    emit({
+      kind: 'snapshot',
+      entries,
+      root: run.worktreePath,
+      generating: active && sessionFeed.generating(run.id),
+    });
     unlabelled.forEach(startLabel);
 
     if (!active) {
@@ -180,6 +185,8 @@ export class RunQueryService {
         }
       } else if (event.kind === 'text-delta') {
         emit({ kind: 'delta', opensBlock: event.opensBlock, text: event.text });
+      } else if (event.kind === 'generating') {
+        emit({ kind: 'generating', active: event.active });
       } else {
         void end();
       }

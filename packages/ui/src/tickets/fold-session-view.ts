@@ -17,6 +17,8 @@ export type SessionView =
       readonly ended: boolean;
       /** The stream dropped and the browser is reconnecting; the next snapshot clears it. */
       readonly connectionLost: boolean;
+      /** The agent is producing text or thinking; false while a tool runs. */
+      readonly generating: boolean;
     };
 
 export const initialSessionView: SessionView = { kind: 'waiting' };
@@ -45,7 +47,10 @@ export function foldSessionView(view: SessionView, frame: SessionStreamFrame): S
         root: frame.root,
         ended: false,
         connectionLost: false,
+        generating: false,
       };
+    case 'generating':
+      return view.kind === 'entries' ? { ...view, generating: frame.active } : view;
     case 'no-session':
     case 'transcript-not-found':
       return { kind: frame.kind };
@@ -61,20 +66,27 @@ export function foldSessionView(view: SessionView, frame: SessionStreamFrame): S
       };
     }
     case 'entry': {
-      const { entries, root, ended, connectionLost } =
+      const { entries, root, ended, connectionLost, generating } =
         view.kind === 'entries'
           ? view
-          : { entries: [], root: undefined, ended: false, connectionLost: false };
+          : {
+              entries: [],
+              root: undefined,
+              ended: false,
+              connectionLost: false,
+              generating: false,
+            };
       return {
         kind: 'entries',
         entries: [...entries, frame.entry],
         ...(root !== undefined && { root }),
         ended,
         connectionLost,
+        generating,
       };
     }
     case 'delta': {
-      const { entries, root, openText, ended, connectionLost } =
+      const { entries, root, openText, ended, connectionLost, generating } =
         view.kind === 'entries'
           ? view
           : {
@@ -83,10 +95,19 @@ export function foldSessionView(view: SessionView, frame: SessionStreamFrame): S
               openText: undefined,
               ended: false,
               connectionLost: false,
+              generating: false,
             };
       const rooted = root !== undefined && { root };
       if (frame.opensBlock) {
-        return { kind: 'entries', entries, ...rooted, openText: frame.text, ended, connectionLost };
+        return {
+          kind: 'entries',
+          entries,
+          ...rooted,
+          openText: frame.text,
+          ended,
+          connectionLost,
+          generating,
+        };
       }
       // A block already open when the page connected: ignored, its entry shows it whole.
       if (openText === undefined) return view;
@@ -97,6 +118,7 @@ export function foldSessionView(view: SessionView, frame: SessionStreamFrame): S
         openText: openText + frame.text,
         ended,
         connectionLost,
+        generating,
       };
     }
     case 'ended':

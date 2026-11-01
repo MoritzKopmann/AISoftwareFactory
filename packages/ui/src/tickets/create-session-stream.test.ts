@@ -104,6 +104,13 @@ describe('createSessionStream', () => {
     });
   });
 
+  it('should apply a generating frame at once when it arrives', () => {
+    const { streams, views } = build();
+    streams[0]?.send({ kind: 'snapshot', entries: [], root: '/w/repo/7' });
+    streams[0]?.send({ kind: 'generating', active: true });
+    expect(views.at(-1)).toMatchObject({ kind: 'entries', generating: true });
+  });
+
   it('should update the view once holding all deltas when three deltas arrive before the next frame', () => {
     const { streams, views, runFrames } = build();
     streams[0]?.send({ kind: 'snapshot', entries: [], root: '/w/repo/7' });

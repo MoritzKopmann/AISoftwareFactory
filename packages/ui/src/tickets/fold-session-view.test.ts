@@ -109,6 +109,7 @@ describe('foldSessionView', () => {
       root: '/w/repo/7',
       ended: false,
       connectionLost: false,
+      generating: false,
     });
   });
 
@@ -168,6 +169,7 @@ describe('foldSessionView', () => {
       ).toMatchObject({
         entries: [text],
         connectionLost: false,
+        generating: false,
       });
     });
 
@@ -187,6 +189,34 @@ describe('foldSessionView', () => {
         { connectionLost: true },
         { connectionLost: true },
       ]);
+    });
+  });
+
+  describe('generating', () => {
+    it('should set generating when a generating frame arrives on an entries view', () => {
+      const snapshot = foldSessionView(initialSessionView, {
+        kind: 'snapshot',
+        entries: [prompt],
+        root: '/w/repo/7',
+      });
+
+      const view = foldSessionView(snapshot, { kind: 'generating', active: true });
+
+      expect(view).toMatchObject({ kind: 'entries', generating: true });
+    });
+
+    it('should keep generating when an entry or a delta follows', () => {
+      const snapshot = foldSessionView(initialSessionView, {
+        kind: 'snapshot',
+        entries: [prompt],
+        root: '/w/repo/7',
+      });
+      const on = foldSessionView(snapshot, { kind: 'generating', active: true });
+
+      const withEntry = foldSessionView(on, { kind: 'entry', entry: text });
+      const withDelta = foldSessionView(withEntry, { kind: 'delta', opensBlock: true, text: 'x' });
+
+      expect([withEntry, withDelta]).toMatchObject([{ generating: true }, { generating: true }]);
     });
   });
 });

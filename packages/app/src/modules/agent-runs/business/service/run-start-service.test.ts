@@ -481,6 +481,19 @@ describe('RunStartService', () => {
       expect(runTranscripts.sessionEntryReads).toHaveLength(1);
     });
 
+    it('should publish generating to the feed when the session yields it', async () => {
+      const { service, agentSessions, finishCalls, sessionFeed } = buildStartSubject();
+      await service.start(startRequest);
+
+      agentSessions.push('id-2', { kind: 'generating', active: true });
+      agentSessions.push('id-2', { kind: 'completed' });
+
+      await vi.waitFor(() => expect(finishCalls).toHaveLength(1));
+      expect(sessionFeed.published).toEqual([
+        { runId: 'id-1', event: { kind: 'generating', active: true } },
+      ]);
+    });
+
     it('should still publish the entry and log the failure when the prompt read fails', async () => {
       const { service, agentSessions, finishCalls, runTranscripts, sessionFeed, logger } =
         buildStartSubject();

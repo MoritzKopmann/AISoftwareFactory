@@ -10,6 +10,13 @@ function mapEntry(entry: SessionEntry): unknown {
 }
 
 describe('toSessionStreamFrame', () => {
+  it('should map a generating event to its frame when it is active', () => {
+    const frame = toSessionStreamFrame({ kind: 'generating', active: true });
+
+    expect(frame).toEqual({ kind: 'generating', active: true });
+    expect(sessionStreamFrameSchema.safeParse(frame).success).toBe(true);
+  });
+
   it('should pass a handback entry through unchanged when it names a subagent', () => {
     const entry: SessionEntry = { kind: 'handback', id: 'u1#0', agentId: 'a1', text: 'Report' };
     expect(mapEntry(entry)).toEqual({
