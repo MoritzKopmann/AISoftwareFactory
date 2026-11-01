@@ -3,6 +3,7 @@ import { RunAlreadyActiveError } from '../../business/errors/run-already-active-
 import { RunNotResumableError } from '../../business/errors/run-not-resumable-error.js';
 import type { RunAnswerService } from '../../business/service/run-answer-service.js';
 import type { RunEndService } from '../../business/service/run-end-service.js';
+import type { RunMessageService } from '../../business/service/run-message-service.js';
 import type { RunQueryService } from '../../business/service/run-query-service.js';
 import type { RunStartService } from '../../business/service/run-start-service.js';
 import type { ActiveRunDto } from '../dto/internal/active-run-dto.js';
@@ -27,6 +28,7 @@ export type AgentRunsFacadeServices = {
   readonly runStartService: RunStartService;
   readonly runEndService: RunEndService;
   readonly runAnswerService: RunAnswerService;
+  readonly runMessageService: RunMessageService;
   readonly runQueryService: RunQueryService;
 };
 

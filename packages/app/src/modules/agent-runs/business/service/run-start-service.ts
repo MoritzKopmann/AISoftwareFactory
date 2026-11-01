@@ -68,7 +68,7 @@ const usageLimitContinuePrompt = 'continue';
 const refusalMessage = 'A human refused this tool call. Do not retry it; carry on without it.';
 
 function answerText(answer: RunAnswer): string {
-  return answer.kind === 'checkpoint' ? answer.text : answer.decision;
+  return answer.kind === 'permission' ? answer.decision : answer.text;
 }
 
 /** Only entries and text deltas go onto the session feed; run endings do not. */
@@ -174,7 +174,12 @@ export class RunStartService {
       throw new RunNotResumableError(`Run ${runId} has no ending to answer`);
     }
     let launch: SessionLaunch;
-    if (ending.kind === 'permission-needed' && answer.kind === 'permission') {
+    if (answer.kind === 'message') {
+      if (ending.kind === 'stopped') {
+        throw new RunNotResumableError(`Run ${runId} was stopped`);
+      }
+      launch = { kind: 'resume', prompt: answer.text };
+    } else if (ending.kind === 'permission-needed' && answer.kind === 'permission') {
       launch = {
         kind: 'resume',
         prompt: buildResumePrompt(ending, answer.decision),

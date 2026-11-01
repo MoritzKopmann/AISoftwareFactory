@@ -1,3 +1,4 @@
+import { ConflictError } from '../../../../shared/errors.js';
 import { isAnswerFor } from '../domain/functions/is-answer-for.js';
 import type { RunAnswer } from '../domain/types/run-answer.js';
 import type { Run } from '../domain/types/run.js';
@@ -11,6 +12,8 @@ export type RunAnswerServiceDependencies = {
   readonly runAnswerWaits: RunAnswerWaits;
   readonly runStartService: Pick<RunStartService, 'resume'>;
 };
+
+const maxHeldTextLength = 10_000;
 
 /** Hands a human's answer to the run that waits for it, or resumes the ended run. */
 export class RunAnswerService {
@@ -45,6 +48,34 @@ export class RunAnswerService {
       throw new RunNotResumableError(`Run ${runId} cannot hold a ${answer.kind} answer`);
     }
     await runRepository.recordHeldAnswer(runId, answer);
+  }
+
+  /** Keeps a message on the run. It joins what is held; a held permission decision refuses it. */
+  async holdMessage(runId: string, text: string): Promise<void> {
+    const { runRepository } = this.dependencies;
+
+    const run = await runRepository.findById(runId);
+    if (run === undefined) {
+      throw new RunNotResumableError(`Run ${runId} is unknown`);
+    }
+    const held = run.heldAnswer;
+    if (held === undefined) {
+      await runRepository.recordHeldAnswer(runId, { kind: 'message', text });
+      return;
+    }
+    if (held.kind === 'permission') {
+      throw new ConflictError(`Run ${runId} holds a permission decision`);
+    }
+    const joined = `${held.text}\n\n${text}`;
+    if (joined.length > maxHeldTextLength) {
+      throw new ConflictError(`Run ${runId} holds too much text to add this message`);
+    }
+    await runRepository.recordHeldAnswer(runId, { kind: held.kind, text: joined });
+  }
+
+  async heldMessage(runId: string): Promise<string | undefined> {
+    const held = (await this.dependencies.runRepository.findById(runId))?.heldAnswer;
+    return held?.kind === 'message' ? held.text : undefined;
   }
 }
 
