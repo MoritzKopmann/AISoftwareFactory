@@ -213,7 +213,7 @@ describe('SessionViewBody', () => {
     expect(markup.indexOf('typing')).toBeGreaterThan(markup.indexOf('bold'));
   });
 
-  it('should render a prompt as markdown under an App label', () => {
+  it('should render a prompt as markdown under a User label', () => {
     const markup = renderSession({
       kind: 'entries',
       entries: [{ kind: 'prompt', id: 'p', text: '### Ticket\n\nBuild it.\n\n- one\n- `two`' }],
@@ -222,7 +222,7 @@ describe('SessionViewBody', () => {
       generating: false,
     });
     expect(markup).toContain('sv-prompt');
-    expect(markup).toContain('>App</');
+    expect(markup).toContain('>User</');
     expect(markup).toContain('>Ticket</h3>');
     expect(markup).toContain('<li>one</li>');
     expect(markup).toContain('<code>two</code>');
