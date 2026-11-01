@@ -17,6 +17,18 @@ describe('toSessionStreamFrame', () => {
     expect(sessionStreamFrameSchema.safeParse(frame).success).toBe(true);
   });
 
+  it('should carry generating on the snapshot frame when the watch event is generating', () => {
+    const frame = toSessionStreamFrame({
+      kind: 'snapshot',
+      entries: [],
+      root: '/w/repo/7',
+      generating: true,
+    });
+
+    expect(frame).toMatchObject({ kind: 'snapshot', generating: true });
+    expect(sessionStreamFrameSchema.safeParse(frame).success).toBe(true);
+  });
+
   it('should pass a handback entry through unchanged when it names a subagent', () => {
     const entry: SessionEntry = { kind: 'handback', id: 'u1#0', agentId: 'a1', text: 'Report' };
     expect(mapEntry(entry)).toEqual({

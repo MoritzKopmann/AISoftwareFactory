@@ -81,7 +81,7 @@ describe('createSessionStreamRoutes', () => {
     const response = await app.request(url);
 
     expect(parseFrames(await response.text())).toEqual([
-      { kind: 'snapshot', entries: [bash], root: '/w/repo/7' },
+      { kind: 'snapshot', entries: [bash], root: '/w/repo/7', generating: false },
       { kind: 'label', toolUseId: 't1', label: 'Runs the tests.' },
       { kind: 'ended' },
     ]);
@@ -95,7 +95,12 @@ describe('createSessionStreamRoutes', () => {
 
     expect(response.headers.get('content-type')).toContain('text/event-stream');
     expect(parseFrames(await response.text())).toEqual([
-      { kind: 'snapshot', entries: [prompt, text, call, result], root: '/w/repo/7' },
+      {
+        kind: 'snapshot',
+        entries: [prompt, text, call, result],
+        root: '/w/repo/7',
+        generating: false,
+      },
       { kind: 'ended' },
     ]);
   });
@@ -114,7 +119,7 @@ describe('createSessionStreamRoutes', () => {
     sessionFeed.end('run-1');
 
     expect(parseFrames(await body)).toEqual([
-      { kind: 'snapshot', entries: [prompt, text], root: '/w/repo/7' },
+      { kind: 'snapshot', entries: [prompt, text], root: '/w/repo/7', generating: false },
       { kind: 'delta', opensBlock: true, text: 'Hel' },
       { kind: 'entry', entry: call },
       { kind: 'ended' },

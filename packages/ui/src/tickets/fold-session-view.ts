@@ -47,7 +47,7 @@ export function foldSessionView(view: SessionView, frame: SessionStreamFrame): S
         root: frame.root,
         ended: false,
         connectionLost: false,
-        generating: false,
+        generating: frame.generating ?? false,
       };
     case 'generating':
       return view.kind === 'entries' ? { ...view, generating: frame.active } : view;

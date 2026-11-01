@@ -41,6 +41,7 @@ export function toSessionStreamFrame(event: TicketSessionWatchEvent): SessionStr
         kind: 'snapshot',
         entries: event.entries.map(toSessionEntryResponse),
         root: event.root,
+        generating: event.generating,
       };
     case 'entry':
       return { kind: 'entry', entry: toSessionEntryResponse(event.entry) };
