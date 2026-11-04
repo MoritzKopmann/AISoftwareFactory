@@ -20,10 +20,9 @@ Mode is **AFK** when the `aisf_escalate` tool is present, **hand-run** otherwise
 
 AFK: A permission denial doesn't end your turn: the app asks the human. Told you may retry → issue the identical call once, unchanged. Otherwise carry on without it.
 
-**escalate `denied`**: a call the work can't finish without was refused.
+**Stop when a call the work can't finish without was refused.**
 
-- AFK: `aisf_escalate({kind: 'denied', reason})`. The `reason` names the refused tool and its
-  input. Escalation ends the run.
+- AFK: `aisf_escalate({kind: 'denied', reason})`. Escalation ends the run.
 - Hand-run: say what was denied, ask.
 
 Never call an `aisf_*` tool that isn't present.

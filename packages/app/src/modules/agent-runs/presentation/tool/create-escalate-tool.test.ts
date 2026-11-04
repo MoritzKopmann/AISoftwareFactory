@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import { createEscalateTool } from './create-escalate-tool.js';
 
 const runContext = {
@@ -9,6 +10,11 @@ const runContext = {
 };
 
 import { textResult } from '../../../../shared/testing/text-result.js';
+function describeInput(name: 'kind' | 'reason'): string {
+  const shape = createEscalateTool().inputShape as z.ZodRawShape;
+  return z.globalRegistry.get(shape[name] as z.ZodType)?.description ?? '';
+}
+
 describe('createEscalateTool', () => {
   it('should be named aisf_escalate', () => {
     expect(createEscalateTool().name).toBe('aisf_escalate');
@@ -42,6 +48,20 @@ describe('createEscalateTool', () => {
     await expect(
       createEscalateTool().execute({ kind: 'other', reason: 'x' }, runContext),
     ).rejects.toThrow();
+  });
+
+  it('should define red, spec and denied in the kind description', () => {
+    const description = describeInput('kind');
+
+    expect(description).toContain('red:');
+    expect(description).toContain('spec:');
+    expect(description).toContain('denied:');
+  });
+
+  it('should name the refused tool and its input for denied in the reason description', () => {
+    const description = describeInput('reason');
+
+    expect(description).toContain('For denied: the refused tool and its input.');
   });
 
   it('should reject when the reason is empty', async () => {
