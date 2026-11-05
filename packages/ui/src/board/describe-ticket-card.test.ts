@@ -17,6 +17,7 @@ describe('describeTicketCard', () => {
       hitl: false,
       spike: false,
       ui: false,
+      skill: false,
       blockerLabels: [],
       conflictLabels: [],
       pullRequestChips: [],
@@ -65,6 +66,16 @@ describe('describeTicketCard', () => {
   it('should not flag ui when the ticket types do not include ui', () => {
     const card = describeTicketCard(buildTicketResponse({ types: ['spike'] }), 'o/n', []);
     expect(card.ui).toBe(false);
+  });
+
+  it('should flag skill when the ticket types include skill', () => {
+    const card = describeTicketCard(buildTicketResponse({ types: ['skill'] }), 'o/n', []);
+    expect(card.skill).toBe(true);
+  });
+
+  it('should not flag skill when the ticket types do not include skill', () => {
+    const card = describeTicketCard(buildTicketResponse({ types: ['ui'] }), 'o/n', []);
+    expect(card.skill).toBe(false);
   });
 
   it('should list only open blockers, qualified when in another repository', () => {

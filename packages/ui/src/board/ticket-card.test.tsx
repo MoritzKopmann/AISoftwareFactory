@@ -13,6 +13,7 @@ function buildCard(overrides: Partial<TicketCardDescription> = {}): TicketCardDe
     hitl: false,
     spike: false,
     ui: false,
+    skill: false,
     blockerLabels: [],
     conflictLabels: [],
     pullRequestChips: [],
@@ -66,6 +67,30 @@ describe('TicketCard', () => {
     );
 
     expect(markup).toContain('<span class="chip hitl">HITL</span><span class="chip ui">UI</span>');
+  });
+
+  it('should show the SKILL chip in the meta row when the ticket is skill and has no other flag', () => {
+    const markup = renderToStaticMarkup(
+      <TicketCard {...buildCard({ skill: true })} projectId="o/n" />,
+    );
+
+    expect(markup).toContain('<span class="meta"><span class="chip skill">SKILL</span></span>');
+  });
+
+  it('should show the chips in the order HITL, SPIKE, SKILL when the ticket has all three', () => {
+    const markup = renderToStaticMarkup(
+      <TicketCard {...buildCard({ hitl: true, spike: true, skill: true })} projectId="o/n" />,
+    );
+
+    expect(markup).toContain(
+      '<span class="chip hitl">HITL</span><span class="chip spike">SPIKE</span><span class="chip skill">SKILL</span>',
+    );
+  });
+
+  it('should show no SKILL chip when the ticket is not skill', () => {
+    const markup = renderToStaticMarkup(<TicketCard {...buildCard()} projectId="o/n" />);
+
+    expect(markup).not.toContain('chip skill');
   });
 
   it('should render the whole card as one link without an action when the ticket is not in backlog', () => {

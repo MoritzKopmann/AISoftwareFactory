@@ -403,9 +403,21 @@ describe('describeRunBar for idea and plan tickets', () => {
     ).toMatchObject({ label: 'Plan' });
   });
 
-  it('should be a plan skill only when the skill is skill-ticket', () => {
+  it('should label Build and hint the skill name when the skill is skill-implement-ticket', () => {
+    expect(
+      describeRunBar(
+        available,
+        { status: 'ready', stuck: false },
+        { kind: 'idle' },
+        412,
+        'skill-implement-ticket',
+      ),
+    ).toMatchObject({ label: 'Build', hint: 'Runs skill-implement-ticket on #412.' });
+  });
+
+  it('should be an idea or plan skill when the skill is skill-ticket or skill-implement-ticket', () => {
     expect(isIdeaOrPlanSkill('skill-ticket')).toBe(true);
-    expect(isIdeaOrPlanSkill('skill-implement-ticket')).toBe(false);
+    expect(isIdeaOrPlanSkill('skill-implement-ticket')).toBe(true);
   });
 
   it.each(['ui-ticket', 'ui-implement-ticket'] as const)(

@@ -26,6 +26,7 @@ const ticketSkillLabels: Partial<Record<RunSkill, string>> = {
   design: 'Design',
   'ui-ticket': 'Split',
   'ui-implement-ticket': 'Build',
+  'skill-implement-ticket': 'Build',
 };
 
 export function isIdeaOrPlanSkill(runSkill: RunSkill): boolean {
