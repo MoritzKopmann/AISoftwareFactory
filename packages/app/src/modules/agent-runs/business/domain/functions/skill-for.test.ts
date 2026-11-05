@@ -7,6 +7,9 @@ describe('skillFor', () => {
     ['implement', ['ui'], 'aisf:ui-implement-ticket'],
     ['plan', ['enhancement'], 'aisf:plan-ticket'],
     ['implement', [], 'aisf:implement-ticket'],
+    ['plan', ['skill'], 'aisf:skill-ticket'],
+    ['implement', ['skill'], 'aisf:skill-implement-ticket'],
+    ['create', ['skill'], 'aisf:create-ticket'],
     ['design', ['ui'], 'aisf:design'],
     ['spike', ['ui', 'spike'], 'aisf:spike'],
   ] as const)('should pick the skill for stage %s and types %j', (stage, types, skill) => {
