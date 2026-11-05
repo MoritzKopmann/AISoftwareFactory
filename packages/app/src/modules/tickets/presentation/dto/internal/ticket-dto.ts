@@ -9,7 +9,7 @@ export type TicketStatusDto =
   | 'conflict'
   | 'closed';
 
-export type TicketTypeDto = 'bug' | 'enhancement' | 'task' | 'spike' | 'ui' | 'onboard';
+export type TicketTypeDto = 'bug' | 'enhancement' | 'task' | 'spike' | 'ui' | 'onboard' | 'skill';
 
 export type ClosingPullRequestDto = {
   readonly number: number;

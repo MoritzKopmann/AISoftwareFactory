@@ -97,4 +97,10 @@ describe('ticketResponseSchema', () => {
 
     expect(ticketResponseSchema.safeParse(ticket).success).toBe(false);
   });
+
+  it('should accept the skill type when the ticket has it', () => {
+    const ticket = buildTicket({ number: 1, types: ['skill'] });
+
+    expect(ticketResponseSchema.parse(ticket).types).toEqual(['skill']);
+  });
 });
