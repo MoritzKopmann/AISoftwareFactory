@@ -11,6 +11,11 @@ export const aisfLabels: ReadonlyArray<AisfLabel> = [
   { name: 'type: spike', color: 'D4C5F9', description: 'Research or investigation' },
   { name: 'type: ui', color: 'C5DEF5', description: 'Design-driven UI work' },
   { name: 'type: onboard', color: 'C5DEF5', description: 'Onboard the repo to aisf' },
+  {
+    name: 'type: skill',
+    color: 'FEF2C0',
+    description: 'Text written for agents: skills, agents, commands',
+  },
   { name: 'priority: critical', color: 'B60205', description: 'Must fix immediately' },
   { name: 'priority: high', color: 'D93F0B', description: 'Important, next up' },
   { name: 'priority: medium', color: 'E99695', description: 'Normal backlog priority' },

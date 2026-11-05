@@ -45,6 +45,16 @@ describe('aisfLabels', () => {
     });
   });
 
+  it('should contain exactly one type: skill entry when the list is read', () => {
+    expect(aisfLabels.filter((label) => label.name === 'type: skill')).toEqual([
+      {
+        name: 'type: skill',
+        color: 'FEF2C0',
+        description: 'Text written for agents: skills, agents, commands',
+      },
+    ]);
+  });
+
   it('should keep the status: in-review description when approved is added', () => {
     expect(aisfLabels.find((label) => label.name === 'status: in-review')?.description).toBe(
       'PR open, awaiting review',
