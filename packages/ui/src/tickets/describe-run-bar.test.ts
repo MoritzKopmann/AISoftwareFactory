@@ -1,6 +1,6 @@
 import type { TicketRunResponse } from '@aisf/app/api-schemas/runs-schemas.js';
 import { describe, expect, it } from 'vitest';
-import { describeRunBar, settleStartState } from './describe-run-bar.js';
+import { describeRunBar, isIdeaOrPlanSkill, settleStartState } from './describe-run-bar.js';
 
 const available: TicketRunResponse = { availability: { kind: 'available' } };
 const disabled: TicketRunResponse = {
@@ -389,6 +389,23 @@ describe('describeRunBar for idea and plan tickets', () => {
       label: 'Plan',
       reason: 'Waiting for spike #417',
     });
+  });
+
+  it('should offer a Plan label when the skill is skill-ticket', () => {
+    expect(
+      describeRunBar(
+        available,
+        { status: 'plan', stuck: false },
+        { kind: 'idle' },
+        412,
+        'skill-ticket',
+      ),
+    ).toMatchObject({ label: 'Plan' });
+  });
+
+  it('should be a plan skill only when the skill is skill-ticket', () => {
+    expect(isIdeaOrPlanSkill('skill-ticket')).toBe(true);
+    expect(isIdeaOrPlanSkill('skill-implement-ticket')).toBe(false);
   });
 
   it.each(['ui-ticket', 'ui-implement-ticket'] as const)(
