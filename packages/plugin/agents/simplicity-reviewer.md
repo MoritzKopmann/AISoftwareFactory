@@ -1,7 +1,7 @@
 ---
 name: simplicity-reviewer
 description: >
-  Read-only reviewer launched by aisf:review-simplicity. Reviews a working diff for simplicity
+  Read-only reviewer. Reviews a working diff for simplicity
   (reuse, simplification, efficiency, altitude), architecture breaches against
   project-architecture, and bugs or gaps. Reports findings; never edits.
 tools: Read, Grep, Glob

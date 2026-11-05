@@ -5,8 +5,7 @@ description: >
   against the working diff, applies only the simplification fixes the calling agent is fully
   confident are safe (tests stay green, ACs stay met, no visible/behavioral change), returns
   architecture breaches to the caller as must-fix, and reports bugs or missing-ticket-scope
-  findings without touching them. Called by aisf:implement-ticket, or any project skill that
-  implements, after acceptance criteria are verified and before commit.
+  findings without touching them. Use after acceptance criteria are verified and before commit.
 ---
 
 # review-simplicity

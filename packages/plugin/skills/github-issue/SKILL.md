@@ -2,8 +2,7 @@
 name: github-issue
 description: >
   Formats, posts and updates GitHub issues for the aisf workflow: create, edit an idea in
-  place, post bare ideas and sub-issues, guarded status transitions, blocked-by. Called by
-  create-, plan- and implement-ticket.
+  place, post bare ideas and sub-issues, guarded status transitions, blocked-by.
 user-invocable: false
 ---
 
@@ -18,14 +17,14 @@ and start work without asking the author anything.
 
 ## Modes
 
-| Mode                        | Caller                                                           | Writes                                                                                                                                                |
-| --------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Interview-driven create** | `aisf:create-ticket`, hand run with no issue number              | New issue, full anatomy, cold-read test, `type:`, `priority:`, `status: backlog` or `status: plan`                                                    |
-| **Edit in place**           | `aisf:create-ticket` on `#N`                                     | Rewrites title and body, adds `type:`, `priority:` and `status: backlog` or `status: plan`. See _Edit an idea in place_.                              |
-| **Bare idea**               | `aisf:create-ticket` spin-offs, `aisf:implement-ticket` findings | Minimal issue, no labels. See _Bare ideas_.                                                                                                           |
-| **Sub-issue**               | `aisf:plan-ticket`                                               | Child of a parent: `status: ready`, `hitl` where confirmed; a UI child is an idea with `project-design`, else `status: backlog`. See _Relationships_. |
-| **Split part**              | `aisf:plan-ticket`                                               | Child of a split umbrella: full anatomy, `status: plan`, parent's `type:` and `priority:`. See _Split part_.                                          |
-| **Direct create**           | any automation caller with a fully-formed finding                | Full anatomy, cold-read test, labels as for interview-driven                                                                                          |
+| Mode                        | Writes                                                                                                                                                |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Interview-driven create** | New issue, full anatomy, cold-read test, `type:`, `priority:`, `status: backlog` or `status: plan`                                                    |
+| **Edit in place**           | Rewrites title and body, adds `type:`, `priority:` and `status: backlog` or `status: plan`. See _Edit an idea in place_.                              |
+| **Bare idea**               | Minimal issue, no labels. See _Bare ideas_.                                                                                                           |
+| **Sub-issue**               | Child of a parent: `status: ready`, `hitl` where confirmed; a UI child is an idea with `project-design`, else `status: backlog`. See _Relationships_. |
+| **Split part**              | Child of a split umbrella: full anatomy, `status: plan`, parent's `type:` and `priority:`. See _Split part_.                                          |
+| **Direct create**           | Full anatomy, cold-read test, labels as for interview-driven                                                                                          |
 
 ## Anatomy of a good ticket
 
@@ -82,16 +81,16 @@ onboarded.
 
 An open issue with **no** `status:` label is an **idea**. Done is the closed state.
 
-| State           | Stored as                                       | Written by                                                                                                                                                                                                                                 |
-| --------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **idea**        | open, no `status:` label                        | anyone opening an issue (incl. a `type: ui` one); `aisf:create-ticket` keeps a `type: ui` idea an idea (`idea → idea`); `aisf:plan-ticket` sends a vague spec back (`plan → idea`) and files a UI child as an idea (with `project-design`) |
-| **backlog**     | `status: backlog`                               | `aisf:create-ticket` (`idea → backlog`); `aisf:plan-ticket` for UI work awaiting a design when the project has no `project-design` (`plan → backlog`, and a new `type: ui` child)                                                          |
-| **plan**        | `status: plan`; may have an open spike child    | `aisf:create-ticket` (`idea → plan`); `aisf:design` (`idea → plan`); the human (`backlog → plan`); `aisf:plan-ticket` (new split parts)                                                                                                    |
-| **planned**     | `status: planned`, has sub-issues               | `aisf:plan-ticket` (`plan → planned`)                                                                                                                                                                                                      |
-| **ready**       | `status: ready`, no sub-issues                  | `aisf:plan-ticket` (`plan → ready`, and new sub-issues); the app's Reset to ready (from `in-progress`, or any status with the `stuck` label; it removes both flag labels)                                                                  |
-| **in-progress** | `status: in-progress`                           | `aisf:implement-ticket` (`ready → in-progress`, and `in-review → in-progress` for rework); the app removes the `waiting` label when a permission or checkpoint answer is given; the status stays `in-progress`                             |
-| **in-review**   | `status: in-review`, plus a PR with `Closes #N` | `aisf:implement-ticket` (`in-progress → in-review`)                                                                                                                                                                                        |
-| _(closed)_      | closed state; leftover labels are ignored       | the app: it rebase-merges an approved PR, and `Closes #N` closes the ticket; it also closes a `planned` parent when its last child closes; `aisf:implement-ticket` closes a `hitl` leaf with no code change, after its evidence comment    |
+| State           | Stored as                                       |
+| --------------- | ----------------------------------------------- |
+| **idea**        | open, no `status:` label                        |
+| **backlog**     | `status: backlog`                               |
+| **plan**        | `status: plan`; may have an open spike child    |
+| **planned**     | `status: planned`, has sub-issues               |
+| **ready**       | `status: ready`, no sub-issues                  |
+| **in-progress** | `status: in-progress`                           |
+| **in-review**   | `status: in-review`, plus a PR with `Closes #N` |
+| _(closed)_      | closed state; leftover labels are ignored       |
 
 - Never `backlog → in-progress` — plan first.
 - **`waiting` and `stuck` are labels beside the status, not statuses.** A ticket keeps its

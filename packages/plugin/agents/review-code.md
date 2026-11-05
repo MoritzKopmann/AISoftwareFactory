@@ -1,7 +1,7 @@
 ---
 name: review-code
 description: >
-  Architecture reviewer launched by aisf:implement-ticket once a ticket's code is green. Given
+  Architecture reviewer once a ticket's code is green. Given
   only the ticket's spec, it reads the working diff, hunts every breach of project-architecture
   and code-rules and fixes it without changing behaviour. Returns what it fixed and where it left the spec.
 tools: Read, Grep, Glob, Edit, Write, Bash
