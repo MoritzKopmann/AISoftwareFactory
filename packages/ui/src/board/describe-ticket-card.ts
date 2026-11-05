@@ -14,6 +14,7 @@ export type TicketCardDescription = {
   readonly hitl: boolean;
   readonly spike: boolean;
   readonly ui: boolean;
+  readonly skill: boolean;
   readonly blockerLabels: ReadonlyArray<string>;
   readonly conflictLabels: ReadonlyArray<string>;
   readonly pullRequestChips: ReadonlyArray<{ readonly label: string }>;
@@ -57,6 +58,7 @@ export function describeTicketCard(
     hitl: ticket.hitl,
     spike: ticket.types.includes('spike'),
     ui: ticket.types.includes('ui'),
+    skill: ticket.types.includes('skill'),
     blockerLabels,
     conflictLabels: ticket.conflictingStatuses.map((status) =>
       ticketStatusLabel(status).toLowerCase(),

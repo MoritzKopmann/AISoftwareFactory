@@ -252,4 +252,11 @@ describe('describeRunPanel for idea and plan tickets', () => {
       describeRunPanel(input({ response: running, runSkill: 'plan-ticket' }), now),
     ).toMatchObject({ startedLabel: 'plan-ticket · started 1 min ago' });
   });
+
+  it('should name skill-implement-ticket before the start time when a skill-implement-ticket run is live', () => {
+    const running = live(localTime(9, 44));
+    expect(
+      describeRunPanel(input({ response: running, runSkill: 'skill-implement-ticket' }), now),
+    ).toMatchObject({ startedLabel: 'skill-implement-ticket · started 1 min ago' });
+  });
 });

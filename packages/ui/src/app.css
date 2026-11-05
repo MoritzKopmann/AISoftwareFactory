@@ -400,6 +400,10 @@ a.ext::after {
   border-color: var(--ui);
 }
 
+.chip.skill {
+  border-color: var(--skill);
+}
+
 .chip.spike {
   border-color: var(--accent);
 }
