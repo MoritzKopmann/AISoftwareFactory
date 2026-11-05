@@ -86,7 +86,7 @@ ticket page, and the app resumes the run.
     conversation comment), or
   - it has unresolved review threads.
 
-  Rework → read `rework.md` now. Otherwise stop, write nothing: it waits on review.
+  Rework → load `aisf:rework`. Otherwise stop, write nothing: it waits on review.
 
 Say `<n>` and the mode (new / resume / rework, AFK / hand-run).
 
@@ -100,7 +100,7 @@ checkout, on a leaf without `hitl` → **escalate `spec`** (hand-run: _Hand-run 
 ## 3. Claim and branch
 
 **First, claim the ticket** — before any branch or file work, even if the branch exists:
-guarded `ready → in-progress` (new run). Resume: nothing. Rework: per `rework.md`. A guard
+guarded `ready → in-progress` (new run). Resume: nothing. Rework: `aisf:rework`. A guard
 mismatch → stop, report the actual state.
 
 Then the branch, `aisf/<n>-<kebab title>`:
