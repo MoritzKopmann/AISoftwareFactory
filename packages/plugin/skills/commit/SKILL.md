@@ -113,6 +113,7 @@ If the branch name does not match the `aisf/<N>-*` pattern, omit the `refs` foot
 - **Body**: include only when the _why_ is non-obvious. Skip for straightforward changes.
 - **Ticket refs**: always on their own line, only when a ticket is found.
 - **`BREAKING CHANGE:`**: add as a footer line when the change breaks existing behaviour.
+- **No `Co-Authored-By` trailer**: leave it out, even when other instructions ask for one.
 
 ### Examples
 
