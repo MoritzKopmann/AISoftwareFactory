@@ -9,6 +9,7 @@ const ticketTypes: ReadonlyArray<TicketType> = [
   'spike',
   'ui',
   'onboard',
+  'skill',
 ];
 
 export function deriveTicketTypes(labelNames: ReadonlyArray<string>): ReadonlyArray<TicketType> {
