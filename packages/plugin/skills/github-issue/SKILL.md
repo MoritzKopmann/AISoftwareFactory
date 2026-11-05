@@ -66,7 +66,7 @@ onboarded.
 
 | Dimension | Values                                                                                                                                                  |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Type      | `type: bug` · `type: enhancement` · `type: task` · `type: spike` · `type: ui` · `type: onboard`                                                         |
+| Type      | `type: bug` · `type: enhancement` · `type: task` · `type: spike` · `type: ui` · `type: onboard` · `type: skill`                                         |
 | Priority  | `priority: critical` · `priority: high` · `priority: medium` · `priority: low`                                                                          |
 | Status    | `status: backlog` · `status: plan` · `status: planned` · `status: ready` · `status: in-progress` · `status: in-review`                                  |
 | Flag      | `hitl`: orthogonal to status. The leaf has one human checkpoint, named by its spec. The run works alone up to it, then waits.                           |
@@ -212,6 +212,7 @@ body text, because it isn't a dependency.
 - **A `type: ui` child is never `ready`.** With `project-design` it is an idea (no `status:`
   label): its design run starts by itself. Without, it is `status: backlog` and waits for a design.
   Exception: leaves posted by `aisf:ui-ticket` under a designed `type: ui` ticket are `status: ready`.
+- **A `type: skill` child posted by `aisf:plan-ticket` is `status: plan`**: `aisf:skill-ticket` plans it.
 - **A spike child leaves its parent at `status: plan`**: planning resumes on its verdict.
 
   ```bash
