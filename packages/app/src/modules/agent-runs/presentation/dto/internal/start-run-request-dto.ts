@@ -13,6 +13,8 @@ export type StartRunRequestDto = {
     | 'in-review'
     | 'conflict'
     | 'closed';
-  readonly types: ReadonlyArray<'bug' | 'enhancement' | 'task' | 'spike' | 'ui' | 'onboard'>;
+  readonly types: ReadonlyArray<
+    'bug' | 'enhancement' | 'task' | 'spike' | 'ui' | 'onboard' | 'skill'
+  >;
   readonly parentNumber?: number;
 };
