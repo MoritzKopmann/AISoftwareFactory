@@ -48,7 +48,7 @@ Done when the ticket is `in-progress`.
 
 # 3. Write
 
-Read `writing-for-agents` (and `SKILL-MECHANICS.md` beside it for a skill). Write the file at
+Read `aisf:skill-writing` (and `SKILL-MECHANICS.md` beside it for a skill). Write the file at
 the spec's Path: frontmatter per its Invocation, then one section per spec step, each ending on
 its done-check. Point to a whole skill or tool, never to part of one. If you need only a part,
 copy it in. Never point to a command: only the app runs it.

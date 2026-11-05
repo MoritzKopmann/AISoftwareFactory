@@ -23,7 +23,7 @@ change into what is there, never to replace the idea.
 - Every question goes through `aisf:questionnaire`, page id `skill-<n>`. Chat gets no questions.
   Stance for the agents: "The human writes skills. Speak in steps, exits and done-checks."
 - Facts are yours: look them up in the skills, agents and code. Decisions are the human's.
-- Read `writing-for-agents` before drafting the graph. The spec answers to it: one source of
+- Read `aisf:skill-writing` before drafting the graph. The spec answers to it: one source of
   truth (point to a skill, never copy it), a done-check per step, the positive target over a ban.
 - A missing precondition or an idea that can't be cut into skills → `aisf_escalate` `spec`.
   Hand-run: say what is missing and stop.

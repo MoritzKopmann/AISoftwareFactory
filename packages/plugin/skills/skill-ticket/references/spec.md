@@ -2,7 +2,7 @@
 
 The body of one `type: skill` ticket. `aisf:skill-implement-ticket` sees this and nothing else:
 write it for a reader with no memory of the interview. It describes behaviour, not prose. The
-implementer writes the text per `writing-for-agents`.
+implementer writes the text per `aisf:skill-writing`.
 
     ## Context
     One sentence: why this skill is new or changes.

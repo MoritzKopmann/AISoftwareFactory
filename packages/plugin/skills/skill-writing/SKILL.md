@@ -1,5 +1,5 @@
 ---
-name: writing-for-agents
+name: skill-writing
 description: Writing documents for agents. Use when creating or editing skills, or modifying CLAUDE.md.
 ---
 
