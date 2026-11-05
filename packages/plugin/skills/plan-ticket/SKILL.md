@@ -42,14 +42,15 @@ Load `aisf:questionnaire` for the interview: the pattern, the agents and the pag
 gh issue view <n> --json title,body,labels,state,subIssues
 ```
 
-`status: plan` → go on. Anything else → stop and name the stage the ticket needs.
+`type: skill` → stop, name `aisf:skill-ticket`, write nothing. `status: plan` → go on. Anything
+else → stop and name the stage the ticket needs.
 
 **Spec check.** The body must state a clear desired outcome and acceptance criteria. Missing,
 vague or self-contradictory → stop: comment the concrete gaps and guard `plan → idea`. Don't
 invent what the spec left out.
 
-**Resume after a split.** `<n>` at `status: plan` with open non-spike children at
-`status: plan` means a split was accepted and posting stopped part-way. Post only the missing
+**Resume after a split.** `<n>` at `status: plan` with open children at
+`status: plan` that are neither spike nor `type: skill` means a split was accepted and posting stopped part-way. Post only the missing
 parts (_Too big: split the ticket_, Posting), guard `plan → planned`, report, stop.
 
 **Resume.** A `## Planning so far` section means planning paused for a spike. Its spike still
@@ -259,6 +260,14 @@ Any other sub-issue touching a second module or layer is cut again. An exception
 to the human; an agreed one goes to Risks as a knowing override. A sub-issue may depend on an
 earlier one but must not need a sibling half-done.
 
+**Skill part.** Work on text written for agents: skills, agent definitions, commands, CLAUDE.md,
+memory-style files (same definition as `aisf:create-ticket`). It becomes **one** `type: skill`
+sub-issue, beside the UI rule. `aisf:skill-ticket` splits it per skill later. An all-skill ticket
+of another type gets an umbrella with that one `type: skill` child; a skill child means an
+umbrella, so neither no-umbrella case below applies. The child is blocked by every sub-issue it
+needs. Every skill part sits in it. It has Title · Scope · Blocked-by · Proves, `hitl` off, no
+Module · Layer.
+
 Per sub-issue: **Title** (the outcome) · **Module · Layer** · **Scope** (one sentence, in and
 out) · **Blocked-by** ·
 **Proves** (which acceptance criteria) · **`hitl`** proposed or not. Nothing before it may need
@@ -287,7 +296,7 @@ Each objection you share becomes a question in the next round (step 3), built by
 
 Show the split: **Title** · **Module** · **Layer** · **Blocked-by** · **Proposed `hitl`** and its
 checkpoint. It is the last round: write `round-<N>.json` with `confirm.tasks` (one task per
-sub-issue, `heading` `<Title> · <module> · <layer>`, `blockedBy`, `hitl`), run `playback-builder` and `round-builder`, and
+sub-issue, `heading` `<Title> · <module> · <layer>`, the skill child's `<Title> · skill`, `blockedBy`, `hitl`), run `playback-builder` and `round-builder`, and
 show it with `aisf_show_artifact`. Tasks only, no decision tree. Confirm locks the `hitl` flags.
 
 **This is the only gate** (besides an accepted split, which is its own gate). Confirmed → the rest runs without further approval. Not confirmed →
@@ -326,6 +335,9 @@ spec**.
 - **UI spec**: what is shown, in which states (empty, loading, error, too much data), which
   actions the user has, and the API contract that feeds it. No layout, no files, no
   Given/When/Then: the design settles those.
+- **Skill child**: a ticket body, not a spec: Context, Scope, Acceptance criteria, and the parent
+  criterion it serves. `aisf:skill-ticket` writes its spec. Skill files are claimed by this child
+  for File coverage.
 - **Name what crosses a sub-issue boundary**: routes, schemas, bus events, tables. Names and
   data shapes, never code bodies.
 - **Pin down what is expensive to correct or that the human decided. Leave free what is cheap.**
@@ -356,6 +368,8 @@ is**.
    `priority:`. Title from the `####` line, body the spec under it. Backend: its own `type:`,
    `status: ready`, `hitl` where confirmed. UI: `type: ui`; with `project-design` present, an
    idea (no `status:` label) whose body is the plan's UI spec; otherwise `status: backlog`.
+   Skill child: `type: skill`, `status: plan`, `--parent <n>`, `--blocked-by` on the create call,
+   posted after its blockers.
 3. **Backfill** the plan with the real sub-issue numbers, guard `plan → planned`, and check
    the count landed. Write each backfilled body to a **new file**, never over its source.
 
