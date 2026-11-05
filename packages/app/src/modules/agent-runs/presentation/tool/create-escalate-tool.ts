@@ -2,11 +2,17 @@ import { z } from 'zod';
 import type { AgentTool } from '../../../../shared/agent-tools.js';
 
 const inputShape = {
-  kind: z.enum(['red', 'spec', 'denied']).describe('Why the run gives up'),
+  kind: z
+    .enum(['red', 'spec', 'denied'])
+    .describe(
+      'Why the run gives up. red: a step the run must pass still fails after fix attempts. spec: the ticket does not answer what the work needs. denied: a call the work cannot finish without was refused.',
+    ),
   reason: z
     .string()
     .min(1)
-    .describe('What was tried, what failed (pasted output), and what a human must decide'),
+    .describe(
+      'What was tried, what failed (pasted output), and what a human must decide. For denied: the refused tool and its input.',
+    ),
 };
 const inputSchema = z.object(inputShape);
 

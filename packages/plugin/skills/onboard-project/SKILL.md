@@ -22,10 +22,10 @@ Every status change and issue write goes through `aisf:github-issue`. Never pass
 
 Mode is **AFK** when the `aisf_escalate` tool is present, **hand-run** otherwise. Decide once.
 
-| Stop point                                       | AFK                                       | Hand-run                  |
-| ------------------------------------------------ | ----------------------------------------- | ------------------------- |
-| **escalate `spec`**: the issue can't be answered | `aisf_escalate({kind: 'spec', reason})`   | ask the concrete question |
-| **escalate `denied`**: a needed call was refused | `aisf_escalate({kind: 'denied', reason})` | say what was denied, ask  |
+| Stop point                      | AFK                                       | Hand-run                  |
+| ------------------------------- | ----------------------------------------- | ------------------------- |
+| **the issue can't be answered** | `aisf_escalate({kind: 'spec', reason})`   | ask the concrete question |
+| **a needed call was refused**   | `aisf_escalate({kind: 'denied', reason})` | say what was denied, ask  |
 
 AFK: A permission denial doesn't end your turn: the app asks the human. Told you may retry →
 issue the identical call once, unchanged. Otherwise carry on without it.

@@ -113,8 +113,7 @@ Every criterion gets evidence:
   "Matches the mock" is not evidence. "16px padding, `var(--surface)`: matches; dark `--accent`
   reads heavier than the mock" is.
 
-A fixable gap → back to §4. A vague or unprovable criterion → escalate `spec`. The leaf has no `hitl` and no
-`aisf_checkpoint`: the PR review is the human check. No Artifact tool call is made.
+A fixable gap → back to §4. A vague or unprovable criterion → escalate `spec`. The leaf has no `hitl`: the PR review is the human check. No Artifact tool call is made.
 
 ## 8. to 10.
 

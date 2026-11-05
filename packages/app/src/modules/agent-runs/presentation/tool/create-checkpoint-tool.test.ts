@@ -24,8 +24,10 @@ describe('createCheckpointTool', () => {
   it('should describe when to use it, the pause, the public comment and the no-secrets rule', () => {
     const { description } = createCheckpointTool();
 
-    expect(description).toContain('hitl');
-    expect(description).toContain('human checkpoint');
+    expect(description).not.toContain('hitl');
+    expect(description).toContain('in any run');
+    expect(description).toContain('Last resort only');
+    expect(description).toContain('aisf_escalate kind spec');
     expect(description).toContain('pauses the run');
     expect(description).toContain('public comment');
     expect(description).toContain('no secrets');

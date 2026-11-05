@@ -34,7 +34,6 @@ them.
 
 Call `aisf_show_artifact` with `{artifactId, title}`.
 
-- `artifactId` matches `^[a-z0-9][a-z0-9-]{0,63}$`.
 - A missing `index.html` returns an error text. The call does not wait.
 
 ## Next round
