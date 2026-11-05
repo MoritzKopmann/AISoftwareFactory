@@ -153,6 +153,18 @@ describe('describeTicketPage', () => {
     });
   });
 
+  it.each([
+    ['plan', 'skill-ticket'],
+    ['ready', 'skill-implement-ticket'],
+  ] as const)(
+    'should name the run skill when a skill ticket is at %s (expects %s)',
+    (status, skill) => {
+      const ticket = buildTicketResponse({ status, types: ['skill'] });
+
+      expect(describeTicketPage(answered(ticket), projectId, 1)).toMatchObject({ runSkill: skill });
+    },
+  );
+
   it('should run onboard-project when the ticket types include onboard', () => {
     const ticket = buildTicketResponse({ status: 'ready', types: ['onboard'] });
 

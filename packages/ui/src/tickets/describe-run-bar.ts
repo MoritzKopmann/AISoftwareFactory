@@ -15,11 +15,14 @@ export type RunSkill =
   | 'design'
   | 'onboard-project'
   | 'ui-ticket'
-  | 'ui-implement-ticket';
+  | 'ui-implement-ticket'
+  | 'skill-ticket'
+  | 'skill-implement-ticket';
 
 const ticketSkillLabels: Partial<Record<RunSkill, string>> = {
   'create-ticket': 'Start',
   'plan-ticket': 'Plan',
+  'skill-ticket': 'Plan',
   design: 'Design',
   'ui-ticket': 'Split',
   'ui-implement-ticket': 'Build',
