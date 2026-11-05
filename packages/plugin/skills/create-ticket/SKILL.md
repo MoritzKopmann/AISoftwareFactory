@@ -58,7 +58,9 @@ Load `aisf:questionnaire` for the pattern, the agents and the page. create-ticke
 round's questions. Specific to create-ticket:
 
 1. **Round 1.** Infer the type from the issue text and the gaps comment: `bug`, `enhancement`
-   or `task` (a spike is a task whose deliverable is an answer), or `ui` only when the skill
+   or `task` (a spike is a task whose deliverable is an answer), or `skill`: work on text
+   written for agents (skills, agent definitions, commands, CLAUDE.md, memory-style files). A
+   `skill` needs no project slot: no gate. Or `ui` only when the skill
    `project-design` exists (try loading it; skip silently if absent). Ask that type's track
    questions at once. No confirm-the-summary question and no pick-the-type question. Hand run
    with no number: ask the one-line summary in chat first, before the issue exists.
@@ -109,6 +111,11 @@ round's questions. Specific to create-ticket:
 
 Same what/why interview as the enhancement track. Ask nothing about layout: the design run
 settles it.
+
+**Skill**
+
+Same what/why interview as the enhancement track: ask its areas. Ask nothing about wording or
+structure of the text: the skill run settles it.
 
 **Task or spike**
 
