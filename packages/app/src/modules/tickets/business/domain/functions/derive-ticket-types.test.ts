@@ -12,6 +12,10 @@ describe('deriveTicketTypes', () => {
     expect(deriveTicketTypes(['type: onboard'])).toEqual(['onboard']);
   });
 
+  it('should return skill when the type: skill label exists', () => {
+    expect(deriveTicketTypes(['type: skill', 'status: plan'])).toEqual(['skill']);
+  });
+
   it('should drop an unknown type label when a known one is present', () => {
     expect(deriveTicketTypes(['type: chore', 'type: bug'])).toEqual(['bug']);
   });
