@@ -50,8 +50,8 @@ Done when the ticket is `in-progress`.
 
 Read `writing-for-agents` (and `SKILL-MECHANICS.md` beside it for a skill). Write the file at
 the spec's Path: frontmatter per its Invocation, then one section per spec step, each ending on
-its done-check. Point to a skill only when its whole is needed; a part of one is copied in.
-Never point to a command (a skill only the app runs).
+its done-check. Point to a whole skill or tool, never to part of one. If you need only a part,
+copy it in. Never point to a command: only the app runs it.
 
 Done when every spec step has a section and every spec Output exists.
 
