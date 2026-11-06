@@ -25,7 +25,7 @@ uses it.
   `spec`.
 - Never merge, never force-push without lease, never push to the default branch. `Closes #<n>`
   closes the ticket.
-- Rework (the ticket is `in-review`): follow `implement-ticket/rework.md`. Each work item is a
+- Rework (the ticket is `in-review`): load `aisf:rework`. Each work item is a
   text change, checked by step 4.
 
 # 1. Identify

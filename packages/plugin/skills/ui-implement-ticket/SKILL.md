@@ -20,8 +20,8 @@ the job it is good at: behaviour.
 
 **This skill follows `aisf:implement-ticket` for everything not visual.** Read it and apply
 these sections as written there: Guard rails, Stop points (mode: AFK when `aisf_escalate` is
-present, hand-run otherwise), §1 Identify (parent, blocked, in-review and rework with
-`aisf:implement-ticket`'s `rework.md`), §3 Claim and branch, §5 Green, §6 Code review, §8 Simplicity review, §9 Commit and §10 PR. It
+present, hand-run otherwise), §1 Identify (parent, blocked, in-review; rework →
+`aisf:rework`), §3 Claim and branch, §5 Green, §6 Code review, §8 Simplicity review, §9 Commit and §10 PR. It
 never merges. The sections below replace §0, §2, §4 and §7.
 
 `gh` infers the repository from the checkout. Never pass `-R`. Every status change and issue
@@ -61,7 +61,7 @@ If the leaf replaces a component, deleting it is part of the job.
 ## 3. Claim and branch
 
 As `aisf:implement-ticket` §3: guarded `ready → in-progress` first (resume: nothing; rework:
-per `aisf:implement-ticket`'s `rework.md`), then the branch.
+`aisf:rework`), then the branch.
 
 ## 4. Build
 
