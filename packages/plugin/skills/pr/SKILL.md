@@ -1,6 +1,6 @@
 ---
 name: pr
-description: Writes a short, visual PR body: Summary, Evidence, Merge danger. Called by aisf:implement-ticket, aisf:ui-implement-ticket and aisf:skill-implement-ticket for every PR body. Use when writing or rewriting a PR body.
+description: Writes a short, visual PR body: Summary, Evidence, Merge danger. Use when writing or rewriting a PR body.
 ---
 
 Use this template for the PR body:
