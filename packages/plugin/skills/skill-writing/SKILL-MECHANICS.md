@@ -1,22 +1,34 @@
 # Skill mechanics
 
-The skill-specific branch of [`aisf:skill-writing`](SKILL.md): what changes when the document is a skill (frontmatter, the invocation choice, and router skills). Everything else about writing it is the universal reference in `SKILL.md`.
+Part of [`aisf:skill-writing`](SKILL.md): frontmatter and invocation of skills, commands and agent definitions. Everything else about writing them is in `SKILL.md`.
 
-## Invocation
+## Model-invoked skill
 
-Two choices, trading the two loads:
+Omit `disable-model-invocation`. The `description` is the skill's context pointer, so the agent can fire it and other skills can reach it; it carries the trigger branches (pointer rules in `SKILL.md`). The cost is permanent context load. You can still type its name: a description only adds agent discovery, never removes the human's reach.
 
-- A **model-invoked** skill keeps a `description`, so the agent can fire it autonomously, and other skills can reach it. You can still type its name: model-invocation always _includes_ user reach; a description only ever adds agent discovery, never removes the human's. The description is the skill's top-level context pointer, forced to stay loaded at all times: permanent context load in exchange for discoverability. A model-invoked skill whose content is all reference is also one home for shared reference: another skill can invoke it, so reference needed by several skills lives in one place. Mechanics: omit `disable-model-invocation`, and write a model-facing description carrying the trigger branches (the pointer-writing rules in `SKILL.md` apply in full).
-- A **user-invoked** skill strips the description from the agent's reach: only the human typing its name can invoke it, and no other skill can. Zero context load, but it spends cognitive load: you are the index that must remember it exists. Mechanics: set `disable-model-invocation: true`; the `description` becomes human-facing: a one-line summary, trigger lists stripped.
+A **reference skill** is one home for reference that several documents need: any of them can invoke it.
 
-Pick model-invocation only when the agent must reach the skill on its own, or another skill must. If it only ever fires by hand, make it user-invoked and pay no context load.
+## Command
 
-Shared reference that two user-invoked skills both need can live in neither: with no descriptions, neither can fire the other. Push it to a plain file outside the skill system: external reference any skill can point at.
+Set `disable-model-invocation: true` and write **no `description`**. Only the human (or the app) runs it, and nothing points to it. Zero context load; the cost is cognitive load: the human is the index.
+
+## Agent definition
+
+A file in `agents/*.md`. Frontmatter:
+
+- `name`.
+- `description`: model-facing, says when to launch the agent.
+- `tools`: only those it needs.
+- `model`: optional.
+
+## Choosing invocation
+
+Pick model-invocation only when an agent or another skill must reach the document. A document that only fires by hand is a command.
 
 ## Splitting by invocation
 
-The invocation cut of splitting (the sequence cut lives in `SKILL.md`): split off a model-invoked skill when you have a distinct leading word that should trigger it on its own (a trigger word you actually use in your prompts), or another skill must reach it. You pay context load for the new always-loaded description, so that independent reach has to be worth it.
+Split off a model-invoked skill when a distinct leading word should trigger it, or another skill must reach it. The new always-loaded description costs context load, so that reach has to be worth it.
 
-## Router skills
+## Shared reference
 
-When user-invoked skills multiply past what you can remember, that piled-up cognitive load is cured by a **router skill**: one user-invoked skill that names the others and when to reach for each, so the human has one skill to remember instead of many. It can only hint, never fire them: user-invoked skills have no description, so nothing but the human can reach them.
+Reference that several commands need, and that is not a skill, lives in a plain file outside any skill, named by path.
