@@ -1,11 +1,14 @@
 ---
 name: skill-writing
-description: Writing documents for agents. Use when creating or editing skills, or modifying CLAUDE.md.
+description: Writing documents for agents. Use when writing a skill, command, agent or CLAUDE.md.
 ---
 
-Reference for writing any document an agent consumes: a skill, a `CLAUDE.md`, a doc reached by a pointer. The packaging differs; the writing does not: the same levers make each one predictable, since the agent takes the same _process_ every run rather than producing the same output.
+## Scope
 
-When the document you're writing is a skill, read [`SKILL-MECHANICS.md`](SKILL-MECHANICS.md) for frontmatter, invocation choice, and router skills.
+Reference for writing any document an agent reads: a skill, a command, an agent definition, a `CLAUDE.md`, a doc reached by a pointer. The packaging differs; the writing does not: the same levers make each one predictable, since the agent takes the same _process_ every run rather than producing the same output.
+
+- Writing a skill, command or agent: read [`SKILL-MECHANICS.md`](SKILL-MECHANICS.md) for frontmatter and invocation.
+- Writing a command or an agent: read [`LAYOUT.md`](LAYOUT.md) for layout and step shape.
 
 ## Context pointers
 
@@ -56,7 +59,8 @@ The strongest criteria are both checkable and exhaustive.
 Splitting one document into two spends one of the two loads, so split only when the cut earns it:
 
 - **By sequence**: split a run of steps where the post-completion steps tempt the agent to rush the one in front of it. Keeping them out of view drives more legwork on the current task. Beware the reverse: merging sequences exposes each step's later steps to what follows, inviting premature completion.
-- **By invocation**, skill-specific: see [`SKILL-MECHANICS.md`](SKILL-MECHANICS.md).
+- **By invocation**: see [`SKILL-MECHANICS.md`](SKILL-MECHANICS.md).
+- **By function**: each skill, command and agent owns one function. A second function is a second document.
 
 ## Leading words
 
@@ -76,6 +80,11 @@ You win twice: fewer tokens, and a sharper hook for the agent to hang its thinki
 ## Pruning
 
 - Keep each meaning in a **single source of truth**: one authoritative place, so changing the behaviour is a one-place edit. **Duplication** (the same meaning in more than one place) costs maintenance and tokens, and inflates a meaning's prominence on the ladder past its real rank. (The accidental inverse of a leading word, which repeats a token on purpose, never the meaning.)
+- **Point to a whole skill, a tool, or a plain file outside any skill (by path). Need a part of a skill: copy it in. A command is never a target.** A **tool** is functionality the application or an external system (MCP) gives the agent. A **skill** is a guide on how to do a thing. A **part** is anything less than the whole skill: a section, or a file inside it (a disclosed reference file, a shipped script). Only the owning skill, or an agent it launches and hands the path to, names its files.
 - The **environment** is a source of truth too (`package.json` scripts, config files, the directory layout, `--help` output), and a document that restates it is a **cache**: a copy of a lookup, earning its load only when the lookup is expensive. Cache what the agent cannot find by looking: the unwritten convention, the reason behind a choice, the gotcha no config confesses. Leave the one-file, one-command lookups to the environment, where they cannot go stale.
 - Check every line for **relevance**: does it still bear on what the document does? A line loses relevance by never bearing on the task (mere exposition, or a branch that should be disclosed) or by going stale as the behaviour or world it describes changes. Shorter documents are easier to keep relevant. Without a pruning discipline the default fate is **sediment**: stale layers that settle because adding feels safe and removing feels risky, until you must core down through them to find what is still live.
 - Hunt **no-ops** sentence by sentence: an instruction the model already obeys by default pays load to say nothing. The test (does it change behaviour versus the default?) is model-relative, not reader-relative: two people disagreeing about a no-op disagree about the default, and settle it by running the document, not by debate. When a sentence fails, delete the whole sentence rather than trim words from it. The test also grades leading words: a word too weak to beat the default (_be thorough_ when the agent is already thorough-ish) is a no-op, and the fix is a stronger word (_relentless_), not a different technique.
+
+## Reference skills
+
+A **reference skill** is one whose content is all reference. Its rules: one topic, concise, concrete, short. The layout and step shape of [`LAYOUT.md`](LAYOUT.md) do not bind it.
