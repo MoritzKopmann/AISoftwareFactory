@@ -33,6 +33,14 @@ describe('createCheckpointTool', () => {
     expect(description).toContain('no secrets');
   });
 
+  it('should say an interrupted result is the pause and the tool is not called again when described', () => {
+    const { description } = createCheckpointTool();
+
+    expect(description).toContain('interrupted');
+    expect(description).toContain('is the pause, not a failure');
+    expect(description).toContain('never call this tool again for the same wait');
+  });
+
   it('should reject when the request is empty', async () => {
     await expect(createCheckpointTool().execute({ request: '' }, runContext)).rejects.toThrow();
   });
