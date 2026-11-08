@@ -58,6 +58,12 @@ describe('createEscalateTool', () => {
     expect(description).toContain('denied:');
   });
 
+  it('should say denied applies only after the human refused the call when the kind is described', () => {
+    const description = describeInput('kind');
+
+    expect(description).toContain('only after the human refused');
+  });
+
   it('should name the refused tool and its input for denied in the reason description', () => {
     const description = describeInput('reason');
 
