@@ -10,7 +10,7 @@ A **reference skill** is one home for reference that several documents need: any
 
 ## Command
 
-Set `disable-model-invocation: true` and write **no `description`**. Only the human (or the app) runs it, and nothing points to it. Zero context load; the cost is cognitive load: the human is the index.
+A command lives in `commands/<name>/SKILL.md`. Set `disable-model-invocation: true` and write **no `description`**. Only the human (or the app) runs it, and nothing points to it. Zero context load; the cost is cognitive load: the human is the index.
 
 ## Agent definition
 
