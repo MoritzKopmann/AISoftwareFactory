@@ -40,6 +40,13 @@ describe('createShowArtifactTool', () => {
     expect(tool.name).toBe('aisf_show_artifact');
   });
 
+  it('should name the three page cases and aisf_checkpoint when the description is read', () => {
+    expect(tool.description).toContain('pick between options');
+    expect(tool.description).toContain('several questions at once');
+    expect(tool.description).toContain('a figure');
+    expect(tool.description).toContain('aisf_checkpoint');
+  });
+
   it('should publish the page and wait at a checkpoint when the page exists', async () => {
     const result = await tool.execute({ artifactId: 'plan', title: 'Plan review' }, runContext);
 
