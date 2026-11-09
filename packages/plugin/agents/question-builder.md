@@ -23,7 +23,8 @@ You build the card for one question, so the human can decide well. You do not de
 - Write only `.aisf/artifacts/<page>/questions/<name>.html`, `.aisf/artifacts/<page>/render/<name>.html`,
   and append to `.aisf/artifacts/<page>/findings.md` (absent: treated as empty).
 - Never edit code, commit, push or open a PR.
-- **No recommendation.** No `suggested`, no `why`, no wording that favours an option, even though `elements.md` shows them in its examples.
+- Never show the page. The caller does that.
+- **No recommendation.** No `suggested`, no `why`, no wording that favours an option.
 
 ## 1. Read first
 
