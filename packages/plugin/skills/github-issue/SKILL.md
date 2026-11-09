@@ -2,7 +2,8 @@
 name: github-issue
 description: >
   Formats, posts and updates GitHub issues for the aisf workflow: create, edit an idea in
-  place, post bare ideas and sub-issues, guarded status transitions, blocked-by.
+  place, post bare ideas and sub-issues, guarded status transitions, blocked-by, what each type, status and
+  flag label means (waiting, stuck, hitl).
 user-invocable: false
 ---
 
@@ -48,13 +49,13 @@ it fits. Checkable: ✓ "completes in under 2s for 95% of requests" ✗ "works b
 **Supporting material** — screenshots, design links, related tickets (`Related: #N`),
 pasted error text (paste it, don't describe it — it's searchable).
 
-**A `## Design` section** may sit on an issue. `aisf:design` writes it: board URL, folder
+**A `## Design` section** may sit on an issue. `design` writes it: board URL, folder
 `.aisf/artifacts/design/` in the `-authoring` worktree, accepted round, the what/why brief. Leave it
 untouched when editing a body.
 
 **A split part** (see _Split part_) is a full ticket body, not a spec. It carries the anatomy above.
 
-**A sub-issue from `aisf:plan-ticket`** carries the body that skill hands over: a spec (Context ·
+**A sub-issue from `plan-ticket`** carries the body that skill hands over: a spec (Context ·
 Scope · Landing zone · Acceptance criteria), or for a `type: ui` child what is displayed. Post it
 as given.
 
@@ -70,6 +71,16 @@ onboarded.
 | Status    | `status: backlog` · `status: plan` · `status: planned` · `status: ready` · `status: in-progress` · `status: in-review`                                  |
 | Flag      | `hitl`: orthogonal to status. The leaf has one human checkpoint, named by its spec. The run works alone up to it, then waits.                           |
 | Flag      | `waiting`: orthogonal to status. A run waits at its human checkpoint; the ticket keeps its status. `stuck`: a run gave up; the ticket keeps its status. |
+
+Types:
+
+- `type: bug`: something isn't working correctly.
+- `type: enhancement`: new feature or improvement.
+- `type: task`: non-feature work item.
+- `type: spike`: research or investigation.
+- `type: ui`: design-driven UI work.
+- `type: onboard`: onboard the repo to aisf.
+- `type: skill`: text written for agents: skills, agent definitions, commands, CLAUDE.md, memory-style files.
 
 - Every **labelled** issue has exactly one `type:`, one `priority:` and one `status:`.
   Bare ideas have none.
@@ -98,10 +109,8 @@ An open issue with **no** `status:` label is an **idea**. Done is the closed sta
   request) when a run ends at its human checkpoint, and removes it on the answer. It adds
   `stuck` (plus a comment with the reason) and removes `waiting` when a run gives up. Reset
   removes both. A legacy `status: waiting` or `status: stuck` label is not migrated: the ticket
-  shows as `conflict` until the label is removed by hand.
+  shows as `conflict` until the label is removed by hand. The human answers on the ticket page, and the app resumes the run.
 - A `planned` parent is a tracking umbrella: it is never implemented and never closed by hand.
-- **A spike has no PR.** `aisf:spike` moves it `ready → in-progress` and closes it itself, once
-  its verdict is in the parent's body.
 
 ## Guarded transitions
 
@@ -153,20 +162,20 @@ gh issue view <n> --json body --jq '.body | length'
 
 ### Edit an idea in place
 
-For `aisf:create-ticket` on an existing idea `#N`:
+For `create-ticket` on an existing idea `#N`:
 
 1. Guard: `#N` must have no `status:` label (`idea → backlog`, `idea → plan`, or `idea → idea`
    for `type: ui`). Otherwise stop and report its state.
 2. Rewrite title and body from the interview; the body gets the full anatomy and passes the
-   cold-read test. GitHub's edit history keeps the original idea text, so don't quote it back.
-3. Write it in one edit:
+   cold-read test. Open questions stay in the body. GitHub's edit history keeps the original idea text, so don't quote it back.
+3. Never `hitl`. Write it in one edit:
 
    ```bash
    gh issue edit <n> --title "<title>" --body-file <tmp> \
      --add-label "type: <x>" --add-label "priority: <x>" --add-label "status: <backlog|plan>"
    ```
 
-   A `type: ui` idea (`idea → idea`) gets no `status:` label; `aisf:design` moves it on:
+   A `type: ui` idea (`idea → idea`) gets no `status:` label; `design` moves it on:
 
    ```bash
    gh issue edit <n> --title "<title>" --body-file <tmp> \
@@ -179,8 +188,9 @@ For spin-offs and findings that a later create-ticket interview will refine:
 
 - An outcome-phrased title.
 - One or two lines of what and why.
-- A provenance line: `Split from #N` (create-ticket spin-offs) or
-  `Found while implementing #N` (implement-ticket blockers and red-on-main findings).
+- A provenance line: `Split from #N` (create-ticket spin-offs),
+  `Found while implementing #N` (implement-ticket blockers and red-on-main findings) or
+  `Found while onboarding #N` (onboard-project: accepted suggestions that need code changes).
 - **No labels.** The cold-read test is waived.
 
 ```bash
@@ -210,8 +220,8 @@ body text, because it isn't a dependency.
   from the parent.
 - **A `type: ui` child is never `ready`.** With `project-design` it is an idea (no `status:`
   label): its design run starts by itself. Without, it is `status: backlog` and waits for a design.
-  Exception: leaves posted by `aisf:ui-ticket` under a designed `type: ui` ticket are `status: ready`.
-- **A `type: skill` child posted by `aisf:plan-ticket` is `status: plan`**: `aisf:skill-ticket` plans it.
+  Exception: leaves posted by `ui-ticket` under a designed `type: ui` ticket are `status: ready`.
+- **A `type: skill` child posted by `plan-ticket` is `status: plan`**: `skill-ticket` plans it.
 - **A spike child leaves its parent at `status: plan`**: planning resumes on its verdict.
 
   ```bash
@@ -233,7 +243,7 @@ body text, because it isn't a dependency.
 
 ### Split part
 
-For `aisf:plan-ticket`'s "Too big: split the ticket". Parts are full sub-issues under an
+For `plan-ticket`'s "Too big: split the ticket". Parts are full sub-issues under an
 umbrella, each planned later on its own. They are not bare ideas, and not `ready` specs.
 
 - Body: full anatomy, cold-read test. No `Split from #N`, no `Part of #N`: the native parent
@@ -263,16 +273,3 @@ gh issue comment <n> --body-file <tmp>
 
 The ticket is left with the `stuck` label, or `in-progress` with no active run. The hand fix: press Reset to
 ready on the ticket page, then Run.
-
-## Hand-run stuck
-
-The fallback when a run must give up and the app's `aisf_escalate` tool is absent:
-
-1. Add the `stuck` label, and remove the `waiting` label if present. The status does not change:
-
-   ```bash
-   gh issue edit <n> --add-label "stuck" --remove-label "waiting"
-   ```
-
-2. A comment stating the reason: what was tried, what failed (paste the output), and what a
-   human needs to decide.
