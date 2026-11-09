@@ -1,6 +1,6 @@
 # Layout
 
-Part of [`aisf:skill-writing`](SKILL.md): one layout and one step shape for commands and agent definitions. Reference skills are not bound (rules in `SKILL.md`). The names match `packages/plugin/skills/skill-ticket/references/spec.md`.
+Part of [`aisf:skill-writing`](SKILL.md): one layout and one step shape for commands and agent definitions. Reference skills are not bound (rules in `SKILL.md`). The names match `packages/plugin/commands/skill-ticket/references/spec.md`.
 
 ## Layout
 

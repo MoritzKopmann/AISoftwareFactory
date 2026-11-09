@@ -8,7 +8,7 @@ implementer writes the text per `aisf:skill-writing`.
     One sentence: why this skill is new or changes.
 
     ## Skill
-    - Path: `packages/plugin/skills/<name>/SKILL.md` (or the agent / command file)
+    - Path: `packages/plugin/skills/<name>/SKILL.md`, `packages/plugin/commands/<name>/SKILL.md` for a command (or the agent file)
     - New | Changed
     - Invocation: user (`disable-model-invocation: true`) | model, with the description
 

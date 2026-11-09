@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { registry } from '../../../assets/kit/kit.js';
@@ -102,7 +102,11 @@ describe('specimens page', () => {
     const root = resolve(import.meta.dirname, '../../../../..');
     const deleted =
       /aisf-(sequence|actor|step|state|modmap|unit|compare|panel|diff|table|scope|label|edge|lifeline|arrowhead)\b/;
-    const folders = ['packages/app/assets/kit', 'packages/plugin/skills'];
+    const folders = [
+      'packages/app/assets/kit',
+      'packages/plugin/skills',
+      'packages/plugin/commands',
+    ].filter((folder) => existsSync(resolve(root, folder)));
     const hits = folders
       .flatMap((folder) =>
         readdirSync(resolve(root, folder), { recursive: true, withFileTypes: true })
@@ -112,5 +116,30 @@ describe('specimens page', () => {
       .filter((file) => deleted.test(readFileSync(file, 'utf8')));
 
     expect(hits).toEqual([]);
+  });
+
+  it('should hold exactly the ten command folders in commands and none in skills when listed', () => {
+    const plugin = resolve(import.meta.dirname, '../../../../plugin');
+    const commands = [
+      'create-ticket',
+      'plan-ticket',
+      'spike',
+      'onboard-project',
+      'design',
+      'ui-ticket',
+      'ui-implement-ticket',
+      'implement-ticket',
+      'skill-ticket',
+      'skill-implement-ticket',
+    ];
+
+    const inCommands = readdirSync(resolve(plugin, 'commands'));
+    const inSkills = readdirSync(resolve(plugin, 'skills'));
+
+    expect(inCommands.toSorted()).toEqual(commands.toSorted());
+    expect(
+      inCommands.every((name) => existsSync(resolve(plugin, 'commands', name, 'SKILL.md'))),
+    ).toBe(true);
+    expect(inSkills.filter((name) => commands.includes(name))).toEqual([]);
   });
 });
