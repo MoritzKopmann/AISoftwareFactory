@@ -26,7 +26,7 @@ export function createShowArtifactTool(artifactService: ArtifactService): AgentT
   return {
     name: 'aisf_show_artifact',
     description:
-      'Show the human a page and wait for them. Publishes .aisf/artifacts/<artifactId>/index.html in your worktree, then pauses the run at a checkpoint until the human answers. Artifact id `design` publishes the design folder as a board.',
+      'Show the human a page and wait for them. Publishes .aisf/artifacts/<artifactId>/index.html in your worktree, then pauses the run at a checkpoint until the human answers. Artifact id `design` publishes the design folder as a board. Use a page when the human must pick between options, answer several questions at once, or see a figure. For "do X and report", use aisf_checkpoint instead.',
     inputShape,
     execute: async (input, runContext) => {
       const parsed = inputSchema.safeParse(input);
