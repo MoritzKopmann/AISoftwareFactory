@@ -14,7 +14,7 @@ export function createParkTool(): AgentTool {
   return {
     name: 'aisf_park',
     description:
-      'Park the ticket behind a blocking ticket you have already linked. Ends the run: the ticket goes back to ready.',
+      'Park the ticket when you find a hidden dependency on another ticket while working: you cannot finish until that ticket lands. Park it behind that blocking ticket, which you have already linked. Ends the run: the ticket goes back to ready.',
     inputShape,
     execute: async (input) => {
       const { blocker } = inputSchema.parse(input);

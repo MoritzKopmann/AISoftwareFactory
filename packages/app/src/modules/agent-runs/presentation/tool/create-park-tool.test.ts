@@ -14,6 +14,14 @@ describe('createParkTool', () => {
     expect(createParkTool().name).toBe('aisf_park');
   });
 
+  it('should name the hidden dependency trigger, the linked blocker and the run end in its description', () => {
+    const { description } = createParkTool();
+
+    expect(description).toContain('hidden dependency on another ticket');
+    expect(description).toContain('already linked');
+    expect(description).toContain('Ends the run');
+  });
+
   it('should return a parked ending with the blocker number when the input is valid', async () => {
     const result = await createParkTool().execute({ blocker: 42 }, runContext);
 
