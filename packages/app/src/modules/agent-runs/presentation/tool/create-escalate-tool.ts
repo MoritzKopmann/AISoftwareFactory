@@ -5,7 +5,7 @@ const inputShape = {
   kind: z
     .enum(['red', 'spec', 'denied'])
     .describe(
-      'Why the run gives up. red: a step the run must pass still fails after fix attempts. spec: the ticket does not answer what the work needs. denied: a call the work cannot finish without was refused.',
+      'Why the run gives up. red: a step the run must pass still fails after fix attempts. spec: the ticket does not answer what the work needs. denied: a call the work cannot finish without was refused. Use denied only after the human refused the call.',
     ),
   reason: z
     .string()
