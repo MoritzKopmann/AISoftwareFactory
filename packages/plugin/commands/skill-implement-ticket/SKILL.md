@@ -1,83 +1,108 @@
 ---
 name: skill-implement-ticket
+description: Write one ready type: skill leaf to a PR, from its spec alone.
 disable-model-invocation: true
 ---
 
-# Role
+# skill-implement-ticket
 
-You are a senior skill author. Build one ready `type: skill` leaf to a PR, from its spec alone.
-The spec is in the `aisf:skill-ticket` format (`skill-ticket/references/spec.md`). You write the
-text; the spec describes behaviour.
+## Role and goal
 
-# Parameters
+You are a senior skill author. Build one ready `type: skill` leaf to a PR, from its spec alone. You write the text; the spec describes behaviour.
 
-`<n> [--since <ISO time>]`: the ticket. `--since` is when the app's last run ended; only rework
-uses it.
+## Parameters
 
-# General rules
+- `<n>`: the ticket.
+- `--since <ISO time>`: passed on to `aisf:rework`.
 
-- The app started this run. It already picked the ticket (a ready leaf, or an in-review one
-  whose PR needs work; never blocked, `stuck` or `waiting`) and put you in its worktree on
-  `aisf/<n>-<slug>`. Don't check those again, and don't create a branch.
-- Every issue write and every status change goes through `aisf:github-issue`. `gh` infers the
-  repository.
-- No step waits for a human. A spec gap or a criterion you cannot meet → `aisf_escalate`
-  `spec`.
-- Never merge, never force-push without lease, never push to the default branch. `Closes #<n>`
-  closes the ticket.
-- Rework (the ticket is `in-review`): load `aisf:rework`. Each work item is a
-  text change, checked by step 4.
+## General rules
 
-# 1. Identify
+- The app runs you in the ticket's worktree on `aisf/<n>-<slug>`.
+- Every issue write and status change goes through `aisf:github-issue`.
+- No step waits for a human.
 
-```bash
-gh issue view <n> --json title,body,labels
+## Graph
+
+```mermaid
+flowchart TD
+  1[1 Identify] -->|ready| 2[2 Claim]
+  1 -->|in-review| R[R Rework]
+  1 -->|no type: skill, or spec sections missing| E((escalate spec))
+  2 -->|claimed| 3[3 Write]
+  2 -->|guard mismatch| S((stop))
+  3 -->|every spec step has a section| 4[4 Check]
+  4 -->|a criterion missed| 3
+  4 -->|a criterion the text cannot meet| E
+  4 -->|every criterion met| 5[5 Commit]
+  5 -->|tree clean| 6[6 PR]
+  6 -->|aisf:pr done| D((done))
+  6 -->|aisf:pr escalates| X((escalate))
+  R -->|rework done| D
+  R -->|not rework| S
+  R -->|aisf:rework escalates| X
 ```
 
-- Without `type: skill` → `aisf_escalate` `spec`, naming the label it has.
-- The body holds Context, Skill, Role and goal, Steps and Acceptance criteria. Else →
-  `aisf_escalate` `spec`.
+## Steps
 
-Done when you have said `<n>` and the mode (new / rework).
+### 1. Identify
 
-# 2. Claim
+- **Goal**: a `type: skill` leaf with a full spec; the mode known.
+- **Actions**: read the ticket's title, body and labels. Mode: `status: ready` → new; `status: in-review` → rework.
+- **Uses**: `aisf:github-issue`.
+- **Done**: `<n>` and the mode (new / rework) said.
+- **Output**: the spec.
+- **Exits**: ready → 2 · in-review → R · no `type: skill` → escalate `spec`, naming the label it has · body lacks Context, Skill, Role and goal, Steps or Acceptance criteria → escalate `spec`.
 
-Guarded `ready → in-progress`. A guard mismatch → stop and report the actual state.
+### 2. Claim
 
-Done when the ticket is `in-progress`.
+- **Goal**: the ticket is `in-progress`.
+- **Actions**: guarded `ready → in-progress`.
+- **Uses**: `aisf:github-issue`.
+- **Done**: the ticket is `in-progress`.
+- **Exits**: claimed → 3 · guard mismatch → stop.
 
-# 3. Write
+### 3. Write
 
-Read `aisf:skill-writing` (and `SKILL-MECHANICS.md` beside it for a skill). Write the file at
-the spec's Path: frontmatter per its Invocation, then one section per spec step, each ending on
-its done-check. Point to a whole skill or tool, never to part of one. If you need only a part,
-copy it in. Never point to a command: only the app runs it.
+- **Goal**: the file at the spec's Path.
+- **Actions**: read `aisf:skill-writing`. Write the frontmatter per the spec's Invocation, then one section per spec step, each ending on its done-check.
+- **Uses**: `aisf:skill-writing`.
+- **Done**: every spec step has a section and every spec Output exists.
+- **Output**: the changed file.
+- **Exits**: every spec step has a section → 4.
 
-Done when every spec step has a section and every spec Output exists.
+### 4. Check
 
-# 4. Check
+- **Goal**: every acceptance criterion met by the text.
+- **Actions**: read the changed text against every acceptance criterion of the spec, one by one. A spec gap found while writing shows here as a criterion the text cannot meet.
+- **Done**: each criterion has the line that meets it, named.
+- **Output**: criterion → line list (the PR's Evidence).
+- **Exits**: a criterion missed → 3 · a criterion the text cannot meet → escalate `spec` · every criterion met → 5.
 
-Read the changed text against every acceptance criterion of the spec, one by one. A miss → back
-to 3. A criterion the text cannot meet → `aisf_escalate` `spec`.
+### 5. Commit
 
-Done when each criterion has the line that meets it, named.
+- **Goal**: one commit.
+- **Actions**: invoke `aisf:commit`.
+- **Uses**: `aisf:commit`.
+- **Done**: the tree is clean.
+- **Exits**: tree clean → 6.
 
-# 5. Commit
+### 6. PR
 
-Invoke `aisf:commit`, with `refs #<n>`.
+- **Goal**: the PR open, the ticket `in-review`.
+- **Actions**: load `aisf:pr`, with step 4's criterion → line list as Evidence.
+- **Uses**: `aisf:pr`.
+- **Done**: `aisf:pr` is done.
+- **Output**: the PR.
+- **Exits**: `aisf:pr` done → done · `aisf:pr` escalates → escalate.
 
-Done when the tree is clean.
+### R. Rework
 
-# 6. PR
+- **Goal**: the in-review PR reworked, or left alone when it is not rework.
+- **Actions**: load `aisf:rework` with `--since`. It drives. Its change step is 3 Write, its check and verify steps are 4 Check, its commit step is 5 Commit.
+- **Uses**: `aisf:rework`.
+- **Done**: `aisf:rework` is done or stopped.
+- **Exits**: rework done → done · not rework → stop · `aisf:rework` escalates → escalate.
 
-1. `git push -u origin HEAD`.
-2. Write the body with `aisf:pr`, step 4's results as Evidence, then append `Closes #<n>`.
-3. `gh pr create --body-file <tmp> --label "priority: <x>"`, `<x>` the ticket's `priority:`
-   label. Title `<type>(<scope>): <ticket title>` as `aisf:commit` chose. Not draft.
-4. Guarded `in-progress → in-review`. Never skip it: it makes the ticket findable.
+## Output
 
-Done when the PR exists against the default branch and the ticket is `in-review`.
-
-# Output
-
-A PR URL, reported in one line.
+The skill file written per the spec, committed, and `aisf:pr` done: one open PR, ticket `in-review`.
