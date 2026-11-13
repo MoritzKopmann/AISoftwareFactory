@@ -1,76 +1,79 @@
 ---
 name: spike
-description: >
-  Run a type: spike sub-issue posted by aisf:plan-ticket: build throwaway code that answers its
-  question, write the verdict into the parent's "Planning so far", close the spike. No TDD, no
-  PR. Use when the user wants to run a spike. Triggers: "spike #N", "run spike N".
+description: Answer a type: spike ticket's question with throwaway code; verdict into the parent.
+disable-model-invocation: true
 ---
 
 # spike
 
-Answer one spike ticket's question, so planning on its parent can go on. Argument: ticket
-number. If none, ask.
+## Role and goal
 
-`gh` infers the repository from the current checkout. Never pass `-R`. Every status change and
-every issue write goes through `aisf:github-issue`.
+Answer one spike ticket's question with throwaway code, so planning on its parent can go on.
 
-## Stop points
+## Parameters
 
-Mode is **AFK** when the `aisf_escalate` tool is present, **hand-run** otherwise. Decide once.
+- `<n>`: the spike ticket. If none, ask.
 
-AFK: A permission denial doesn't end your turn: the app asks the human. Told you may retry → issue the identical call once, unchanged. Otherwise carry on without it.
+## General rules
 
-**Stop when a call the work can't finish without was refused.**
+- Every status change and issue write goes through `aisf:github-issue`.
+- The run is on its own branch. Uncommitted work in the tree is this spike's: build on it.
 
-- AFK: `aisf_escalate({kind: 'denied', reason})`. Escalation ends the run.
-- Hand-run: say what was denied, ask.
+## Graph
 
-Never call an `aisf_*` tool that isn't present.
-
-## 1. Read
-
-```bash
-gh issue view <n> --json title,body,labels,state,parent
+```mermaid
+flowchart TD
+  S((start)) --> 1[1 Read]
+  1 -->|preconditions hold, claimed or resumed| 2[2 Build]
+  1 -->|anything else, or guard mismatch| X((stop))
+  2 -->|built| 3[3 Verify]
+  3 -->|hitl: aisf_checkpoint answered| 4[4 Verdict]
+  3 -->|no hitl: output settles the options, or clearly won't| 4
+  4 --> D((done))
 ```
 
-Go on only with an open `type: spike` ticket at `status: ready`, or `status: in-progress` to
-resume, whose parent has a `## Planning so far` section. Anything else → stop, say why, write
-nothing.
+## Steps
 
-Take from the body: the options, and what result settles them.
+### 1. Read
 
-## 2. Build
+- **Goal**: an open `type: spike` whose parent has `## Planning so far`; know its options and what settles them; own the ticket.
+- **Actions**: read the ticket (title, body, labels, state, parent). Take from the body the options and the result that settles them. At `status: ready`: guard `ready → in-progress`. At `status: in-progress` (resume): no guard.
+- **Uses**: `aisf:github-issue`.
+- **Done**: options and settling result named; ticket is `in-progress`.
+- **Exits**: preconditions hold and claimed or resumed → 2 · anything else, or guard mismatch → stop: say why, write nothing.
 
-Branch `aisf/<n>-spike`. Already on `aisf/<n>-*` → stay. Otherwise, on a clean tree:
-`git fetch origin && git switch -c aisf/<n>-spike origin/main`. A dirty tree → ask the human.
-Never stash. Then guard `ready → in-progress`.
+### 2. Build
 
-Build the least that produces the settling result. It is throwaway: no TDD, no review, no
-project checks.
+- **Goal**: the least code that produces the settling result.
+- **Actions**: build it. It is throwaway: no TDD, no review, no project checks.
+- **Done**: something exists that can be run to produce the settling result.
+- **Exits**: built → 3.
 
-## 3. Verify
+### 3. Verify
 
-- **`hitl` label:** the human judges. Say how to start it and what to look at, then wait. Their
-  answer is the evidence.
-- **No `hitl`:** you judge. Run it and keep the output.
+- **Goal**: a result someone saw. Rate only what was seen.
+- **Actions**: `hitl` label → call `aisf_checkpoint` with how to start it and what to look at; the human's answer is the evidence. No `hitl` → run it and keep the output. Stop when the result settles the options, or when it is clear it won't: that is an `inconclusive` verdict, not a reason to keep building.
+- **Uses**: `aisf_checkpoint` (hitl only).
+- **Done**: evidence in hand: the human's answer, or the run output.
+- **Exits**: hitl, checkpoint answered → 4 · no hitl, output settles the options or clearly won't → 4.
 
-Never rate a result nobody saw. Stop when the result settles the options, or when it is clear it
-won't: that is an `inconclusive` verdict, not a reason to keep building.
+### 4. Verdict
 
-## 4. Verdict
+- **Goal**: the verdict in the parent, the spike closed.
+- **Actions**: commit everything in one commit, `chore: spike #<n>`. Never push, no PR. Read the current branch (`git branch --show-current`). Insert into the parent's body, directly under `Waiting for the verdict of #<n>`:
 
-Commit everything in one commit, `chore: spike #<n>`. Never push, no PR.
+      **Verdict:** the option chosen, or `inconclusive`.
+      **Evidence:** what was built and run, and what it showed. On a `hitl` spike: what the human reported.
+      **Caveats:** what the result does not cover.
+      **Code:** local branch `<current branch>`, not pushed.
 
-Insert into the parent's body, directly under `Waiting for the verdict of #<n>`:
+  Inconclusive or failed gets the full story under Evidence: what was tried, why it did not settle the options, what blocked it. Close the spike. Report the verdict and that `plan #<parent>` resumes from it. Don't start planning.
 
-    **Verdict:** the option chosen, or `inconclusive`.
-    **Evidence:** what was built and run, and what it showed. On a `hitl` spike: what the human
-    reported.
-    **Caveats:** what the result does not cover.
-    **Code:** local branch `aisf/<n>-spike`, not pushed.
+- **Uses**: `aisf:github-issue`, `git`.
+- **Done**: one local commit; verdict block in the parent with the real branch name; spike closed.
+- **Output**: the verdict report.
+- **Exits**: always → done.
 
-**Inconclusive or failed** gets the full story under Evidence: what was tried, why it did not
-settle the options, and what blocked it.
+## Output
 
-Then `gh issue close <n>`. Report the verdict and that `plan #<parent>` resumes from it. Don't
-start planning yourself.
+The verdict block in the parent's body, the spike closed, the spike code in one commit on the run's local branch, not pushed.
