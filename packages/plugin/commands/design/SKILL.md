@@ -1,53 +1,105 @@
 ---
 name: design
-description: >
-  Draw the screen of a type: ui idea as plain-HTML boards in the project's own look, revise it
-  from pinned comments on the board page, and on Accept hand the ticket to planning.
-  Use when a type: ui idea needs its design. Triggers: "design #N", "draw #N".
+disable-model-invocation: true
 ---
 
 # design
 
-Make the design a `type: ui` idea is built from. The output is a folder of boards drawn in the
-project's own look. A later split reads the markup, so the source is the product: a pretty
-board whose numbers can't be read off its HTML has failed.
+## Role and goal
+
+Draws the boards of a `type: ui` idea and revises them until the human accepts. The output is a
+folder of boards drawn in the project's own look. A later split reads the markup, so the source
+is the product: a pretty board whose numbers can't be read off its HTML has failed.
 
 The human reviews on the board page the app serves. You never see the page. Feedback comes back
 as events. You answer by editing files. The page reloads by itself.
 
-`gh` infers the repository from the current checkout. Never pass `-R`. Every issue write goes
-through `aisf:github-issue`.
+## Parameters
 
-## Input and precondition
+- `<n>`: the issue number.
 
-Argument: the issue number. If none, ask.
+## General rules
 
-```bash
-gh issue view <n> --json title,body,labels,state
+- Every issue read and write goes through `aisf:github-issue`.
+- Write only to `.aisf/artifacts/design/` in the worktree. The id `design` is reserved for it.
+
+## Graph
+
+```mermaid
+flowchart TD
+  1[1 Read] -->|open, no status:, type: ui| 2[2 Look]
+  1 -->|anything else| S((stop))
+  2 -->|project-design loaded| 3[3 Draw]
+  2 -->|Unknown skill| E((escalate))
+  3 -->|folder written| 4[4 Show]
+  4 -->|design-feedback| 5[5 Revise]
+  4 -->|design-accepted| 6[6 Hand over]
+  5 -->|boards edited, comments answered| 4
+  6 -->|body written, guard passed| D((done))
 ```
 
-Go on only for an open issue with **no** `status:` label and the `type: ui` label. Anything else
-→ stop and say why. A stop here writes nothing.
+## Steps
 
-The issue body is the brief: what the screen solves, not how it looks.
+### 1. Read
 
-## Stop points
+- **Goal**: open issue, no `status:` label, `type: ui`.
+- **Actions**: read the issue (title, body, labels, state). The body is the brief: what the screen solves, not how it looks.
+- **Uses**: `aisf:github-issue`
+- **Done**: state, labels and brief known.
+- **Output**: the brief.
+- **Exits**: `open, no status:, type: ui → 2` · `anything else → stop` (say why; write nothing).
 
-Mode is **AFK** when the `aisf_escalate` tool is present, **hand-run** otherwise. Decide once.
-Escalate `spec` = `aisf_escalate({kind: 'spec', reason})`. Hand-run: ask the human instead.
+### 2. Look
 
-## 1. The project's look
+- **Goal**: know the project's look and the screen's domain.
+- **Actions**: load `project-design`: tokens by role, fonts, icon set, components. Read the screen's current code, if any, and the domain it shows: its states and user actions.
+- **Uses**: `project-design` (Skill tool)
+- **Done**: every domain state and user action listed; tokens, fonts, icons, components known. Nothing written yet.
+- **Output**: state list; the project's look.
+- **Exits**: `project-design loaded → 3` · `Unknown skill → escalate` (`aisf_escalate` `spec`, "project has no project-design slot").
 
-Load `project-design`. `Unknown skill` → escalate `spec`, "project has no project-design slot".
-Write nothing before this.
+### 3. Draw
 
-It names the project's tokens (by role), fonts, icon set and components. Read the screen's
-current code, if any, and the domain it shows: which states the data can be in, what a user can
-do. A state the domain can't produce is wrong. A missing one is wrong.
+- **Goal**: the first round of boards.
+- **Actions**: write `.aisf/artifacts/design/` (`index.json`, `tokens.css`, `boards/<id>.html`) with `"round": 1`, per Reference: The folder, Board rules, Craft.
+- **Done**: every domain state has a board; each board obeys every board rule; `index.json` has round 1.
+- **Output**: the design folder.
+- **Exits**: `folder written → 4`.
 
-## 2. The folder
+### 4. Show
 
-Write only to `.aisf/artifacts/design/` in the worktree. The id `design` is reserved for this.
+- **Goal**: get the human's verdict.
+- **Actions**: `aisf_show_artifact({artifactId: 'design', title})`. One or two chat lines: what you drew, what to judge first. Read the event per `aisf:artifacts`.
+- **Uses**: `aisf_show_artifact`, `aisf:artifacts`
+- **Done**: an event is read.
+- **Output**: the human's event.
+- **Exits**: `design-feedback → 5` · `design-accepted → 6`. No other exit.
+
+### 5. Revise
+
+- **Goal**: apply the pinned comments.
+- **Actions**: `design-feedback` payload: `round`, `comments` (each `n`, `board`, `theme`, `x`, `y`, `text`), `message`; `x` and `y` are board px. Per comment: read the markup at that board px first. Edit the boards in place. Bump `round`; each touched board's `note` says what changed this round. One chat line per comment: done, or why not.
+- **Done**: every comment answered; round bumped.
+- **Output**: revised folder.
+- **Exits**: `boards edited, comments answered → 4` (republish).
+
+### 6. Hand over
+
+- **Goal**: hand the ticket to planning.
+- **Actions**: stop editing the folder. Write a `## Design` section into the body by edit in place: board URL, folder path `.aisf/artifacts/design/` in the `-authoring` worktree, accepted round, the what/why brief. Keep `type: ui`. Guard `idea → plan`. One summary line.
+- **Uses**: `aisf:github-issue`
+- **Done**: `## Design` in the body; `status: plan`.
+- **Output**: updated issue.
+- **Exits**: `body written, guard passed → done`.
+
+## Output
+
+- `.aisf/artifacts/design/`: `index.json`, `tokens.css`, `boards/<id>.html`, at the accepted round.
+- The issue: a `## Design` section, `status: plan`.
+
+## Reference
+
+### The folder
 
     .aisf/artifacts/design/
       index.json          boards, sizes, notes, order
@@ -61,6 +113,8 @@ Write only to `.aisf/artifacts/design/` in the worktree. The id `design` is rese
 
 A value with no token is a **new token**. Put it in `tokens.css` under a `/* NEW */` comment,
 and say why in the board's `note`. Never inline a bare hex in a board.
+
+### Board rules
 
 **A board** is a plain HTML page at a fixed pixel size, at the real width of the target (not a
 shrunk schematic). It links `../tokens.css`.
@@ -99,7 +153,7 @@ shrunk schematic). It links `../tokens.css`.
 
 `note` is your voice on the board. The human reads it, and so does the split.
 
-## 3. Craft
+### Craft
 
 - **One committed look.** Draw the direction you'd defend. If the brief is truly open, offer up
   to 3 boards titled `Direction A · …` on round 1. Delete the losers once the human picks.
@@ -110,38 +164,3 @@ shrunk schematic). It links `../tokens.css`.
   is a cost you name.
 - **Accessible.** Text contrast 4.5:1, icons 3:1, in both themes. Targets at least 48 px. Colour
   is never the only signal. Real `<button>` and heading elements.
-
-## 4. The loop
-
-1. Write the folder with `"round": 1`.
-2. `aisf_show_artifact({ artifactId: 'design', title })`. Say in one or two chat lines what you
-   drew and what to judge first.
-3. The call returns the human's event, read as in `aisf:artifacts` (`<aisf-event … kind=…>`).
-   If the session ended while waiting, the same event arrives in the resume prompt. Read it the
-   same way.
-
-### `design-feedback`
-
-Payload: `round`, `comments` (each `n`, `board`, `theme`, `x`, `y`, `text`), `message`.
-`x` and `y` are in board px.
-
-1. For each comment, read the markup at that board px first. A pin is about the spot it sits on.
-2. Edit the boards in place.
-3. Bump `round`. In each touched board's `note`, say what changed this round.
-4. Answer each comment in one chat line: done, or why not. If you disagree, give your reason.
-   Never comply silently.
-5. Republish with `aisf_show_artifact({ artifactId: 'design', title })`.
-
-A plain-text answer from the ticket page counts as `message`, with no pins.
-
-### `design-accepted`
-
-Payload: `round`. Stop editing the folder. Then:
-
-1. Write a `## Design` section into the issue body, through `aisf:github-issue` (edit in
-   place): the board URL, the folder path `.aisf/artifacts/design/` in the `-authoring`
-   worktree, the accepted round, and the what/why brief. Keep `type: ui`.
-2. Guard `idea → plan` (`aisf:github-issue`, _Guarded transitions_).
-3. End with one summary line.
-
-Read the body back: length 0 → stop and report.
