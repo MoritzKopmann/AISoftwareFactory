@@ -45,8 +45,7 @@ AFK: A permission denial doesn't end your turn: the app asks the human. Told you
 
 Checkpoint waits: the human's answer arrives as the `aisf_checkpoint` tool result, so carry on
 from it. An "interrupted" or refused result means the app resumes this session with a prompt
-that carries the answer. Never call the tool again for the same request. Hand-run carries on
-with the answer; the human says give up → `aisf:github-issue` _Hand-run stuck_.
+that carries the answer. Never call the tool again for the same request.
 Never call an `aisf_*` tool that isn't present.
 
 `request`: what the human must do or judge, the worktree path, the exact commands to run, and
@@ -95,7 +94,7 @@ Say `<n>` and the mode (new / resume / rework, AFK / hand-run).
 Load `aisf:tdd`. Read the ticket and the code its Landing zone names. List the files to touch,
 one test per scenario, and the proof for each criterion without behaviour. Settle any vague
 criterion's reading now. A criterion that needs the running app or a write outside the
-checkout, on a leaf without `hitl` → **escalate `spec`** (hand-run: _Hand-run stuck_).
+checkout, on a leaf without `hitl` → **escalate `spec`**.
 
 ## 3. Claim and branch
 
