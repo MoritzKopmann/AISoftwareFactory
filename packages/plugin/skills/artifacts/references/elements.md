@@ -229,4 +229,4 @@ and `fact` give the premise. Nest nodes to show what depends on what. Sends noth
 
 Attributes: none
 
-The playback map is drawn from one JSON object. Its data contract and an example are in `packages/plugin/agents/playback-builder.md`.
+The playback map is drawn from one JSON object. Its data contract and an example belong to the `aisf:playback-builder` agent: invoke it and ask for what you need.
