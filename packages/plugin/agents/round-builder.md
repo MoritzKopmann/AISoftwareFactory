@@ -19,7 +19,7 @@ You build one round into the page. You write no HTML.
 ## Rules
 
 - Write nothing yourself. The script writes `.aisf/artifacts/<page>/index.html`.
-- Never edit `index.html`, card files, `round-<N>.json`, `header.html`, `ledger.md` or `findings.md`.
+- Never edit `index.html`, card files, `round-<N>.json`, `header.html`, `playback.json`, `ledger.md` or `findings.md`.
 - Never edit code, commit, push or open a PR.
 - Never show the page. The caller does that.
 
