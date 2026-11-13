@@ -1,75 +1,128 @@
 ---
 name: rework
 description: >
-  Rework of an in-review ticket whose PR needs work: claim, rebase on main, the work list, one
-  commit and evidence per item, force-with-lease push, PR replies, back to review. Use when a
-  run finds its ticket in rework.
+  Decides whether an in-review ticket's PR needs rework and reworks it: claim, rebase on main,
+  the work list, one commit and evidence per item, PR via `aisf:pr`, replies. Use when a builder
+  finds its ticket `in-review`.
 ---
 
 # rework
 
-Read by the running builder, as an extension of its own process. When the ticket is `in-review`
-and its PR needs work, each section below replaces the builder's step of the same role. The
-agent already holds `<n>`, the PR and `--since <ISO time>` (when the app's last run ended).
+## Role and goal
 
-Goal: every review item handled, the PR updated in place, the ticket back in `in-review`.
+Read by the running builder (`implement-ticket`, `ui-implement-ticket`, `skill-implement-ticket`) as an extension of its own process, whenever its ticket is `in-review`. Each step below replaces the builder's step of the same role.
 
-- Every stop and escalate goes through the builder's own stop points (AFK or hand-run).
-- Every status change goes through `aisf:github-issue`.
+Goal: decide whether this is rework. If it is: every review item handled, the PR updated in place, the ticket back in `in-review`. If not: stop, write nothing; it waits on review.
+
+## Parameters
+
+- `<n>`: the ticket. The builder holds it.
+- `--since <ISO time>`: when the app's last run ended. Only rework uses it.
+- The PR is found by step 1, not handed in.
+
+## General rules
+
+- Every status change and issue write goes through `aisf:github-issue`.
+- Every escalate is `aisf_escalate`.
 - Rebase, never merge `origin/main` in: a merge commit blocks the app's rebase-merge.
-- Push only with `--force-with-lease`. A review thread is the reviewer's to resolve.
+- A review thread is the reviewer's to resolve.
 
-## Claim
+## Graph
 
-Replaces the builder's claim. Guarded `in-review → in-progress` via `aisf:github-issue`. A guard
-mismatch → stop, report the actual state.
+```mermaid
+flowchart TD
+  1[1 Detect] -->|rework| 2[2 Claim]
+  1 -->|not rework| S((stop))
+  2 -->|claimed| 3[3 Rebase]
+  2 -->|guard mismatch| S
+  3 -->|rebased, green| 4[4 Work list]
+  3 -->|dirty tree| EP((escalate spec))
+  3 -->|rebase cannot finish| ER((escalate red))
+  4 -->|every item committed| 5[5 Evidence]
+  4 -->|item contradicts spec or needs judgement| EP
+  5 -->|every item has evidence| 6[6 Unapprove]
+  6 -->|label gone or absent| 7[7 PR]
+  7 -->|PR updated, ticket in-review| 8[8 Replies]
+  7 -->|aisf:pr escalates| E((escalate))
+  8 -->|every handled item replied| D((done))
+```
 
-Done when the ticket is `in-progress`.
+## Steps
 
-## Branch
+### 1. Detect
 
-On a clean tree (a dirty tree: the builder's own dirty-tree rule): `git fetch origin`, switch to
-the PR's `headRefName`, `git rebase origin/main`. Then run the builder's check step. A rebase
-you cannot finish → escalate `red`.
+- Goal: decide whether the in-review ticket is rework.
+- Actions: find the PR via `closedByPullRequestsReferences`. It is rework when exactly one open PR exists, it has no `approved` label unless it conflicts, and at least one holds:
+  - it conflicts with `origin/main` (GitHub `mergeable` is `CONFLICTING`; `UNKNOWN` counts as no conflict, as in the app),
+  - it has review activity after `--since` (a review with text or comments, or a PR conversation comment); without `--since` this trigger does not apply,
+  - it has unresolved review threads.
+- Uses: `aisf:github-issue` (issue read), `gh pr view`, `gh api graphql` (`reviewThreads`).
+- Done: rework or not rework is decided.
+- Output: the PR number, and which triggers hold.
+- Exits: `rework → 2` · `not rework → stop`, write nothing: it waits on review.
 
-Done when the branch is rebased and the builder's checks are green.
+### 2. Claim
 
-## Work list
+- Goal: the ticket is `in-progress`.
+- Actions: guarded `in-review → in-progress`.
+- Uses: `aisf:github-issue`.
+- Done: the ticket is `in-progress`.
+- Output: the claimed ticket.
+- Exits: `claimed → 3` · `guard mismatch → stop`.
 
-The work list replaces the spec's work. List:
+### 3. Rebase
 
-- each unresolved review thread (`gh api graphql`, `reviewThreads`; keep each comment's `databaseId`)
-- each review body and PR conversation comment created after `--since`
-- failing checks
-- conflicts
+- Goal: the current branch rebased on `origin/main`, checks green.
+- Actions: `git status --porcelain`; non-empty → escalate `spec`, naming the dirty files. Else `git fetch origin`, `git rebase origin/main` on the current branch. Then the builder's check step.
+- Uses: `git`, the builder's check step, `aisf_escalate`.
+- Done: the branch is rebased and the builder's checks are green.
+- Output: the rebased branch.
+- Exits: `rebased, green → 4` · `dirty tree → escalate spec` · `rebase cannot finish → escalate red`.
 
-Without `--since`: no review bodies or conversation comments.
+### 4. Work list
 
-Per item: the builder's change-and-check step, then the builder's commit step, so each item has
-its own commit. Track item → SHA. A rebase alone (no other item) needs no new commit. An item
-that contradicts the spec or needs a judgement call → escalate `spec`.
+- Goal: every review item changed, green and committed.
+- Actions: list each unresolved review thread (keep each comment's `databaseId`), each review body and PR conversation comment created after `--since` (none without `--since`), failing checks, conflicts. Per item: the builder's change-and-check step, then its commit step, so each item has its own commit. Track item → SHA. A rebase alone needs no new commit.
+- Uses: `gh api graphql` (`reviewThreads`), `gh pr view`, `gh pr checks`, the builder's change, check and commit steps.
+- Done: every item is changed, green and committed, and the item → SHA list is written.
+- Output: the item → SHA list.
+- Exits: `every item committed → 5` · `item contradicts the spec or needs a judgement call → escalate spec`.
 
-Done when every item is changed, green and committed, and the item → SHA list is written.
+### 5. Evidence
 
-## Evidence
+- Goal: proof for every item.
+- Actions: in the builder's verify step, every work-list item gets evidence beside the criteria.
+- Uses: the builder's verify step.
+- Done: every item has one evidence line.
+- Output: the evidence lines, for the PR body.
+- Exits: `every item has evidence → 6`.
 
-In the builder's verify step, every work-list item gets evidence beside the criteria.
+### 6. Unapprove
 
-Done when every item has one evidence line.
+- Goal: the human re-approves the reworked PR. The app auto-merges an `in-review` PR with `approved`, so the label must go before step 7 moves the ticket to `in-review`.
+- Actions: if the PR has the `approved` label: `gh pr edit <pr> --remove-label approved`.
+- Uses: `gh`.
+- Done: the PR has no `approved` label.
+- Exits: `label gone or absent → 7`.
 
-## PR
+### 7. PR
 
-Replaces the builder's PR step.
+- Goal: the PR updated in place and the ticket `in-review`.
+- Actions: load `aisf:pr` as a rework run. It pushes with lease, rewrites the body with the evidence and `Closes #<n>`, and moves the ticket to `in-review`. No new PR.
+- Uses: `aisf:pr`.
+- Done: `aisf:pr` is done: PR updated, ticket `in-review`.
+- Output: the PR URL.
+- Exits: `PR updated, ticket in-review → 8` · `aisf:pr escalates → escalate`.
 
-1. `git push --force-with-lease` to the same branch. No new PR.
-2. Reply under each handled review comment with what changed and its SHA
-   (`gh api repos/{owner}/{repo}/pulls/<pr>/comments/<databaseId>/replies -f body=…`). A handled
-   review body or conversation comment gets one PR comment quoting it, with its SHA.
-3. Re-request review from every reviewer whose item was handled.
-4. Rewrite the PR body with `aisf:pr` from `origin/main...HEAD`, keep `Closes #<n>`, then
-   `gh pr edit <pr> --body-file <tmp>`.
-5. If the PR has the `approved` label, remove it (`gh pr edit <pr> --remove-label approved`).
-   The human re-approves.
-6. Guarded `in-progress → in-review`.
+### 8. Replies
 
-Done when the ticket is `in-review`.
+- Goal: every reviewer knows what changed, by a SHA that is on GitHub.
+- Actions: reply under each handled review comment with what changed and its SHA (`gh api repos/{owner}/{repo}/pulls/<pr>/comments/<databaseId>/replies -f body=…`). A handled review body or conversation comment gets one PR comment quoting it, with its SHA. Re-request review from every reviewer whose item was handled.
+- Uses: `gh api`, `gh pr edit --add-reviewer`.
+- Done: every handled item has a reply, and review is re-requested from each of their reviewers.
+- Output: the replies.
+- Exits: `every handled item replied → done`.
+
+## Output
+
+Rework: the PR updated in place (one commit per item, rebased, pushed with lease, body rewritten), no `approved` label, a reply per handled item with its SHA, review re-requested, the ticket `in-review`. Not rework: nothing written.
