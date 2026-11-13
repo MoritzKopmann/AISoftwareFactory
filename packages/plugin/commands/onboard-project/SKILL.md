@@ -1,56 +1,38 @@
 ---
 name: onboard-project
-description: >
-  Draft a project's four slots (project-architecture, code-rules, project-testing,
-  project-toolchain), plus project-design when the project has a frontend, with the owner and
-  deliver them as one PR. Migrates existing docs, scans the repo, asks for unwritten knowledge, suggests best practices. Runs on a type: onboard issue.
-  Use when the user wants to onboard a project. Triggers: "onboard #N", "onboard project".
+disable-model-invocation: true
+description: Draft a project's slots with the owner and deliver them as one PR.
 ---
 
 # onboard-project
 
-Draft the four slots with the owner. Deliver them as one PR. Merging it is the approval.
-Argument: `<n>`, the onboarding issue. If none, ask.
+## Role and goal
 
-The project has no slots yet. **Never call a skill that loads a project slot**
-(`aisf:commit`, `aisf:tdd`, `aisf:review-*`): they stop with "project not onboarded". Commit
-with `git` directly.
+Draft the project's slots with the owner and deliver them as one PR. Merging it is the approval.
 
-Every status change and issue write goes through `aisf:github-issue`. Never pass `-R`.
+## Parameters
 
-## Stop points
+`<n>`: the onboarding issue.
 
-Mode is **AFK** when the `aisf_escalate` tool is present, **hand-run** otherwise. Decide once.
+## General rules
 
-| Stop point                      | AFK                                       | Hand-run                  |
-| ------------------------------- | ----------------------------------------- | ------------------------- |
-| **the issue can't be answered** | `aisf_escalate({kind: 'spec', reason})`   | ask the concrete question |
-| **a needed call was refused**   | `aisf_escalate({kind: 'denied', reason})` | say what was denied, ask  |
+- Every issue read and write goes through `aisf:github-issue`.
+- The project has no slots yet. **Never call a skill that loads a project slot**
+  (`aisf:commit`, `aisf:tdd`, `aisf:review-*`): they stop with "project not onboarded". Commit
+  with `git` directly.
 
-AFK: A permission denial doesn't end your turn: the app asks the human. Told you may retry →
-issue the identical call once, unchanged. Otherwise carry on without it.
+## 1. Read
 
-Questions to the owner go on a bridge page (`aisf:artifacts`). Hand-run without a page tool:
-ask in chat, same content.
+Read the issue (title, body, labels, state) through `aisf:github-issue`.
 
-## 0. Precondition
+- `status: ready` → guarded `ready → in-progress`, before any file work.
+- `status: in-progress` → resume, no guard.
+- Other type or state, or a guard mismatch → stop: name the state, write nothing.
 
-```bash
-gh issue view <n> --json title,body,labels,state
-```
+Done: the issue is `type: onboard` and `in-progress`.
+Exits: claimed or resumed → 2 · other type or state, or guard mismatch → stop.
 
-Go on only for `type: onboard` at `status: ready` (new) or `status: in-progress` (resume). Anything else
-→ stop, name the state. A stop here writes nothing.
-
-## 1. Claim and branch
-
-- New run: guarded `ready → in-progress` first, before any file work. Resume: nothing. A guard
-  mismatch → stop, report the actual state.
-- Branch is the run's own `aisf/<n>-<kebab title>`. Already on it → stay. Otherwise on a clean
-  tree: `git fetch origin`, `git switch -c <branch> origin/main` (or `git switch <branch>` on resume).
-  Dirty tree on another branch → AFK **escalate `spec`**, hand-run ask. Never stash or discard.
-
-## 2. Restart ledger
+## 2. Ledger
 
 State lives in `.aisf/artifacts/onboard-<n>/` (gitignored):
 
@@ -59,6 +41,9 @@ State lives in `.aisf/artifacts/onboard-<n>/` (gitignored):
 
 **Read both first.** A section marked `confirmed` or `edited` is never asked again. Update the
 ledger right after each answer, before the next step.
+
+Done: ledger and drafts read, or known absent (new run).
+Exits: ledger read → 3.
 
 ## 3. Gather, per slot
 
@@ -106,11 +91,17 @@ whatever the owner wants.
 
 Every slot file has frontmatter `name`, `description` and `user-invocable: false`.
 
+Done: every slot (`project-design` only on `yes`) has a draft in `drafts/`, every section is in the ledger.
+Exits: every slot drafted → 4.
+
 ## 4. Verify the toolchain
 
 Run `analyze` and `test` from the draft `aisf-toolchain` block once. Show the output on the
 review page. A failure is a finding for the owner: it may be a real repo defect. Never edit the
 repo's code to make it pass.
+
+Done: the output of both commands is in hand.
+Exits: output in hand → 5.
 
 ## 5. Review page
 
@@ -126,7 +117,10 @@ the ledger, re-show only what changed or is still open. Repeat until every secti
 confirmed. Also ask, per file, whether to delete each old copy.
 
 Accepted suggestions that need code changes are not done here. Post each as a bare idea
-through `aisf:github-issue` (`Found while onboarding #<n>`).
+through `aisf:github-issue`.
+
+Done: every section is `confirmed` or `edited` in the ledger; a delete answer per old copy; every accepted code-change suggestion posted as a bare idea.
+Exits: a section still open or edited → 5 (republish) · every section confirmed → 6.
 
 ## 6. Write and commit
 
@@ -141,12 +135,16 @@ git commit -m "docs(onboarding): add project slots" -m "refs #<n>"
 
 End the message with the attribution lines the session was given.
 
+Done: one commit holds the slot files and the agreed deletions.
+Exits: committed → 7.
+
 ## 7. PR
 
-`git push -u origin HEAD`. Never force, never the default branch. Write the body with `aisf:pr`,
-then append `Closes #<n>`. List the proposed deletions and the bare ideas posted in the body.
-`gh pr create --body-file <tmp> --label "priority: <x>"` (`<x>` is the issue's `priority:` label)
-against the default branch, title `docs(onboarding): add project slots`. Reuse an existing PR
-with `gh pr edit`. Then guarded `in-progress → in-review`. Never skip it.
+Load `aisf:pr`.
 
-Report the PR URL in one line. Never merge, never close the issue.
+Done: the PR is open and the ticket is `in-review`.
+Exits: PR open, ticket in-review → done.
+
+## Output
+
+The slot files in `.claude/skills/` in one commit on the run's branch, one open PR, the ticket `in-review`, a bare idea per accepted code-change suggestion.
