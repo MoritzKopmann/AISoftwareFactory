@@ -2,8 +2,8 @@
 name: artifacts
 description: >
   Build a bridge page from the <aisf-*> kit elements, show it with aisf_show_artifact and read
-  the human's answer. Use when the human must pick between options, answer several questions at
-  once, or see a figure. Triggers: "show a page", "artifact", "bridge page", "ask on a page".
+  the human's answer. Use when building, showing or reading a bridge page. Triggers: "show a page",
+  "artifact", "bridge page", "ask on a page".
 ---
 
 # artifacts
@@ -12,12 +12,6 @@ Write one HTML page. The app serves it. The human answers on it. The answer come
 result of `aisf_show_artifact`.
 
 Read `references/elements.md` and `references/figures.md` before writing any page.
-
-## When to show a page
-
-- Show a page when the human picks between options, answers several questions at once, or
-  needs a figure.
-- For "do X and report", use a plain `aisf_checkpoint`.
 
 ## File location
 
