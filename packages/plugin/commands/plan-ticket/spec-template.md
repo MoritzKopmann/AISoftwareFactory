@@ -35,7 +35,7 @@ Rules:
   `hitl` sub-issue. A check a scenario can state (a function, route or component result) is a
   scenario, even when it also shows in the app.
 - **A `hitl` spec names its human checkpoint**: the scenario where the human acts or judges,
-  and what they act on, and the worktree path and the exact commands the human runs. Every
+  and what they act on. Every
   other step must run without them. A `hitl` leaf with no code change says so in its spec, and
   ends in an evidence comment on the ticket and a closed ticket.
 - **Exact names.** A shared contract keeps the plan's name and shape, verbatim. Name everything
