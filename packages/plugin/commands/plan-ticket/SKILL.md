@@ -1,388 +1,206 @@
 ---
 name: plan-ticket
-description: >
-  Turn a settled GitHub ticket (status: plan) into a technical plan on the ticket and one spec
-  per sub-issue, each buildable on its own by aisf:implement-ticket. UI work is split off as one
-  type: ui sub-issue for the design path. A ticket holding several independent features can be
-  split into smaller tickets at the round-1 playback. Interviews the human in rounds, without
-  recommending an answer, and pushes back once after an answer, until nothing is left open. Use when the user wants to plan a ticket or epic. Triggers:
-  "plan #N", "plan ticket N", "plan this epic".
+description: Turn a plan ticket into a technical plan and one spec per sub-issue.
+disable-model-invocation: true
 ---
 
 # plan-ticket
 
-Turn a ticket at `status: plan` into a plan on the ticket and a spec on each sub-issue.
-Argument: ticket number. If none, ask.
+## Role and goal
 
-`gh` infers the repository from the current checkout. Never pass `-R`. Every status change and
-every issue write goes through `aisf:github-issue`.
+Seat: senior developer in the project's stack. Turn a ticket at `status: plan` into a technical plan on the ticket and one spec per sub-issue, each buildable on its own by `aisf:implement-ticket`. Or split a too-big ticket into plan parts, or pause for a spike. The agent plans, the human decides.
 
-**The agent plans, the human decides.** Nothing is silently assumed.
+## Parameters
 
-- **Never guess.** Underdefined → ask.
-- **Never make a feature decision alone**, unless it follows directly from one already made.
+- `<n>`: the ticket.
 
-`aisf:create-ticket` settled _what_, this settles _how_, `aisf:implement-ticket` writes the
-code: one sub-issue, one branch, one PR. A parent with children is a tracking umbrella. A ticket
-that holds several independent features may instead be split into smaller tickets (step 3).
+## General rules
 
-## Precondition
+- Every status change and issue write goes through `aisf:github-issue`.
+- Every question goes through `aisf:questionnaire`, page id `plan-<n>`, stance "how it is built; technical detail encouraged". The caller's header is the playback map (`playback-builder`). Ledger line: `decision · answer · assumes: … · round N`.
+- Never guess: underdefined → ask. Never make a feature decision alone, unless it follows directly from one already made.
+- **Your seat.**
+  - Enforce `project-architecture`'s rules and name every change in its terms.
+  - Optimise for homogeneity: a second way to do what the project already does is a defect. Argue from precedent, citing code by name.
+  - Prefer reduction to addition within the criteria.
+  - Name the failure modes the criteria need, with their blast radius.
+- **Scope** is the acceptance criteria. Test: would a criterion fail without this?
+  - Yes → in scope. Work forced beyond a criterion's text is a necessary extension; its question names the reason ("AC2 fails without it").
+  - No → not asked. One line under Out of scope, **Noticed, not planned**.
+  - Skip every module, layer and phase the criteria need no change in.
 
-**Project slots.** Load `project-toolchain`, `project-architecture` and `project-testing` with
-the Skill tool (bare names), then every skill they name under `## Load also`. Any
-`Unknown skill` → stop and report "project not onboarded". Every project fact used below comes
-from these slots, never from memory of another project.
+## Graph
 
-**Bridge page.** No `aisf_show_artifact` tool → stop: "plan-ticket needs the bridge page".
-Load `aisf:questionnaire` for the interview: the pattern, the agents and the page.
-
-**Status.**
-
-```bash
-gh issue view <n> --json title,body,labels,state,subIssues
+```mermaid
+flowchart TD
+  1[1 Read] -->|preconditions hold| 2[2 Research]
+  1 -->|type: skill, not status: plan, or its spike still open| S((stop))
+  1 -->|spec vague: gaps comment, plan → idea| S
+  2 -->|end state stated, facts logged| 3[3 Decide]
+  3 -->|every decision sorted| 4[4 Interview]
+  4 -->|fresh round 1: ticket-split rule fires| 5[5 Split the ticket]
+  4 -->|a decision needs real experience first| 6[6 Spike]
+  4 -->|no decision in scope open| 7[7 Split]
+  5 -->|accept: parts posted, plan → planned| S
+  5 -->|reject| 4
+  5 -->|text answer: redraw next round| 5
+  6 -->|spike posted| S
+  7 -->|split drafted| 8[8 Critic]
+  8 -->|an objection is shared| 4
+  8 -->|no shared objection| 9[9 Confirm]
+  9 -->|confirmed| 10[10 Write the plan]
+  9 -->|not confirmed: reopen| 4
+  10 -->|a decision left open| 4
+  10 -->|a check fails: resplit| 7
+  10 -->|three checks pass| 11[11 Write to GitHub]
+  11 -->|numbers reported| D((done))
 ```
 
-`type: skill` → stop, name `aisf:skill-ticket`, write nothing. `status: plan` → go on. Anything
-else → stop and name the stage the ticket needs.
-
-**Spec check.** The body must state a clear desired outcome and acceptance criteria. Missing,
-vague or self-contradictory → stop: comment the concrete gaps and guard `plan → idea`. Don't
-invent what the spec left out.
-
-**Resume after a split.** `<n>` at `status: plan` with open children at
-`status: plan` that are neither spike nor `type: skill` means a split was accepted and posting stopped part-way. Post only the missing
-parts (_Too big: split the ticket_, Posting), guard `plan → planned`, report, stop.
-
-**Resume.** A `## Planning so far` section means planning paused for a spike. Its spike still
-open → stop and name it. Otherwise that section and the verdict under it are settled: they seed
-the ledger, and step 3 asks only what is still open. A resumed session reads the ledger and the
-findings log from `.aisf/artifacts/plan-<n>/` (`ledger.md`, `findings.md`).
-
-## Your seat
-
-You plan. **Seat: senior developer in the project's stack.** You:
-
-- **Enforce `project-architecture`'s rules** (SKILL.md and `references/rules.md`), and name every
-  change in its terms.
-- **Optimize for homogeneity.** A second way to do what the project already does is a defect.
-  Argue from precedent, citing code by name.
-- **Prefer reduction to addition** within the criteria. Hunt the existing type, port or use
-  case that makes the code a criterion needs unnecessary.
-- **Name the failure modes of what the criteria need**, with their blast radius, and mark where
-  the cheap path is fine.
-
-## Scope
-
-**Scope is the acceptance criteria, nothing else.** One test decides every candidate: _would an
-acceptance criterion fail without this?_
-
-- **Yes** → in scope. Work a criterion forces beyond its literal text (a migration, a change to
-  shared code) is a necessary extension: its question carries an **Extends scope** badge and
-  the reason ("AC2 fails without it").
-- **No** → not asked. It goes to Out of scope under **Noticed, not planned**, one line each.
-
-Skip every module, layer and phase the criteria need no change in.
-
-## 1. Research
-
-State the desired end state in a few sentences. It decides what to research.
-
-**Facts are the agents' job.** Dispatch read-only research agents whenever a fact is missing,
-before or between rounds, as many as the ticket needs. Sources: the codebase, the web (high-trust
-primary sources), and any project the human names. Each agent gets **one specific question**,
-and every prompt says: _"Do not edit files, commit, or open PRs — report findings only."_
-
-**Pattern research.** For each module with non-trivial business logic, one research agent asks
-which design pattern, if any, fits that logic. "None" is a valid and likely answer. Its finding
-goes to the findings log; it becomes a question only when a pattern is proposed.
-
-**Findings log.** `.aisf/artifacts/plan-<n>/findings.md`: question · finding · source. Read it before every
-dispatch; a question it already answers is never sent again.
-
-**A dependency the project lacks** is checked against `project-toolchain`'s dependency bar and
-becomes a question. A new dependency is never your call.
-
-## 2. Decide
-
-The decisions in scope, in **phases**. Presentation and infrastructure are wiring; business
-holds the logic. Start from the UI, because criteria are usually written from the frontend's
-view.
-
-1. **UI.** Which UI area shows each criterion, what it shows in which states (empty, loading,
-   error, too much data), the user's actions, and which data it needs from the backend. The
-   frontend has no architecture rules: it shows the data the backend provides, and its internal
-   layering is not planned.
-2. **Modules.** Which backend module, existing or new, owns each feature.
-3. **Inbound contract.** What each module offers the frontend, other modules and services:
-   routes, facade methods, bus events, their data shapes, and the processes they trigger. It
-   must cover every UI data need from phase 1.
-4. **Business logic.** What exactly happens in the business layer, and the design pattern if
-   pattern research proposed one.
-5. **Outbound interfaces and data.** The ports to infrastructure, other modules and services.
-   For a repository: what data is stored, and which tables are created, extended or changed.
-   For anything else: what is sent, what comes back, and what it needs (an API key, an
-   account).
-
-Sort every decision in scope:
-
-- **Question**: expensive to change, or open to real opinion. You give it the decision and
-  **rough options**; its `question-builder` agent builds the card (problem, options with gain, cost
-  and effect, figure). No option is recommended, on any card.
-- **Settled by precedent**: the project already does it one way, and nobody would argue. One
-  line: decision · source. The human sees it and may veto it.
-
-**Spike call.** A decision that needs real experience first gets a spike: the options, what
-result settles them, and whether the human has to judge that result.
-
-## 3. Interview
-
-Your own process, on `aisf:questionnaire`. The design tree is the decisions in scope: every branch the criteria need.
-Facts come from agents (step 1). **No card recommends an answer.** Specific to planning:
-
-- **Per round:**
-  1. Pick the **frontier**: every question whose answer does not depend on another open one. Give
-     each rough options.
-  2. Run one `question-builder` agent per question, in parallel (page `plan-<n>`, stance "how it is built; technical detail encouraged"). Every question card comes from
-     one: interview questions, the ticket-split question, AC-split questions, `hitl`
-     checkpoints, accepted critic objections, questions from step 7.
-  3. Read the results. `card` → it goes in the round. `settled` → a precedent row. `split` →
-     split the question and send the parts out again in the same round; a part that depends on
-     another waits a round.
-  4. Write `.aisf/artifacts/plan-<n>/round-<N>.json` (contract in `agents/round-builder.md`).
-  5. Run `playback-builder` (`n`, page `plan-<n>`, `N`), then `round-builder` (page `plan-<n>`, `N`, the absolute path of `skills/questionnaire/build-page.mjs`).
-  6. Call `aisf_show_artifact` yourself (id `plan-<n>`) and read the answers. Never show the
-     page from an agent.
-  7. Update the ledger, run the reopen check, decide pushback.
-- **Start with a playback.** Round 1 opens with the playback map (`agents/playback-builder.md`): each
-  acceptance criterion as a path through the touched UI and modules, by layer, new and changed
-  parts marked. There is no Correct / Wrong path question. Round 1's questions are the ones that
-  picture raises.
-- **AC split.** A criterion whose playback needs two or more starting points gets a split
-  question in round 1, built by `question-builder` as a split proposal that shows the proposed
-  criteria. Accepted → right after the round, rewrite the criteria in the ticket body through
-  `aisf:github-issue` (Posting + Read back, as step 8.1 edits the body). When the ticket-split
-  rule fires, round 1 holds only that question; AC-split questions come in the round after a
-  Reject.
-- **The map stays current.** It sits above every round. `playback-builder` updates the playback data to
-  match the ledger each round. A changed path is not asked again: the answer that changed it
-  already decided it.
-- **Phases shape the rounds.** Early rounds hold the early phases. A question from a later
-  phase whose answer depends on nothing open may come early.
-- **Settled rows** are confirmed by submitting the round. A veto turns one into a question in the
-  next round.
-- **Free text** you cannot read clearly leads to a follow-up question in the next round.
-- **Pushback.** You may push back on an answer when you can cite one ground: a hard ban or
-  placement rule breach, a second way to do what the project already does, more than the
-  criteria need, or a named failure mode. At most once per answer, as a pushback card in the next
-  round (`question-builder` pushback input: the human's answer and the case against it). The human
-  reaffirms → the answer stands, its ledger line gets `· pushback: round M, reaffirmed`, it is
-  never pushed back again, and step 7 lists it under Risks as a knowing override.
-- **Reopen what a later answer breaks.** An answer contradicting a settled decision's
-  `assumes:` in the ledger, or changing a layer an earlier phase settled, reopens that decision: it
-  returns as a question in the next round, naming the answer that reopened it. Re-scan once per
-  round.
-- **Ledger.** `.aisf/artifacts/plan-<n>/ledger.md`, appended each round:
-  `decision · answer · assumes: … · round N`, precedent decisions included. You write `assumes`
-  here only, never on a card.
-- **Files are the memory.** After each round, the ledger and the findings log hold everything
-  later steps need. Later steps read them, not the scrollback, so a compacted context loses
-  nothing.
-
-**Done** when no decision in scope is open: every criterion has its flow, its landing module and
-its data settled in the ledger.
-
-**Spike.** A decision that needs real experience first pauses planning:
-
-1. Post a sub-issue, `type: spike`, `status: ready`: the options, what result settles them, and
-   that its verdict goes into this ticket's `## Planning so far`. It gets `hitl` when the human
-   confirmed they judge the result; without it `aisf:spike` tests alone.
-2. Write the ledger into the ticket body as `## Planning so far`, ending with
-   `Waiting for the verdict of #<spike>`.
-3. The ticket stays `status: plan`. Report the spike's number, that `aisf:spike` runs it, and
-   stop.
-
-## Too big: split the ticket
-
-Not step 4 "Split". That one splits a plan into sub-issues. This one splits the ticket itself
-into smaller tickets. It differs from `aisf:create-ticket`'s split: parts are full sub-issues
-under an umbrella, not bare ideas.
-
-**Rule.** Checked once, on a fresh round 1 (never on a spike resume). Split when the ticket asks
-for two or more features, each enhancing the app and usable completely without the others. One
-big feature is never split here. No token or count threshold. Rule does not fire → round 1 as
-above, no split question.
-
-**Round 1 when it fires:** the playback map and one split question, nothing else: no
-AC-split questions. One
-`<aisf-question>`:
-
-- An `<aisf-context kind="mockup">` shows each part: title, drafted Context and Scope written
-  from `<n>`'s text, and its criteria numbered (A1, A2, B1 …).
-- **Part criteria:** `<n>`'s criteria regrouped verbatim. A criterion touching several parts goes
-  to each. New criteria only from the human's note.
-- Cards: accept and reject. The card tells the human to use the text field for long edits. `question-builder` builds it as a split proposal.
-
-**Answers.**
-
-- **Text answer** → the next round redraws the revised split. Nothing is posted. Only a
-  clean accept posts.
-- **Reject** → the next round asks today's round-1 questions. Steps 4–8 run as today.
-- **Accept** → check each part body against the Spec check and `aisf:github-issue`'s cold-read
-  test, then post.
-
-**Posting.** Through `aisf:github-issue` mode **Split part**, one per part in dependency order:
-`--parent <n>`, `type:` and `priority:` from `<n>`, `status: plan`, `--blocked-by` between parts
-where one needs another. `<n>`'s body stays unchanged. Then the `subIssuesSummary.total` check,
-then guard `plan → planned` on `<n>`.
-
-**After posting:** report every part number and that each needs its own plan run. Stop. Steps
-4–8 never run after a split.
-
-## 4. Split
-
-**Frontend and backend first.** Frontend is every surface a human sees, judged from the codebase. All of it becomes **one UI sub-issue**, built later through the design
-path, never by `aisf:implement-ticket`. With `project-design` present, that child is filed as an
-idea and starts its design run by itself. It is blocked by every backend sub-issue it reads from.
-
-**Backend** is cut by module responsibility first, then along the interfaces between layers:
-**one module and one layer each**, as `project-architecture` names them. Wiring a sub-issue's
-classes into the composition root is part of that sub-issue.
-
-- **Inside a module:** infrastructure → business → presentation.
-- **Between modules:** by dependency. A provider's facade (presentation) comes before the
-  consumer's adapter (infrastructure) that calls it.
-- **Port exception:** an infrastructure sub-issue owns the port it implements in
-  `business/port/`, and nothing else in business.
-- **Small changes:** when a layer's share is wiring only, its module's layers may merge into one
-  sub-issue. That is a question, with its effect.
-
-Any other sub-issue touching a second module or layer is cut again. An exception is a question
-to the human; an agreed one goes to Risks as a knowing override. A sub-issue may depend on an
-earlier one but must not need a sibling half-done.
-
-**Skill part.** Work on text written for agents: skills, agent definitions, commands, CLAUDE.md,
-memory-style files (same definition as `aisf:create-ticket`). It becomes **one** `type: skill`
-sub-issue, beside the UI rule. `aisf:skill-ticket` splits it per skill later. An all-skill ticket
-of another type gets an umbrella with that one `type: skill` child; a skill child means an
-umbrella, so neither no-umbrella case below applies. The child is blocked by every sub-issue it
-needs. Every skill part sits in it. It has Title · Scope · Blocked-by · Proves, `hitl` off, no
-Module · Layer.
-
-Per sub-issue: **Title** (the outcome) · **Module · Layer** · **Scope** (one sentence, in and
-out) · **Blocked-by** ·
-**Proves** (which acceptance criteria) · **`hitl`** proposed or not. Nothing before it may need
-the human. A criterion that needs the running app or a real external write goes to a `hitl`
-sub-issue only. A check a scenario can state is a scenario, never the checkpoint.
-
-**Every `hitl` checkpoint is a question**, shown in full: what is set up, what the human does or
-judges. Only an agreed checkpoint goes into a spec.
-
-Two splits have no umbrella:
-
-- **Fits one PR, no UI.** Plan and spec land on the ticket itself.
-- **UI only.** The ticket itself becomes the UI ticket (an idea when `project-design` exists).
-
-## 5. Critic
-
-One read-only critic agent; say so in the prompt. It gets the ticket body, the ledger, the
-draft split and the three project slots, and may read the codebase. It hunts: a breach of a hard
-ban or placement rule, a second way to do what the project already does, an acceptance
-criterion no sub-issue proves, a flow step ending nowhere, a decision taken without the human,
-and work no criterion needs.
-
-Each objection you share becomes a question in the next round (step 3), built by `question-builder`. One you reject goes to Risks with the reason.
-
-## 6. Confirm
-
-Show the split: **Title** · **Module** · **Layer** · **Blocked-by** · **Proposed `hitl`** and its
-checkpoint. It is the last round: write `round-<N>.json` with `confirm.tasks` (one task per
-sub-issue, `heading` `<Title> · <module> · <layer>`, the skill child's `<Title> · skill`, `blockedBy`, `hitl`), run `playback-builder` and `round-builder`, and
-show it with `aisf_show_artifact`. Tasks only, no decision tree. Confirm locks the `hitl` flags.
-
-**This is the only gate** (besides an accepted split, which is its own gate). Confirmed → the rest runs without further approval. Not confirmed →
-reopen that decision and go back to step 3.
-
-## 7. Write the plan
-
-One document, written by you from the ledger and the findings log. It holds the plan **and every
-spec**.
-
-    ## Technical plan
-
-    ### Architecture and data flow
-    Where each piece lands: module, layer, class type, new or existing. What is reused, changed
-    and deleted. Data model and migrations. One flow line per use case: entry point → what it
-    calls → what that calls next.
-    ### Tools and libraries
-    A new dependency or infrastructure, and why nothing the project has covers it. Omit when none.
-    ### Practices and tests
-    Only what is specific to this ticket: what can't be unit tested, what needs a human check,
-    how sensitive data is handled. Omit when empty.
-    ### Risks
-    Failure modes and blast radius · knowing human overrides · rejected critic objections.
-    ### Out of scope
-    Including **Noticed, not planned**.
-    ### Acceptance criteria
-    The ticket's own criteria, each tagged with the sub-issue that proves it.
-    ### Sub-issues
-    One section per sub-issue, in order:
-
-    #### <n>. <Title>
-    Blocked-by · `hitl` and its checkpoint
-    <the spec>
-
-- **Backend spec**: follow `spec-template.md` (this folder).
-- **UI spec**: what is shown, in which states (empty, loading, error, too much data), which
-  actions the user has, and the API contract that feeds it. No layout, no files, no
-  Given/When/Then: the design settles those.
-- **Skill child**: a ticket body, not a spec: Context, Scope, Acceptance criteria, and the parent
-  criterion it serves. `aisf:skill-ticket` writes its spec. Skill files are claimed by this child
-  for File coverage.
-- **Name what crosses a sub-issue boundary**: routes, schemas, bus events, tables. Names and
-  data shapes, never code bodies.
-- **Pin down what is expensive to correct or that the human decided. Leave free what is cheap.**
-- **A broken flow is a defect, not a footnote.** A step ending nowhere, a piece nothing calls:
-  fix it here.
-- **A decision the plan leaves open comes back as a question**, never as a guess: put it to the
-  human (on the same page, as a further round, built by `question-builder`), record the answer in the ledger, then go on.
-
-**Three checks, once, on this document.** A failure is a defect in the split, not a note on the
-ticket: resplit or add a sub-issue, and take a changed split back to step 6.
-
-- **Seams match.** Walk the flow. Every step whose ends land in different sub-issues is a shared
-  contract: both specs give it the same name and shape. A step no sub-issue implements is
-  dropped work.
-- **File coverage.** Every file the plan names is claimed by at least one spec. Unclaimed means
-  dropped: a migration, a step from `project-architecture`'s "Adding a module — checklist".
-- **No criterion left unproven.** Every acceptance criterion maps to a sub-issue whose criteria
-  prove its share.
-
-## 8. Write to GitHub
-
-Everything through `aisf:github-issue`. Each child body is its spec, **copied from the plan as
-is**.
-
-1. **The ticket.** Append `## Technical plan` to its body, replacing `## Planning so far` if
-   present.
-2. **Sub-issues, in dependency order**, each with `--parent`, `--blocked-by` and the ticket's
-   `priority:`. Title from the `####` line, body the spec under it. Backend: its own `type:`,
-   `status: ready`, `hitl` where confirmed. UI: `type: ui`; with `project-design` present, an
-   idea (no `status:` label) whose body is the plan's UI spec; otherwise `status: backlog`.
-   Skill child: `type: skill`, `status: plan`, `--parent <n>`, `--blocked-by` on the create call,
-   posted after its blockers.
-3. **Backfill** the plan with the real sub-issue numbers, guard `plan → planned`, and check
-   the count landed. Write each backfilled body to a **new file**, never over its source.
-
-   ```bash
-   gh issue view <n> --json subIssuesSummary --jq .subIssuesSummary.total
-   ```
-
-**Fits one PR:** `## Technical plan`, then its one spec under `## Spec` in place of
-`### Sub-issues`, go on the ticket itself. Then guard `plan → ready`.
-
-**UI only:** the UI spec goes on the ticket itself, its `type:` becomes `type: ui`, then
-guard `plan → backlog`. With `project-design` present: drop the `status:` label instead (`plan → idea`).
-
-Report every number written and what `aisf:implement-ticket` can pick up next. For a UI ticket:
-with `project-design`, it starts its design run by itself; otherwise it needs a design before
-`aisf:ui-ticket <n>`.
+## Steps
+
+### 1. Read
+
+- **Goal**: project slots loaded; the ticket is `status: plan` with a clear spec.
+- **Actions**: load `project-toolchain`, `project-architecture`, `project-testing` with the Skill tool, then every skill under their `## Load also`. Read the ticket. `## Planning so far` with its spike closed: it and the verdict seed the ledger; step 4 asks only what is open. Spec check: the body states a clear outcome and acceptance criteria.
+- **Uses**: Skill tool, `aisf:github-issue`.
+- **Done**: slots loaded, ticket read, spec checked.
+- **Exits**:
+  - preconditions hold → 2
+  - `Unknown skill` → stop, "project not onboarded"
+  - `type: skill` → stop, name `aisf:skill-ticket`, write nothing
+  - not `status: plan` → stop, name the stage it needs
+  - `## Planning so far` with its spike open → stop, name it
+  - spec missing, vague or contradictory → comment the gaps, guard `plan → idea`, stop
+
+### 2. Research
+
+- **Goal**: the end state stated, every missing fact found.
+- **Actions**: state the end state in a few sentences. Dispatch read-only research agents, one specific question each, before or between rounds; every prompt says "Do not edit files, commit, or open PRs — report findings only." Sources: codebase, high-trust primary web sources, projects the human names. Pattern research: per module with non-trivial business logic, one agent asks which design pattern fits ("none" is valid); it becomes a question only when a pattern is proposed. A dependency the project lacks is checked against `project-toolchain`'s dependency bar and becomes a question.
+- **Uses**: research agents.
+- **Done**: end state stated; every fact the decisions need is in `findings.md`.
+- **Output**: `findings.md` lines.
+- **Exits**: → 3
+
+### 3. Decide
+
+- **Goal**: every decision in scope sorted.
+- **Actions**: list the decisions by phase, UI first:
+  1. UI: area, states, actions, data needs; no frontend layering.
+  2. Modules.
+  3. Inbound contract: covers every UI data need.
+  4. Business logic, plus pattern.
+  5. Outbound interfaces and data.
+
+  Sort each:
+  - **question**: expensive to change or open to opinion, with rough options.
+  - **settled by precedent**: one line, decision · source; the human may veto.
+  - **spike call**: needs real experience; options, what settles them, whether the human judges.
+
+- **Done**: every decision is a question, a precedent row or a spike call.
+- **Output**: the question list and precedent rows.
+- **Exits**: → 4
+
+### 4. Interview
+
+- **Goal**: no decision in scope open.
+- **Actions**: rounds per `aisf:questionnaire`. Specific to planning:
+  - Round 1 opens with the playback map: each criterion as a path through the touched UI and modules, by layer, new and changed parts marked. No Correct / Wrong path question.
+  - A criterion whose playback needs two or more starting points gets a split question in round 1, a split proposal showing the proposed criteria. Accepted → rewrite the criteria in the body through `aisf:github-issue`. When the ticket-split rule fires (step 5), round 1 holds only that question; AC-split questions come in the round after a Reject.
+  - The map stays current every round; a changed path is not asked again.
+  - Phases shape the rounds; a later-phase question depending on nothing open may come early.
+  - Settled rows are confirmed by submitting; a veto turns one into a question next round.
+  - Pushback: at most once per answer, on one ground (hard ban or placement breach, a second way, more than the criteria need, a named failure mode), as a pushback card. Reaffirmed → the ledger line gets `· pushback: round M, reaffirmed`, never pushed again, listed under Risks as a knowing override.
+  - Reopen: an answer contradicting a settled `assumes:` or changing a layer an earlier phase settled reopens that decision next round, naming the answer. Re-scan once per round.
+- **Uses**: `aisf:questionnaire`, `aisf:github-issue`.
+- **Done**: every criterion has its flow, landing module and data settled in the ledger.
+- **Output**: ledger.
+- **Exits**:
+  - fresh round 1 (never a spike resume) and the ticket-split rule fires → 5
+  - a decision needs real experience first → 6
+  - no decision in scope open → 7
+
+### 5. Split the ticket
+
+- **Goal**: a ticket of several independent features posted as plan parts.
+- **Actions**: split when the ticket asks for two or more features, each enhancing the app and usable completely without the others. One big feature is never split here; no token or count threshold. Round 1 holds the playback map and one split question (a split proposal): each part with title, drafted Context and Scope from `<n>`'s text, and `<n>`'s criteria regrouped verbatim and numbered (A1, A2, B1 …). A criterion touching several parts goes to each; new criteria only from the human's note. Accept → check each part body against the spec check and the cold-read test, post through `aisf:github-issue` mode Split part, guard `plan → planned`, report every part number and that each needs its own plan run.
+- **Uses**: `aisf:questionnaire`, `aisf:github-issue`.
+- **Done**: the human accepted, rejected or answered in text.
+- **Exits**:
+  - accept, parts posted → stop
+  - reject → 4, with the usual round-1 questions
+  - text answer → 5, redraw next round, nothing posted
+
+### 6. Spike
+
+- **Goal**: planning paused on a spike.
+- **Actions**: post a `type: spike` sub-issue through `aisf:github-issue`: the options, what result settles them, that its verdict goes into this ticket's `## Planning so far`; `hitl` only when the human confirmed they judge the result. Write the ledger into the body as `## Planning so far`, ending `Waiting for the verdict of #<spike>`. The ticket stays `status: plan`.
+- **Uses**: `aisf:github-issue`.
+- **Done**: spike posted, Planning so far written.
+- **Output**: the spike number, reported with "`aisf:spike` runs it".
+- **Exits**: → stop
+
+### 7. Split
+
+- **Goal**: the draft split into sub-issues.
+- **Actions**:
+  - All frontend becomes one UI sub-issue for the design path, blocked by every backend sub-issue it reads from.
+  - Backend is cut by module, then layer: infrastructure → business → presentation; provider facade before consumer adapter; port exception; wiring-only layers may merge, as a question.
+  - Any other cross-module or cross-layer sub-issue is cut again; an exception is a question, an agreed one is a knowing override.
+  - Skill part: work of `type: skill` becomes one `type: skill` child, blocked by every sub-issue it needs. An all-skill ticket of another type gets an umbrella with that one child. Fields: Title · Scope · Blocked-by · Proves, `hitl` off.
+  - Per sub-issue: Title · Module · Layer · Scope · Blocked-by · Proves · `hitl` proposed.
+  - A criterion that needs the running app or a real external write goes to a `hitl` sub-issue only; a check a scenario can state is a scenario.
+  - Every `hitl` checkpoint is a question; only an agreed one goes into a spec.
+  - No umbrella: fits one PR with no UI; UI only.
+- **Done**: every criterion is proven by a sub-issue in the draft.
+- **Output**: the draft split.
+- **Exits**: → 8
+
+### 8. Critic
+
+- **Goal**: objections to the split found.
+- **Actions**: one read-only critic agent (say so in the prompt) with the ticket body, the ledger, the draft split and the three slots; it may read the code. It hunts: a hard-ban or placement breach, a second way, a criterion no sub-issue proves, a flow step ending nowhere, a decision taken without the human, work no criterion needs. A rejected objection goes to Risks with the reason.
+- **Uses**: critic agent.
+- **Done**: every objection is shared or rejected.
+- **Exits**:
+  - an objection is shared → 4, as a question next round
+  - no shared objection → 9
+
+### 9. Confirm
+
+- **Goal**: the human confirms the split and the `hitl` flags.
+- **Actions**: the last round, per `aisf:questionnaire` (Confirm). One task per sub-issue: heading `<Title> · <module> · <layer>` (skill child `<Title> · skill`), its blocked-by, its proposed `hitl`. Tasks only, no decision tree. Confirm locks the `hitl` flags. The only gate besides an accepted ticket split.
+- **Uses**: `aisf:questionnaire`.
+- **Done**: confirmed or reopened.
+- **Exits**:
+  - confirmed → 10
+  - not confirmed → 4, reopening that decision
+
+### 10. Write the plan
+
+- **Goal**: the plan and every spec, passing three checks.
+- **Actions**: write from the ledger and findings. Plan template: Architecture and data flow · Tools and libraries · Practices and tests · Risks · Out of scope · Acceptance criteria · Sub-issues. Backend spec per `spec-template.md`. UI spec: what is shown, states, actions, the API contract; no layout, files or Given/When/Then. Skill child: a ticket body (Context, Scope, Acceptance criteria, the parent criterion it serves). Name what crosses a boundary; pin what is expensive or human-decided; a broken flow is fixed here. Three checks, once:
+  - seams match
+  - file coverage
+  - no criterion unproven
+- **Uses**: `spec-template.md`.
+- **Done**: the three checks pass.
+- **Output**: the plan document.
+- **Exits**:
+  - a decision the plan leaves open → 4, as a question
+  - a check fails → 7, resplit, then 8 and 9 again
+  - three checks pass → 11
+
+### 11. Write to GitHub
+
+- **Goal**: the plan on the ticket, every sub-issue posted.
+- **Actions**: append `## Technical plan` to the body, replacing `## Planning so far`. Post sub-issues through `aisf:github-issue`; title from the `####` line, body the spec as is. Backfill real numbers into a new file. Guard `plan → planned`.
+  - Fits one PR: plan plus `## Spec` on the ticket, guard `plan → ready`.
+  - UI only: the UI spec goes on the ticket, its type becomes `type: ui`, guard `plan → backlog`; with `project-design`, `plan → idea`.
+- **Uses**: `aisf:github-issue`.
+- **Done**: plan on the ticket, every sub-issue posted, status moved.
+- **Output**: report of every number and what `aisf:implement-ticket` picks up next. For a UI ticket: with `project-design` it starts its design run by itself, else it needs a design before `aisf:ui-ticket <n>`.
+- **Exits**: → done
+
+## Output
+
+The plan on the ticket and one spec per sub-issue; or plan parts under `<n>`; or a spike with `## Planning so far`. And a report of every number.
