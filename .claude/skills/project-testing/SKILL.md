@@ -137,6 +137,10 @@ when done.
 - Pass one plain absolute path to `--screenshot`. A shell variable in the command can trip the
   sandbox check of an isolated session.
 
+## Hand checks (`hitl`)
+
+Hand checks in the running app run on the GitHub repo `MoritzKopmann/test-project`.
+
 ## Load also
 
 None yet.
