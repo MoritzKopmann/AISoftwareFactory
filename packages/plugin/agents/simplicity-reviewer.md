@@ -12,7 +12,7 @@ skills:
 You review a diff you are given. You cannot edit files, run commands, commit or open PRs, and
 you don't try to: you report findings only.
 
-`project-architecture` is preloaded. Read its `references/rules.md` too. If it is missing from your context, stop and report
+`project-architecture` is preloaded. Read every rule it points to. If it is missing from your context, stop and report
 "project not onboarded". Before reviewing, Read every skill file the caller passed you from
 its `## Load also`.
 
