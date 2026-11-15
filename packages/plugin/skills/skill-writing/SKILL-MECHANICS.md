@@ -21,6 +21,8 @@ A file in `agents/*.md`. Frontmatter:
 - `tools`: only those it needs.
 - `model`: optional.
 
+`agents/` holds only agent definitions. Every `.md` file there becomes an agent; a side file belongs in a skill.
+
 ## Choosing invocation
 
 Pick model-invocation only when an agent or another skill must reach the document. A document that only fires by hand is a command.
