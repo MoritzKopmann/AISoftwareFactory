@@ -30,7 +30,7 @@ flowchart TD
   1 -->|no type: skill, or spec sections missing| E((escalate spec))
   2 -->|claimed| 3[3 Write]
   2 -->|guard mismatch| S((stop))
-  3 -->|every spec step has a section| 4[4 Check]
+  3 -->|every spec step and section has its part| 4[4 Check]
   4 -->|a criterion missed| 3
   4 -->|a criterion the text cannot meet| E
   4 -->|every criterion met| 5[5 Commit]
@@ -47,11 +47,11 @@ flowchart TD
 ### 1. Identify
 
 - **Goal**: a `type: skill` leaf with a full spec; the mode known.
-- **Actions**: read the ticket's title, body and labels. Mode: `status: ready` → new; `status: in-review` → rework.
+- **Actions**: read the ticket's title, body and labels. The required body sections are Context, Skill, Role and goal, Acceptance criteria, and `## Steps` or `## Sections` or both. Mode: `status: ready` → new; `status: in-review` → rework.
 - **Uses**: `aisf:github-issue`.
 - **Done**: `<n>` and the mode (new / rework) said.
 - **Output**: the spec.
-- **Exits**: ready → 2 · in-review → R · no `type: skill` → escalate `spec`, naming the label it has · body lacks Context, Skill, Role and goal, Steps or Acceptance criteria → escalate `spec`.
+- **Exits**: ready → 2 · in-review → R · no `type: skill` → escalate `spec`, naming the label it has · body lacks Context, Skill, Role and goal or Acceptance criteria, or has neither Steps nor Sections → escalate `spec`.
 
 ### 2. Claim
 
@@ -63,12 +63,12 @@ flowchart TD
 
 ### 3. Write
 
-- **Goal**: the file at the spec's Path.
-- **Actions**: read `aisf:skill-writing`. Write the frontmatter per the spec's Invocation, then one section per spec step, each ending on its done-check.
+- **Goal**: every file at the spec's Path lines.
+- **Actions**: read `aisf:skill-writing`. Write the frontmatter per the spec's Invocation, then one file section per spec step, and one per spec section, each ending on its done-check. A spec with several paths: write every listed file.
 - **Uses**: `aisf:skill-writing`.
-- **Done**: every spec step has a section and every spec Output exists.
-- **Output**: the changed file.
-- **Exits**: every spec step has a section → 4.
+- **Done**: every spec step and every spec section has its part in the file, every listed path is written, every spec Output exists.
+- **Output**: the changed files.
+- **Exits**: done → 4.
 
 ### 4. Check
 
