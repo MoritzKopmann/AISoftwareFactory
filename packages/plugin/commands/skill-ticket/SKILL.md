@@ -30,6 +30,11 @@ They never replace the idea.
   `graph.json` to each `question-builder` and the node the question is about: the figure
   highlights that node, the heading names it (`ui-ticket · 3 Questionnaire`).
 - Any answer may add, cut or rewire nodes. Update `graph.json`.
+- **Accepted locations.** A touched skill lives in exactly one of:
+  - in the plugin: `packages/plugin/skills/<name>/SKILL.md`, `packages/plugin/commands/<name>/SKILL.md`, `packages/plugin/agents/<name>.md`;
+  - in the target repo: a skill folder `.claude/skills/<name>/` (its `SKILL.md`), a file `.claude/agents/<name>.md`, a file `.claude/commands/<name>.md`.
+
+  This list lives here only. `references/spec.md` and the steps point to it.
 
 # Graph
 
@@ -52,24 +57,28 @@ flowchart TD
 
 ## 1. Read
 
-- **Goal**: know every touched skill and what changes in it.
+- **Goal**: know every touched skill, what changes in it, and where it lives.
 - **Actions**: check `<n>` is open, `type: skill`, `status: plan`. Read the idea in the body.
   Read every skill, agent and command it names, and every one that calls or is called by those.
-  Note each fact in `findings.md`.
+  Check the path of each touched skill against the accepted locations. A path in none is a
+  **misfit**: note it in `findings.md` with the path the idea names. Note each fact in
+  `findings.md`.
 - **Uses**: `aisf:github-issue`.
-- **Done**: every touched skill is listed as new or changed, with one line on what changes.
+- **Done**: every touched skill is listed as new or changed, with one line on what changes, and
+  with its accepted path or marked misfit.
 - **Output**: `findings.md`.
 - **Exits**: `<n>` not open, not `type: skill` or not `status: plan` → stop, naming the status
   it has · the idea can't be cut into skills → escalate (`aisf_escalate` `spec`) · listed → 2.
 
 ## 2. Purpose
 
-- **Goal**: settle what each touched skill is for.
+- **Goal**: settle what each touched skill is for, and where it lives.
 - **Actions**: round 1. Per touched skill: role and goal, invocation (user or model, and the
   description if model), parameters, expected output. Also ask for the list of touched skills
-  itself: add, drop, merge.
+  itself: add, drop, merge. Per misfit, one card: "which accepted location?", one option per
+  accepted location. The answer becomes that skill's path.
 - **Uses**: `aisf:questionnaire`.
-- **Done**: every touched skill has all four settled.
+- **Done**: every touched skill has all four settled and an accepted path.
 - **Output**: ledger rows.
 - **Exits**: settled → 3.
 
