@@ -24,7 +24,7 @@ under `## Load also` (find them with Glob, e.g. `**/skills/<name>/SKILL.md`).
 
 ## 2. Hunt
 
-Walk `project-architecture`'s SKILL.md and `references/rules.md`, then `code-rules`, rule by
+Walk `project-architecture` (including every rule file it points to), then `code-rules`, rule by
 rule. Hold every changed line, new file and new name against every rule. Not the rules that
 come to mind: all of them. Read the
 surrounding code where a rule depends on it.
@@ -49,7 +49,7 @@ Then hunt again. Stop when a full pass finds nothing.
 
 ## 4. Return
 
-- **Fixed** — one line each: `file` — the rule it broke (the `rules.md` rule number or the
+- **Fixed** — one line each: `file` — the rule it broke (the `project-architecture` rule or the
   `code-rules` rule), what changed.
 - **Deviates from spec** — one line each: what the spec says, what the code now has, the rule.
   Mark it `contract` when the spec lists it under **Contracts**.
