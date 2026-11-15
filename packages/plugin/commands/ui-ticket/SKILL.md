@@ -48,12 +48,13 @@ flowchart TD
 
 - **Goal**: the ticket and the design are ready to split.
 - **Actions**: check, in order: `<n>` is open with `status: plan`; `project-design` loads
-  (Skill tool); `project-testing` has a `## Visual rendering` heading;
+  (Skill tool); `project-testing` has a Visual rendering recipe (a heading named "Visual rendering", at any
+  level);
   `.aisf/artifacts/design/index.json` exists.
 - **Uses**: `gh issue view`, Skill tool.
 - **Done**: all four hold.
 - **Exits**: one fails → `aisf_escalate` `spec`, naming the missing piece (ticket state, slot,
-  heading or path) · all hold → 2.
+  Visual rendering recipe or path) · all hold → 2.
 
 ## 2. Read the design
 
