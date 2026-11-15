@@ -22,7 +22,7 @@ From the calling skill:
 - One bridge page per session. Chat gets no questions. The caller shows the page itself, never from an agent.
 - Files are the memory. Later steps read `ledger.md` and `findings.md`, not the scrollback, so a compacted context loses nothing.
 - The page is a decision device: disposable, never linked from GitHub.
-- Each agent's input and rules are in its own file (`agents/`).
+- Each agent's input and rules are in its own definition.
 
 # Graph
 
