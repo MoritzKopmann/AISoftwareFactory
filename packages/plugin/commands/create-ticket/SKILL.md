@@ -1,186 +1,111 @@
 ---
 name: create-ticket
-description: >
-  Turn an idea issue (open, no status: label) into a ticket. Interviews the human in rounds on a
-  bridge page, rewrites the issue in place, and ends at status: backlog
-  or status: plan (a type: ui idea stays an idea). Splits surplus scope into bare ideas. Use when the user wants to create,
-  refine or shape a ticket. Triggers: "create ticket", "refine #N", "turn #N into a ticket".
+disable-model-invocation: true
+description: Turn an idea issue into a backlog or plan ticket through a what/why interview.
 ---
 
 # create-ticket
 
-Turn an idea into a ticket. Argument: issue number. If none (hand run), ask for a
-one-sentence summary and create the issue yourself.
+## Role and goal
 
-`gh` infers the repository from the current checkout. Never pass `-R`. Every issue write goes
-through `aisf:github-issue`: its _Edit an idea in place_ for `#N`, _Interview-driven create_
-with no number, _Bare ideas_ for spin-offs. Formatting and the cold-read test are its.
+Turn an idea issue into a ticket through a what/why interview. How is `aisf:plan-ticket`'s.
 
-**Ask what and why, never how.** `aisf:plan-ticket` settles how.
+## Parameters
 
-## Precondition
+- `<n>`: the idea issue. Required.
 
-```bash
-gh issue view <n> --json title,body,labels,state,comments
+## General rules
+
+- Every issue read and write goes through `aisf:github-issue`.
+- Ask what and why, never how.
+
+## Graph
+
+```mermaid
+flowchart TD
+  1[1 Read] -->|open idea, slots loaded| 2[2 Type]
+  1 -->|any status: label or closed| S((stop))
+  1 -->|Unknown skill: project not onboarded| S
+  2 -->|type inferred| 3[3 Interview]
+  3 -->|split denied: interview goes on| 3
+  3 -->|split confirmed| 4[4 Split]
+  3 -->|cold-read test passes| 5[5 Summary]
+  4 -->|ticket narrowed| 5
+  5 -->|Reopen note names another type| 2
+  5 -->|Reopen with a note| 3
+  5 -->|Confirm| 6[6 Write]
+  6 -->|guard mismatch| S
+  6 -->|issue written, numbers reported| D((done))
 ```
 
-- Open and no `status:` label → go on. Anything else → stop, name its state (`backlog`, …),
-  write nothing.
-- A gaps comment from `aisf:plan-ticket` (a spec sent back to idea) is ordinary input. It
-  seeds the first rounds.
+## Steps
 
-**Bridge page.** No `aisf_show_artifact` tool → stop: "create-ticket needs the bridge page".
-Load `aisf:artifacts`.
+### 1. Read
 
-**Project slots.** Load `project-toolchain` with the Skill tool (bare name). Load
-`project-architecture` too (it decides a question below). `Unknown skill` → stop:
-"project not onboarded". Load `project-index` if it exists. Skip silently if absent.
+- **Goal**: an open idea in view, and the project slots loaded.
+- **Actions**: read issue `<n>` (title, body, labels, state, comments). Open and no `status:` label → go on. A gaps comment from `aisf:plan-ticket` (a spec sent back to idea) is ordinary input: it seeds the first rounds. Load `project-toolchain` and `project-architecture` with the Skill tool (bare names). Load `project-index` if it exists; skip silently if absent.
+- **Uses**: `aisf:github-issue`, Skill tool.
+- **Done**: the issue text and comments are in view; toolchain and architecture loaded.
+- **Exits**:
+  - open idea, slots loaded → 2
+  - any `status:` label or closed → stop (name its state, write nothing)
+  - Unknown skill → stop ("project not onboarded")
 
-**Resume.** `.aisf/artifacts/create-<n>/ledger.md` exists → read it. Continue from it. Never
-ask an answered round again.
+### 2. Type
 
-## Files
+- **Goal**: one ticket type, and its track picked.
+- **Actions**: infer the type from the issue text and the gaps comment: `bug`, `enhancement`, `task` (a spike is a task whose deliverable is an answer), `skill`, or `ui` only when the skill `project-design` loads (try it; skip silently if absent). No pick-the-type and no confirm-the-summary question. Entered from a Reopen: take the type the note names.
+- **Uses**: Skill tool (`project-design`).
+- **Done**: one type set; its track is the one step 3 asks.
+- **Exits**: type inferred → 3
 
-For issue `<n>`:
+### 3. Interview
 
-- Page id: `create-<n>`. **One page for the whole session**, at
-  `.aisf/artifacts/create-<n>/index.html`. `round-builder` adds each round to the same
-  file. Republish with the same id.
-- Ledger: `.aisf/artifacts/create-<n>/ledger.md`. Append after every round:
-  `area · answer · round N`, plus open questions. Later steps read the ledger, not the
-  scrollback.
-- A hand run with no number has no `<n>` yet: ask the summary, create the bare issue first,
-  then use its number. Skip the Precondition for that issue.
+- **Goal**: the drafted ticket passes the cold-read test.
+- **Actions**: ask the track's areas in rounds, in the track's order. Cover every area; skip one an earlier answer settled. Rough options come from the issue text and, when present, `project-index`. When answers show the idea is several tickets, propose the split as a question in a round: the first part (this ticket) and each other part with a one-line summary. An unknown the human cannot settle goes into the ticket as an open question; never omit it. Tracks:
+  - **Bug**: 1. Reproduction: exact trigger steps, the state before the failure. 2. Expected vs actual: concrete behaviour. 3. Frequency and scope: always, sometimes, specific data or device. 4. Environment: platform options from `project-toolchain`'s `platforms`; plus version and data state. 5. Impact: who is affected, is there a workaround. 6. Related tickets or commits.
+  - **Enhancement or feature**: 1. User and goal. 2. Trigger or entry point: where in the app the flow starts; only when the feature has a surface a human sees. 3. Core behaviour: the happy path, step by step. 4. Edge cases and error states. 5. Non-goals: out of scope, explicitly; use `project-index`'s recall of the touched feature when present. 6. Persistence: what must survive the next launch. 7. Constraints the user would notice: offline, instant, one platform. 8. Design or UX reference; only when the feature has UI. 9. Dependencies: blocked-by or related.
+  - **UI**: the enhancement areas. Nothing about layout: the design run settles it.
+  - **Skill**: the enhancement areas. Nothing about wording or structure of the text: the skill run settles it.
+  - **Task or spike**: 1. Deliverable. 2. Why now: what it unblocks. 3. Constraints: time-box, output format. 4. Definition of done.
+- **Uses**: `aisf:questionnaire` with page id `create-<n>`; stance "what is to be built only; no more technical than the requirement; effects in ticket terms (scope, criteria), never module or layer; cards never offer an implementation choice"; ledger line `area · answer · round N`, plus open questions.
+- **Done**: the drafted ticket passes `aisf:github-issue`'s cold-read test, or a split was confirmed.
+- **Output**: ledger lines; the drafted ticket.
+- **Exits**:
+  - split confirmed → 4
+  - split denied → 3 (the interview goes on)
+  - cold-read test passes → 5
 
-## Interview
+### 4. Split
 
-Load `aisf:questionnaire` for the pattern, the agents and the page. create-ticket picks each
-round's questions. Specific to create-ticket:
+- **Goal**: this ticket holds the first part only.
+- **Actions**: narrow the drafted ticket to the first part. Note each other part with its one-line summary for step 6. No umbrella, no sub-issue link.
+- **Done**: the draft covers the first part only; every other part is noted.
+- **Output**: the list of spin-off parts.
+- **Exits**: ticket narrowed → 5
 
-1. **Round 1.** Infer the type from the issue text and the gaps comment: `bug`, `enhancement`
-   or `task` (a spike is a task whose deliverable is an answer), or `skill`: work on text
-   written for agents (skills, agent definitions, commands, CLAUDE.md, memory-style files). A
-   `skill` needs no project slot: no gate. Or `ui` only when the skill
-   `project-design` exists (try loading it; skip silently if absent). Ask that type's track
-   questions at once. No confirm-the-summary question and no pick-the-type question. Hand run
-   with no number: ask the one-line summary in chat first, before the issue exists.
-2. **Group the frontier.** Every question whose answer does not depend on another open one goes
-   in the same round, across track areas. No cap on the count. The track lists the areas to
-   cover, in its order. Cover every area. Skip one an earlier answer settled.
-3. **Every question** is built by one `question-builder` agent, in parallel, with: page
-   `create-<n>`, a name, the question, rough options drafted from the issue text and, when the
-   slot exists, from `project-index`, and the stance "what is to be built only; no more technical
-   than the requirement; effects in ticket terms (scope, criteria), never module or layer". Full
-   cards. Plus the kit's free text field. No `suggested` card anywhere. Cards never offer an
-   implementation choice.
-4. **Each round.** Write `.aisf/artifacts/create-<n>/round-<N>.json` (contract in
-   `agents/round-builder.md`). Run `round-builder` (page `create-<n>`, `N`, the absolute path of
-   `skills/questionnaire/build-page.mjs`). Call `aisf_show_artifact` yourself (id `create-<n>`)
-   and read the answers. There is no playback-builder and no `header.html`: the page has no
-   playback and no header section.
-5. **Stop when** the ticket passes the cold-read test. An unknown the human cannot settle goes
-   into the ticket as an open question. Never omit it.
+### 5. Summary
 
-### Tracks
+- **Goal**: the human confirms the drafted ticket.
+- **Actions**: write `.aisf/artifacts/create-<n>/summary.html`: title, context, scope, acceptance criteria; the inferred `type:` and a proposed `priority:` based on the impact and why-now answers; any split. The Confirm round has one task, **Plan next**, off by default. A `type: ui` ticket gets no task.
+- **Uses**: `aisf:questionnaire` with page id `create-<n>`.
+- **Done**: a Confirm or a Reopen with a note is back.
+- **Output**: `summary.html`; Plan next on or off.
+- **Exits**:
+  - Confirm → 6
+  - Reopen note names another type → 2
+  - Reopen with a note → 3
 
-**Bug**
+### 6. Write
 
-1. Reproduction: exact trigger steps, the state before the failure.
-2. Expected vs actual: concrete behaviour.
-3. Frequency and scope: always, sometimes, specific data or device.
-4. Environment: platform options come from `project-toolchain`'s `platforms`; plus version
-   and data state.
-5. Impact: who is affected, is there a workaround.
-6. Related tickets or commits.
+- **Goal**: the issue is the ticket.
+- **Actions**: through `aisf:github-issue`'s Edit an idea in place: guard `idea → backlog` (Plan next off), `idea → plan` (on), or `idea → idea` (`type: ui`); rewrite title and body; one `type:` and one `priority:`. Each dependency the interview found becomes a blocked-by. Post each noted part as a bare idea. Report the issue number, its status and each spin-off number.
+- **Uses**: `aisf:github-issue`.
+- **Done**: title, body and labels are written; every spin-off has a number.
+- **Exits**:
+  - guard mismatch → stop
+  - issue written, numbers reported → done
 
-**Enhancement or feature**
+## Output
 
-1. User and goal.
-2. Trigger or entry point: where in the app the flow starts. Ask only when the feature has a
-   surface a human sees.
-3. Core behaviour: the happy path, step by step.
-4. Edge cases and error states.
-5. Non-goals: out of scope, explicitly. Use the `project-index` recall of the touched feature
-   when the slot exists.
-6. Persistence: what must survive the next launch.
-7. Constraints the user would notice: offline, instant, one platform.
-8. Design or UX reference. Only when the feature has UI.
-9. Dependencies: blocked-by or related.
-
-**UI**
-
-Same what/why interview as the enhancement track. Ask nothing about layout: the design run
-settles it.
-
-**Skill**
-
-Same what/why interview as the enhancement track: ask its areas. Ask nothing about wording or
-structure of the text: the skill run settles it.
-
-**Task or spike**
-
-1. Deliverable.
-2. Why now: what it unblocks.
-3. Constraints: time-box, output format.
-4. Definition of done.
-
-## Split
-
-Answers show the idea is several tickets → one round proposes the split: the first part
-(this ticket) and each other part with a one-line summary. Confirmed:
-
-- Narrow the current ticket to the first part. Finish it as below.
-- Post each other part as a **bare idea**: no labels, a one-line summary, `Split from #<n>`.
-- No umbrella. No native sub-issue link.
-
-## Summary round
-
-The last round. Write the drafted ticket to `.aisf/artifacts/create-<n>/summary.html`:
-
-- Title, context, scope, acceptance criteria.
-- The labels: the inferred `type:` and the proposed `priority:`. Base the priority on the impact
-  and why-now answers.
-- Any proposed split.
-
-Write `round-<N>.json` as:
-
-```json
-{
-  "confirm": {
-    "tasks": [{ "number": 1, "heading": "Plan next", "blockedBy": [], "hitl": false }],
-    "summary": "summary.html"
-  }
-}
-```
-
-Run `round-builder`, then `aisf_show_artifact`. **Plan next** is the one task, **off by
-default**. `"1": true` in the Confirm payload's `hitl` means on.
-
-**Confirm locks it.** A Reopen with a note → back to the interview on that note. The note may
-name another type: rerun that type's track areas.
-
-## Write
-
-Through `aisf:github-issue`, guard first (`idea → backlog`, `idea → plan`, or `idea → idea` for
-`type: ui`).
-
-1. Rewrite title and body in place. Full anatomy, cold-read test. Open questions stay in the
-   body.
-2. Labels: one `type:`, one `priority:`, and `status: backlog` (Plan next off) or
-   `status: plan` (on). A `type: ui` idea gets no `status:` label and no Plan next switch: it
-   stays an idea and the design run picks it up. **Never** `hitl`, **never** `domain:`.
-3. A dependency is a native blocked-by (`--add-blocked-by`). "Related" stays a `Related: #N`
-   body line.
-4. Post the spin-offs.
-
-Report the issue number, its status and each spin-off number. **Stop.** The skill never starts
-`aisf:plan-ticket`.
-
-## Anti-patterns
-
-- Chaining into `aisf:plan-ticket`.
-- Writing an umbrella for a split.
-- Offering "how" choices on cards.
-- A second page for the same session.
-- A `suggested` card, a playback or a header on the page.
-- Re-asking a round the ledger already holds.
+Issue `<n>` rewritten in place with `type:`, `priority:` and `status: backlog` or `status: plan` (a `type: ui` idea stays an idea, no `status:`). Each spin-off posted as a bare idea. The report names the issue number, its status and each spin-off number.
