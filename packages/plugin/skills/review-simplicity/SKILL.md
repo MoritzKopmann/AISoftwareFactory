@@ -70,7 +70,7 @@ flowchart TD
 
   - **Architecture**
     - A change in the diff that breaks a rule of `project-architecture`.
-      Each finding names the rule number it breaks.
+      Each finding names the rule ID it breaks.
 
     Returned to the caller as must-fix. Never applied by this skill.
 
