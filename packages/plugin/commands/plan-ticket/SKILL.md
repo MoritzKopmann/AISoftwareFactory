@@ -168,7 +168,7 @@ flowchart TD
 ### 9. Confirm
 
 - **Goal**: the human confirms the split and the `hitl` flags.
-- **Actions**: the last round, per `aisf:questionnaire` (Confirm). One task per sub-issue: heading `<Title> · <module> · <layer>` (skill child `<Title> · skill`), its blocked-by, its proposed `hitl`. Tasks only, no decision tree. Confirm locks the `hitl` flags. The only gate besides an accepted ticket split.
+- **Actions**: the last round, run as the Confirm round of `aisf:questionnaire` (its step 10). The Reopen exits below are this step's own: a Reopen goes back to this step's exit, not to the questionnaire's step 2. One task per sub-issue: heading `<Title> · <module> · <layer>` (skill child `<Title> · skill`), its blocked-by, its proposed `hitl`. Tasks only, no decision tree. Confirm locks the `hitl` flags. The only gate besides an accepted ticket split.
 - **Uses**: `aisf:questionnaire`.
 - **Done**: confirmed or reopened.
 - **Exits**:
