@@ -8,7 +8,7 @@ implementer writes the text per `aisf:skill-writing`.
     One sentence: why this skill is new or changes.
 
     ## Skill
-    - Path: one of skill-ticket's accepted locations (general rules)
+    - Path: one of skill-ticket's accepted locations (general rules); several files may be listed
     - New | Changed
     - Invocation: user (`disable-model-invocation: true`) | model, with the description
 
@@ -37,6 +37,13 @@ implementer writes the text per `aisf:skill-writing`.
     - Output:
     - Exits: `<condition> → <node | done | escalate | stop>`
 
+    ## Sections
+    One `### <H2 name>` per section, in file order.
+    ### <H2 name>
+    - Goal:
+    - Content: the rules and facts it must hold
+    - Done:
+
     ## Output
     What exists when the skill is done.
 
@@ -47,4 +54,13 @@ implementer writes the text per `aisf:skill-writing`.
     ## Acceptance criteria
     Observable in the skill text: "Step 3 invokes `aisf:tdd`", "Every step has a done-check".
 
-The graph in the ticket and `graph.json` hold the same nodes and exits.
+## Kinds
+
+- **Step skill**: the template above, with Graph and Steps.
+- **Rule skill**: Context, Skill, Role and goal, Sections, Scope, Acceptance criteria. It drops
+  Parameters, Graph, Steps and Output. General rules stay only if the skill has a General rules
+  part.
+- **Mixed skill**: Sections, and for its Steps part `## Graph` (one per recipe that branches)
+  and `## Steps` (one `###` per recipe, step fields per step).
+
+The graph and sections in the ticket and `graph.json` hold the same nodes, exits and sections.
