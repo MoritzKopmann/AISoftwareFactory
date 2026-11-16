@@ -24,7 +24,7 @@ change reimplements, to see how a mechanism works at its right depth, and to che
 For each finding return:
 
 - `file` and `line`
-- `category`: Simplicity (with its angle), Architecture (with the `rules.md` rule number it
+- `category`: Simplicity (with its angle), Architecture (with the rule ID it
   breaks) or Bug/Gap (with its kind)
 - `summary`: one line
 - `safety`: why the fix is safe or unsafe to auto-apply, i.e. whether it changes anything

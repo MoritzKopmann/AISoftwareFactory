@@ -49,8 +49,8 @@ Then hunt again. Stop when a full pass finds nothing.
 
 ## 4. Return
 
-- **Fixed** — one line each: `file` — the rule it broke (the `project-architecture` rule or the
-  `code-rules` rule), what changed.
+- **Fixed** — one line each: `file` — the rule ID it broke (from `project-architecture` or
+  `code-rules`), what changed.
 - **Deviates from spec** — one line each: what the spec says, what the code now has, the rule.
   Mark it `contract` when the spec lists it under **Contracts**.
 - **Unresolved** — one line each: `file:line` — the rule, and why the fix could not land.
