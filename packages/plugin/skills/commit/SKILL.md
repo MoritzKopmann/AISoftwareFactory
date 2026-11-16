@@ -2,8 +2,6 @@
 name: commit
 description: "Produces a conventional commit — runs the project's format and analyze commands, fixes warnings in its own diff, derives type/scope, adds a ticket ref when one exists."
 when_to_use: "user asks to commit, 'stage changes', or 'create a commit'; also invoked by other skills at the end of their workflow"
-model: haiku
-effort: low
 ---
 
 # Commit Skill
