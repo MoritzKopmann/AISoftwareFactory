@@ -30,14 +30,14 @@ You are a senior skill author. Build one ready `type: skill` leaf to a PR, from 
 flowchart TD
   1[1 Identify] -->|ready| 2[2 Claim]
   1 -->|in-review| R1[R1 Detect]
-  1 -->|no type: skill, or spec sections missing| E((escalate))
+  1 -->|"no type: skill, or spec sections missing"| E((escalate))
   2 -->|claimed| 3[3 Write]
   2 -->|guard mismatch| S((stop))
-  3 -->|every spec step and section has its part (rework: every item changed)| 4[4 Check]
+  3 -->|"every spec step and section has its part (rework: every item changed)"| 4[4 Check]
   3 -->|rework item contradicts the spec or needs judgement| E
   4 -->|a criterion missed| 3
   4 -->|a criterion the text cannot meet| E
-  4 -->|every criterion met (rework: every item too)| 5[5 Commit]
+  4 -->|"every criterion met (rework: every item too)"| 5[5 Commit]
   5 -->|tree clean, new build| 6[6 PR]
   5 -->|tree clean, rework| R5[R5 Unapprove]
   6 -->|aisf:pr done| D((done))
@@ -46,8 +46,8 @@ flowchart TD
   R1 -->|not rework| S
   R2 -->|claimed| R3[R3 Rebase]
   R2 -->|guard mismatch| S
-  R3 -->|rebased, every criterion still met (step 4)| R4[R4 Work list]
-  R3 -->|dirty tree (spec) · rebase cannot finish (red)| E
+  R3 -->|"rebased, every criterion still met (step 4)"| R4[R4 Work list]
+  R3 -->|"dirty tree (spec) · rebase cannot finish (red)"| E
   R4 -->|work list written, items left| 3
   R4 -->|rebase only, no item| R5
   R5 -->|label gone or absent| R6[R6 PR]
