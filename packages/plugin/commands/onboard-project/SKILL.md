@@ -63,7 +63,8 @@ plugin skills) are sources: mine them. Propose deleting each in the PR, per file
 keep any. Project-only skills stay and are wired in through the slot's `## Load also`.
 
 Each section is shaped by `references/shape-<slot>.md`. Shapes are structure only. The content
-comes from the sources above.
+comes from the sources above. On form (order of parts, how a rule is written, the Steps part),
+the rule layout in `aisf:skill-writing` wins; the shape files give only the slot's content.
 
 | Slot                   | Shape                                      | File written                                                           |
 | ---------------------- | ------------------------------------------ | ---------------------------------------------------------------------- |
@@ -76,9 +77,9 @@ comes from the sources above.
 project have a frontend? Cards `yes` and `no`, ledger section `project-design.frontend`.
 
 - `yes` → draft the slot below, shaped by `references/shape-project-design.md`. Also draft the
-  optional `## Visual rendering` section of `project-testing`, shaped by
+  Visual rendering recipe under `## Steps` of `project-testing`, shaped by
   `references/shape-project-testing.md`. It shows on the review page with that slot.
-- `no` → write no `project-design` slot and no `## Visual rendering` section. Never ask about
+- `no` → write no `project-design` slot and no Visual rendering recipe under `## Steps`. Never ask about
   it again.
 
 | Slot             | Shape                                | File written                             |
