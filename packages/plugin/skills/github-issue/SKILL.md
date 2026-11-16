@@ -18,14 +18,12 @@ and start work without asking the author anything.
 
 ## Modes
 
-| Mode                        | Writes                                                                                                                                                |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Interview-driven create** | New issue, full anatomy, cold-read test, `type:`, `priority:`, `status: backlog` or `status: plan`                                                    |
-| **Edit in place**           | Rewrites title and body, adds `type:`, `priority:` and `status: backlog` or `status: plan`. See _Edit an idea in place_.                              |
-| **Bare idea**               | Minimal issue, no labels. See _Bare ideas_.                                                                                                           |
-| **Sub-issue**               | Child of a parent: `status: ready`, `hitl` where confirmed; a UI child is an idea with `project-design`, else `status: backlog`. See _Relationships_. |
-| **Split part**              | Child of a split umbrella: full anatomy, `status: plan`, parent's `type:` and `priority:`. See _Split part_.                                          |
-| **Direct create**           | Full anatomy, cold-read test, labels as for interview-driven                                                                                          |
+| Mode              | Writes                                                                                                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Edit in place** | Rewrites title and body, adds `type:`, `priority:` and `status: backlog` or `status: plan`. See _Edit an idea in place_.                              |
+| **Bare idea**     | Minimal issue, no labels. See _Bare ideas_.                                                                                                           |
+| **Sub-issue**     | Child of a parent: `status: ready`, `hitl` where confirmed; a UI child is an idea with `project-design`, else `status: backlog`. See _Relationships_. |
+| **Split part**    | Child of a split umbrella: full anatomy, `status: plan`, parent's `type:` and `priority:`. See _Split part_.                                          |
 
 ## Anatomy of a good ticket
 
@@ -141,15 +139,7 @@ Note the space after each label colon (`status: ready`).
 
 ## Posting
 
-Compose the body, write it to a temp file (multi-line bodies can't go inline), then:
-
-```bash
-gh issue create \
-  --title "<title>" --body-file <tmp> \
-  --label "type: <x>" --label "priority: <x>" --label "status: <backlog|plan>"
-```
-
-It prints the new issue URL on stdout.
+Write the body to a temp file; multi-line bodies can't go inline.
 
 ### Read back
 
@@ -203,6 +193,7 @@ For spin-offs and findings that a later create-ticket interview will refine:
   `Found while implementing #N` (implement-ticket blockers and red-on-main findings) or
   `Found while onboarding #N` (onboard-project: accepted suggestions that need code changes).
 - **No labels.** The cold-read test is waived.
+- A human's own ticket also starts as an idea, through the app or an unlabelled `gh issue create`. `aisf:create-ticket` shapes it. A human's own idea needs no provenance line.
 
 ```bash
 gh issue create --title "<title>" --body-file <tmp>
