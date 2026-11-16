@@ -1,6 +1,6 @@
 # Layout
 
-Part of [`aisf:skill-writing`](SKILL.md): one layout and one step shape for commands and agent definitions. Reference skills are not bound (rules in `SKILL.md`).
+Part of [`aisf:skill-writing`](SKILL.md): two layouts. The step layout and step shape bind step documents (documents run start to finish). The rule layout follows below and binds rule skills (documents consulted on demand).
 
 ## Layout
 
@@ -29,3 +29,36 @@ A field with nothing to say is left out. Done and Exits are always there.
 ## Agents
 
 An agent definition uses the same names: Parameters for its input, Output for its return. Its Output gives the exact block its caller reads.
+
+## Rule layout
+
+In this order; a part with nothing to say is left out:
+
+1. Frontmatter
+2. A machine-read block a consumer needs (e.g. `aisf-toolchain`)
+3. **Scope**: one or two lines: what the rules cover.
+4. **Model**: the short mental model the rules rest on.
+5. **General rules**: rules that hold across every topic, once.
+6. One H2 per topic
+7. **Steps** (mixed only)
+8. `## Load also` (slot only, last, heading unchanged)
+
+### One rule
+
+`<ID>. **Must:** <positive target, one line>` or `**Should:**`.
+
+- ID: two uppercase letters from the topic plus a number (`NA1`, `PR3`), unique in the skill. An ID is stable: never reused, never renumbered.
+- A reason (why) and an example only when the rule needs them, under the rule.
+- An exception is a sub-bullet under its rule.
+- A lint-checked rule keeps its lint tag as a separate bracket after the ID: `PR3. [L5] **Must:** …`.
+- Cite a rule as `<skill> <ID>` (`code-rules NA1`).
+
+### Facts, pointers, disclosed files
+
+- **Facts**: a topic may hold an unnumbered fact table or short prose beside its rules. Only rules get IDs.
+- **Pointers**: a pointer to a disclosed file sits beside the topic or step that uses it.
+- **Disclosed rule file** (e.g. `references/rules.md`): same layout, minus frontmatter.
+
+### Steps part (mixed)
+
+`## Steps`, one H3 per recipe. Each recipe is numbered from 1 in the step shape above (Goal, Actions, Uses, Done, Output, Exits), any length. A graph per recipe only when a step has more than one exit. A recipe cites rule IDs; it never restates a rule.

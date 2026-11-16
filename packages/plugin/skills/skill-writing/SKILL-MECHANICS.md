@@ -6,7 +6,7 @@ Part of [`aisf:skill-writing`](SKILL.md): frontmatter and invocation of skills, 
 
 Omit `disable-model-invocation`. The `description` is the skill's context pointer, so the agent can fire it and other skills can reach it; it carries the trigger branches (pointer rules in `SKILL.md`). The cost is permanent context load. You can still type its name: a description only adds agent discovery, never removes the human's reach.
 
-A **reference skill** is one home for reference that several documents need: any of them can invoke it.
+A **rule skill** is one home for reference that several documents need: any of them can invoke it.
 
 ## Command
 

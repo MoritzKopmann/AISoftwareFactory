@@ -8,7 +8,7 @@ description: Writing documents for agents. Use when writing a skill, command, ag
 Reference for writing any document an agent reads: a skill, a command, an agent definition, a `CLAUDE.md`, a doc reached by a pointer. The packaging differs; the writing does not: the same levers make each one predictable, since the agent takes the same _process_ every run rather than producing the same output.
 
 - Writing a skill, command or agent: read [`SKILL-MECHANICS.md`](SKILL-MECHANICS.md) for frontmatter and invocation.
-- Writing a command or an agent: read [`LAYOUT.md`](LAYOUT.md) for layout and step shape.
+- Writing a command, an agent or a rule skill: read [`LAYOUT.md`](LAYOUT.md). It holds the step layout and the rule layout.
 
 ## Context pointers
 
@@ -86,6 +86,6 @@ You win twice: fewer tokens, and a sharper hook for the agent to hang its thinki
 - Check every line for **relevance**: does it still bear on what the document does? A line loses relevance by never bearing on the task (mere exposition, or a branch that should be disclosed) or by going stale as the behaviour or world it describes changes. Shorter documents are easier to keep relevant. Without a pruning discipline the default fate is **sediment**: stale layers that settle because adding feels safe and removing feels risky, until you must core down through them to find what is still live.
 - Hunt **no-ops** sentence by sentence: an instruction the model already obeys by default pays load to say nothing. The test (does it change behaviour versus the default?) is model-relative, not reader-relative: two people disagreeing about a no-op disagree about the default, and settle it by running the document, not by debate. When a sentence fails, delete the whole sentence rather than trim words from it. The test also grades leading words: a word too weak to beat the default (_be thorough_ when the agent is already thorough-ish) is a no-op, and the fix is a stronger word (_relentless_), not a different technique.
 
-## Reference skills
+## Rule skills
 
-A **reference skill** is one whose content is all reference. Its rules: one topic, concise, concrete, short. The layout and step shape of [`LAYOUT.md`](LAYOUT.md) do not bind it.
+A **rule skill** is a skill made of rules. Test by use: a document consulted on demand takes the rule layout; a document run start to finish takes the step layout. Rules plus one or more recipes is a **mixed** skill: rule layout, with its recipes in a Steps part. [`LAYOUT.md`](LAYOUT.md) holds the layout. Keep one topic, concise, concrete, short.
