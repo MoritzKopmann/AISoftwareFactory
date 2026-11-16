@@ -168,18 +168,29 @@ For `create-ticket` on an existing idea `#N`:
    for `type: ui`). Otherwise stop and report its state.
 2. Rewrite title and body from the interview; the body gets the full anatomy and passes the
    cold-read test. Open questions stay in the body. GitHub's edit history keeps the original idea text, so don't quote it back.
-3. Never `hitl`. Write it in one edit:
+3. Read the `type:` and `priority:` labels `#N` already has. The list may be empty:
+
+   ```bash
+   gh issue view <n> --json labels --jq '[.labels[].name | select(test("^(type|priority): "))]'
+   ```
+
+4. Never `hitl`. Write it in one edit, so exactly one `type:`, one `priority:` and the target
+   status remain. Add `--remove-label "<label>"` once per label from step 3 that differs from
+   the one added. A label found equal to the added one is not removed: `gh` runs add and remove
+   in parallel, so a label in both has no defined end state.
 
    ```bash
    gh issue edit <n> --title "<title>" --body-file <tmp> \
-     --add-label "type: <x>" --add-label "priority: <x>" --add-label "status: <backlog|plan>"
+     --add-label "type: <x>" --add-label "priority: <x>" --add-label "status: <backlog|plan>" \
+     --remove-label "<stale type: or priority: label>"
    ```
 
    A `type: ui` idea (`idea → idea`) gets no `status:` label; `design` moves it on:
 
    ```bash
    gh issue edit <n> --title "<title>" --body-file <tmp> \
-     --add-label "type: ui" --add-label "priority: <x>"
+     --add-label "type: ui" --add-label "priority: <x>" \
+     --remove-label "<stale type: or priority: label>"
    ```
 
 ### Bare ideas
