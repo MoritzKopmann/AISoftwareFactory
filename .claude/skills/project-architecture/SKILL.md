@@ -6,20 +6,11 @@ description: Rules and a working reference implementation for a TypeScript modul
 
 # Layered modular architecture (TypeScript)
 
-The application is a modular monolith. Each feature module (`users`, `orders`, …) is split into three
-layers, and modules talk to each other only through narrow, explicit contracts. The goal is that any
-module can be understood, tested and replaced on its own, and that a module could later become a
-separate service without its business code changing.
+## Scope
 
-The **complete rule set** is in `references/rules.md`. Read it before making non-trivial changes: it
-holds the full placement table, all 39 rules, and the checklist for new modules. This file gives you the
-mental model, the workflows, and a map of the example app.
+A modular monolith: three layers per module, narrow contracts between modules.
 
-A **working example app** that follows every rule is in `assets/example-app/`. When you are unsure how
-something should look, open the matching file there and copy its shape. The map below tells you which
-file shows what.
-
-## The model in one picture
+## Model
 
 ```
 presentation  ──►  business  ◄──  infrastructure
@@ -39,11 +30,17 @@ The arrows matter more than the folders. Interfaces live where they are *used* (
 infrastructure depends on business, never the other way round. If you find yourself importing
 something "upward", stop: the interface is in the wrong place.
 
+## General rules
+
+- **GR1 Must** When the project deviates on purpose (different folder names, an existing DI container, a
+  framework like NestJS with its own module system), follow the project and name the rule ID you adapt and
+  why. Keep dependencies pointing one way and contracts narrow.
+
 ## Module layout
 
-The folder tree is in `references/rules.md`, section "Folder layout". It is the only copy, so read it there.
+The folder tree is in `references/rules.md`, "Folder layout". It is the only copy.
 
-## Example app map
+## Example app
 
 All paths are relative to `assets/example-app/`. Run `npm install && npm run check` there to typecheck,
 run the architecture linter and the tests. `npm run demo` exercises the whole flow.
@@ -63,104 +60,105 @@ run the architecture linter and the tests. `npm run demo` exercises the whole fl
 | Consume another module's API (anti-corruption adapter) | `orders/business/port/user/user.port.ts` (`UserPort`) → `orders/infrastructure/internal/users.adapter.ts` (`UsersAdapter`) |
 | React to events from other modules | `notifications/presentation/bus/event-handlers.ts` |
 | Publish an event | `orders/business/service/order.service.ts` (`bus.publish`) + `src/shared/event-bus.ts` (`DomainEvents`) |
-| Enforce the rules automatically | `.dependency-cruiser.cjs` (rule IDs match `[L1]`, `[B2]` … in rules.md) |
+| Enforce the rules automatically | `.dependency-cruiser.cjs` (rule IDs match the lint tags `[L1]`, `[B2]` … in rules.md) |
 
 (`users/…`, `orders/…`, `notifications/…` are under `src/modules/`.)
-
-## Workflows
-
-### Placing a single file
-Find it in the "What goes where" table in `references/rules.md`. If nothing fits, ask which layer it
-belongs to by direction: is it a way *in* (presentation), a rule (business), or a way *out*
-(infrastructure)? Interfaces go to the layer that *uses* them.
-
-### Adding a use case or endpoint to an existing module
-1. Entity changes → `business/domain/`. Rules → a method on a service in `business/service/`.
-2. New persistence needs → extend the interface in `business/port/repository/`, then the implementation(s)
-   in `infrastructure/repository/`.
-3. HTTP: request/response DTOs in `dto/api/`, mapper in `dto/mapper/`, controller method in
-   `presentation/api/`, route in `<module>.routes.ts`.
-4. Keep checks split: shape checks (is it a number?) in the controller, business rules (is it > 0?)
-   in the service.
-
-### Deciding whether something is a new module
-Do this before writing code for any new feature, and especially when building from an empty project —
-that is where it is most tempting to fold everything into one or two modules "because nothing else
-needs it yet". A module is a **business capability that owns its own data and rules**; size and
-current number of consumers don't matter.
-
-Create a module when **any** of these holds:
-1. **Own data** — it has records only it writes (payments: charges, status, refunds).
-2. **Own rules and vocabulary** that change for different reasons than its neighbours'.
-3. **Several modules need it.**
-4. **It could plausibly become a separate service or another team's responsibility.**
-
-Keep it inside an existing module when:
-- it only exists as part of another entity's lifecycle (order lines → `orders`);
-- it is a purely technical capability without business state (sending mail, storing files, SMS) — an
-  adapter in `infrastructure/<capability>/` of the module that uses it;
-- the two parts would need constant synchronous calls in both directions (the boundary is wrong).
-
-Test: *"If this feature were deleted, which data and rules would disappear with it?"* A coherent set
-that belongs to nobody else is a module. Example: storing "paid" status on the order inside `orders`
-is wrong — payment records belong to a `payments` module, and `orders` asks it for status through its
-internal API. The "When to create a module" section in `references/rules.md` has the full version with more examples.
-
-### Splitting a class
-Do this when placing a service, repository or adapter, before writing it.
-
-- **Must:** a class has one reason to change. Test: describe it in one sentence without "and" or
-  "or". `RunService` that starts runs **and** formats log lines is two classes.
-- **Should:** its methods use most of its fields. A group of methods sharing only some of the
-  fields is its own class.
-
-### Adding a module
-Follow the checklist at the end of `references/rules.md`. Every module's `index.ts` exports exactly one
-`create<Module>Module(deps)` factory returning `{ routes, jobs, internal }` (all always present, possibly
-empty; cron/CLI entry points go into `jobs`, keyed `<module>.<job-name>`), plus type-only re-exports of its `presentation/internal` API and `dto/internal` types — nothing
-from `business/` or `infrastructure/`.
-
-### Module A needs something from module B
-Decide first: **does A need an answer to continue?**
-- **Yes → synchronous call through B's internal API.**
-  1. In B: add the method to `presentation/internal/<b>.api.ts`; inputs and outputs are `dto/internal/`
-     types or primitives. Implement it in the facade by calling B's *services* (never repositories),
-     mapping with B's mapper. Only `shared/errors.ts` errors (or `null` for expected absence) may escape.
-  2. In A: declare what A needs from B as one interface `<Thing>Port` in `business/port/<thing>/`
-     (`<Thing>` = B, singular), named in A's vocabulary (orders has `UserPort.exists()`, not `UsersApi`).
-     One port per provider; add methods to it, never a second port.
-  3. In A: implement it in one `<B>Adapter` in `infrastructure/internal/<provider>-adapter.ts` (orders has
-     `UsersAdapter`), importing only B's `index.ts`. Its constructor takes `Pick<BApi, …>`.
-  4. Add B's API type to A's factory deps; pass `b.internal.x` in `composition-root.ts`.
-- **No, A is announcing that something happened → event.** Add the payload to `DomainEvents` in
-  `shared/event-bus.ts` (it's a public contract), publish from A's service, subscribe in B's
-  `presentation/bus/`.
-
-The module graph must stay acyclic: the composition root calls factories in dependency order, so if
-A and B need each other, turn one direction into an event.
-
-### Dependency injection
-Constructor injection only, wired by hand: each module wires its own classes in `index.ts`; the
-composition root only creates shared infrastructure (bus, DB pool, config), calls module factories and
-passes facades between them. No DI container, decorators, `reflect-metadata`, service locators or
-module-level singletons — the compiler checks plain wiring for free, and tests just pass fakes.
-Factories accept optional overrides (`repo?`, `mailer?`) for tests and other environments.
-
-### Reviewing code
-Check imports against the dependency direction first; that catches most violations. Then the rules the
-linter cannot see: entities leaking through DTOs, business rules in controllers, facades going to
-repositories, module-specific errors escaping a facade, `index.ts` re-exporting business types. Cite
-the rule number from `references/rules.md` so the author can look it up.
 
 ## Enforcement
 
 `assets/example-app/.dependency-cruiser.cjs` enforces the import rules (dependency-cruiser 16).
 For a new project, copy it to the repo root, `npm i -D dependency-cruiser@16`, and add
 `"lint:arch": "depcruise src --config .dependency-cruiser.cjs"`. If the project already uses these
-folder names, it works unchanged. Always run it (and `tsc`) after structural changes — it is much
-faster than reasoning about imports by hand, and every rule ID in its output maps to `references/rules.md`.
+folder names, it works unchanged. Run it (and `tsc`) after structural changes: every rule ID in its
+output is a lint tag in `references/rules.md`.
 
-When the user's project deviates from these rules on purpose (different folder names, an existing DI
-container, a framework like NestJS with its own module system), follow the project and say which rule
-you are adapting and why. The rules exist to keep dependencies pointing one way and contracts narrow;
-honour that intent rather than the literal folder names.
+## Steps
+
+### Placing a single file
+
+1. **Goal:** find the file's folder.
+   - **Actions:** look it up in "What goes where" in `references/rules.md`. If nothing fits, ask by direction: a way *in* (presentation), a rule (business), or a way *out* (infrastructure).
+   - **Done:** one folder named; an interface sits in the layer that uses it (BU3).
+
+### Adding a use case or endpoint
+
+1. **Goal:** place the domain change.
+   - **Actions:** entity changes → `business/domain/`. Rules → a method on a service in `business/service/`.
+   - **Done:** no rule lives outside `business/service/` (BU4, PR2).
+2. **Goal:** persistence.
+   - **Actions:** extend the interface in `business/port/repository/`, then the implementations in `infrastructure/repository/`.
+   - **Done:** every interface method has an implementation.
+3. **Goal:** the HTTP side.
+   - **Actions:** request/response DTOs in `dto/api/`, mapper in `dto/mapper/`, controller method in `presentation/api/`, route in `<module>.routes.ts`.
+   - **Done:** PR1, PR6 and PR7 hold.
+4. **Goal:** split the checks.
+   - **Actions:** shape checks in the controller, business rules in the service.
+   - **Done:** PR2 holds.
+
+### Deciding whether something is a new module
+
+1. **Goal:** decide before writing code, most of all in an empty project, where folding everything into one or two modules "because nothing else needs it yet" is the pull.
+   - **Actions:** test the feature against MC1–MC4 and MK1–MK3 in `references/rules.md`, "When to create a module"; run its Test and compare the case table.
+   - **Done:** each MC and MK rule has a yes or no, and the decision is named.
+   - **Output:** new module (→ Adding a module) or the existing module that keeps it.
+
+### Splitting a class
+
+1. **Goal:** split a service, repository or adapter when placing it, before writing it.
+   - **Actions:** apply BU7 and BU8 to its methods and fields.
+   - **Done:** each class passes BU7; BU8 is met or the odd group is its own class.
+
+### Adding a module
+
+1. **Goal:** build the module.
+   - **Actions:** follow `### Adding a module` in `references/rules.md`, "Steps".
+   - **Done:** its last step passes.
+
+### Module A needs something from module B
+
+```mermaid
+flowchart TD
+  1[1 Does A need an answer to continue?] -->|yes| 2[2 Add method to B's internal API]
+  1 -->|no, announcing| 6[6 Add event to DomainEvents, publish, subscribe]
+  2 --> 3[3 Declare Port in A] --> 4[4 Adapter in A] --> 5[5 Wire in composition root]
+  5 --> D((done))
+  6 --> D
+```
+
+1. **Goal:** pick sync call or event.
+   - **Actions:** ask: does A need an answer to continue? (MB5)
+   - **Done:** one answer.
+   - **Exits:** yes → 2 · no, A announces something that happened → 6.
+2. **Goal:** B offers the method.
+   - **Actions:** add it to `presentation/internal/<b>.api.ts` with `dto/internal/` types or primitives; implement it in the facade by calling B's services, mapping with B's mapper.
+   - **Done:** IA1, IA4, PR8 hold.
+3. **Goal:** A declares what it needs.
+   - **Actions:** one interface `<Thing>Port` in `business/port/<thing>/`, in A's vocabulary (orders has `UserPort.exists()`, not `UsersApi`). Add methods to the port, never a second one.
+   - **Done:** BU3 holds.
+4. **Goal:** A implements the port.
+   - **Actions:** one `<B>Adapter` in `infrastructure/internal/<provider>-adapter.ts` (orders has `UsersAdapter`), importing only B's `index.ts`; constructor takes `Pick<BApi, …>`.
+   - **Done:** IN3, IA5 and MB1 hold.
+5. **Goal:** wire it.
+   - **Actions:** add B's API type to A's factory deps; pass `b.internal.x` in `composition-root.ts`.
+   - **Done:** WI2 and WI3 hold; WI5 holds (if A and B need each other, turn one direction into an event).
+   - **Exits:** → done.
+6. **Goal:** announce an event.
+   - **Actions:** add the payload to `DomainEvents` in `shared/event-bus.ts`, publish from A's service, subscribe in B's `presentation/bus/`.
+   - **Done:** MB6 holds.
+   - **Exits:** → done.
+
+### Dependency injection
+
+1. **Goal:** wire classes by hand.
+   - **Actions:** each module wires its own classes in `index.ts`; the composition root creates shared infrastructure, calls module factories and passes facades between them. Factories accept optional overrides (`repo?`, `mailer?`) for tests and other environments.
+   - **Done:** WI1–WI4 and WI6 hold.
+
+### Reviewing code
+
+1. **Goal:** find breaches.
+   - **Actions:** check imports against the dependency direction first; it catches most. Then the rules the linter cannot see: entities leaking through DTOs, business rules in controllers, facades going to repositories, module-specific errors escaping a facade, `index.ts` re-exporting business types.
+   - **Done:** every finding cites `project-architecture <ID>`.
+
+## Load also
+
+None yet.
