@@ -5,7 +5,7 @@ description: Asking the human in rounds on one bridge page. Use when a skill mus
 
 # Role and goal
 
-The entry point for asking the human in rounds on one bridge page. It names the three builder agents: `question-builder`, `round-builder`, `playback-builder`. It is loaded into the calling skill's session, so the caller runs the steps itself. The calling skill owns its questions, its stance, its page id and its ledger line format; this skill owns how the asking works.
+The entry point for asking the human in rounds on one bridge page. It names the three builder agents: `question-builder`, `round-builder`, `playback-builder`. It is loaded into the calling skill's session, so the caller runs the steps itself. The calling skill owns its questions, its stance, its page id and its ledger line format; this skill owns how the asking works, the Confirm round and the `round-<N>.json` contract.
 
 # Parameters
 
@@ -40,7 +40,12 @@ flowchart TD
   7 -->|round-builder returns error| S((stop))
   8 -->|answer back| 9[9 Read answer]
   9 -->|caller starts a new round| 2
+  9 -->|caller closes| 10[10 Confirm round]
   9 -->|topic explored to the expected extent, nothing unclear| D((done))
+  10 -->|confirm| D
+  10 -->|reopen, caller names its own Reopen exit| D
+  10 -->|reopen, no caller Reopen exit: note becomes an open decision| 2
+  10 -->|build error| S
 ```
 
 # Steps
@@ -82,7 +87,7 @@ flowchart TD
 ## 5. Write round
 
 - Goal: hand the round to the build.
-- Actions: the caller writes `.aisf/artifacts/<page-id>/round-<N>.json` before the build. Contract in `agents/round-builder.md`.
+- Actions: the caller writes `.aisf/artifacts/<page-id>/round-<N>.json` before the build. The contract (cards shape) is in `references/round.md`.
 - Uses: Write.
 - Done: `round-<N>.json` exists.
 - Output: `round-<N>.json`.
@@ -121,8 +126,22 @@ flowchart TD
 - Uses: skill `aisf:artifacts`.
 - Done: the ledger holds every answer of the round.
 - Output: ledger lines.
-- Exits: `caller starts a new round → 2` · `topic explored to the expected extent, nothing unclear → done`.
+- Exits: `caller starts a new round → 2` · `caller closes → 10` · `topic explored to the expected extent, nothing unclear → done`.
+
+## 10. Confirm round
+
+- Goal: the human confirms or reopens what the caller drafted.
+- Actions:
+  - Write `round-<N>.json` in the confirm shape per `references/round.md`: the caller's tasks, and its summary file when it has one.
+  - Build and show it as steps 6–8 do. Only this differs: no cards, so steps 3–4 are skipped; a caller with a header runs step 6 before the build.
+  - Read the event as `aisf:artifacts` says: `kind=confirm` or `kind=reopen`, the note, the `hitl` map.
+  - Append one ledger line in the caller's format: Confirm or Reopen, with the note.
+  - Return nothing: the skill runs in the caller's session, so the event stays in context.
+- Uses: Write, skill `aisf:artifacts`, tool `aisf_show_artifact`.
+- Done: a Confirm, or a Reopen with its note, is in `ledger.md`.
+- Output: `round-<N>.json` (confirm shape), a ledger line.
+- Exits: `confirm → done` · `reopen, caller names its own Reopen exit → done` (the caller routes) · `reopen, no caller Reopen exit → 2` (the note becomes an open decision; the next close re-enters 10) · `build error → stop` (report the reason).
 
 # Output
 
-In `.aisf/artifacts/<page-id>/`: `index.html` (all rounds), one `round-<N>.json` per round, `ledger.md`, `findings.md`, and `header.html` for a caller with a header.
+In `.aisf/artifacts/<page-id>/`: `index.html` (all rounds), one `round-<N>.json` per round, `ledger.md`, `findings.md`, and `header.html` for a caller with a header. In the skill folder: `references/round.md`.
