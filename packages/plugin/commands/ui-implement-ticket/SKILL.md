@@ -31,7 +31,7 @@ The oracle is the mock: render, look, compare, adjust. TDD keeps behaviour, neve
 flowchart TD
   1[1 Read] -->|ready ui leaf, checks hold, claimed| 2[2 Understand]
   1 -->|in-review| R[R Rework]
-  1 -->|project-design, Visual rendering or mock missing| E((escalate))
+  1 -->|project-design, Visual rendering recipe or mock missing| E((escalate))
   1 -->|anything else, or guard mismatch| S((stop))
   2 -->|plan listed| 3[3 Build]
   2 -->|vague or unprovable criterion| E
@@ -62,10 +62,10 @@ Escapes inside `aisf:pr` and `aisf:rework` are not drawn: the owner's graph hold
 ### 1. Read
 
 - Goal: a ready `type: ui` leaf with its mock and slots, claimed; or an `in-review` ticket handed to rework.
-- Actions: read the ticket. A leaf at `status: ready` with `type: ui` and Part, Landing zone, Description, Scope and Acceptance criteria in its body (the body `aisf:ui-ticket` posts). Then check, before the claim: `project-design` loads; `project-testing` has `## Visual rendering`; `.aisf/design/mocks/<part>.html` exists in this worktree, `<part>` from the body's Part. All hold → guard `ready → in-progress`. `in-review` → R.
+- Actions: read the ticket. A leaf at `status: ready` with `type: ui` and Part, Landing zone, Description, Scope and Acceptance criteria in its body (the body `aisf:ui-ticket` posts). Then check, before the claim: `project-design` loads; `project-testing` has a Visual rendering recipe (a heading named "Visual rendering", at any level); `.aisf/design/mocks/<part>.html` exists in this worktree, `<part>` from the body's Part. All hold → guard `ready → in-progress`. `in-review` → R.
 - Uses: `aisf:github-issue`, Skill tool.
 - Done: the ticket is `in-progress`, handed to R, escalated, or the run stopped.
-- Exits: ready ui leaf, checks hold, claimed → 2 · `in-review` → R · a check fails → escalate `spec`, naming `project-design`, `## Visual rendering` or the mock path · anything else (no `type: ui` included), or guard mismatch → stop: say why, write nothing.
+- Exits: ready ui leaf, checks hold, claimed → 2 · `in-review` → R · a check fails → escalate `spec`, naming `project-design`, the Visual rendering recipe or the mock path · anything else (no `type: ui` included), or guard mismatch → stop: say why, write nothing.
 
 ### 2. Understand
 
@@ -81,7 +81,7 @@ Escapes inside `aisf:pr` and `aisf:rework` are not drawn: the owner's graph hold
 - Actions:
   - Behaviour: TDD per `aisf:tdd`: what a click or key does, which state a view model describes for each input, callbacks, navigation. Assert behaviour only, never geometry: no padding, radius or colour equality, no counting wrapper elements. Test layout follows `project-testing`.
   - The spec's names, Landing zone and contracts go in verbatim: a sibling builds against them. Scope's Out belongs to a sibling. Hidden dependency (can't finish until another ticket lands): find or post a bare idea for it, `gh issue edit <n> --add-blocked-by <m>`, comment why, `aisf_park`.
-  - Render loop: render with the `## Visual rendering` recipe in `project-testing`, once per state the leaf lists, in light and dark. PNGs go to `.aisf/images/`, named `<part>-<state>-light.png` and `<part>-<state>-dark.png`. Render, Read the PNG, compare it with the mock, adjust, render again. Walk the leaf's checklist line by line: matches or doesn't. Tokens from `.aisf/design/tokens.css`, never literals; a colour with no token follows what the leaf decided. Stop when every line matches or has a stated reason it can't. Pixel-perfect is not the goal; an unresolved difference goes to the PR as a known deviation.
+  - Render loop: render with the Visual rendering recipe in `project-testing`, once per state the leaf lists, in light and dark. PNGs go to `.aisf/images/`, named `<part>-<state>-light.png` and `<part>-<state>-dark.png`. Render, Read the PNG, compare it with the mock, adjust, render again. Walk the leaf's checklist line by line: matches or doesn't. Tokens from `.aisf/design/tokens.css`, never literals; a colour with no token follows what the leaf decided. Stop when every line matches or has a stated reason it can't. Pixel-perfect is not the goal; an unresolved difference goes to the PR as a known deviation.
 - Uses: `aisf:tdd`, `project-testing`, `aisf:github-issue`, `aisf_park`.
 - Done: every behaviour has a passing test; every checklist line matches or has a stated reason.
 - Output: the PNGs in `.aisf/images/`; the per-line verdicts.
