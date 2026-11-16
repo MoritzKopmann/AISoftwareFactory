@@ -40,8 +40,7 @@ flowchart TD
 ### 1. Gather the diff
 
 - **Goal**: the diff about to be committed.
-- **Actions**: `git diff HEAD` plus `git status --porcelain` for new files. In a rework run it is
-  only the rework diff.
+- **Actions**: `git diff HEAD` plus `git status --porcelain` for new files.
 - **Done**: the diff and the new-file list are in hand.
 - **Exits**: `→ 2`
 
