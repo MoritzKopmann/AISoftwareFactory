@@ -17,30 +17,32 @@ registry: npmjs.com
 platforms: [linux]
 ```
 
-## Running the commands
+## Running the commands (RC)
 
-- **Node ≥22 is required** (`.nvmrc` says 22). On an older Node, `npm ci` warns `EBADENGINE` and the tools fail. Switch Node rather than work around it.
-- Run every command from the repo root after `npm ci`. `{file}` is a path relative to the root, e.g. `packages/app/src/shared/http.test.ts`.
-- `format` rewrites files. CI runs the check-only variant, `npm run format:check`. Prettier ignores `.claude/`, `.aisf/` and `package-lock.json`.
+- **RC1 Must:** use Node ≥22 (`.nvmrc` says 22). On an older Node, `npm ci` warns `EBADENGINE` and the tools fail. Switch Node rather than work around it.
+- **RC2 Must:** run every command from the repo root after `npm ci`. `{file}` is a path relative to the root, e.g. `packages/app/src/shared/http.test.ts`.
+- **RC3 Must:** know that `format` rewrites files. CI runs the check-only variant, `npm run format:check`.
 
-## Reading `analyze` output
+Prettier ignores `.claude/`, `.aisf/` and `package-lock.json`.
 
-`analyze` runs three steps in order and stops at the first failure:
+## Reading analyze output (RA)
 
-1. **`typecheck`**: `tsc` per workspace (`app`, `ui`). Errors are `file(line,col): error TSxxxx`.
-2. **`lint`**: ESLint with `typescript-eslint` strict. Errors are grouped by file, with the rule name last on each line.
-3. **`depcruise`**: dependency-cruiser over `packages/`. A violation names the rule (e.g. `no-circular`, or a module-boundary rule) and the `from → to` import that broke it. A boundary violation is an architecture breach under `project-architecture`, not a lint nit.
+`analyze` runs three stages in order and stops at the first failure:
 
-Treat every error and warning as a failure. Fix the cause. Never add an `eslint-disable`, `@ts-ignore` or a depcruise exception without saying why in the PR.
+| Stage | Runs | An error looks like |
+|---|---|---|
+| `typecheck` | `tsc` per workspace (`app`, `ui`) | `file(line,col): error TSxxxx` |
+| `lint` | ESLint with `typescript-eslint` strict | Grouped by file, rule name last on each line |
+| `depcruise` | dependency-cruiser over `packages/` | Names the rule (e.g. `no-circular`, or a module-boundary rule) and the `from → to` import that broke it. A boundary violation is an architecture breach under `project-architecture`, not a lint nit |
 
-## Adding a dependency
+- **RA1 Must:** treat every error and warning as a failure. Fix the cause. Add no `eslint-disable`, `@ts-ignore` or depcruise exception without saying why in the PR.
 
-A new dependency is never the agent's call: it becomes a question for the human. The bar a candidate must clear:
+## Adding a dependency (AD)
 
-- Actively maintained (a release in the last 12 months) and widely used on npm.
-- A permissive licence (MIT, ISC, BSD, Apache-2.0).
-- Ships ESM and its own TypeScript types (or has maintained `@types/…`).
-- Pure JS: no native addons or install scripts. It must run on Node ≥22 on every platform in `platforms`.
-- Small, and not already covered by the Node standard library or an existing dependency.
-
-Add it to the workspace that uses it (`npm install <pkg> -w @aisf/app`), not the root. The root holds only dev tooling.
+- **AD1 Must:** ask the human before adding a dependency. It is never the agent's call.
+- **AD2 Must:** pick a candidate that is actively maintained (a release in the last 12 months) and widely used on npm.
+- **AD3 Must:** pick a permissive licence (MIT, ISC, BSD, Apache-2.0).
+- **AD4 Must:** pick one that ships ESM and its own TypeScript types (or has maintained `@types/…`).
+- **AD5 Must:** pick pure JS: no native addons or install scripts. It must run on Node ≥22 on every platform in `platforms`.
+- **AD6 Should:** pick a small one, not already covered by the Node standard library or an existing dependency.
+- **AD7 Must:** add it to the workspace that uses it (`npm install <pkg> -w @aisf/app`), not the root. The root holds only dev tooling.
