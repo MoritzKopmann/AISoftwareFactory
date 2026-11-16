@@ -87,7 +87,7 @@ flowchart TD
 ### 5. Summary
 
 - **Goal**: the human confirms the drafted ticket.
-- **Actions**: write `.aisf/artifacts/create-<n>/summary.html`: title, context, scope, acceptance criteria; the inferred `type:` and a proposed `priority:` based on the impact and why-now answers; any split. The Confirm round has one task, **Plan next**, off by default. A `type: ui` ticket gets no task.
+- **Actions**: write `.aisf/artifacts/create-<n>/summary.html`: title, context, scope, acceptance criteria; the inferred `type:` and a proposed `priority:` based on the impact and why-now answers; any split. The Confirm round has one task, **Plan next**, off by default. A `type: ui` ticket gets no task. The round runs as the Confirm round of `aisf:questionnaire` (its step 10). The Reopen exits below are this step's own: a Reopen goes back to this step, not to the questionnaire's step 2.
 - **Uses**: `aisf:questionnaire` with page id `create-<n>`.
 - **Done**: a Confirm or a Reopen with a note is back.
 - **Output**: `summary.html`; Plan next on or off.
