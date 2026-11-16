@@ -122,8 +122,9 @@ flowchart TD
 ## 5. Confirm
 
 - **Goal**: the human confirms the plan.
-- **Actions**: Confirm round: each plan, and per skill a table of role, parameters, rules,
-  output and nodes or sections.
+- **Actions**: run the Confirm round of `aisf:questionnaire` (its step 10): each plan, and per
+  skill a table of role, parameters, rules, output and nodes or sections. The Reopen exit
+  below is this step's own: a Reopen goes back here and routes to the step the human names.
 - **Uses**: `aisf:questionnaire`.
 - **Done**: the human confirms or reopens.
 - **Exits**: confirmed → 6 · reopen → the step the human names (2, 3 or 4).
