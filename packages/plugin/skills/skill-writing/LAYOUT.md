@@ -9,9 +9,8 @@ In this order:
 1. **Role and goal**
 2. **Parameters**
 3. **General rules**: a rule that holds for every step goes here, once.
-4. **Graph**: a mermaid flowchart, only when a step has more than one exit. A straight sequence has none.
-5. **Steps**: numbered.
-6. **Output**
+4. **Steps**: numbered.
+5. **Output**
 
 ## Step shape
 
@@ -22,9 +21,14 @@ Labelled bullets, in this order:
 - **Uses**: its tools.
 - **Done**: its expected outcome, the completion criterion.
 - **Output**: what the step produces.
-- **Exits**: `<condition> → <target>`. The target is a step, `done`, `escalate` or `stop`.
+- **Exits**: the only place routing is written. One sub-bullet per exit: `<condition> → <target>`.
+  - Condition: checkable ("the Confirm event is `reopen`", not "not confirmed"). A step's only exit restates its Done.
+  - Target: a step, `done`, `escalate` or `stop`.
+  - Back-exit (target an earlier step): names every later step that runs again before this step is reached once more, or says none does ("→ 4, then 7, 8 and 9 again").
+  - A back-exit whose re-run steps have an Output says what carries over and what is void ("the ledger stays; the split draft is void").
+  - A step reached from several steps that returns to its sender: one exit per sender only when the targets differ ("sent from 5 → 6", "sent from 7 → 7").
 
-A field with nothing to say is left out. Done and Exits are always there.
+Goal, Actions, Uses and Output are optional: a step leaves one out when it has nothing to say. Done and Exits are never left out.
 
 ## Agents
 
@@ -61,4 +65,4 @@ In this order; a part with nothing to say is left out:
 
 ### Steps part (mixed)
 
-`## Steps`, one H3 per recipe. Each recipe is numbered from 1 in the step shape above (Goal, Actions, Uses, Done, Output, Exits), any length. A graph per recipe only when a step has more than one exit. A recipe cites rule IDs; it never restates a rule.
+`## Steps`, one H3 per recipe. Each recipe is numbered from 1 in the step shape above (Goal, Actions, Uses, Done, Output, Exits), any length. A recipe cites rule IDs; it never restates a rule.
