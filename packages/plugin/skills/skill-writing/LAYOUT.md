@@ -28,7 +28,7 @@ Labelled bullets, in this order:
   - A back-exit whose re-run steps have an Output says what carries over and what is void ("the ledger stays; the split draft is void").
   - A step reached from several steps that returns to its sender: one exit per sender only when the targets differ ("sent from 5 → 6", "sent from 7 → 7").
 
-A field with nothing to say is left out. Done and Exits are always there.
+Goal, Actions, Uses and Output are optional: a step leaves one out when it has nothing to say. Done and Exits are never left out.
 
 ## Agents
 
