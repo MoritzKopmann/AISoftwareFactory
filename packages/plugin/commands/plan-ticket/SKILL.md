@@ -144,7 +144,7 @@ flowchart TD
 - **Goal**: the draft split into sub-issues.
 - **Actions**:
   - All frontend becomes one UI sub-issue for the design path, blocked by every backend sub-issue it reads from.
-  - Backend is cut by module, then layer: infrastructure → business → presentation; provider facade before consumer adapter; port exception; wiring-only layers may merge, as a question.
+  - Backend is cut by module, then layer: infrastructure → business → presentation; provider facade before consumer adapter; an infrastructure sub-issue also owns the port it implements in `business/port/`, and nothing else in business; wiring-only layers may merge, as a question.
   - Any other cross-module or cross-layer sub-issue is cut again; an exception is a question, an agreed one is a knowing override.
   - Skill part: work of `type: skill` becomes one `type: skill` child, blocked by every sub-issue it needs. An all-skill ticket of another type gets an umbrella with that one child. Fields: Title · Scope · Blocked-by · Proves, `hitl` off.
   - Per sub-issue: Title · Module · Layer · Scope · Blocked-by · Proves · `hitl` proposed.
@@ -178,10 +178,23 @@ flowchart TD
 ### 10. Write the plan
 
 - **Goal**: the plan and every spec, passing three checks.
-- **Actions**: write from the ledger and findings. Plan template: Architecture and data flow · Tools and libraries · Practices and tests · Risks · Out of scope · Acceptance criteria · Sub-issues. Backend spec per `spec-template.md`. UI spec: what is shown, states, actions, the API contract; no layout, files or Given/When/Then. Skill child: a ticket body (Context, Scope, Acceptance criteria, the parent criterion it serves). Name what crosses a boundary; pin what is expensive or human-decided; a broken flow is fixed here. Three checks, once:
-  - seams match
-  - file coverage
-  - no criterion unproven
+- **Actions**: write from the ledger and findings.
+  - Plan template, the sections in this order: Architecture and data flow · Tools and libraries · Practices and tests · Risks · Out of scope · Acceptance criteria · Sub-issues. The Sub-issues section holds one section per sub-issue, in dependency order:
+
+    ```
+    #### <k>. <Title>
+    Blocked-by: <k>, … · `hitl` and its checkpoint
+    <the spec>
+    ```
+
+    `<k>` is the draft number from step 7. Specs nest under it (`spec-template.md` uses `#####`).
+
+  - Backend spec per `spec-template.md`. UI spec: what is shown, states, actions, the API contract; no layout, files or Given/When/Then. Skill child: a ticket body (Context, Scope, Acceptance criteria, the parent criterion it serves).
+  - Name what crosses a boundary; pin what is expensive or human-decided; a broken flow is fixed here.
+  - Three checks, once. Each fails the split, not the ticket:
+    - **Seams match**: walk each flow line of Architecture and data flow. Each step whose two ends sit in different sub-issues is a shared contract. Pass: both specs give it the same name and shape. Fail: name or shape differ, or a flow step no sub-issue builds.
+    - **File coverage**: every file the plan names vs the Files lines of the specs; the skill child claims skill files. Fail: a file no spec claims (for example a migration, or a step of `project-architecture`'s new-module checklist).
+    - **No criterion unproven**: every acceptance criterion of `<n>` vs the sub-issues tagged to it. Fail: a criterion with no sub-issue, or one whose sub-issues' scenarios don't cover its share.
 - **Uses**: `spec-template.md`.
 - **Done**: the three checks pass.
 - **Output**: the plan document.
@@ -193,7 +206,11 @@ flowchart TD
 ### 11. Write to GitHub
 
 - **Goal**: the plan on the ticket, every sub-issue posted.
-- **Actions**: append `## Technical plan` to the body, replacing `## Planning so far`. Post sub-issues through `aisf:github-issue`; title from the `####` line, body the spec as is. Backfill real numbers into a new file. Guard `plan → planned`.
+- **Actions**, in order:
+  1. Append `## Technical plan` to `<n>`'s body, replacing `## Planning so far`.
+  2. Post sub-issues through `aisf:github-issue` in dependency order. Title: the `<Title>` of its `#### <k>. <Title>` line from step 10's template. Body: the spec under that line, as is. Keep a map draft `<k>` → real `#number`; `--blocked-by` uses the real numbers.
+  3. Backfill: in the plan, replace each draft `<k>` (the `####` lines and Blocked-by lines) with its real `#number`. Write the edited body to a new temp file, never over the draft file. Edit `<n>`'s body once more from it.
+  4. Guard `plan → planned`, then check `subIssuesSummary.total` equals the number of sub-issues.
   - Fits one PR: plan plus `## Spec` on the ticket, guard `plan → ready`.
   - UI only: the UI spec goes on the ticket, its type becomes `type: ui`, guard `plan → backlog`; with `project-design`, `plan → idea`.
 - **Uses**: `aisf:github-issue`.
