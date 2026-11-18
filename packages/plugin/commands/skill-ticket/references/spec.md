@@ -21,13 +21,6 @@ implementer writes the text per `aisf:skill-writing`.
     ## General rules
     Rules that hold for every step. Each names the skill it points to.
 
-    ## Graph
-    ```mermaid
-    flowchart TD
-      1[Read] --> 2[Purpose]
-      2 -->|precondition fails| E((escalate))
-    ```
-
     ## Steps
     ### 1. <Name>
     - Goal:
@@ -35,7 +28,8 @@ implementer writes the text per `aisf:skill-writing`.
     - Uses: skills, agents, tools
     - Done:
     - Output:
-    - Exits: `<condition> → <node | done | escalate | stop>`
+    - Exits:
+      - `<condition> → <step | done | escalate | stop>`
 
     ## Sections
     One `### <H2 name>` per section, in file order.
@@ -56,11 +50,13 @@ implementer writes the text per `aisf:skill-writing`.
 
 ## Kinds
 
-- **Step skill**: the template above, with Graph and Steps.
+- **Step skill**: the template above, with Steps.
 - **Rule skill**: Context, Skill, Role and goal, Sections, Scope, Acceptance criteria. It drops
-  Parameters, Graph, Steps and Output. General rules stay only if the skill has a General rules
-  part.
-- **Mixed skill**: Sections, and for its Steps part `## Graph` (one per recipe that branches)
-  and `## Steps` (one `###` per recipe, step fields per step).
+  Parameters, Steps and Output. General rules stay only if the skill has a General rules part.
+- **Mixed skill**: Sections, and for its Steps part `## Steps` (one `###` per recipe, step
+  fields per step).
+- **Changed skill**: Context, Skill, Scope, Acceptance criteria. For a form-only change of an
+  existing skill (e.g. rewrite every exit to the exit form, routing unchanged). The acceptance
+  criteria carry the whole change.
 
-The graph and sections in the ticket and `graph.json` hold the same nodes, exits and sections.
+The steps, exits and sections in the ticket and `graph.json` match.
