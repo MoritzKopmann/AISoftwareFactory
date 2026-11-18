@@ -24,30 +24,6 @@ From the calling skill:
 - The page is a decision device: disposable, never linked from GitHub.
 - Each agent's input and rules are in its own definition.
 
-# Graph
-
-```mermaid
-flowchart TD
-  1[1 Read memory] -->|memory read| 2[2 Frontier]
-  2 -->|frontier picked| 3[3 Build cards]
-  3 -->|all results back| 4[4 Sort results]
-  4 -->|split: parts re-sent same round| 3
-  4 -->|all sorted| 5[5 Write round]
-  5 -->|caller has a header| 6[6 Header]
-  5 -->|no header| 7[7 Build page]
-  6 -->|header written| 7
-  7 -->|page built| 8[8 Show]
-  7 -->|round-builder returns error| S((stop))
-  8 -->|answer back| 9[9 Read answer]
-  9 -->|caller starts a new round| 2
-  9 -->|caller closes| 10[10 Confirm round]
-  9 -->|topic explored to the expected extent, nothing unclear| D((done))
-  10 -->|confirm| D
-  10 -->|reopen, caller names its own Reopen exit| D
-  10 -->|reopen, no caller Reopen exit: note becomes an open decision| 2
-  10 -->|build error| S
-```
-
 # Steps
 
 ## 1. Read memory
@@ -56,7 +32,8 @@ flowchart TD
 - Actions: read `ledger.md` and `findings.md` in `.aisf/artifacts/<page-id>/` (absent: empty). A resumed session asks only what is still open.
 - Uses: Read.
 - Done: every settled decision and known fact is in view.
-- Exits: `memory read → 2`.
+- Exits:
+  - every settled decision and known fact is in view → 2
 
 ## 2. Frontier
 
@@ -65,7 +42,8 @@ flowchart TD
 - Uses: Read, Grep, research agents for facts.
 - Done: every frontier decision has a name and rough options, and none depends on an open one.
 - Output: the round's question list.
-- Exits: `frontier picked → 3`.
+- Exits:
+  - every frontier decision has a name and rough options, none depends on an open one → 3
 
 ## 3. Build cards
 
@@ -74,7 +52,8 @@ flowchart TD
 - Uses: agent `question-builder`.
 - Done: every question has a result.
 - Output: per question `card`, `settled` or `split`.
-- Exits: `all results back → 4`.
+- Exits:
+  - every question has a result → 4
 
 ## 4. Sort results
 
@@ -82,7 +61,9 @@ flowchart TD
 - Actions: `card` → it goes in the round. `settled` → a precedent row. `split` → send the parts out again in the same round; a part that depends on another waits a round.
 - Done: every result is a card, a row, or waits for a later round.
 - Output: card names and rows.
-- Exits: `split: parts re-sent same round → 3` · `all sorted → 5`.
+- Exits:
+  - a result is `split` → 3 (the parts go out as new questions; step 4 runs again, no later step does. Carries over: every `card` and `settled` result of this round. Void: the `split` result, replaced by its parts' results.)
+  - every result is a card, a row, or waits for a later round → 5
 
 ## 5. Write round
 
@@ -91,7 +72,9 @@ flowchart TD
 - Uses: Write.
 - Done: `round-<N>.json` exists.
 - Output: `round-<N>.json`.
-- Exits: `caller has a header → 6` · `no header → 7`.
+- Exits:
+  - `round-<N>.json` exists and the caller has a header → 6
+  - `round-<N>.json` exists and the caller has no header → 7
 
 ## 6. Header
 
@@ -100,7 +83,8 @@ flowchart TD
 - Uses: agent `playback-builder`.
 - Done: `header.html` written.
 - Output: `header.html`.
-- Exits: `header written → 7`.
+- Exits:
+  - `header.html` is written → 7
 
 ## 7. Build page
 
@@ -109,7 +93,9 @@ flowchart TD
 - Uses: agent `round-builder`.
 - Done: `round-builder` returns `result: page`.
 - Output: `index.html`.
-- Exits: `page built → 8` · `round-builder returns error → stop` (report its reason).
+- Exits:
+  - `round-builder` returns `result: page` → 8
+  - `round-builder` returns an error → stop (report its reason)
 
 ## 8. Show
 
@@ -117,7 +103,8 @@ flowchart TD
 - Actions: call `aisf_show_artifact` yourself with the page id. Read `aisf:artifacts` first.
 - Uses: tool `aisf_show_artifact`, skill `aisf:artifacts`.
 - Done: the event or a plain-text answer is back.
-- Exits: `answer back → 9`.
+- Exits:
+  - the event or a plain-text answer is back → 9
 
 ## 9. Read answer
 
@@ -126,7 +113,10 @@ flowchart TD
 - Uses: skill `aisf:artifacts`.
 - Done: the ledger holds every answer of the round.
 - Output: ledger lines.
-- Exits: `caller starts a new round → 2` · `caller closes → 10` · `topic explored to the expected extent, nothing unclear → done`.
+- Exits:
+  - the ledger holds every answer of the round and the caller starts a new round → 2 (steps 3–9 run again. Carries over: `ledger.md`, `findings.md`, every earlier `round-<N>.json`, `index.html` with its earlier rounds, `header.html` until step 6 rewrites it. Void: this round's question list, card names, rows and ledger-line list.)
+  - the ledger holds every answer of the round and the caller closes → 10
+  - the topic is explored to the expected extent and nothing is unclear → done
 
 ## 10. Confirm round
 
@@ -140,7 +130,11 @@ flowchart TD
 - Uses: Write, skill `aisf:artifacts`, tool `aisf_show_artifact`.
 - Done: a Confirm, or a Reopen with its note, is in `ledger.md`.
 - Output: `round-<N>.json` (confirm shape), a ledger line.
-- Exits: `confirm → done` · `reopen, caller names its own Reopen exit → done` (the caller routes) · `reopen, no caller Reopen exit → 2` (the note becomes an open decision; the next close re-enters 10) · `build error → stop` (report the reason).
+- Exits:
+  - the ledger line is a Confirm → done
+  - the ledger line is a Reopen and the caller names its own Reopen exit → done (the caller routes)
+  - the ledger line is a Reopen and the caller has no Reopen exit → 2 (the note becomes an open decision; steps 3–10 run again, and the next close re-enters 10. Carries over: `ledger.md` with the Reopen line, `findings.md`, every earlier `round-<N>.json`, `index.html`. Void: the confirm-shape `round-<N>.json` as a round of cards, and the earlier question list, card names and rows.)
+  - the build returns an error → stop (report the reason)
 
 # Output
 
