@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 Build one ready `type: ui` leaf to an open PR by render and compare against its mock. An `in-review` ticket is reworked by steps R1–R7: every rework change passes the same gates as a first build (Green, Code review, Verify AC, Simplicity review, Commit).
 
-The oracle is the mock: render, look, compare, adjust. TDD keeps behaviour, never geometry.
+The oracle is the mock's PNG: render the mock once, render the build, look, compare picture with picture, adjust. TDD keeps behaviour, never geometry.
 
 ## Parameters
 
@@ -46,22 +46,24 @@ Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
 
 ### 2. Understand
 
-- Goal: a plan of the build.
-- Actions: read the leaf and the mock `.aisf/design/mocks/<part>.html`: it is what you build against. Read `.aisf/design/tokens.css`. Load `aisf:tdd`, `project-design` and `project-testing`, plus each skill they name under `## Load also`. List the files, the states, the behaviours and the test for each, and the visual proof per checklist line. Settle every vague criterion's reading now. A leaf that replaces a component: deleting it is part of the job.
+- Goal: a plan of the build, and the mock as a picture.
+- Actions: read the leaf and the mock `.aisf/design/mocks/<part>.html`. Read `.aisf/design/tokens.css`. Load `aisf:tdd`, `project-design` and `project-testing`, plus each skill they name under `## Load also`. Render the whole mock once with the Visual rendering recipe in `project-testing` (`file://<abs path to the mock>` in place of the URL). Window as wide as the mock, tall enough to hold every state copy in both themes. Write the PNG to `.aisf/render/<part>-mock.png` and Read it: it is what you build against. Find in it each state × theme copy the plan needs: the copy with that `data-theme` and that state's caption. List the files, the states, the behaviours and the test for each, and the visual proof per checklist line. Settle every vague criterion's reading now. A leaf that replaces a component: deleting it is part of the job.
 - Uses: `aisf:tdd`, `project-design`, `project-testing`.
-- Done: every criterion has a test or a proof in the list.
+- Done: every criterion has a test or a proof in the list; `.aisf/render/<part>-mock.png` exists and every state × theme copy is found in it.
+- Output: the plan; `.aisf/render/<part>-mock.png`.
 - Exits:
-  - plan listed → 3
+  - plan listed, mock PNG read → 3
   - a criterion is vague or unprovable → escalate `spec`
+  - the mock render fails → escalate `spec`, naming the mock path
 
 ### 3. Build
 
-- Goal: every behaviour built by TDD, every checklist line matching the mock or carrying a stated reason, inside Scope.
+- Goal: every behaviour built by TDD, every checklist line matching the mock PNG or carrying a stated reason, inside Scope.
 - Actions:
   - Behaviour: TDD per `aisf:tdd`: what a click or key does, which state a view model describes for each input, callbacks, navigation. Assert behaviour only, never geometry: no padding, radius or colour equality, no counting wrapper elements. Test layout follows `project-testing`.
   - The spec's names, Landing zone and contracts go in verbatim: a sibling builds against them. Scope's Out belongs to a sibling. Hidden dependency (can't finish until another ticket lands): find or post a bare idea for it, `gh issue edit <n> --add-blocked-by <m>`, comment why, `aisf_park`.
-  - Render loop: render with the Visual rendering recipe in `project-testing`, once per state the leaf lists, in light and dark. PNGs go to `.aisf/images/`, named `<part>-<state>-light.png` and `<part>-<state>-dark.png`. Render, Read the PNG, compare it with the mock, adjust, render again. Walk the leaf's checklist line by line: matches or doesn't. Tokens from `.aisf/design/tokens.css`, never literals; a colour with no token follows what the leaf decided. Stop when every line matches or has a stated reason it can't. Pixel-perfect is not the goal; an unresolved difference goes to the PR as a known deviation.
-- Rework: the R4 work list is the scope. Change every item: behaviour by TDD, then re-render and replace the images in `.aisf/images/`.
+  - Render loop: render with the Visual rendering recipe in `project-testing`, once per state the leaf lists, in light and dark. PNGs go to `.aisf/images/`, named `<part>-<state>-light.png` and `<part>-<state>-dark.png`. Render, Read the PNG, compare it with its spot in `.aisf/render/<part>-mock.png` (the copy with that `data-theme` and that state's caption), adjust, render again. The mock PNG stays in `.aisf/render/`, never in `.aisf/images/`. Walk the leaf's checklist line by line: matches or doesn't. Tokens from `.aisf/design/tokens.css`, never literals; a colour with no token follows what the leaf decided. Stop when every line matches or has a stated reason it can't. Pixel-perfect is not the goal; an unresolved difference goes to the PR as a known deviation.
+- Rework: the R4 work list is the scope. Change every item: behaviour by TDD, then re-render and replace the images in `.aisf/images/`. `.aisf/render/<part>-mock.png` from step 2 is reused: a rework runs in the same worktree, and the mock is never re-copied.
 - Uses: `aisf:tdd`, `project-testing`, `aisf:github-issue`, `aisf_park`.
 - Done: every behaviour has a passing test; every checklist line matches or has a stated reason. Rework: every item changed.
 - Output: the PNGs in `.aisf/images/`; the per-line verdicts.
@@ -214,4 +216,4 @@ Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
 
 ## Output
 
-An open PR and the ticket `in-review`, the images in `.aisf/images/` (never committed); or a rework done: the PR updated in place (rebased, one rework commit, pushed with lease, body rewritten), no `approved` label, a reply per handled item with the rework SHA, review re-requested, the ticket `in-review`. Not rework: nothing written.
+An open PR and the ticket `in-review`, the images in `.aisf/images/` and `.aisf/render/<part>-mock.png` (agent only, never committed); or a rework done: the PR updated in place (rebased, one rework commit, pushed with lease, body rewritten), no `approved` label, a reply per handled item with the rework SHA, review re-requested, the ticket `in-review`. Not rework: nothing written.
