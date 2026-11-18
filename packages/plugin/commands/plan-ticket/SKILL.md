@@ -29,33 +29,6 @@ Seat: senior developer in the project's stack. Turn a ticket at `status: plan` i
   - No → not asked. One line under Out of scope, **Noticed, not planned**.
   - Skip every module, layer and phase the criteria need no change in.
 
-## Graph
-
-```mermaid
-flowchart TD
-  1[1 Read] -->|preconditions hold| 2[2 Research]
-  1 -->|type: skill, not status: plan, or its spike still open| S((stop))
-  1 -->|spec vague: gaps comment, plan → idea| S
-  2 -->|end state stated, facts logged| 3[3 Decide]
-  3 -->|every decision sorted| 4[4 Interview]
-  4 -->|fresh round 1: ticket-split rule fires| 5[5 Split the ticket]
-  4 -->|a decision needs real experience first| 6[6 Spike]
-  4 -->|no decision in scope open| 7[7 Split]
-  5 -->|accept: parts posted, plan → planned| S
-  5 -->|reject| 4
-  5 -->|text answer: redraw next round| 5
-  6 -->|spike posted| S
-  7 -->|split drafted| 8[8 Critic]
-  8 -->|an objection is shared| 4
-  8 -->|no shared objection| 9[9 Confirm]
-  9 -->|confirmed| 10[10 Write the plan]
-  9 -->|not confirmed: reopen| 4
-  10 -->|a decision left open| 4
-  10 -->|a check fails: resplit| 7
-  10 -->|three checks pass| 11[11 Write to GitHub]
-  11 -->|numbers reported| D((done))
-```
-
 ## Steps
 
 ### 1. Read
@@ -65,7 +38,7 @@ flowchart TD
 - **Uses**: Skill tool, `aisf:github-issue`.
 - **Done**: slots loaded, ticket read, spec checked.
 - **Exits**:
-  - preconditions hold → 2
+  - slots loaded, ticket `status: plan`, spec clear, no spike open → 2
   - `Unknown skill` → stop, "project not onboarded"
   - `type: skill` → stop, name `aisf:skill-ticket`, write nothing
   - not `status: plan` → stop, name the stage it needs
@@ -79,7 +52,8 @@ flowchart TD
 - **Uses**: research agents.
 - **Done**: end state stated; every fact the decisions need is in `findings.md`.
 - **Output**: `findings.md` lines.
-- **Exits**: → 3
+- **Exits**:
+  - end state stated, every fact in `findings.md` → 3
 
 ### 3. Decide
 
@@ -98,7 +72,8 @@ flowchart TD
 
 - **Done**: every decision is a question, a precedent row or a spike call.
 - **Output**: the question list and precedent rows.
-- **Exits**: → 4
+- **Exits**:
+  - every decision is a question, a precedent row or a spike call → 4
 
 ### 4. Interview
 
@@ -117,7 +92,7 @@ flowchart TD
 - **Exits**:
   - fresh round 1 (never a spike resume) and the ticket-split rule fires → 5
   - a decision needs real experience first → 6
-  - no decision in scope open → 7
+  - no decision in scope open, every criterion has its flow, landing module and data in the ledger → 7
 
 ### 5. Split the ticket
 
@@ -126,9 +101,9 @@ flowchart TD
 - **Uses**: `aisf:questionnaire`, `aisf:github-issue`.
 - **Done**: the human accepted, rejected or answered in text.
 - **Exits**:
-  - accept, parts posted → stop
-  - reject → 4, with the usual round-1 questions
-  - text answer → 5, redraw next round, nothing posted
+  - the human accepted and every part is posted, `plan → planned` → stop
+  - the human rejected → 4, with the usual round-1 questions. No later step runs again out of turn: 5 does not fire again, 4 goes on by its own exits. The ledger stays; nothing was posted, so nothing is void.
+  - the answer is text, neither accept nor reject → 5, redraw next round. Only 5 runs again; nothing is posted.
 
 ### 6. Spike
 
@@ -137,7 +112,8 @@ flowchart TD
 - **Uses**: `aisf:github-issue`.
 - **Done**: spike posted, Planning so far written.
 - **Output**: the spike number, reported with "`aisf:spike` runs it".
-- **Exits**: → stop
+- **Exits**:
+  - spike posted, Planning so far written → stop
 
 ### 7. Split
 
@@ -153,7 +129,8 @@ flowchart TD
   - No umbrella: fits one PR with no UI; UI only.
 - **Done**: every criterion is proven by a sub-issue in the draft.
 - **Output**: the draft split.
-- **Exits**: → 8
+- **Exits**:
+  - every criterion is proven by a sub-issue in the draft → 8
 
 ### 8. Critic
 
@@ -162,8 +139,8 @@ flowchart TD
 - **Uses**: critic agent.
 - **Done**: every objection is shared or rejected.
 - **Exits**:
-  - an objection is shared → 4, as a question next round
-  - no shared objection → 9
+  - an objection is shared → 4, as a question next round; then 7 Split, 8 Critic and 9 Confirm run again. The ledger stays; the draft split is void.
+  - every objection is rejected, none shared → 9
 
 ### 9. Confirm
 
@@ -172,8 +149,8 @@ flowchart TD
 - **Uses**: `aisf:questionnaire`.
 - **Done**: confirmed or reopened.
 - **Exits**:
-  - confirmed → 10
-  - not confirmed → 4, reopening that decision
+  - the Confirm event is `confirm` → 10
+  - the Confirm event is `reopen` → 4, reopening the decision the note names; then 7 Split, 8 Critic and 9 Confirm again. The ledger stays; the draft split is void.
 
 ### 10. Write the plan
 
@@ -199,9 +176,9 @@ flowchart TD
 - **Done**: the three checks pass.
 - **Output**: the plan document.
 - **Exits**:
-  - a decision the plan leaves open → 4, as a question
-  - a check fails → 7, resplit, then 8 and 9 again
-  - three checks pass → 11
+  - a decision the plan leaves open → 4, as a question; then 7 Split, 8 Critic, 9 Confirm and 10 Write the plan run again. The ledger stays; the draft split and the plan document are void.
+  - a check fails → 7, resplit; then 8 Critic, 9 Confirm and 10 Write the plan run again. The ledger stays, 4 does not run again; the draft split and the plan document are void.
+  - the three checks pass → 11
 
 ### 11. Write to GitHub
 
@@ -216,7 +193,8 @@ flowchart TD
 - **Uses**: `aisf:github-issue`.
 - **Done**: plan on the ticket, every sub-issue posted, status moved.
 - **Output**: report of every number and what `aisf:implement-ticket` picks up next. For a UI ticket: with `project-design` it starts its design run by itself, else it needs a design before `aisf:ui-ticket <n>`.
-- **Exits**: → done
+- **Exits**:
+  - plan on the ticket, every sub-issue posted, status moved → done
 
 ## Output
 
