@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 ## Role and goal
 
-Build one ready `type: ui` leaf to an open PR by render and compare against its mock. An `in-review` ticket is reworked by steps R1–R7: every rework change passes the same gates as a first build (Green, Code review, Verify AC, Simplicity review, Commit).
+Build one ready `type: ui` leaf to an open PR by render and compare against its mock. An `in-review` ticket is reworked by steps R1–R7: every rework change passes the same gates as a first build (Code review, Fix bugs, Verify AC, Commit).
 
 The oracle is the mock's PNG: render the mock once, render the build, look, compare picture with picture, adjust. TDD keeps behaviour, never geometry.
 
@@ -19,16 +19,16 @@ The oracle is the mock's PNG: render the mock once, render the build, look, comp
 
 ## General rules
 
-- The ticket is the whole brief. Through step 6, load no `project-architecture` or `project-index`, and read no parent's or sibling's body. `aisf:review-code` checks the architecture in step 5.
+- The ticket is the whole brief. Through step 6, load no `project-architecture` or `project-index`, and read no parent's or sibling's body. `aisf:review-code` checks the architecture in step 4.
 - Every status change and issue write goes through `aisf:github-issue`.
 - Keep every test as strong as it is. Touch a PR only when green.
+- **Green**: `test` and `analyze` from `project-toolchain` are clean; read `analyze` as its block says. A step that changes code is done only when green. 5 fix attempts per failing check; a new failure resets the count; 5 attempts → escalate `red`. Unsure a failure is yours → run the file in a throwaway `git worktree` on `origin/main`. Red there too → not yours: report it, post a bare idea if none exists.
+- One `aisf:review-code` launch per pass through step 4.
 - A choice the ticket leaves open, or a contradiction in it, is a decision: make it, list it in the PR's Merge danger.
 - Images are never committed or uploaded. `.aisf/` is gitignored: never `git add -f` an image.
 - Rework: rebase, never merge `origin/main` in: a merge commit blocks the app's rebase-merge.
 - Rework: a review thread is the reviewer's to resolve.
-- Rework: one commit per rework run. Items stay uncommitted through 3 → 4 → 5 → 6 → 7; step 8 commits them once. Steps 5 and 7 read the uncommitted diff as in a first build.
-
-Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
+- Rework: one commit per rework run. Items stay uncommitted through 3 → 4 → 5 → 6; step 7 commits them once. Steps 4 and 5 read the uncommitted diff as in a first build.
 
 ## Steps
 
@@ -58,43 +58,54 @@ Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
 
 ### 3. Build
 
-- Goal: every behaviour built by TDD, every checklist line matching the mock PNG or carrying a stated reason, inside Scope.
+- Goal: every behaviour built by TDD, every checklist line matching the mock PNG or carrying a stated reason, inside Scope, green.
 - Actions:
   - Behaviour: TDD per `aisf:tdd`: what a click or key does, which state a view model describes for each input, callbacks, navigation. Assert behaviour only, never geometry: no padding, radius or colour equality, no counting wrapper elements. Test layout follows `project-testing`.
   - The spec's names, Landing zone and contracts go in verbatim: a sibling builds against them. Scope's Out belongs to a sibling. Hidden dependency (can't finish until another ticket lands): find or post a bare idea for it, `gh issue edit <n> --add-blocked-by <m>`, comment why, `aisf_park`.
   - Render loop: render with the Visual rendering recipe in `project-testing`, once per state the leaf lists, in light and dark. PNGs go to `.aisf/images/`, named `<part>-<state>-light.png` and `<part>-<state>-dark.png`. Render, Read the PNG, compare it with its spot in `.aisf/render/<part>-mock.png` (the copy with that `data-theme` and that state's caption), adjust, render again. The mock PNG stays in `.aisf/render/`, never in `.aisf/images/`. Walk the leaf's checklist line by line: matches or doesn't. Tokens from `.aisf/design/tokens.css`, never literals; a colour with no token follows what the leaf decided. Stop when every line matches or has a stated reason it can't. Pixel-perfect is not the goal; an unresolved difference goes to the PR as a known deviation.
 - Rework: the R4 work list is the scope. Change every item: behaviour by TDD, then re-render and replace the images in `.aisf/images/`. `.aisf/render/<part>-mock.png` from step 2 is reused: a rework runs in the same worktree, and the mock is never re-copied.
 - Uses: `aisf:tdd`, `project-testing`, `aisf:github-issue`, `aisf_park`.
-- Done: every behaviour has a passing test; every checklist line matches or has a stated reason. Rework: every item changed.
+- Done: every behaviour has a passing test; every checklist line matches or has a stated reason; green. Rework: every item changed.
 - Output: the PNGs in `.aisf/images/`; the per-line verdicts.
 - Exits:
-  - every behaviour built, every line checked → 4
+  - every behaviour built, every line checked, green → 4
   - the work needed lies outside Scope → escalate `spec`
-  - hidden dependency, blocker linked → stop via `aisf_park`
   - a rework item contradicts the spec or needs a judgement call → escalate `spec`
+  - 5 fix attempts on a check → escalate `red`
+  - hidden dependency, blocker linked → stop via `aisf_park`
 
-### 4. Green
+### 4. Code review
 
-- Goal: `test` and `analyze` clean.
-- Actions: run `test` and `analyze` from `project-toolchain`; read `analyze` as its block says. 5 fix attempts per failing check; a new failure resets the count. Unsure a failure is yours → run the file in a throwaway `git worktree` on `origin/main`. Red there too → not yours: report it, post a bare idea if none exists.
-- Uses: `project-toolchain`.
-- Done: both clean.
+- Goal: the architecture checked against the spec; suspected bugs and gaps in hand.
+- Actions: launch one `aisf:review-code` agent whose prompt is the spec, verbatim, nothing else (on a one-PR ticket: the `## Spec` section). Fixed → keep. Deviates from spec → each in the PR's Merge danger; a `contract` one also gets a comment on every sibling the spec names for it: old name and shape, new one, the rule. Suspected bugs and gaps → hand the list to 5. Make it green.
+- Uses: `aisf:review-code`.
+- Done: its result handled; green.
+- Output: the Suspected bugs and gaps list.
 - Exits:
-  - both clean, sent from 5 → 6
-  - both clean, sent from 7 → 7
-  - both clean, reached from 3 or R3 (first pass or rework) → 5
+  - suspected bugs or gaps listed → 5
+  - none listed, green → 6
+  - a deviation stays unresolved → escalate `spec`
   - 5 fix attempts on a check → escalate `red`
 
-### 5. Code review
+### 5. Fix bugs
 
-- Goal: the architecture checked against the spec.
-- Actions: launch one `aisf:review-code` agent whose prompt is the spec, verbatim, nothing else (on a one-PR ticket: the `## Spec` section). Fixed → nothing. Deviates from spec → each in the PR's Merge danger; a `contract` one also gets a comment on every sibling the spec names for it: old name and shape, new one, the rule. Re-run 4; keep its fixes.
-- Uses: `aisf:review-code`.
-- Done: its result handled, green.
+- Goal: every line of the Suspected bugs and gaps list handled.
+- Actions: per line:
+  - **Behaviour bug**: write a failing test from its failure scenario, per `aisf:tdd`.
+    - The test passes on today's code → delete the test, move on.
+    - The fix would leave Scope or contradict the spec → `aisf_report_finding` (`kind` bug, `location` file:line, `summary`), one line in Merge danger, no fix.
+    - Else fix it; the test passes.
+  - **Visual bug** (geometry, colour, layout: no behaviour test allowed): fix it through step 3's render loop, re-render the affected states in light and dark, update that checklist line's verdict. The updated verdict is the proof. Evidence notes that no test was written for it. Out of Scope or against the spec → report it as a behaviour bug.
+  - **Gap**: `aisf_report_finding` (`kind` gap), one line in Merge danger. No code.
+
+  Then make it green. A fixed behaviour bug is not recorded in the PR body: its test in the diff is the record.
+
+- Uses: `aisf:tdd`, `project-testing`, `aisf_report_finding`.
+- Done: every line fixed, dropped or reported; green.
+- Output: the Merge danger lines for reported bugs and gaps; updated verdicts and images for visual fixes.
 - Exits:
-  - the agent's fixes are applied → 4, then 6 (5 does not run again; no Output carries over or goes void)
-  - the agent fixed nothing, or deviates and every deviation is in the PR's Merge danger, and green → 6
-  - a deviation stays unresolved → escalate `spec`
+  - every line handled, green → 6
+  - 5 fix attempts on a check → escalate `red`
 
 ### 6. Verify AC
 
@@ -104,34 +115,23 @@ Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
 - Output: the evidence for the PR.
 - Exits:
   - every criterion has evidence → 7
-  - a gap is fixable → 3, then 4 and 5 again (the tests and code stay; the PNGs, per-line verdicts and this step's evidence are void and made again)
+  - a gap is fixable → 3, then 4 and 6 again, and 5 when 4 lists bugs (the tests and code stay; the PNGs, per-line verdicts and this step's evidence are void and made again)
   - a criterion is vague or unprovable → escalate `spec`
 
-### 7. Simplicity review
-
-- Goal: the diff simplified.
-- Actions: invoke `aisf:review-simplicity` and handle its report as it says.
-- Uses: `aisf:review-simplicity`.
-- Done: no must-fix left.
-- Exits:
-  - the review applied a change, or a must-fix was fixed → 4, then 7 again (no other step runs again; no Output carries over or goes void)
-  - no must-fix left → 8
-  - a must-fix needs judgement → escalate `spec`
-
-### 8. Commit
+### 7. Commit
 
 - Goal: one commit.
 - Actions: invoke `aisf:commit`.
 - Uses: `aisf:commit`.
 - Done: committed.
 - Exits:
-  - committed, new build → 9
+  - committed, new build → 8
   - committed, rework → R5
 
-### 9. PR
+### 8. PR
 
 - Goal: the work shipped, the ticket findable.
-- Actions: invoke `aisf:pr` with the step 6 evidence. Evidence names the mock path and each image file in `.aisf/images/`, says the images show on the ticket page, and gives the per-line verdict as text. Merge danger lists every unresolved difference from the mock, and why.
+- Actions: invoke `aisf:pr` with the step 6 evidence. Evidence names the mock path and each image file in `.aisf/images/`, says the images show on the ticket page, and gives the per-line verdict as text. Merge danger lists every unresolved difference from the mock, and why, and the lines from 4 and 5.
 - Uses: `aisf:pr`.
 - Done: PR open and ticket `in-review`.
 - Exits:
@@ -163,15 +163,15 @@ Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
 
 ### R3. Rebase
 
-- Goal: the current branch rebased on `origin/main`, `test` and `analyze` clean.
-- Actions: `git status --porcelain`; non-empty → escalate `spec`, naming the dirty files. Else `git fetch origin`, `git rebase origin/main` on the current branch. Then run step 4 Green's actions.
-- Uses: `git`, step 4 Green, `aisf_escalate`.
-- Done: the branch is rebased and `test` and `analyze` are clean.
+- Goal: the current branch rebased on `origin/main`, green.
+- Actions: `git status --porcelain`; non-empty → escalate `spec`, naming the dirty files. Else `git fetch origin`, `git rebase origin/main` on the current branch. Then make it green (General rules).
+- Uses: `git`, `project-toolchain`, `aisf_escalate`.
+- Done: the branch is rebased; green.
 - Output: the rebased branch.
 - Exits:
-  - rebased, `test` and `analyze` clean → R4
+  - rebased, green → R4
   - dirty tree → escalate `spec`
-  - rebase cannot finish → escalate `red`
+  - rebase cannot finish or 5 fix attempts on a check → escalate `red`
 
 ### R4. Work list
 
@@ -181,7 +181,7 @@ Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
 - Done: every item is on the list.
 - Output: the work list.
 - Exits:
-  - work list written, items left → 3 (steps 4 to 8 run once more as in a first build; the work list stays as the scope, nothing goes void)
+  - work list written, items left → 3, then 4, 6 and 7 again, and 5 when 4 lists bugs (one `aisf:review-code` launch per pass; the work list stays as the scope, nothing goes void)
   - rebase only, no item → R5
 
 ### R5. Unapprove
