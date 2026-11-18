@@ -38,7 +38,9 @@ in the diff, for the implement run to handle. It fixes none of them.
 - **Actions**: `git diff HEAD`, plus `git status --porcelain` for new files. Read every changed file in full.
 - **Uses**: Bash, Read.
 - **Done**: every changed and new file read.
-- **Exits**: diff read → 2 · a preloaded skill missing → stop, report "project not onboarded".
+- **Exits**:
+  - diff read → 2
+  - a preloaded skill missing → stop, report "project not onboarded"
 
 ### 2. Hunt
 
@@ -46,7 +48,9 @@ in the diff, for the implement run to handle. It fixes none of them.
 - **Actions**: walk `project-architecture` (including every rule file it points to), then `code-rules`, rule by rule. Hold every changed line, new file and new name against every rule. Not the rules that come to mind: all of them. Read the surrounding code where a rule depends on it.
 - **Uses**: `project-architecture`, `code-rules`.
 - **Done**: every rule held against every changed line.
-- **Exits**: breaches found → 3 · a full pass finds nothing → 4.
+- **Exits**:
+  - breaches found → 3
+  - a full pass finds nothing → 4
 
 ### 3. Fix
 
@@ -58,7 +62,8 @@ in the diff, for the implement run to handle. It fixes none of them.
   - **Stay green.** After fixing, run `test` and `analyze` from the `aisf-toolchain` block; both clean. A fix you can't land green: revert it whole and report it as unresolved.
 - **Uses**: `project-toolchain`.
 - **Done**: every breach fixed or reverted; `test` and `analyze` clean.
-- **Exits**: fixed or reverted → 2 (hunt again).
+- **Exits**:
+  - every breach fixed or reverted, `test` and `analyze` clean → 2; no other step runs before 3 is reached again
 
 ### 4. Suspect
 
@@ -72,7 +77,8 @@ in the diff, for the implement run to handle. It fixes none of them.
 - **Uses**: Read, Grep, Glob.
 - **Done**: every changed line read for bugs and gaps; every listed suspect has a failure scenario.
 - **Output**: the Suspected bugs and gaps list.
-- **Exits**: every changed line read → 5.
+- **Exits**:
+  - every changed line read → 5
 
 ### 5. Return
 
@@ -87,7 +93,8 @@ in the diff, for the implement run to handle. It fixes none of them.
 
 - **Done**: the block is written.
 - **Output**: the block.
-- **Exits**: → done.
+- **Exits**:
+  - the block is written → done
 
 ## Output
 
