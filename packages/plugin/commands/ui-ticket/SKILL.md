@@ -21,27 +21,6 @@ interview.
 - Nothing leaves the machine: no `Artifact` tool, no upload. Every mock is a local file.
   `ui-split` (step 5) is the one page shown.
 
-# Graph
-
-```mermaid
-flowchart TD
-  1[1 Precondition] -->|all hold| 2[2 Read the design]
-  1 -->|one fails| E((escalate))
-  2 --> 3[3 Split into components]
-  3 --> 4[4 Research the landing zone]
-  4 --> 5[5 Flag UI the app can't back]
-  5 -->|no gaps, or every gap answered| 6[6 Describe and mock]
-  6 -->|new gap found| 5
-  6 -->|every leaf described and mocked| 7[7 Check]
-  7 -->|split defect| 3
-  7 -->|landing zone defect| 4
-  7 -->|unflagged gap| 5
-  7 -->|description or mock defect| 6
-  7 -->|fix needs input no step gives| E
-  7 -->|all four pass| 8[8 Write to GitHub]
-  8 -->|every issue posted| D((done))
-```
-
 # Steps
 
 ## 1. Precondition
@@ -53,8 +32,10 @@ flowchart TD
   `.aisf/artifacts/design/index.json` exists.
 - **Uses**: `gh issue view`, Skill tool.
 - **Done**: all four hold.
-- **Exits**: one fails → `aisf_escalate` `spec`, naming the missing piece (ticket state, slot,
-  Visual rendering recipe or path) · all hold → 2.
+- **Exits**:
+  - one fails → `aisf_escalate` `spec`, naming the missing piece (ticket state, slot, Visual
+    rendering recipe or path)
+  - all four hold → 2
 
 ## 2. Read the design
 
@@ -66,7 +47,8 @@ flowchart TD
   notes: never built.
 - **Done**: every board read; a state list per component.
 - **Output**: the state lists.
-- **Exits**: → 3.
+- **Exits**:
+  - every board read and a state list per component → 3
 
 ## 3. Split into components
 
@@ -78,7 +60,8 @@ flowchart TD
   two.
 - **Done**: every `data-part` is a leaf or described inside one.
 - **Output**: the ordered component list.
-- **Exits**: → 4.
+- **Exits**:
+  - every `data-part` is a leaf or described inside one → 4
 
 ## 4. Research the landing zone
 
@@ -91,7 +74,8 @@ flowchart TD
 - **Uses**: `project-architecture` (load it here), `project-design`.
 - **Done**: every component has the three answers; every missing piece is listed.
 - **Output**: landing zones and the gap list.
-- **Exits**: → 5.
+- **Exits**:
+  - every component has the three answers and every missing piece is listed → 5
 
 ## 5. Flag UI the app can't back
 
@@ -107,7 +91,8 @@ flowchart TD
 - **Uses**: `aisf:artifacts`, `aisf_show_artifact`.
 - **Done**: every gap has an answer, or there are none.
 - **Output**: the answers.
-- **Exits**: → 6.
+- **Exits**:
+  - every gap has an answer, or there are none → 6
 
 ## 6. Describe and mock
 
@@ -125,7 +110,11 @@ flowchart TD
   - Apply every Scrap and Update answer to the leaf and its mock.
 - **Done**: every leaf has a description and a mock.
 - **Output**: descriptions; one mock file per leaf.
-- **Exits**: a new gap found → 5 · every leaf described and mocked → 7.
+- **Exits**:
+  - a new gap found → 5. Steps 5, 6 and 7 run again. Carries over: state lists, component
+    list, landing zones, answers so far, descriptions and mocks. Void: none; the new answer is
+    applied in step 6 to the leaves it touches.
+  - every leaf described and mocked → 7
 
 ## 7. Check
 
@@ -137,9 +126,21 @@ flowchart TD
   - **No invented numbers**: every px and token traces to a board or `tokens.css`.
   - **Gaps flagged**: no leaf quietly assumes a route or data that doesn't exist.
 - **Done**: all four pass.
-- **Exits**: split defect → 3 · landing zone defect → 4 · unflagged gap → 5 · description or
-  mock defect → 6 · the fix needs input no step gives (a board, a token, an answer outside
-  Scrap, Update, Blocking ticket) → `aisf_escalate` `spec` · all four pass → 8.
+- **Exits**:
+  - split defect → 3. Steps 3, 4, 5, 6 and 7 run again. Carries over: state lists, answers
+    for pieces that stay in a leaf. Void: component list, landing zones and gap list, and the
+    descriptions and mocks of every leaf the split changed.
+  - landing zone defect → 4. Steps 4, 5, 6 and 7 run again. Carries over: state lists,
+    component list. Void: landing zones and gap list of the defective components, and the
+    descriptions and mocks of those leaves; answers for pieces no gap list holds any more.
+  - unflagged gap → 5. Steps 5, 6 and 7 run again. Carries over: state lists, component list,
+    landing zones, answers so far. Void: the descriptions and mocks of the leaves the new
+    answer touches.
+  - description or mock defect → 6. Steps 6 and 7 run again. Carries over: state lists,
+    component list, landing zones, answers. Void: the defective descriptions and mocks.
+  - the fix needs input no step gives (a board, a token, an answer outside Scrap, Update,
+    Blocking ticket) → `aisf_escalate` `spec`
+  - all four pass → 8
 
 ## 8. Write to GitHub
 
@@ -157,7 +158,8 @@ flowchart TD
 - **Uses**: `aisf:github-issue`.
 - **Done**: every blocking ticket and leaf is posted and `<n>` is `planned`.
 - **Output**: every number posted, reported.
-- **Exits**: → done.
+- **Exits**:
+  - every blocking ticket and leaf is posted and `<n>` is `planned` → done
 
 # Output
 
