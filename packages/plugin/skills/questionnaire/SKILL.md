@@ -5,7 +5,7 @@ description: Asking the human in rounds on one bridge page. Use when a skill mus
 
 # Role and goal
 
-The entry point for asking the human in rounds on one bridge page. It names the three builder agents: `question-builder`, `round-builder`, `playback-builder`. It is loaded into the calling skill's session, so the caller runs the steps itself. The calling skill owns its questions, its stance, its page id and its ledger line format; this skill owns how the asking works, the Confirm round and the `round-<N>.json` contract.
+The entry point for asking the human in rounds on one bridge page. It names two builder agents: `question-builder`, `playback-builder`. It is loaded into the calling skill's session, so the caller runs the steps itself. The calling skill owns its questions, its stance, its page id and its ledger line format; this skill owns how the asking works, the Confirm round and the `round-<N>.json` contract.
 
 # Parameters
 
@@ -89,13 +89,14 @@ From the calling skill:
 ## 7. Build page
 
 - Goal: add the round to the one page.
-- Actions: run `round-builder` (page id, `N`, the absolute path of `build-page.mjs` in this folder).
-- Uses: agent `round-builder`.
-- Done: `round-builder` returns `result: page`.
+- Actions: run `node ${CLAUDE_SKILL_DIR}/build-page.mjs <page-id> <N>` via Bash and read its exit code. On the first non-zero exit: fix your own `round-<N>.json` once, then rerun.
+- Uses: Bash.
+- Done: the script exits 0.
 - Output: `index.html`.
 - Exits:
-  - `round-builder` returns `result: page` → 8
-  - `round-builder` returns an error → stop (report its reason)
+  - the script exits 0 → 8
+  - the script exits non-zero for the first time → 7 (fix own `round-<N>.json`, rerun; no later step runs before. Carries over: cards, rows, `header.html`. Void: the failed `round-<N>.json`, replaced by the fixed one.)
+  - the rerun exits non-zero → stop (report the script's line)
 
 ## 8. Show
 
@@ -123,7 +124,7 @@ From the calling skill:
 - Goal: the human confirms or reopens what the caller drafted.
 - Actions:
   - Write `round-<N>.json` in the confirm shape per `references/round.md`: the caller's tasks, and its summary file when it has one.
-  - Build and show it as steps 6–8 do. Only this differs: no cards, so steps 3–4 are skipped; a caller with a header runs step 6 before the build.
+  - Build it as step 7 does (same repair-once rule), then show it as step 8 does. Only this differs: no cards, so steps 3–4 are skipped; a caller with a header runs step 6 before the build.
   - Read the event as `aisf:artifacts` says: `kind=confirm` or `kind=reopen`, the note, the `hitl` map.
   - Append one ledger line in the caller's format: Confirm or Reopen, with the note.
   - Return nothing: the skill runs in the caller's session, so the event stays in context.
@@ -134,7 +135,7 @@ From the calling skill:
   - the ledger line is a Confirm → done
   - the ledger line is a Reopen and the caller names its own Reopen exit → done (the caller routes)
   - the ledger line is a Reopen and the caller has no Reopen exit → 2 (the note becomes an open decision; steps 3–10 run again, and the next close re-enters 10. Carries over: `ledger.md` with the Reopen line, `findings.md`, every earlier `round-<N>.json`, `index.html`. Void: the confirm-shape `round-<N>.json` as a round of cards, and the earlier question list, card names and rows.)
-  - the build returns an error → stop (report the reason)
+  - the rerun build exits non-zero → stop (report the script's line)
 
 # Output
 
