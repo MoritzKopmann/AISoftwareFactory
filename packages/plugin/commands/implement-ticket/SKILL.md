@@ -25,47 +25,7 @@ Build one ready code leaf to an open PR, from the spec on the ticket alone. An `
 - Rework: a review thread is the reviewer's to resolve.
 - Rework: one commit per rework run. Items stay uncommitted through 3 → 4 → 5 → 6 → 7; step 8 commits them once. Steps 5 and 7 read the uncommitted diff as in a first build.
 
-## Graph
-
-```mermaid
-flowchart TD
-  1[1 Read] -->|ready leaf with a spec, claimed| 2[2 Understand]
-  1 -->|in-review| R1[R1 Detect]
-  1 -->|anything else, or guard mismatch| S((stop))
-  2 -->|plan listed| 3[3 Implement]
-  2 -->|criterion needs the running app, no hitl| E((escalate))
-  3 -->|every scenario built, rework: every item changed| 4[4 Green]
-  3 -->|work outside Scope, rework item contradicts the spec or needs judgement| E
-  3 -->|hidden dependency: blocker linked, aisf_park| S
-  4 -->|green, or back to 6 / 7| 5[5 Code review]
-  4 -->|5 fix attempts on a check| E
-  5 -->|fixes applied: re-run green| 4
-  5 -->|green after review| 6[6 Verify AC]
-  5 -->|unresolved| E
-  6 -->|every criterion has evidence, rework: every item too| 7[7 Simplicity review]
-  6 -->|a gap, or hitl defect inside Scope| 3
-  6 -->|hitl answer outside Scope| E
-  7 -->|applied or must-fix fixed: re-run green, then 7 again| 4
-  7 -->|no must-fix left| 8[8 Commit]
-  7 -->|must-fix needs judgement| E
-  8 -->|committed, new build| 9[9 PR]
-  8 -->|committed, rework| R5[R5 Unapprove]
-  9 -->|PR open, in-review; or hitl no-code leaf closed| D((done))
-  R1 -->|rework| R2[R2 Claim]
-  R1 -->|not rework| S
-  R2 -->|claimed| R3[R3 Rebase]
-  R2 -->|guard mismatch| S
-  R3 -->|rebased, green: step 4| R4[R4 Work list]
-  R3 -->|dirty tree: spec, rebase cannot finish: red| E
-  R4 -->|work list written, items left| 3
-  R4 -->|rebase only, no item| R5
-  R5 -->|label gone or absent| R6[R6 PR]
-  R6 -->|PR updated, ticket in-review| R7[R7 Replies]
-  R6 -->|aisf:pr escalates| E
-  R7 -->|every handled item replied, review re-requested| D
-```
-
-Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
+Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
 
 ## Steps
 
@@ -75,7 +35,10 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Actions: read the ticket. A leaf at `status: ready` with Scope, Landing zone and Acceptance criteria in its body (under `## Spec` on a one-PR ticket): guard `ready → in-progress`. `in-review` → R1.
 - Uses: `aisf:github-issue`.
 - Done: the ticket is `in-progress`, handed to R1, or the run stopped.
-- Exits: ready leaf with a spec, claimed → 2 · `in-review` → R1 · anything else, or guard mismatch → stop: say why, write nothing.
+- Exits:
+  - ready leaf with a spec, claimed → 2
+  - `in-review` → R1
+  - anything else, or guard mismatch → stop: say why, write nothing
 
 ### 2. Understand
 
@@ -83,7 +46,9 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Actions: load `aisf:tdd`. Read the ticket and the code its Landing zone names. List the files to touch, one test per scenario, and the proof for each criterion without behaviour. Settle every vague criterion's reading now.
 - Uses: `aisf:tdd`.
 - Done: every criterion has a test or a proof in the list.
-- Exits: plan listed → 3 · a criterion needs the running app or a write outside the checkout, on a leaf without `hitl` → escalate `spec`.
+- Exits:
+  - every criterion has a test or a proof in the list → 3
+  - a criterion needs the running app or a write outside the checkout, on a leaf without `hitl` → escalate `spec`
 
 ### 3. Implement
 
@@ -91,7 +56,11 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Actions: TDD per `aisf:tdd`. The spec's names, Landing zone and contracts go in verbatim: a sibling builds against them. Scope's Out belongs to a sibling. Hidden dependency (can't finish until another ticket lands): find or post a bare idea for it, `gh issue edit <n> --add-blocked-by <m>`, comment why, `aisf_park`. Rework → the R4 work list is the scope: change every item by TDD.
 - Uses: `aisf:tdd`, `aisf:github-issue`, `aisf_park`.
 - Done: every scenario has a passing test. Rework → every item changed.
-- Exits: every scenario built → 4 · needed work outside Scope → escalate `spec` · rework item contradicts the spec or needs a judgement call → escalate `spec` · hidden dependency, blocker linked → stop via `aisf_park`.
+- Exits:
+  - every scenario has a passing test, rework: every item changed → 4
+  - needed work outside Scope → escalate `spec`
+  - rework item contradicts the spec or needs a judgement call → escalate `spec`
+  - hidden dependency, blocker linked → stop via `aisf_park`
 
 ### 4. Green
 
@@ -99,7 +68,11 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Actions: run `test` and `analyze` from `project-toolchain`; read `analyze` as its block says. 5 fix attempts per failing check; a new failure resets the count. Unsure a failure is yours → run the file in a throwaway `git worktree` on `origin/main`. Red there too → not yours: report it, post a bare idea if none exists.
 - Uses: `project-toolchain`.
 - Done: both clean.
-- Exits: green → 5, or back to the step that sent here (5 → 6, 7 → 7) · 5 fix attempts on a check → escalate `red`.
+- Exits:
+  - both clean, sent from 3 → 5
+  - both clean, sent from 5 → 6
+  - both clean, sent from 7 → 7
+  - 5 fix attempts on a check → escalate `red`
 
 ### 5. Code review
 
@@ -107,7 +80,10 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Actions: launch one `aisf:review-code` agent whose prompt is the spec, verbatim, nothing else (on a one-PR ticket: the `## Spec` section). Fixed → nothing. Deviates from spec → each in the PR's Merge danger; a `contract` one also gets a comment on every sibling the spec names for it: old name and shape, new one, the rule. Re-run 4; keep its fixes.
 - Uses: `aisf:review-code`.
 - Done: its result handled, green.
-- Exits: fixes applied → 4 · green after review → 6 · unresolved → escalate `spec`.
+- Exits:
+  - fixes applied → 4: 4 runs again, no later step does (4 then goes to 6); no re-run step has an Output
+  - its result handled, green after review → 6
+  - a deviation left unresolved → escalate `spec`
 
 ### 6. Verify AC
 
@@ -116,7 +92,10 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Uses: `aisf_checkpoint` (`hitl` only).
 - Done: every criterion has evidence. Rework → every item has evidence.
 - Output: the evidence for the PR.
-- Exits: every criterion has evidence → 7 · a gap, or a `hitl` defect inside Scope → 3 · `hitl` answer outside Scope → escalate `spec`, quoting it.
+- Exits:
+  - every criterion has evidence, rework: every item too → 7
+  - a gap, or a `hitl` defect inside Scope → 3: 3, 4, 5, 6 and 7 run again. The evidence (step 6's Output) is void: step 6 builds it anew. The code, tests and fixes made so far carry over.
+  - `hitl` answer outside Scope → escalate `spec`, quoting it
 
 ### 7. Simplicity review
 
@@ -124,7 +103,10 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Actions: invoke `aisf:review-simplicity` and handle its report as it says.
 - Uses: `aisf:review-simplicity`.
 - Done: no must-fix left.
-- Exits: applied, or must-fix fixed → 4, then 7 again · no must-fix left → 8 · must-fix needs judgement → escalate `spec`.
+- Exits:
+  - a simplification applied, or a must-fix fixed → 4: 4 and 7 run again, 5 and 6 do not; no re-run step has an Output
+  - no must-fix left → 8
+  - must-fix needs judgement → escalate `spec`
 
 ### 8. Commit
 
@@ -132,7 +114,9 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Actions: invoke `aisf:commit`.
 - Uses: `aisf:commit`.
 - Done: committed.
-- Exits: committed, new build → 9 · committed, rework → R5.
+- Exits:
+  - committed, new build → 9
+  - committed, rework → R5
 
 ### 9. PR
 
@@ -140,7 +124,8 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Actions: a `hitl` leaf whose spec names no code change → post the step 6 evidence as a ticket comment, close the ticket; no push, no PR. Otherwise invoke `aisf:pr` with the step 6 evidence.
 - Uses: `aisf:pr`, `aisf:github-issue`.
 - Done: PR open and ticket `in-review`; or the `hitl` no-code leaf closed.
-- Exits: → done.
+- Exits:
+  - PR open and ticket `in-review`; or the `hitl` no-code leaf closed → done
 
 ### R1. Detect
 
@@ -152,7 +137,9 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Uses: `aisf:github-issue` (issue read), `gh pr view`, `gh api graphql` (`reviewThreads`).
 - Done: rework or not rework is decided.
 - Output: the PR number, and which triggers hold.
-- Exits: rework → R2 · not rework → stop, write nothing: it waits on review.
+- Exits:
+  - rework → R2
+  - not rework → stop, write nothing: it waits on review
 
 ### R2. Claim
 
@@ -160,7 +147,9 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Actions: guarded `in-review → in-progress`.
 - Uses: `aisf:github-issue`.
 - Done: the ticket is `in-progress`.
-- Exits: claimed → R3 · guard mismatch → stop.
+- Exits:
+  - claimed → R3
+  - guard mismatch → stop
 
 ### R3. Rebase
 
@@ -169,7 +158,10 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Uses: `git`, step 4 Green, `aisf_escalate`.
 - Done: the branch is rebased and `test` and `analyze` are clean.
 - Output: the rebased branch.
-- Exits: rebased, green → R4 · dirty tree → escalate `spec` · rebase cannot finish → escalate `red`.
+- Exits:
+  - rebased, `test` and `analyze` clean → R4
+  - dirty tree → escalate `spec`
+  - rebase cannot finish → escalate `red`
 
 ### R4. Work list
 
@@ -178,7 +170,9 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Uses: `gh api graphql` (`reviewThreads`), `gh pr view`, `gh pr checks`.
 - Done: every item is on the list.
 - Output: the work list.
-- Exits: work list written, items left → 3 · rebase only, no item → R5.
+- Exits:
+  - work list written, at least one item → 3
+  - rebase only, no item → R5
 
 ### R5. Unapprove
 
@@ -186,7 +180,8 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Actions: if the PR has the `approved` label: `gh pr edit <pr> --remove-label approved`.
 - Uses: `gh`.
 - Done: the PR has no `approved` label.
-- Exits: label gone or absent → R6.
+- Exits:
+  - the PR has no `approved` label → R6
 
 ### R6. PR
 
@@ -195,7 +190,9 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Uses: `aisf:pr`.
 - Done: `aisf:pr` is done: PR updated, ticket `in-review`.
 - Output: the PR URL.
-- Exits: PR updated, ticket in-review → R7 · `aisf:pr` escalates → escalate.
+- Exits:
+  - PR updated, ticket `in-review` → R7
+  - `aisf:pr` escalates → escalate
 
 ### R7. Replies
 
@@ -204,7 +201,8 @@ Escapes inside `aisf:pr` are not drawn: the owner's graph holds them.
 - Uses: `gh api`, `gh pr edit --add-reviewer`.
 - Done: every handled item has a reply, and review is re-requested from each of their reviewers.
 - Output: the replies.
-- Exits: every handled item replied → done.
+- Exits:
+  - every handled item has a reply and review is re-requested from each of their reviewers → done
 
 ## Output
 
