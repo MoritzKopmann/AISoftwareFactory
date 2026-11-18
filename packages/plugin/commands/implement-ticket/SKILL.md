@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 ## Role and goal
 
-Build one ready code leaf to an open PR, from the spec on the ticket alone. An `in-review` ticket is reworked by steps R1–R7: every rework change passes the same gates as a first build (Green, Code review, Verify AC, Simplicity review, Commit).
+Build one ready code leaf to an open PR, from the spec on the ticket alone. An `in-review` ticket is reworked by steps R1–R7: every rework change passes the same gates as a first build (Code review, Fix bugs, Verify AC, Commit).
 
 ## Parameters
 
@@ -17,13 +17,15 @@ Build one ready code leaf to an open PR, from the spec on the ticket alone. An `
 
 ## General rules
 
-- The ticket is the whole brief. Through step 6, load no `project-architecture` or `project-index`, and read no parent's or sibling's body. `aisf:review-code` checks the architecture in step 5.
+- The ticket is the whole brief. Through step 6, load no `project-architecture` or `project-index`, and read no parent's or sibling's body. `aisf:review-code` checks the architecture in step 4.
 - Every status change and issue write goes through `aisf:github-issue`.
 - Keep every test as strong as it is. Touch a PR only when green.
+- **Green**: `test` and `analyze` from `project-toolchain` are clean; read `analyze` as its block says. A step that changes code is done only when green. 5 fix attempts per failing check; a new failure resets the count; 5 attempts → escalate `red`. Unsure a failure is yours → run the file in a throwaway `git worktree` on `origin/main`. Red there too → not yours: report it, post a bare idea if none exists.
+- One `aisf:review-code` launch per pass through step 4.
 - A choice the ticket leaves open, or a contradiction in it, is a decision: make it, list it in the PR's Merge danger.
 - Rework: rebase, never merge `origin/main` in: a merge commit blocks the app's rebase-merge.
 - Rework: a review thread is the reviewer's to resolve.
-- Rework: one commit per rework run. Items stay uncommitted through 3 → 4 → 5 → 6 → 7; step 8 commits them once. Steps 5 and 7 read the uncommitted diff as in a first build.
+- Rework: one commit per rework run. Items stay uncommitted through 3 → 4 → 5 → 6; step 7 commits them once. Steps 4 and 5 read the uncommitted diff as in a first build.
 
 Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
 
@@ -52,38 +54,48 @@ Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
 
 ### 3. Implement
 
-- Goal: every scenario built, inside Scope.
+- Goal: every scenario built, inside Scope, green.
 - Actions: TDD per `aisf:tdd`. The spec's names, Landing zone and contracts go in verbatim: a sibling builds against them. Scope's Out belongs to a sibling. Hidden dependency (can't finish until another ticket lands): find or post a bare idea for it, `gh issue edit <n> --add-blocked-by <m>`, comment why, `aisf_park`. Rework → the R4 work list is the scope: change every item by TDD.
 - Uses: `aisf:tdd`, `aisf:github-issue`, `aisf_park`.
-- Done: every scenario has a passing test. Rework → every item changed.
+- Done: every scenario has a passing test; green. Rework → every item changed.
 - Exits:
-  - every scenario has a passing test, rework: every item changed → 4
+  - every scenario built, green → 4
   - needed work outside Scope → escalate `spec`
   - rework item contradicts the spec or needs a judgement call → escalate `spec`
+  - 5 fix attempts on a check → escalate `red`
   - hidden dependency, blocker linked → stop via `aisf_park`
 
-### 4. Green
+### 4. Code review
 
-- Goal: `test` and `analyze` clean.
-- Actions: run `test` and `analyze` from `project-toolchain`; read `analyze` as its block says. 5 fix attempts per failing check; a new failure resets the count. Unsure a failure is yours → run the file in a throwaway `git worktree` on `origin/main`. Red there too → not yours: report it, post a bare idea if none exists.
-- Uses: `project-toolchain`.
-- Done: both clean.
+- Goal: the architecture checked against the spec; suspected bugs and gaps in hand.
+- Actions: launch one `aisf:review-code` agent whose prompt is the spec, verbatim, nothing else (on a one-PR ticket: the `## Spec` section). Fixed → keep. Deviates from spec → each in the PR's Merge danger; a `contract` one also gets a comment on every sibling the spec names for it: old name and shape, new one, the rule. Suspected bugs and gaps → hand the list to 5. Make it green.
+- Uses: `aisf:review-code`.
+- Done: its result handled; green.
+- Output: the Suspected bugs and gaps list.
 - Exits:
-  - both clean, sent from 3 → 5
-  - both clean, sent from 5 → 6
-  - both clean, sent from 7 → 7
+  - suspected bugs or gaps listed → 5
+  - none listed, green → 6
+  - a deviation left unresolved → escalate `spec`
   - 5 fix attempts on a check → escalate `red`
 
-### 5. Code review
+### 5. Fix bugs
 
-- Goal: the architecture checked against the spec.
-- Actions: launch one `aisf:review-code` agent whose prompt is the spec, verbatim, nothing else (on a one-PR ticket: the `## Spec` section). Fixed → nothing. Deviates from spec → each in the PR's Merge danger; a `contract` one also gets a comment on every sibling the spec names for it: old name and shape, new one, the rule. Re-run 4; keep its fixes.
-- Uses: `aisf:review-code`.
-- Done: its result handled, green.
+- Goal: every line of the Suspected bugs and gaps list handled.
+- Actions: per line:
+  - **Bug**: write a failing test from its failure scenario, per `aisf:tdd`.
+    - The test passes on today's code → delete the test, move on.
+    - The fix would leave Scope or contradict the spec → `aisf_report_finding` (`kind` bug, `location` file:line, `summary`), one line in Merge danger, no fix.
+    - Else fix it; the test passes.
+  - **Gap**: `aisf_report_finding` (`kind` gap), one line in Merge danger. No code.
+
+  Then make it green. A fixed bug is not recorded in the PR body: its test in the diff is the record.
+
+- Uses: `aisf:tdd`, `aisf_report_finding`.
+- Done: every line fixed, dropped or reported; green.
+- Output: the Merge danger lines for reported bugs and gaps.
 - Exits:
-  - fixes applied → 4: 4 runs again, no later step does (4 then goes to 6); no re-run step has an Output
-  - its result handled, green after review → 6
-  - a deviation left unresolved → escalate `spec`
+  - every line handled, green → 6
+  - 5 fix attempts on a check → escalate `red`
 
 ### 6. Verify AC
 
@@ -97,31 +109,20 @@ Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
   - a gap, or a `hitl` defect inside Scope → 3: 3, 4, 5, 6 and 7 run again. The evidence (step 6's Output) is void: step 6 builds it anew. The code, tests and fixes made so far carry over.
   - `hitl` answer outside Scope → escalate `spec`, quoting it
 
-### 7. Simplicity review
-
-- Goal: the diff simplified.
-- Actions: invoke `aisf:review-simplicity` and handle its report as it says.
-- Uses: `aisf:review-simplicity`.
-- Done: no must-fix left.
-- Exits:
-  - a simplification applied, or a must-fix fixed → 4: 4 and 7 run again, 5 and 6 do not; no re-run step has an Output
-  - no must-fix left → 8
-  - must-fix needs judgement → escalate `spec`
-
-### 8. Commit
+### 7. Commit
 
 - Goal: one commit.
 - Actions: invoke `aisf:commit`.
 - Uses: `aisf:commit`.
 - Done: committed.
 - Exits:
-  - committed, new build → 9
+  - committed, new build → 8
   - committed, rework → R5
 
-### 9. PR
+### 8. PR
 
 - Goal: the work shipped, the ticket findable.
-- Actions: a `hitl` leaf whose spec names no code change → post the step 6 evidence as a ticket comment, close the ticket; no push, no PR. Otherwise invoke `aisf:pr` with the step 6 evidence.
+- Actions: a `hitl` leaf whose spec names no code change → post the step 6 evidence as a ticket comment, close the ticket; no push, no PR. Otherwise invoke `aisf:pr` with the step 6 evidence; Merge danger also carries the lines from 4 and 5.
 - Uses: `aisf:pr`, `aisf:github-issue`.
 - Done: PR open and ticket `in-review`; or the `hitl` no-code leaf closed.
 - Exits:
@@ -153,15 +154,15 @@ Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
 
 ### R3. Rebase
 
-- Goal: the current branch rebased on `origin/main`, `test` and `analyze` clean.
-- Actions: `git status --porcelain`; non-empty → escalate `spec`, naming the dirty files. Else `git fetch origin`, `git rebase origin/main` on the current branch. Then run step 4 Green's actions.
-- Uses: `git`, step 4 Green, `aisf_escalate`.
-- Done: the branch is rebased and `test` and `analyze` are clean.
+- Goal: the current branch rebased on `origin/main`, green.
+- Actions: `git status --porcelain`; non-empty → escalate `spec`, naming the dirty files. Else `git fetch origin`, `git rebase origin/main` on the current branch. Then make it green (General rules).
+- Uses: `git`, `project-toolchain`, `aisf_escalate`.
+- Done: the branch is rebased; green.
 - Output: the rebased branch.
 - Exits:
-  - rebased, `test` and `analyze` clean → R4
+  - rebased, green → R4
   - dirty tree → escalate `spec`
-  - rebase cannot finish → escalate `red`
+  - rebase cannot finish, or 5 fix attempts on a check → escalate `red`
 
 ### R4. Work list
 
@@ -171,7 +172,7 @@ Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
 - Done: every item is on the list.
 - Output: the work list.
 - Exits:
-  - work list written, at least one item → 3
+  - work list written, at least one item → 3 (each pass through 4 is one review launch)
   - rebase only, no item → R5
 
 ### R5. Unapprove
@@ -207,3 +208,5 @@ Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
 ## Output
 
 An open PR and the ticket `in-review`; or a `hitl` leaf with no code change closed with its evidence; or a rework done: the PR updated in place (rebased, one rework commit, pushed with lease, body rewritten), no `approved` label, a reply per handled item with the rework SHA, review re-requested, the ticket `in-review`. Not rework: nothing written.
+
+Merge danger also lists reported gaps and out-of-Scope bugs.
