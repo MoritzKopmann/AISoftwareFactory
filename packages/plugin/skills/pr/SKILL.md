@@ -19,20 +19,6 @@ Loaded into a builder session once the ticket's work is committed. Ships that wo
 - Never push to the default branch. Never force-push without lease.
 - Every issue read and status change goes through `aisf:github-issue`.
 
-## Graph
-
-```mermaid
-flowchart TD
-  1[1 Read] -->|read| 2[2 Push]
-  2 -->|pushed| 3[3 Body]
-  2 -->|push rejected| E((escalate red))
-  3 -->|body written| 4[4 PR]
-  4 -->|PR open, base is default| 5[5 In review]
-  4 -->|base still wrong after one fix| E
-  5 -->|guard passed| D((done))
-  5 -->|guard mismatch| S((stop))
-```
-
 ## Steps
 
 ### 1. Read
@@ -42,7 +28,8 @@ flowchart TD
 - Uses: `aisf:github-issue`, `gh`, `git log`.
 - Done: title, priority, default branch, type and scope known; open PR known or known to be absent.
 - Output: these values.
-- Exits: `read → 2`.
+- Exits:
+  - title, priority, default branch, type and scope known; open PR known or known to be absent → 2
 
 ### 2. Push
 
@@ -51,7 +38,9 @@ flowchart TD
 - Uses: `git`.
 - Done: the remote branch matches `HEAD`.
 - Output: the pushed branch.
-- Exits: `pushed → 3` · `push rejected → escalate red` (output pasted).
+- Exits:
+  - the remote branch matches `HEAD` → 3
+  - push rejected → escalate `red` (output pasted)
 
 ### 3. Body
 
@@ -60,7 +49,8 @@ flowchart TD
 - Uses: `references/body.md`.
 - Done: the body file has all three sections and `Closes #<n>`.
 - Output: the body temp file.
-- Exits: `body written → 4`.
+- Exits:
+  - the body file has all three sections and `Closes #<n>` → 4
 
 ### 4. PR
 
@@ -69,7 +59,9 @@ flowchart TD
 - Uses: `gh`.
 - Done: the PR is open, not draft, has the priority label, base is the default branch.
 - Output: the PR number and URL.
-- Exits: `PR open, base is default → 5` · `base still wrong after one fix → escalate red`.
+- Exits:
+  - the PR is open, not draft, has the priority label, base is the default branch → 5
+  - base still wrong after one fix → escalate `red`
 
 ### 5. In review
 
@@ -78,7 +70,9 @@ flowchart TD
 - Uses: `aisf:github-issue` (guarded transitions).
 - Done: the ticket is `in-review`.
 - Output: the PR URL line.
-- Exits: `guard passed → done` · `guard mismatch → stop`, report the actual state.
+- Exits:
+  - guard passed, the ticket is `in-review` → done
+  - guard mismatch → stop, report the actual state
 
 ## Output
 
