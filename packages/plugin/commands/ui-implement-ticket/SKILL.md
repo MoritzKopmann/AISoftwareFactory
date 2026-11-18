@@ -30,46 +30,6 @@ The oracle is the mock's PNG: render the mock once, render the build, look, comp
 - Rework: a review thread is the reviewer's to resolve.
 - Rework: one commit per rework run. Items stay uncommitted through 3 → 4 → 5 → 6; step 7 commits them once. Steps 4 and 5 read the uncommitted diff as in a first build.
 
-## Graph
-
-```mermaid
-flowchart TD
-  1[1 Read] -->|ready ui leaf, checks hold, claimed| 2[2 Understand]
-  1 -->|in-review| R1[R1 Detect]
-  1 -->|project-design, Visual rendering recipe or mock missing| E((escalate))
-  1 -->|anything else, or guard mismatch| S((stop))
-  2 -->|plan listed| 3[3 Build]
-  2 -->|vague or unprovable criterion| E
-  3 -->|every behaviour built, every line checked, green; rework: every item changed, images re-rendered| 4[4 Code review]
-  3 -->|work outside Scope; rework item contradicts the spec or needs judgement: spec · 5 fix attempts: red| E
-  3 -->|hidden dependency: blocker linked, aisf_park| S
-  4 -->|suspected bugs or gaps listed| 5[5 Fix bugs]
-  4 -->|none listed, green| 6[6 Verify AC]
-  4 -->|unresolved: spec · 5 fix attempts: red| E
-  5 -->|every line handled, green| 6
-  5 -->|5 fix attempts: red| E
-  6 -->|every criterion has evidence; rework: every item too| 7[7 Commit]
-  6 -->|a fixable gap| 3
-  6 -->|vague or unprovable criterion| E
-  7 -->|committed, new build| 8[8 PR]
-  7 -->|committed, rework| R5[R5 Unapprove]
-  8 -->|PR open, in-review| D((done))
-  R1 -->|rework| R2[R2 Claim]
-  R1 -->|not rework| S
-  R2 -->|claimed| R3[R3 Rebase]
-  R2 -->|guard mismatch| S
-  R3 -->|rebased, green| R4[R4 Work list]
-  R3 -->|dirty tree: spec; rebase cannot finish or 5 fix attempts: red| E
-  R4 -->|work list written, items left| 3
-  R4 -->|rebase only, no item| R5
-  R5 -->|label gone or absent| R6[R6 PR]
-  R6 -->|PR updated, ticket in-review| R7[R7 Replies]
-  R6 -->|aisf:pr escalates| E
-  R7 -->|every handled item replied, review re-requested| D
-```
-
-Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
-
 ## Steps
 
 ### 1. Read
@@ -155,7 +115,7 @@ Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
 - Output: the evidence for the PR.
 - Exits:
   - every criterion has evidence → 7
-  - a gap is fixable → 3 (the tests and code stay; the PNGs, per-line verdicts and this step's evidence are void and made again)
+  - a gap is fixable → 3, then 4 and 6 again, and 5 when 4 lists bugs (the tests and code stay; the PNGs, per-line verdicts and this step's evidence are void and made again)
   - a criterion is vague or unprovable → escalate `spec`
 
 ### 7. Commit
@@ -221,7 +181,7 @@ Escapes inside `aisf:pr` are not drawn: the owner's Exits hold them.
 - Done: every item is on the list.
 - Output: the work list.
 - Exits:
-  - work list written, items left → 3 (steps 4 to 7 run once more as in a first build, one `aisf:review-code` launch per pass; the work list stays as the scope, nothing goes void)
+  - work list written, items left → 3, then 4, 6 and 7 again, and 5 when 4 lists bugs (one `aisf:review-code` launch per pass; the work list stays as the scope, nothing goes void)
   - rebase only, no item → R5
 
 ### R5. Unapprove
