@@ -22,19 +22,6 @@ None. Reads the working diff.
 - Load `project-architecture` and `project-toolchain` with the Skill tool (bare names). Either
   returns `Unknown skill` → stop, report "project not onboarded".
 
-## Graph
-
-```mermaid
-flowchart TD
-  S((start)) --> 1[Gather the diff]
-  S -->|project not onboarded| X((stop))
-  1 --> 2[Review]
-  2 --> 3[Apply]
-  3 --> 4[Report]
-  4 -->|architecture must-fix found| D((done))
-  4 -->|no must-fix| D
-```
-
 ## Steps
 
 ### 1. Gather the diff
@@ -42,7 +29,8 @@ flowchart TD
 - **Goal**: the diff about to be committed.
 - **Actions**: `git diff HEAD` plus `git status --porcelain` for new files.
 - **Done**: the diff and the new-file list are in hand.
-- **Exits**: `→ 2`
+- **Exits**:
+  - the diff and the new-file list are in hand → 2
 
 ### 2. Review
 
@@ -82,7 +70,8 @@ flowchart TD
 - **Uses**: agent `aisf:simplicity-reviewer`, Glob.
 - **Done**: every agent has returned.
 - **Output**: the findings, in the agent's own return fields.
-- **Exits**: `→ 3`
+- **Exits**:
+  - every agent has returned → 3
 
 ### 3. Apply
 
@@ -97,7 +86,8 @@ flowchart TD
 - **Uses**: `project-toolchain` commands `test_file`, `test`, `analyze`.
 - **Done**: every simplicity finding is applied or discarded; `test` and `analyze` are green; no
   finding is half-applied.
-- **Exits**: `→ 4`
+- **Exits**:
+  - every simplicity finding is applied or discarded, `test` and `analyze` green → 4
 
 ### 4. Report
 
@@ -114,7 +104,9 @@ flowchart TD
 - **Uses**: tool `aisf_report_finding`.
 - **Done**: every bug and gap went through the tool; the block is written.
 - **Output**: the Report block.
-- **Exits**: `architecture must-fix found → done` (the caller fixes and invokes again) · `no must-fix → done`
+- **Exits**:
+  - architecture must-fix found → done (the caller fixes and invokes again)
+  - no must-fix → done
 
 ## Output
 
