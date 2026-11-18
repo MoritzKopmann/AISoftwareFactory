@@ -19,25 +19,6 @@ Turn an idea issue into a ticket through a what/why interview. How is `aisf:plan
 - Every issue read and write goes through `aisf:github-issue`.
 - Ask what and why, never how.
 
-## Graph
-
-```mermaid
-flowchart TD
-  1[1 Read] -->|open idea, slots loaded| 2[2 Type]
-  1 -->|any status: label or closed| S((stop))
-  1 -->|Unknown skill: project not onboarded| S
-  2 -->|type inferred| 3[3 Interview]
-  3 -->|split denied: interview goes on| 3
-  3 -->|split confirmed| 4[4 Split]
-  3 -->|cold-read test passes| 5[5 Summary]
-  4 -->|ticket narrowed| 5
-  5 -->|Reopen note names another type| 2
-  5 -->|Reopen with a note| 3
-  5 -->|Confirm| 6[6 Write]
-  6 -->|guard mismatch| S
-  6 -->|issue written, numbers reported| D((done))
-```
-
 ## Steps
 
 ### 1. Read
@@ -57,7 +38,8 @@ flowchart TD
 - **Actions**: infer the type from the issue text and the gaps comment: `bug`, `enhancement`, `task` (a spike is a task whose deliverable is an answer), `skill`, or `ui` only when the skill `project-design` loads (try it; skip silently if absent). No pick-the-type and no confirm-the-summary question. Entered from a Reopen: take the type the note names.
 - **Uses**: Skill tool (`project-design`).
 - **Done**: one type set; its track is the one step 3 asks.
-- **Exits**: type inferred → 3
+- **Exits**:
+  - one type set, its track picked → 3
 
 ### 3. Interview
 
@@ -74,7 +56,7 @@ flowchart TD
 - **Output**: ledger lines, including Plan next; the drafted ticket.
 - **Exits**:
   - split confirmed → 4
-  - split denied → 3 (the interview goes on)
+  - split denied → 3 (the interview goes on; no later step ran, so nothing carries over or is void)
   - cold-read test passes (a non-ui ticket only with a Plan next answer) → 5
 
 ### 4. Split
@@ -83,7 +65,8 @@ flowchart TD
 - **Actions**: narrow the drafted ticket to the first part. Note each other part with its one-line summary for step 6. No umbrella, no sub-issue link.
 - **Done**: the draft covers the first part only; every other part is noted.
 - **Output**: the list of spin-off parts.
-- **Exits**: ticket narrowed → 5
+- **Exits**:
+  - draft covers the first part only, every other part noted → 5
 
 ### 5. Summary
 
@@ -94,8 +77,8 @@ flowchart TD
 - **Output**: `summary.html`.
 - **Exits**:
   - Confirm → 6
-  - Reopen note names another type → 2
-  - Reopen with a note → 3
+  - Reopen note names another type → 2 (steps 3, 5 run again, and 4 when a split is confirmed again; the ledger lines carry over; the drafted ticket, the spin-off list and `summary.html` are void)
+  - Reopen with a note → 3 (step 5 runs again, and 4 when a split is confirmed again; the ledger lines and the type carry over; the drafted ticket is revised; the spin-off list and `summary.html` are void)
 
 ### 6. Write
 
