@@ -23,21 +23,6 @@ as events. You answer by editing files. The page reloads by itself.
 - Every issue read and write goes through `aisf:github-issue`.
 - Write only to `.aisf/artifacts/design/` in the worktree. The id `design` is reserved for it.
 
-## Graph
-
-```mermaid
-flowchart TD
-  1[1 Read] -->|open, no status:, type: ui| 2[2 Look]
-  1 -->|anything else| S((stop))
-  2 -->|project-design loaded| 3[3 Draw]
-  2 -->|Unknown skill| E((escalate))
-  3 -->|folder written| 4[4 Show]
-  4 -->|design-feedback| 5[5 Revise]
-  4 -->|design-accepted| 6[6 Hand over]
-  5 -->|boards edited, comments answered| 4
-  6 -->|body written, guard passed| D((done))
-```
-
 ## Steps
 
 ### 1. Read
@@ -47,7 +32,9 @@ flowchart TD
 - **Uses**: `aisf:github-issue`
 - **Done**: state, labels and brief known.
 - **Output**: the brief.
-- **Exits**: `open, no status:, type: ui → 2` · `anything else → stop` (say why; write nothing).
+- **Exits**:
+  - issue open, no `status:` label, `type: ui` → 2
+  - issue closed, or has a `status:` label, or lacks `type: ui` → stop (say why; write nothing)
 
 ### 2. Look
 
@@ -56,7 +43,9 @@ flowchart TD
 - **Uses**: `project-design` (Skill tool)
 - **Done**: every domain state and user action listed; tokens, fonts, icons, components known. Nothing written yet.
 - **Output**: state list; the project's look.
-- **Exits**: `project-design loaded → 3` · `Unknown skill → escalate` (`aisf_escalate` `spec`, "project has no project-design slot").
+- **Exits**:
+  - `project-design` loaded → 3
+  - Skill tool returns Unknown skill → escalate (`aisf_escalate` `spec`, "project has no project-design slot")
 
 ### 3. Draw
 
@@ -64,7 +53,8 @@ flowchart TD
 - **Actions**: write `.aisf/artifacts/design/` (`index.json`, `tokens.css`, `boards/<id>.html`) with `"round": 1`, per Reference: The folder, Board rules, Craft.
 - **Done**: every domain state has a board; each board obeys every board rule; `index.json` has round 1.
 - **Output**: the design folder.
-- **Exits**: `folder written → 4`.
+- **Exits**:
+  - every domain state has a board, each board obeys every board rule, `index.json` has round 1 → 4
 
 ### 4. Show
 
@@ -73,7 +63,9 @@ flowchart TD
 - **Uses**: `aisf_show_artifact`, `aisf:artifacts`
 - **Done**: an event is read.
 - **Output**: the human's event.
-- **Exits**: `design-feedback → 5` · `design-accepted → 6`. No other exit.
+- **Exits**:
+  - event is `design-feedback` → 5
+  - event is `design-accepted` → 6
 
 ### 5. Revise
 
@@ -81,7 +73,8 @@ flowchart TD
 - **Actions**: `design-feedback` payload: `round`, `comments` (each `n`, `board`, `theme`, `x`, `y`, `text`), `message`; `x` and `y` are board px. Per comment: read the markup at that board px first. Edit the boards in place. Bump `round`; each touched board's `note` says what changed this round. One chat line per comment: done, or why not.
 - **Done**: every comment answered; round bumped.
 - **Output**: revised folder.
-- **Exits**: `boards edited, comments answered → 4` (republish).
+- **Exits**:
+  - every comment answered, round bumped → 4 (republish). Step 4 runs again; no other step does. Carries over: the revised folder. Void: the human's event from the last run of 4.
 
 ### 6. Hand over
 
@@ -90,7 +83,8 @@ flowchart TD
 - **Uses**: `aisf:github-issue`
 - **Done**: `## Design` in the body; `status: plan`.
 - **Output**: updated issue.
-- **Exits**: `body written, guard passed → done`.
+- **Exits**:
+  - `## Design` in the body, `status: plan` → done
 
 ## Output
 
