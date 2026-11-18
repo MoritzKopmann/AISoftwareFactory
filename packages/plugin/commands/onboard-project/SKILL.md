@@ -21,24 +21,6 @@ Onboard a target repo. Write basic slots that pass the contract: `project-toolch
   (`aisf:commit`, `aisf:tdd`, `aisf:review-*`): they stop with "project not onboarded". Commit
   with `git` directly.
 
-## Graph
-
-```mermaid
-flowchart TD
-  1[1 Read] -->|claimed or resumed| 2[2 Ledger]
-  1 -->|other type or state, or guard mismatch| S((stop))
-  2 -->|ledger read| 3[3 Draft toolchain]
-  3 -->|toolchain drafted| 4[4 Stub other slots]
-  4 -->|every other slot stubbed| 5[5 Verify toolchain]
-  5 -->|output in hand| 6[6 Review page]
-  6 -->|a section still open or edited| 6
-  6 -->|every section confirmed| 7[7 Write and commit]
-  7 -->|committed| 8[8 Slot tickets]
-  8 -->|one ticket per written slot exists| 9[9 PR]
-  8 -->|a post fails| S
-  9 -->|PR open, ticket in-review| D((done))
-```
-
 ## Steps
 
 ### 1. Read
@@ -47,7 +29,9 @@ flowchart TD
 - **Actions**: read the issue (title, body, labels, state) through `aisf:github-issue`. `status: ready` → guarded `ready → in-progress`, before any file work. `status: in-progress` → resume, no guard.
 - **Uses**: `aisf:github-issue`.
 - **Done**: the issue is `type: onboard` and `in-progress`.
-- **Exits**: claimed or resumed → 2 · other type or state, or guard mismatch → stop (name the state, write nothing).
+- **Exits**:
+  - the issue is `type: onboard` and was claimed or resumed → 2
+  - other type or state, or guard mismatch → stop (name the state, write nothing)
 
 ### 2. Ledger
 
@@ -60,7 +44,8 @@ flowchart TD
 
 - **Uses**: Read.
 - **Done**: ledger and drafts read, or known absent (new run).
-- **Exits**: ledger read → 3.
+- **Exits**:
+  - ledger and drafts read, or known absent → 3
 
 ### 3. Draft toolchain
 
@@ -77,7 +62,8 @@ flowchart TD
 - **Uses**: `aisf:skill-writing`, `references/shape-project-toolchain.md`.
 - **Done**: the draft holds the `aisf-toolchain` block with its 7 keys and the prose parts; every section is in the ledger.
 - **Output**: `drafts/project-toolchain/SKILL.md`.
-- **Exits**: toolchain drafted → 4.
+- **Exits**:
+  - the draft holds the `aisf-toolchain` block and every section is in the ledger → 4
 
 ### 4. Stub other slots
 
@@ -98,14 +84,16 @@ flowchart TD
 - **Uses**: `aisf:artifacts`, tool `aisf_show_artifact`.
 - **Done**: the frontend answer is in the ledger; every slot to write has a draft with the three frontmatter keys.
 - **Output**: `drafts/<slot>/SKILL.md` per stubbed slot.
-- **Exits**: every other slot stubbed → 5.
+- **Exits**:
+  - the frontend answer is in the ledger and every slot to write has a draft → 5
 
 ### 5. Verify toolchain
 
 - **Goal**: know whether the drafted commands run.
 - **Actions**: run `analyze` and `test` from the draft `aisf-toolchain` block once. Show the output on the review page. A failure is a finding for the owner: it may be a real repo defect. Never edit the repo's code to make it pass.
 - **Done**: the output of both commands is in hand.
-- **Exits**: output in hand → 6.
+- **Exits**:
+  - the output of `analyze` and `test` is in hand → 6
 
 ### 6. Review page
 
@@ -119,7 +107,9 @@ flowchart TD
 
 - **Uses**: `aisf:artifacts`, tool `aisf_show_artifact`, `aisf:github-issue`.
 - **Done**: every section is `confirmed` or `edited` in the ledger; every accepted code-change suggestion posted as a bare idea.
-- **Exits**: a section still open or edited → 6 (republish) · every section confirmed → 7.
+- **Exits**:
+  - a section is still `open` or `edited` → 6 again (republish; no later step runs again)
+  - every section is `confirmed` in the ledger → 7
 
 ### 7. Write and commit
 
@@ -135,7 +125,8 @@ flowchart TD
 
 - **Uses**: `git`.
 - **Done**: one commit holds every slot file to write.
-- **Exits**: committed → 8.
+- **Exits**:
+  - one commit holds every slot file to write → 8
 
 ### 8. Slot tickets
 
@@ -153,7 +144,9 @@ flowchart TD
 - **Uses**: `aisf:github-issue`, `gh`.
 - **Done**: `tickets` holds a number per written slot, each issue `status: plan` and blocked by `<n>`.
 - **Output**: 4 or 5 `type: skill` issues.
-- **Exits**: one ticket per written slot exists → 9 · a post fails → stop (report the `gh` output; `<n>` stays in-progress, so the next run resumes here).
+- **Exits**:
+  - `tickets` holds a number per written slot → 9
+  - a post fails → stop (report the `gh` output; `<n>` stays in-progress, so the next run resumes here)
 
 ### 9. PR
 
@@ -161,7 +154,8 @@ flowchart TD
 - **Actions**: load `aisf:pr`.
 - **Uses**: `aisf:pr`.
 - **Done**: the PR is open and the ticket is `in-review`.
-- **Exits**: PR open, ticket in-review → done.
+- **Exits**:
+  - the PR is open and the ticket is `in-review` → done
 
 ## Output
 
