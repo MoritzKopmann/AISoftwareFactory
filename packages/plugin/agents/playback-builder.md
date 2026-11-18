@@ -28,16 +28,6 @@ Drafts per `aisf:playback`.
 - Never edits code, commits, pushes or opens a PR.
 - Never shows the page. The caller does that.
 
-# Graph
-
-```mermaid
-flowchart TD
-  1[1 Playback data] -->|playback.json written| 2[2 End state]
-  1 -->|cannot draft| S((stop: error block))
-  2 -->|end state set| 3[3 Header]
-  3 -->|header.html written| D((done: header block))
-```
-
 # Steps
 
 ## 1. Playback data
@@ -53,8 +43,9 @@ flowchart TD
 - **Done**: `playback.json` parses as JSON, follows the contract in `aisf:playback`, and every acceptance criterion
   has an entry with at least one path. Round 1: the example was read before drafting.
 - **Output**: `.aisf/artifacts/<page>/playback.json`.
-- **Exits**: `playback.json written → 2` · `cannot draft (ticket or page files missing) → stop`
-  with the error block.
+- **Exits**:
+  - `playback.json` parses and every acceptance criterion has an entry with a path → 2
+  - ticket or page files missing, so no draft is possible → stop, with the error block
 
 ## 2. End state
 
@@ -62,7 +53,8 @@ flowchart TD
 - **Actions**: round 1 drafts it from the ticket's Context and criteria. Later rounds keep it as
   it is in the existing `header.html`.
 - **Done**: one `<p>` exists for the header.
-- **Exits**: `end state set → 3`.
+- **Exits**:
+  - one `<p>` exists for the header → 3
 
 ## 3. Header
 
@@ -72,7 +64,8 @@ flowchart TD
   `aisf:playback` applies).
 - **Done**: `header.html` is written and its JSON child parses.
 - **Output**: `.aisf/artifacts/<page>/header.html`.
-- **Exits**: `header.html written → done` with the header block.
+- **Exits**:
+  - `header.html` is written and its JSON child parses → done, with the header block
 
 # Output
 
