@@ -30,19 +30,6 @@ in the diff, for the implement run to handle. It fixes none of them.
 - Only what the diff introduces or changes.
 - Never stage, commit or push, and never write to GitHub.
 
-## Graph
-
-```mermaid
-flowchart TD
-  1[1 Read the changes] -->|diff read| 2[2 Hunt]
-  1 -->|a preloaded skill missing| S((stop))
-  2 -->|breaches found| 3[3 Fix]
-  3 -->|fixed or reverted: hunt again| 2
-  2 -->|a full pass finds nothing| 4[4 Suspect]
-  4 -->|every changed line read for bugs and gaps| 5[5 Return]
-  5 --> D((done))
-```
-
 ## Steps
 
 ### 1. Read the changes
