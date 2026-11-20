@@ -231,25 +231,31 @@ export class AisfRoundElement extends HTMLElement {
   /** @param {boolean} locked */
   renderBar(locked) {
     const questions = this.questions;
-    if (questions.length === 0 || this.hasAttribute('frozen')) return;
+    const isRowsOnly = questions.length === 0 && this.precedent !== null && this.confirm === null;
+    if ((questions.length === 0 && !isRowsOnly) || this.hasAttribute('frozen')) return;
     let bar = this.querySelector('.aisf-action-bar');
     if (bar === null) {
       bar = buildElement('div', 'aisf-action-bar');
-      const accept = buildElement('button', 'aisf-accept-all', 'Accept all remaining');
       const submit = buildElement('button', 'aisf-submit', 'Submit');
-      accept.type = 'button';
       submit.type = 'button';
-      accept.addEventListener('click', this.onAcceptAll);
       submit.addEventListener('click', this.onSubmit);
-      bar.append(buildElement('span', 'aisf-answered-count'), accept, submit);
+      if (isRowsOnly) {
+        bar.append(submit);
+      } else {
+        const accept = buildElement('button', 'aisf-accept-all', 'Accept all remaining');
+        accept.type = 'button';
+        accept.addEventListener('click', this.onAcceptAll);
+        bar.append(buildElement('span', 'aisf-answered-count'), accept, submit);
+      }
       this.append(bar);
     }
     const answered = questions.filter(
       (question) => /** @type {any} */ (question).isAnswered,
     ).length;
-    /** @type {HTMLElement} */ (bar.querySelector('.aisf-answered-count')).textContent =
-      `${answered} of ${questions.length}`;
-    /** @type {HTMLButtonElement} */ (bar.querySelector('.aisf-accept-all')).disabled = locked;
+    const count = /** @type {HTMLElement | null} */ (bar.querySelector('.aisf-answered-count'));
+    if (count !== null) count.textContent = `${answered} of ${questions.length}`;
+    const accept = /** @type {HTMLButtonElement | null} */ (bar.querySelector('.aisf-accept-all'));
+    if (accept !== null) accept.disabled = locked;
     /** @type {HTMLButtonElement} */ (bar.querySelector('.aisf-submit')).disabled =
       locked || answered < questions.length;
   }

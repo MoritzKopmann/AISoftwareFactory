@@ -359,4 +359,70 @@ describe('AisfRoundElement', () => {
       payload: { answers: [{ question: 'c', choice: 'confirm' }] },
     });
   });
+
+  describe('rows-only round', () => {
+    const rowsOnly = round(
+      1,
+      `<aisf-precedent>
+        <div name="p1" source="#12">Keep the old name</div>
+        <div name="p2" source="#14">Use a map</div>
+      </aisf-precedent>`,
+    );
+
+    it('should show an enabled Submit and no accept-all or count when the round has rows and no questions', async () => {
+      await mount(rowsOnly);
+
+      expect($<HTMLButtonElement>('.aisf-submit').disabled).toBe(false);
+      expect(document.querySelector('.aisf-accept-all')).toBeNull();
+      expect(document.querySelector('.aisf-answered-count')).toBeNull();
+    });
+
+    it('should send the vetoes with no answers when Submit is pressed', async () => {
+      await mount(rowsOnly);
+      await click($('[name="p1"] .aisf-veto-switch'));
+      await type($<HTMLTextAreaElement>('[name="p1"] .aisf-veto-note'), 'also run the app');
+
+      await click($('.aisf-submit'));
+
+      expect(aisf.sent).toEqual([
+        { kind: 'submit', round: 1, payload: { answers: [], vetoes: { p1: 'also run the app' } } },
+      ]);
+    });
+
+    it('should freeze the round and drop the bar when the send is acknowledged', async () => {
+      await mount(rowsOnly);
+
+      await click($('.aisf-submit'));
+
+      expect($('aisf-round').hasAttribute('frozen')).toBe(true);
+      expect(document.querySelector('.aisf-action-bar')).toBeNull();
+    });
+
+    it('should disable Submit when the page status is closed', async () => {
+      await mount(rowsOnly);
+
+      aisf.emitStatus('closed');
+
+      expect($<HTMLButtonElement>('.aisf-submit').disabled).toBe(true);
+    });
+
+    it('should draw no bar when the round has no questions, rows or confirm', async () => {
+      await mount(round(1, '<p>text</p>'));
+
+      expect(document.querySelector('.aisf-action-bar')).toBeNull();
+    });
+  });
+
+  it('should keep the count, Accept all remaining and Submit when the round has questions and rows', async () => {
+    await mount(
+      round(
+        1,
+        `<aisf-precedent><div name="p1" source="#1">Keep</div></aisf-precedent>${questions(1)}`,
+      ),
+    );
+
+    expect($('.aisf-answered-count').textContent).toBe('0 of 1');
+    expect($('.aisf-accept-all')).toBeTruthy();
+    expect($<HTMLButtonElement>('.aisf-submit').disabled).toBe(true);
+  });
 });
