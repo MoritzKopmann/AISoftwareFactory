@@ -136,20 +136,12 @@ chore(deps): add zod ^4.1.0
 
 ---
 
-## Step 8 — Refresh the project index
-
-If a `project-index` skill exists, invoke `project-index` record for each module the diff
-touches before staging. The refreshed index stages with this commit. Skip silently if the
-skill is absent (`Unknown skill`) or the diff touches no module.
-
----
-
-## Step 9 — Stage and commit
+## Step 8 — Stage and commit
 
 Stage only the files that belong to this logical change. Prefer explicit file paths over `git add -A`. Then commit using a HEREDOC to preserve formatting.
 
 ---
 
-## Step 10 — Verify
+## Step 9 — Verify
 
 Run `git status` after the commit to confirm the working tree is clean (or note any intentionally unstaged files).
