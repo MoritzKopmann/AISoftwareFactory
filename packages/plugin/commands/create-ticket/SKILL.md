@@ -24,7 +24,7 @@ Turn an idea issue into a ticket through a what/why interview. How is `aisf:plan
 ### 1. Read
 
 - **Goal**: an open idea in view, and the project slots loaded.
-- **Actions**: read issue `<n>` (title, body, labels, state, comments). Open and no `status:` label → go on. A gaps comment from `aisf:plan-ticket` (a spec sent back to idea) is ordinary input: it seeds the first rounds. Load `project-toolchain` and `project-architecture` with the Skill tool (bare names). Load `project-index` if it exists; skip silently if absent.
+- **Actions**: read issue `<n>` (title, body, labels, state, comments). Open and no `status:` label → go on. A gaps comment from `aisf:plan-ticket` (a spec sent back to idea) is ordinary input: it seeds the first rounds. Load `project-toolchain` and `project-architecture` with the Skill tool (bare names).
 - **Uses**: `aisf:github-issue`, Skill tool.
 - **Done**: the issue text and comments are in view; toolchain and architecture loaded.
 - **Exits**:
@@ -44,9 +44,9 @@ Turn an idea issue into a ticket through a what/why interview. How is `aisf:plan
 ### 3. Interview
 
 - **Goal**: the drafted ticket passes the cold-read test, and a non-ui ticket has a Plan next answer.
-- **Actions**: ask the track's areas in rounds, in the track's order. Cover every area; skip one an earlier answer settled. Rough options come from the issue text and, when present, `project-index`. When answers show the idea is several tickets, propose the split as a question in a round: the first part (this ticket) and each other part with a one-line summary. An unknown the human cannot settle goes into the ticket as an open question; never omit it. Tracks:
+- **Actions**: ask the track's areas in rounds, in the track's order. Cover every area; skip one an earlier answer settled. Rough options come from the issue text. When answers show the idea is several tickets, propose the split as a question in a round: the first part (this ticket) and each other part with a one-line summary. An unknown the human cannot settle goes into the ticket as an open question; never omit it. Tracks:
   - **Bug**: 1. Reproduction: exact trigger steps, the state before the failure. 2. Expected vs actual: concrete behaviour. 3. Frequency and scope: always, sometimes, specific data or device. 4. Environment: platform options from `project-toolchain`'s `platforms`; plus version and data state. 5. Impact: who is affected, is there a workaround. 6. Related tickets or commits.
-  - **Enhancement or feature**: 1. User and goal. 2. Trigger or entry point: where in the app the flow starts; only when the feature has a surface a human sees. 3. Core behaviour: the happy path, step by step. 4. Edge cases and error states. 5. Non-goals: out of scope, explicitly; use `project-index`'s recall of the touched feature when present. 6. Persistence: what must survive the next launch. 7. Constraints the user would notice: offline, instant, one platform. 8. Design or UX reference; only when the feature has UI. 9. Dependencies: blocked-by or related.
+  - **Enhancement or feature**: 1. User and goal. 2. Trigger or entry point: where in the app the flow starts; only when the feature has a surface a human sees. 3. Core behaviour: the happy path, step by step. 4. Edge cases and error states. 5. Non-goals: out of scope, explicitly. 6. Persistence: what must survive the next launch. 7. Constraints the user would notice: offline, instant, one platform. 8. Design or UX reference; only when the feature has UI. 9. Dependencies: blocked-by or related.
   - **UI**: the enhancement areas. Nothing about layout: the design run settles it.
   - **Skill**: the enhancement areas. Nothing about wording or structure of the text: the skill run settles it.
   - **Task or spike**: 1. Deliverable. 2. Why now: what it unblocks. 3. Constraints: time-box, output format. 4. Definition of done.
