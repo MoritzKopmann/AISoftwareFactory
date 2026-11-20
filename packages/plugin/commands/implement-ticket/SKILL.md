@@ -17,7 +17,7 @@ Build one ready code leaf to an open PR, from the spec on the ticket alone. An `
 
 ## General rules
 
-- The ticket is the whole brief. Through step 6, load no `project-architecture` or `project-index`, and read no parent's or sibling's body. `aisf:review-code` checks the architecture in step 4.
+- The ticket is the whole brief. Through step 6, load no `project-architecture`, and read no parent's or sibling's body. `aisf:review-code` checks the architecture in step 4.
 - Every status change and issue write goes through `aisf:github-issue`.
 - Keep every test as strong as it is. Touch a PR only when green.
 - **Green**: `test` and `analyze` from `project-toolchain` are clean; read `analyze` as its block says. A step that changes code is done only when green. 5 fix attempts per failing check; a new failure resets the count; 5 attempts → escalate `red`. Unsure a failure is yours → run the file in a throwaway `git worktree` on `origin/main`. Red there too → not yours: report it, post a bare idea if none exists.
