@@ -31,4 +31,22 @@ describe('describeFindingIssue', () => {
 
     expect(issue.body).toBe('Kind: gap\nLocation: `src/a.ts:12`\n\nFound while implementing #141');
   });
+
+  it('should set types to bug and keep the title and body when the finding is a bug', () => {
+    const issue = describeFindingIssue(
+      buildFinding({ kind: 'bug', location: 'src/a.ts:12', ticketNumber: 141 }),
+    );
+
+    expect(issue).toEqual({
+      title: 'Retry loop never stops',
+      body: 'Kind: bug\nLocation: `src/a.ts:12`\n\nFound while implementing #141',
+      types: ['bug'],
+    });
+  });
+
+  it('should have no types when the finding is a gap', () => {
+    const issue = describeFindingIssue(buildFinding({ kind: 'gap' }));
+
+    expect(issue).not.toHaveProperty('types');
+  });
 });
