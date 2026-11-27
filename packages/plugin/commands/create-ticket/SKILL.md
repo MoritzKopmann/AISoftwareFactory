@@ -8,7 +8,7 @@ description: Turn an idea issue into a backlog or plan ticket through a what/why
 
 ## Role and goal
 
-Turn an idea issue into a ticket through a what/why interview. How is `aisf:plan-ticket`'s.
+Turn an idea issue into a ticket through a what/why interview. How is `aisf:plan-ticket`'s. A bug idea is marked `type: bug` and left for `aisf:create-bug-ticket`.
 
 ## Parameters
 
@@ -34,23 +34,23 @@ Turn an idea issue into a ticket through a what/why interview. How is `aisf:plan
 
 ### 2. Type
 
-- **Goal**: one ticket type, and its track picked.
-- **Actions**: infer the type from the issue text and the gaps comment: `bug`, `enhancement`, `task` (a spike is a task whose deliverable is an answer), `skill`, or `ui` only when the skill `project-design` loads (try it; skip silently if absent). No pick-the-type and no confirm-the-summary question. Entered from a Reopen: take the type the note names.
-- **Uses**: Skill tool (`project-design`).
-- **Done**: one type set; its track is the one step 3 asks.
+- **Goal**: one ticket type set; a bug idea marked.
+- **Actions**: infer the type from the issue text and the gaps comment: `bug`, `enhancement`, `task` (a spike is a task whose deliverable is an answer), `skill`, or `ui` only when the skill `project-design` loads (try it; skip silently if absent). No pick-the-type and no confirm-the-summary question. Inferred `bug` → mark it through `aisf:github-issue`'s Mark a bug idea (adds `type: bug` only), with no question. Report the issue number and that the app starts `aisf:create-bug-ticket`. Entered from a Reopen: take the type the note names.
+- **Uses**: `aisf:github-issue`, Skill tool (`project-design`).
+- **Done**: a bug idea is marked `type: bug`; or one other type is set, and its track is the one step 3 asks.
 - **Exits**:
-  - one type set, its track picked → 3
+  - type `bug`, `type: bug` written → stop
+  - another type set, its track picked → 3
 
 ### 3. Interview
 
 - **Goal**: the drafted ticket passes the cold-read test, and a non-ui ticket has a Plan next answer.
 - **Actions**: ask the track's areas in rounds, in the track's order. Cover every area; skip one an earlier answer settled. Rough options come from the issue text. When answers show the idea is several tickets, propose the split as a question in a round: the first part (this ticket) and each other part with a one-line summary. An unknown the human cannot settle goes into the ticket as an open question; never omit it. Tracks:
-  - **Bug**: 1. Reproduction: exact trigger steps, the state before the failure. 2. Expected vs actual: concrete behaviour. 3. Frequency and scope: always, sometimes, specific data or device. 4. Environment: platform options from `project-toolchain`'s `platforms`; plus version and data state. 5. Impact: who is affected, is there a workaround. 6. Related tickets or commits.
   - **Enhancement or feature**: 1. User and goal. 2. Trigger or entry point: where in the app the flow starts; only when the feature has a surface a human sees. 3. Core behaviour: the happy path, step by step. 4. Edge cases and error states. 5. Non-goals: out of scope, explicitly. 6. Persistence: what must survive the next launch. 7. Constraints the user would notice: offline, instant, one platform. 8. Design or UX reference; only when the feature has UI. 9. Dependencies: blocked-by or related.
   - **UI**: the enhancement areas. Nothing about layout: the design run settles it.
   - **Skill**: the enhancement areas. Nothing about wording or structure of the text: the skill run settles it.
   - **Task or spike**: 1. Deliverable. 2. Why now: what it unblocks. 3. Constraints: time-box, output format. 4. Definition of done.
-  - **Plan next**: the last area of the bug, enhancement, skill and task tracks. The ui track has none. Ask it in the round that closes the interview, as one question card named `plan-next`, heading "Plan next". Two cards: value `plan` (plan this ticket next) and value `backlog` (park it in the backlog). No suggested card: no default. The answer is the Submit payload entry `answers[question="plan-next"].choice`: `plan` or `backlog`. A free-text answer that is not clearly one of the two: ask it again next round. Entered from a Reopen: keep the Plan next answer in the ledger unless the note names Plan next.
+  - **Plan next**: the last area of the enhancement, skill and task tracks. The ui track has none. Ask it in the round that closes the interview, as one question card named `plan-next`, heading "Plan next". Two cards: value `plan` (plan this ticket next) and value `backlog` (park it in the backlog). No suggested card: no default. The answer is the Submit payload entry `answers[question="plan-next"].choice`: `plan` or `backlog`. A free-text answer that is not clearly one of the two: ask it again next round. Entered from a Reopen: keep the Plan next answer in the ledger unless the note names Plan next.
 - **Uses**: `aisf:questionnaire` with page id `create-<n>`; stance "what is to be built only; no more technical than the requirement; effects in ticket terms (scope, criteria), never module or layer; cards never offer an implementation choice"; ledger line `area · answer · round N`, plus open questions. Plan next ledger line: `Plan next · plan|backlog · round N`.
 - **Done**: the drafted ticket passes `aisf:github-issue`'s cold-read test and, when non-ui, has a Plan next answer in the ledger; or a split was confirmed.
 - **Output**: ledger lines, including Plan next; the drafted ticket.
@@ -77,7 +77,7 @@ Turn an idea issue into a ticket through a what/why interview. How is `aisf:plan
 - **Output**: `summary.html`.
 - **Exits**:
   - Confirm → 6
-  - Reopen note names another type → 2 (steps 3, 5 run again, and 4 when a split is confirmed again; the ledger lines carry over; the drafted ticket, the spin-off list and `summary.html` are void)
+  - Reopen note names another type → 2 (a note naming bug is marked in 2 and the run stops; else steps 3, 5 run again, and 4 when a split is confirmed again; the ledger lines carry over; the drafted ticket, the spin-off list and `summary.html` are void)
   - Reopen with a note → 3 (step 5 runs again, and 4 when a split is confirmed again; the ledger lines and the type carry over; the drafted ticket is revised; the spin-off list and `summary.html` are void)
 
 ### 6. Write
@@ -92,4 +92,4 @@ Turn an idea issue into a ticket through a what/why interview. How is `aisf:plan
 
 ## Output
 
-Issue `<n>` rewritten in place with `type:`, `priority:` and `status: backlog` or `status: plan` (a `type: ui` idea stays an idea, no `status:`). Each spin-off posted as a bare idea. The report names the issue number, its status and each spin-off number.
+Issue `<n>` rewritten in place with `type:`, `priority:` and `status: backlog` or `status: plan` (a `type: ui` idea stays an idea, no `status:`). Each spin-off posted as a bare idea. The report names the issue number, its status and each spin-off number. Or: a bug idea marked `type: bug` (no title, body or other label changed), with the report naming its number and `aisf:create-bug-ticket`.
