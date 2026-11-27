@@ -1,9 +1,5 @@
 import type { Finding } from '../types/finding.js';
-
-export type FindingIssue = {
-  readonly title: string;
-  readonly body: string;
-};
+import type { FindingIssue } from '../types/finding-issue.js';
 
 export function describeFindingIssue(finding: Finding): FindingIssue {
   return {
