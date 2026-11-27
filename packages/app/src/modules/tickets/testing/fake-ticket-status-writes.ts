@@ -3,18 +3,25 @@ import type { TicketLiveState } from '../business/domain/types/ticket-live-state
 import type { RunPort, RunWait } from '../business/port/run/run-port.js';
 import type { TicketStatusWrites } from '../business/port/github/ticket-status-writes.js';
 import type { TicketStatus } from '../../../shared/ticket-status/ticket-status.js';
+import type { TicketType } from '../../../shared/ticket-type/ticket-type.js';
 
 export class FakeTicketStatusWrites implements TicketStatusWrites {
   readonly calls: string[] = [];
   liveStatus: TicketStatus = 'in-progress';
   liveWaiting = false;
   liveStuck = false;
+  liveTypes: ReadonlyArray<TicketType> = [];
   openSpike = false;
   setStatusFailure: Error | undefined;
 
   async readState(): Promise<TicketLiveState> {
     this.calls.push('readState');
-    return { status: this.liveStatus, waiting: this.liveWaiting, stuck: this.liveStuck };
+    return {
+      status: this.liveStatus,
+      waiting: this.liveWaiting,
+      stuck: this.liveStuck,
+      types: this.liveTypes,
+    };
   }
 
   async setSecondaryState(
