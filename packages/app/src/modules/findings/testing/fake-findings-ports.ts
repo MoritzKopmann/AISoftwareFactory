@@ -1,7 +1,8 @@
+import type { FindingIssue } from '../business/domain/types/finding-issue.js';
 import type { ProjectPort } from '../business/port/project/project-port.js';
 import type { TicketPort } from '../business/port/ticket/ticket-port.js';
 import type { ProjectDto, ProjectsApi } from '../../projects/index.js';
-import type { RepositoryReferenceDto, TicketsApi } from '../../tickets/index.js';
+import type { IdeaDto, RepositoryReferenceDto, TicketsApi } from '../../tickets/index.js';
 
 export const repository = { owner: 'moritz', name: 'aisf' };
 
@@ -17,16 +18,16 @@ export const knownProject: ProjectDto = {
 export class FakeTicketPort implements TicketPort {
   createdNumber = 200;
   error: Error | undefined;
-  readonly createdTickets: Array<{ readonly title: string; readonly body: string }> = [];
+  readonly createdTickets: Array<FindingIssue> = [];
 
   async create(
     _repository: { readonly owner: string; readonly name: string },
-    ticket: { readonly title: string; readonly body: string },
+    issue: FindingIssue,
   ): Promise<number> {
     if (this.error !== undefined) {
       throw this.error;
     }
-    this.createdTickets.push(ticket);
+    this.createdTickets.push(issue);
     return this.createdNumber;
   }
 }
@@ -49,12 +50,9 @@ export class FakeProjectsApi implements Pick<ProjectsApi, 'list'> {
 
 export class FakeTicketsApi implements Pick<TicketsApi, 'createIdea'> {
   createdNumber = 200;
-  readonly createdIdeas: Array<{ readonly title: string; readonly body: string }> = [];
+  readonly createdIdeas: Array<IdeaDto> = [];
 
-  async createIdea(
-    _repository: RepositoryReferenceDto,
-    idea: { readonly title: string; readonly body: string },
-  ): Promise<number> {
+  async createIdea(_repository: RepositoryReferenceDto, idea: IdeaDto): Promise<number> {
     this.createdIdeas.push(idea);
     return this.createdNumber;
   }
