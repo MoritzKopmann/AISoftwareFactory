@@ -6,6 +6,7 @@ import type {
 } from '@aisf/app/api-schemas/tickets-schemas.js';
 import { describeLabelMarker, type LabelMarker } from '../board/describe-label-marker.js';
 import { describeTicketStatusMark, type StatusMark } from '../board/describe-ticket-status-mark.js';
+import { describeTypeChips, type TypeChip } from '../board/describe-type-chips.js';
 import { formatClockTime } from '../board/format-clock-time.js';
 import { ticketStatusLabel } from '../board/ticket-status-labels.js';
 import type { RunSkill } from './describe-run-bar.js';
@@ -39,6 +40,7 @@ export type TicketPageDescription =
       readonly url: string;
       readonly body: string;
       readonly runSkill: RunSkill;
+      readonly typeChips: ReadonlyArray<TypeChip>;
       readonly reviewPanel?: ReviewPanelDescription;
       readonly parent?: {
         readonly href: string;
@@ -76,6 +78,7 @@ function describeLoadedTicket(ticket: TicketResponse, projectId: string): Ticket
     url: ticket.url,
     body: ticket.body,
     runSkill: runSkillFor(ticket),
+    typeChips: describeTypeChips(ticket.types),
     ...(reviewPanel.kind === 'shown' ? { reviewPanel } : {}),
     ...(ticket.parent === undefined
       ? {}

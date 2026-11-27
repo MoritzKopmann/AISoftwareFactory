@@ -15,9 +15,7 @@ describe('describeTicketCard', () => {
       title: 'Plain',
       backlog: false,
       hitl: false,
-      spike: false,
-      ui: false,
-      skill: false,
+      typeChips: [],
       blockerLabels: [],
       conflictLabels: [],
       pullRequestChips: [],
@@ -53,29 +51,23 @@ describe('describeTicketCard', () => {
     expect(card.hitl).toBe(true);
   });
 
-  it('should flag a spike when the ticket types include spike', () => {
-    const card = describeTicketCard(buildTicketResponse({ types: ['spike'] }), 'o/n', []);
-    expect(card.spike).toBe(true);
+  it('should carry a BUG type chip when the ticket types are only bug', () => {
+    const card = describeTicketCard(buildTicketResponse({ types: ['bug'] }), 'o/n', []);
+    expect(card.typeChips).toEqual([{ type: 'bug', label: 'BUG' }]);
   });
 
-  it('should flag ui when the ticket types include ui', () => {
-    const card = describeTicketCard(buildTicketResponse({ types: ['ui'] }), 'o/n', []);
-    expect(card.ui).toBe(true);
+  it('should carry the type chips in the order UI, SPIKE, SKILL, BUG when the ticket has all four types', () => {
+    const card = describeTicketCard(
+      buildTicketResponse({ types: ['bug', 'skill', 'ui', 'spike'] }),
+      'o/n',
+      [],
+    );
+    expect(card.typeChips.map((chip) => chip.label)).toEqual(['UI', 'SPIKE', 'SKILL', 'BUG']);
   });
 
-  it('should not flag ui when the ticket types do not include ui', () => {
-    const card = describeTicketCard(buildTicketResponse({ types: ['spike'] }), 'o/n', []);
-    expect(card.ui).toBe(false);
-  });
-
-  it('should flag skill when the ticket types include skill', () => {
-    const card = describeTicketCard(buildTicketResponse({ types: ['skill'] }), 'o/n', []);
-    expect(card.skill).toBe(true);
-  });
-
-  it('should not flag skill when the ticket types do not include skill', () => {
-    const card = describeTicketCard(buildTicketResponse({ types: ['ui'] }), 'o/n', []);
-    expect(card.skill).toBe(false);
+  it('should carry no type chip when the ticket types are only enhancement', () => {
+    const card = describeTicketCard(buildTicketResponse({ types: ['enhancement'] }), 'o/n', []);
+    expect(card.typeChips).toEqual([]);
   });
 
   it('should list only open blockers, qualified when in another repository', () => {

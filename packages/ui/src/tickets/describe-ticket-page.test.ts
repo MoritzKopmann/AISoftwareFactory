@@ -93,7 +93,25 @@ describe('describeTicketPage', () => {
       url: 'https://github.com/MoritzKopmann/postkarte/issues/36',
       body: '',
       runSkill: 'implement-ticket',
+      typeChips: [],
     });
+  });
+
+  it('should carry a UI chip and a BUG chip when the ticket types are ui and bug', () => {
+    const ticket = buildTicketResponse({ types: ['ui', 'bug'] });
+
+    expect(describeTicketPage(answered(ticket), projectId, 1)).toMatchObject({
+      typeChips: [
+        { type: 'ui', label: 'UI' },
+        { type: 'bug', label: 'BUG' },
+      ],
+    });
+  });
+
+  it('should carry no type chip when the ticket types are only enhancement', () => {
+    const ticket = buildTicketResponse({ types: ['enhancement'] });
+
+    expect(describeTicketPage(answered(ticket), projectId, 1)).toMatchObject({ typeChips: [] });
   });
 
   it('should pass the ticket body on when the ticket loads', () => {

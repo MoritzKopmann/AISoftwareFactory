@@ -71,6 +71,7 @@
   --hitl: #6b47c2;
   --ui: #0b7a75;
   --skill: #5f6f00;
+  --bug: #a8248f;
   --path-b: #0b7a75;
 
   --font-ui: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif;
@@ -131,6 +132,7 @@
     --hitl: #baa0ff;
     --ui: #4fd1c5;
     --skill: #b8d64a;
+    --bug: #f07fd8;
     --path-b: #4fd1c5;
 
     color-scheme: dark;
@@ -157,6 +159,7 @@
   --hitl: #baa0ff;
   --ui: #4fd1c5;
   --skill: #b8d64a;
+  --bug: #f07fd8;
   --path-b: #4fd1c5;
 
   color-scheme: dark;

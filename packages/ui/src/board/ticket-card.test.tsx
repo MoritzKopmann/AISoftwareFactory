@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { TicketCardDescription } from './describe-ticket-card.js';
+import type { TypeChip } from './describe-type-chips.js';
 import { TicketCard } from './ticket-card.js';
 
 function buildCard(overrides: Partial<TicketCardDescription> = {}): TicketCardDescription {
@@ -11,9 +12,7 @@ function buildCard(overrides: Partial<TicketCardDescription> = {}): TicketCardDe
     title: 'A ticket',
     backlog: false,
     hitl: false,
-    spike: false,
-    ui: false,
-    skill: false,
+    typeChips: [],
     blockerLabels: [],
     conflictLabels: [],
     pullRequestChips: [],
@@ -21,10 +20,15 @@ function buildCard(overrides: Partial<TicketCardDescription> = {}): TicketCardDe
   };
 }
 
+const uiChip: TypeChip = { type: 'ui', label: 'UI' };
+const spikeChip: TypeChip = { type: 'spike', label: 'SPIKE' };
+const skillChip: TypeChip = { type: 'skill', label: 'SKILL' };
+const bugChip: TypeChip = { type: 'bug', label: 'BUG' };
+
 describe('TicketCard', () => {
   it('should show a SPIKE chip and no HITL chip when the ticket is a spike without hitl', () => {
     const markup = renderToStaticMarkup(
-      <TicketCard {...buildCard({ spike: true })} projectId="o/n" />,
+      <TicketCard {...buildCard({ typeChips: [spikeChip] })} projectId="o/n" />,
     );
 
     expect(markup).toContain('<span class="chip spike">SPIKE</span>');
@@ -39,7 +43,7 @@ describe('TicketCard', () => {
 
   it('should show the HITL chip directly followed by the SPIKE chip when the ticket is a hitl spike', () => {
     const markup = renderToStaticMarkup(
-      <TicketCard {...buildCard({ hitl: true, spike: true })} projectId="o/n" />,
+      <TicketCard {...buildCard({ hitl: true, typeChips: [spikeChip] })} projectId="o/n" />,
     );
 
     expect(markup).toContain(
@@ -49,7 +53,7 @@ describe('TicketCard', () => {
 
   it('should show the UI chip in the meta row when the ticket is ui and has no other flag', () => {
     const markup = renderToStaticMarkup(
-      <TicketCard {...buildCard({ ui: true })} projectId="o/n" />,
+      <TicketCard {...buildCard({ typeChips: [uiChip] })} projectId="o/n" />,
     );
 
     expect(markup).toContain('<span class="meta"><span class="chip ui">UI</span></span>');
@@ -63,7 +67,7 @@ describe('TicketCard', () => {
 
   it('should show the HITL chip directly followed by the UI chip when the ticket is a hitl ui ticket', () => {
     const markup = renderToStaticMarkup(
-      <TicketCard {...buildCard({ hitl: true, ui: true })} projectId="o/n" />,
+      <TicketCard {...buildCard({ hitl: true, typeChips: [uiChip] })} projectId="o/n" />,
     );
 
     expect(markup).toContain('<span class="chip hitl">HITL</span><span class="chip ui">UI</span>');
@@ -71,7 +75,7 @@ describe('TicketCard', () => {
 
   it('should show the SKILL chip in the meta row when the ticket is skill and has no other flag', () => {
     const markup = renderToStaticMarkup(
-      <TicketCard {...buildCard({ skill: true })} projectId="o/n" />,
+      <TicketCard {...buildCard({ typeChips: [skillChip] })} projectId="o/n" />,
     );
 
     expect(markup).toContain('<span class="meta"><span class="chip skill">SKILL</span></span>');
@@ -79,12 +83,29 @@ describe('TicketCard', () => {
 
   it('should show the chips in the order HITL, SPIKE, SKILL when the ticket has all three', () => {
     const markup = renderToStaticMarkup(
-      <TicketCard {...buildCard({ hitl: true, spike: true, skill: true })} projectId="o/n" />,
+      <TicketCard
+        {...buildCard({ hitl: true, typeChips: [spikeChip, skillChip] })}
+        projectId="o/n"
+      />,
     );
 
     expect(markup).toContain(
       '<span class="chip hitl">HITL</span><span class="chip spike">SPIKE</span><span class="chip skill">SKILL</span>',
     );
+  });
+
+  it('should show the BUG chip in the meta row when the ticket is bug and has no other flag', () => {
+    const markup = renderToStaticMarkup(
+      <TicketCard {...buildCard({ typeChips: [bugChip] })} projectId="o/n" />,
+    );
+
+    expect(markup).toContain('<span class="meta"><span class="chip bug">BUG</span></span>');
+  });
+
+  it('should show no meta row when the ticket has no type chip and no other meta item', () => {
+    const markup = renderToStaticMarkup(<TicketCard {...buildCard()} projectId="o/n" />);
+
+    expect(markup).not.toContain('class="meta"');
   });
 
   it('should show no SKILL chip when the ticket is not skill', () => {
