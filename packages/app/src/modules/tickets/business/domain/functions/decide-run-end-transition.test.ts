@@ -6,7 +6,7 @@ import type { TicketLiveState } from '../types/ticket-live-state.js';
 import type { TicketStatus } from '../../../../../shared/ticket-status/ticket-status.js';
 
 function live(status: TicketStatus, flags: Partial<TicketLiveState> = {}): TicketLiveState {
-  return { status, waiting: false, stuck: false, ...flags };
+  return { status, waiting: false, stuck: false, types: [], ...flags };
 }
 
 describe('decideRunEndTransition', () => {

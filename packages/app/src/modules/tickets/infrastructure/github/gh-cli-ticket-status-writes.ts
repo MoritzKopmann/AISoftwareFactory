@@ -1,4 +1,5 @@
 import { deriveTicketStatus } from '../../business/domain/functions/derive-ticket-status.js';
+import { deriveTicketTypes } from '../../business/domain/functions/derive-ticket-types.js';
 import { deriveSecondaryStates } from '../../business/domain/functions/derive-secondary-states.js';
 import type { TicketLiveState } from '../../business/domain/types/ticket-live-state.js';
 import type { TicketStatus } from '../../../../shared/ticket-status/ticket-status.js';
@@ -26,6 +27,7 @@ export class GhCliTicketStatusWrites implements TicketStatusWrites {
         labelNames,
       }).status,
       ...deriveSecondaryStates({ labelNames }),
+      types: deriveTicketTypes(labelNames),
     };
   }
 
