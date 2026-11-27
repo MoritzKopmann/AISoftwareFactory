@@ -37,11 +37,19 @@ export function decideRunEndTransition(
       ? { kind: 'return-to-ready' }
       : { kind: 'none' };
   }
-  if (!runningStatuses[stage].includes(live.status) || live.stuck) {
+  if (!isRunning(live, stage) || live.stuck) {
     return { kind: 'none' };
   }
   if (isFinishedRework(ending, live, stage)) {
     return { kind: 'none' };
+  }
+  // A bug run left at `plan` would be started again every poll.
+  if (isBugRunAtPlan(live, stage) && ending.kind === 'finished') {
+    return {
+      kind: 'flag',
+      state: 'stuck',
+      comment: 'The bug run finished but the ticket is still at plan',
+    };
   }
   // An authoring run that ends `finished` is normal: the ticket moved on by itself.
   // A plan run left at `plan` with no open spike would be started again every poll.
@@ -61,6 +69,14 @@ export function decideRunEndTransition(
     return { kind: 'flag', state: 'waiting', comment: describeEnding(ending) };
   }
   return { kind: 'flag', state: 'stuck', comment: describeEnding(ending) };
+}
+
+function isRunning(live: TicketLiveState, stage: RunStage): boolean {
+  return runningStatuses[stage].includes(live.status) || isBugRunAtPlan(live, stage);
+}
+
+function isBugRunAtPlan(live: TicketLiveState, stage: RunStage): boolean {
+  return stage === 'create' && live.types.includes('bug') && live.status === 'plan';
 }
 
 function isAuthoringStage(stage: RunStage): boolean {

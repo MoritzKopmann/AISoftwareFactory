@@ -4,6 +4,7 @@ import type { RunStage } from '../types/run-stage.js';
 import type { RunEnding } from '../types/run-ending.js';
 import type { TicketLiveState } from '../types/ticket-live-state.js';
 import type { TicketStatus } from '../../../../../shared/ticket-status/ticket-status.js';
+import type { TicketType } from '../../../../../shared/ticket-type/ticket-type.js';
 
 function live(status: TicketStatus, flags: Partial<TicketLiveState> = {}): TicketLiveState {
   return { status, waiting: false, stuck: false, types: [], ...flags };
@@ -386,6 +387,71 @@ describe('decideRunEndTransition for a plan run that finished', () => {
     expect(decideRunEndTransition(finished, live('idea'), 'create', false)).toEqual({
       kind: 'none',
     });
+  });
+});
+
+describe('decideRunEndTransition for a create run on a bug ticket', () => {
+  const bugAt = (status: TicketStatus, flags: Partial<TicketLiveState> = {}): TicketLiveState =>
+    live(status, { types: ['bug'], ...flags });
+
+  it('should mark the ticket stuck when the bug run finished and the ticket is still at plan', () => {
+    const ending: RunEnding = { kind: 'finished' };
+
+    const transition = decideRunEndTransition(ending, bugAt('plan'), 'create');
+
+    expect(transition).toEqual({
+      kind: 'flag',
+      state: 'stuck',
+      comment: 'The bug run finished but the ticket is still at plan',
+    });
+  });
+
+  it('should mark the ticket stuck with the crash comment when the bug run crashed at plan', () => {
+    const ending: RunEnding = { kind: 'crashed', reason: 'boom' };
+
+    const transition = decideRunEndTransition(ending, bugAt('plan'), 'create');
+
+    expect(transition).toEqual({ kind: 'flag', state: 'stuck', comment: 'The run crashed: boom' });
+  });
+
+  it('should mark the ticket waiting with the request when the bug run reached its checkpoint at plan', () => {
+    const ending: RunEnding = { kind: 'checkpoint', request: 'Answer on the page' };
+
+    const transition = decideRunEndTransition(ending, bugAt('plan'), 'create');
+
+    expect(transition).toEqual({
+      kind: 'flag',
+      state: 'waiting',
+      comment:
+        'The run reached its human checkpoint and waits for an answer on the ticket page:\n\nAnswer on the page',
+    });
+  });
+
+  it('should write nothing when the bug run finished and the ticket is already stuck at plan', () => {
+    const ending: RunEnding = { kind: 'finished' };
+
+    const transition = decideRunEndTransition(ending, bugAt('plan', { stuck: true }), 'create');
+
+    expect(transition).toEqual({ kind: 'none' });
+  });
+
+  it('should write nothing when the bug run finished and moved the ticket on to ready', () => {
+    const ending: RunEnding = { kind: 'finished' };
+
+    const transition = decideRunEndTransition(ending, bugAt('ready'), 'create');
+
+    expect(transition).toEqual({ kind: 'none' });
+  });
+
+  it.each<[ReadonlyArray<TicketType>, RunEnding]>([
+    [[], { kind: 'finished' }],
+    [[], { kind: 'crashed', reason: 'x' }],
+    [['enhancement'], { kind: 'finished' }],
+    [['enhancement'], { kind: 'crashed', reason: 'x' }],
+  ])('should write nothing when a create run on types %o ended %o at plan', (types, ending) => {
+    const transition = decideRunEndTransition(ending, live('plan', { types }), 'create');
+
+    expect(transition).toEqual({ kind: 'none' });
   });
 });
 
