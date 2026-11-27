@@ -197,6 +197,15 @@ describe('FindingService', () => {
       expect(await findingRepository.findById(1)).toEqual(ticketed);
     });
 
+    it('should pass types bug to the port and mark the finding ticketed when a bug finding is ticketed', async () => {
+      await findingRepository.insert({ ...newFinding, kind: 'bug' });
+
+      await findingService.createTicket('moritz/aisf', 2);
+
+      expect(ticketPort.createdTickets).toEqual([expect.objectContaining({ types: ['bug'] })]);
+      expect(await findingRepository.findById(2)).toMatchObject({ state: 'ticketed' });
+    });
+
     it('should create only one issue when Create ticket is used twice at once', async () => {
       const outcomes = await Promise.allSettled([
         findingService.createTicket('moritz/aisf', 1),
