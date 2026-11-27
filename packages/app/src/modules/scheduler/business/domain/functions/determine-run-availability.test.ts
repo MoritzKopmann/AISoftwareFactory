@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { determineRunAvailability } from './determine-run-availability.js';
 import type { RunAvailabilityInput } from '../types/run-availability-input.js';
 import type { SchedulableTicket } from '../types/schedulable-ticket.js';
+import type { TicketType } from '../../../../../shared/ticket-type/ticket-type.js';
 
 const readyLeaf: SchedulableTicket = {
   number: 42,
@@ -236,6 +237,54 @@ describe('determineRunAvailability', () => {
 
       expect(determineRunAvailability(buildInput({ trigger: 'auto', ticket }))).toEqual({
         kind: 'available',
+      });
+    });
+
+    describe('bug idea', () => {
+      const bugIdea: SchedulableTicket = { ...readyLeaf, status: 'idea', types: ['bug'] };
+
+      it('should be available when nothing holds the bug idea back', () => {
+        expect(determineRunAvailability(buildInput({ trigger: 'auto', ticket: bugIdea }))).toEqual({
+          kind: 'available',
+        });
+      });
+
+      it.each<[string, Partial<RunAvailabilityInput>, string]>([
+        ['the project is paused', { projectPaused: true }, 'The project is paused'],
+        ['the idea is stuck', { ticket: { ...bugIdea, stuck: true } }, '#42 is stuck'],
+        [
+          'the idea is waiting',
+          { ticket: { ...bugIdea, waiting: true } },
+          '#42 is waiting for a human',
+        ],
+        [
+          'the usage limit is reached',
+          { usagePausedUntil: '2026-10-18T15:00:00.000Z' },
+          'Usage limit reached, resets at 2026-10-18T15:00:00.000Z',
+        ],
+      ])('should be disabled with the reason when %s', (_description, overrides, reason) => {
+        const input = buildInput({ trigger: 'auto', ticket: bugIdea, ...overrides });
+
+        expect(determineRunAvailability(input)).toEqual({ kind: 'disabled', reason });
+      });
+
+      it('should be absent when the bug idea has an open blocker', () => {
+        const ticket: SchedulableTicket = { ...bugIdea, hasOpenBlocker: true };
+
+        expect(determineRunAvailability(buildInput({ trigger: 'auto', ticket }))).toEqual({
+          kind: 'absent',
+        });
+      });
+    });
+
+    it.each<[string, ReadonlyArray<TicketType>]>([
+      ['no type', []],
+      ['type skill', ['skill']],
+    ])('should be absent when the ticket is an idea with %s', (_description, types) => {
+      const ticket: SchedulableTicket = { ...readyLeaf, status: 'idea', types };
+
+      expect(determineRunAvailability(buildInput({ trigger: 'auto', ticket }))).toEqual({
+        kind: 'absent',
       });
     });
 
