@@ -1,4 +1,5 @@
 import type { TicketResponse } from '@aisf/app/api-schemas/tickets-schemas.js';
+import { describeTypeChips, type TypeChip } from './describe-type-chips.js';
 import { describeLabelMarker, type LabelMarker } from './describe-label-marker.js';
 import { ticketStatusLabel } from './ticket-status-labels.js';
 
@@ -12,9 +13,7 @@ export type TicketCardDescription = {
   readonly backlog: boolean;
   readonly parentTitle?: string;
   readonly hitl: boolean;
-  readonly spike: boolean;
-  readonly ui: boolean;
-  readonly skill: boolean;
+  readonly typeChips: ReadonlyArray<TypeChip>;
   readonly blockerLabels: ReadonlyArray<string>;
   readonly conflictLabels: ReadonlyArray<string>;
   readonly pullRequestChips: ReadonlyArray<{ readonly label: string }>;
@@ -56,9 +55,7 @@ export function describeTicketCard(
     backlog: ticket.status === 'backlog',
     ...(ticket.parent === undefined ? {} : { parentTitle: ticket.parent.title }),
     hitl: ticket.hitl,
-    spike: ticket.types.includes('spike'),
-    ui: ticket.types.includes('ui'),
-    skill: ticket.types.includes('skill'),
+    typeChips: describeTypeChips(ticket.types),
     blockerLabels,
     conflictLabels: ticket.conflictingStatuses.map((status) =>
       ticketStatusLabel(status).toLowerCase(),

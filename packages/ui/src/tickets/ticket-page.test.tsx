@@ -23,6 +23,7 @@ function loaded(overrides: Partial<LoadedDescription> = {}): LoadedDescription {
     url: 'https://github.com/o/n/issues/56',
     body: 'Some body',
     runSkill: 'implement-ticket',
+    typeChips: [],
     ...overrides,
   };
 }
@@ -113,6 +114,28 @@ describe('TicketPageView', () => {
     expect(markup).toMatch(
       /<div class="tp-chips"><span class="chip flow">.*?In progress<\/span><span class="chip hitl">.*?Waiting<\/span><a class="ext"[^>]*>Open on GitHub<\/a>/,
     );
+  });
+
+  it('should show the UI chip and the BUG chip after the status chip and the Waiting chip, before Open on GitHub, when the ticket is ui and bug', () => {
+    const markup = render(
+      loaded({
+        marker: 'waiting',
+        typeChips: [
+          { type: 'ui', label: 'UI' },
+          { type: 'bug', label: 'BUG' },
+        ],
+      }),
+    );
+
+    expect(markup).toMatch(
+      /<div class="tp-chips"><span class="chip neutral">.*?Ready<\/span><span class="chip hitl">.*?Waiting<\/span><span class="chip ui">UI<\/span><span class="chip bug">BUG<\/span><a class="ext"[^>]*>Open on GitHub<\/a>/,
+    );
+  });
+
+  it('should show no type chip in the top bar when the ticket has no type chip', () => {
+    const markup = render(loaded());
+
+    expect(markup).not.toMatch(/class="chip (ui|spike|skill|bug)"/);
   });
 
   it('should end the top bar with the session toggle in the run actions slot when the ticket is loaded', () => {

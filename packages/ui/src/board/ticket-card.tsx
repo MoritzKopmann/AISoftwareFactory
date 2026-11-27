@@ -1,6 +1,7 @@
 import { CardMoveToPlanAction } from './card-move-to-plan-action.js';
 import type { TicketCardDescription } from './describe-ticket-card.js';
 import { RunMarkerChip } from './run-marker-chip.js';
+import { TypeChips } from './type-chips.js';
 
 export function TicketCard({
   projectId,
@@ -11,9 +12,7 @@ export function TicketCard({
   backlog,
   parentTitle,
   hitl,
-  spike,
-  ui,
-  skill,
+  typeChips,
   blockerLabels,
   conflictLabels,
   pullRequestChips,
@@ -23,9 +22,7 @@ export function TicketCard({
     runMarker !== undefined ||
     conflictLabels.length > 0 ||
     hitl ||
-    spike ||
-    ui ||
-    skill ||
+    typeChips.length > 0 ||
     blockerLabels.length > 0 ||
     pullRequestChips.length > 0;
   const parentLine = parentTitle !== undefined && <span className="parent">↳ {parentTitle}</span>;
@@ -34,9 +31,7 @@ export function TicketCard({
       {runMarker !== undefined && <RunMarkerChip marker={runMarker} />}
       {conflictLabels.length > 0 && <span>{conflictLabels.join(' · ')}</span>}
       {hitl && <span className="chip hitl">HITL</span>}
-      {ui && <span className="chip ui">UI</span>}
-      {spike && <span className="chip spike">SPIKE</span>}
-      {skill && <span className="chip skill">SKILL</span>}
+      <TypeChips chips={typeChips} />
       {blockerLabels.map((label) => (
         <span key={label}>{label}</span>
       ))}

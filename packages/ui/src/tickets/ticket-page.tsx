@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import type { LiveUpdates } from '../live/live-updates.js';
 import { useLiveRead } from '../live/use-live-read.js';
 import { RunMarkerChip } from '../board/run-marker-chip.js';
+import { TypeChips } from '../board/type-chips.js';
 import { KnownBugs } from '../findings/known-bugs.js';
 import {
   describeTicketPage,
@@ -227,6 +228,7 @@ function LoadedTicket({
                     {description.marker !== undefined && (
                       <RunMarkerChip marker={description.marker} />
                     )}
+                    <TypeChips chips={description.typeChips} />
                     <a className="ext" href={description.url} target="_blank" rel="noopener">
                       Open on GitHub
                     </a>
