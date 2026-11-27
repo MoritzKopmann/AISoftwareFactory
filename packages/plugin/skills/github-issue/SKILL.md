@@ -18,12 +18,14 @@ and start work without asking the author anything.
 
 ## Modes
 
-| Mode              | Writes                                                                                                                                                |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Edit in place** | Rewrites title and body, adds `type:`, `priority:` and `status: backlog` or `status: plan`. See _Edit an idea in place_.                              |
-| **Bare idea**     | Minimal issue, no labels. See _Bare ideas_.                                                                                                           |
-| **Sub-issue**     | Child of a parent: `status: ready`, `hitl` where confirmed; a UI child is an idea with `project-design`, else `status: backlog`. See _Relationships_. |
-| **Split part**    | Child of a split umbrella: full anatomy, `status: plan`, parent's `type:` and `priority:`. See _Split part_.                                          |
+| Mode                | Writes                                                                                                                                                |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Edit in place**   | Rewrites title and body, adds `type:`, `priority:` and `status: backlog` or `status: plan`. See _Edit an idea in place_.                              |
+| **Bare idea**       | Minimal issue, no labels. See _Bare ideas_.                                                                                                           |
+| **Sub-issue**       | Child of a parent: `status: ready`, `hitl` where confirmed; a UI child is an idea with `project-design`, else `status: backlog`. See _Relationships_. |
+| **Split part**      | Child of a split umbrella: full anatomy, `status: plan`, parent's `type:` and `priority:`. See _Split part_.                                          |
+| **Mark a bug idea** | Adds `type: bug` to an idea, nothing else. See _Mark a bug idea_ under _Posting_.                                                                     |
+| **Close**           | Comments the reason, closes as not planned. See _Close_.                                                                                              |
 
 ## Anatomy of a good ticket
 
@@ -81,7 +83,8 @@ Types:
 - `type: skill`: text written for agents: skills, agent definitions, commands, CLAUDE.md, memory-style files.
 
 - Every **labelled** issue has exactly one `type:`, one `priority:` and one `status:`.
-  Bare ideas have none.
+  Bare ideas have none. Exceptions: a `type: ui` idea has `type:` and `priority:`, no `status:`.
+  A **bug idea** carries only `type: bug`: no `priority:`, no `status:`.
 - **Never create a label.** If `gh` reports a label as missing, the project isn't
   onboarded: stop and report "project not onboarded", naming the missing label.
 - Write no other labels. Labels outside these families on an issue are left alone.
@@ -90,18 +93,21 @@ Types:
 
 An open issue with **no** `status:` label is an **idea**. Done is the closed state.
 
-| State           | Stored as                                       |
-| --------------- | ----------------------------------------------- |
-| **idea**        | open, no `status:` label                        |
-| **backlog**     | `status: backlog`                               |
-| **plan**        | `status: plan`; may have an open spike child    |
-| **planned**     | `status: planned`, has sub-issues               |
-| **ready**       | `status: ready`, no sub-issues                  |
-| **in-progress** | `status: in-progress`                           |
-| **in-review**   | `status: in-review`, plus a PR with `Closes #N` |
-| _(closed)_      | closed state; leftover labels are ignored       |
+| State           | Stored as                                            |
+| --------------- | ---------------------------------------------------- |
+| **idea**        | open, no `status:` label                             |
+| **bug idea**    | open, `type: bug` only, no `status:`, no `priority:` |
+| **backlog**     | `status: backlog`                                    |
+| **plan**        | `status: plan`; may have an open spike child         |
+| **planned**     | `status: planned`, has sub-issues                    |
+| **ready**       | `status: ready`, no sub-issues                       |
+| **in-progress** | `status: in-progress`                                |
+| **in-review**   | `status: in-review`, plus a PR with `Closes #N`      |
+| _(closed)_      | closed state; leftover labels are ignored            |
 
 - Never `backlog → in-progress` — plan first.
+- A bug idea goes `idea → ready`, written by `aisf:create-bug-ticket`; it never goes through plan.
+  A ready bug leaf carries `## Reproduction`, `## Cause` and `## Trigger` instead of a `## Spec`.
 - **`waiting` and `stuck` are labels beside the status, not statuses.** A ticket keeps its
   lifecycle status while it waits or is stuck. The app adds `waiting` (plus a comment with the
   request) when a run ends at its human checkpoint, and removes it on the answer. It adds
@@ -154,8 +160,8 @@ gh issue view <n> --json body --jq '.body | length'
 
 For `create-ticket` on an existing idea `#N`:
 
-1. Guard: `#N` must have no `status:` label (`idea → backlog`, `idea → plan`, or `idea → idea`
-   for `type: ui`). Otherwise stop and report its state.
+1. Guard: `#N` must have no `status:` label (`idea → backlog`, `idea → plan`, `idea → idea`
+   for `type: ui`, or `idea → ready` for a `type: bug` idea). Otherwise stop and report its state.
 2. Rewrite title and body from the interview; the body gets the full anatomy and passes the
    cold-read test. Open questions stay in the body. GitHub's edit history keeps the original idea text, so don't quote it back.
 3. Read the `type:` and `priority:` labels `#N` already has. The list may be empty:
@@ -182,6 +188,26 @@ For `create-ticket` on an existing idea `#N`:
      --add-label "type: ui" --add-label "priority: <x>" \
      --remove-label "<stale type: or priority: label>"
    ```
+
+   A `type: bug` idea (`idea → ready`) keeps `type: bug` and gains `priority:` and `status: ready`:
+
+   ```bash
+   gh issue edit <n> --title "<title>" --body-file <tmp> \
+     --add-label "priority: <x>" --add-label "status: ready"
+   ```
+
+### Mark a bug idea
+
+Marks an idea as a bug idea.
+
+1. Guard `idea → idea`: `#N` must have no `status:` label. Otherwise stop and report its state.
+2. Add the label:
+
+   ```bash
+   gh issue edit <n> --add-label "type: bug"
+   ```
+
+Nothing else is written: no title, body, priority or status.
 
 ### Bare ideas
 
@@ -270,6 +296,23 @@ note), write the text to a temp file, then:
 ```bash
 gh issue comment <n> --body-file <tmp>
 ```
+
+## Close
+
+For an issue that will not be built.
+
+1. Write the reason as a comment, per _Comments_.
+2. Close it:
+
+   ```bash
+   gh issue close <n> --reason "not planned"
+   ```
+
+3. Read back. The result must be `CLOSED`, else stop and report:
+
+   ```bash
+   gh issue view <n> --json state --jq .state
+   ```
 
 ## The app died mid-answer
 
