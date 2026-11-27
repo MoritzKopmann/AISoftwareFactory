@@ -5,7 +5,7 @@ const rankByStatus: Readonly<Partial<Record<ReviewedTicket['status'], number>>> 
   ready: 1,
   plan: 2,
 };
-const uiIdeaRank = 3;
+const autoIdeaRank = 3;
 
 export function rankDueTickets(
   tickets: ReadonlyArray<ReviewedTicket>,
@@ -17,7 +17,11 @@ export function rankDueTickets(
 
 function rankOf({ status, types }: ReviewedTicket): number | undefined {
   if (status === 'idea') {
-    return types.includes('ui') ? uiIdeaRank : undefined;
+    return startsWithoutRunPress(types) ? autoIdeaRank : undefined;
   }
   return rankByStatus[status];
+}
+
+function startsWithoutRunPress(types: ReviewedTicket['types']): boolean {
+  return types.includes('ui') || types.includes('bug');
 }

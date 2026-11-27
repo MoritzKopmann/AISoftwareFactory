@@ -83,7 +83,7 @@ function isRunnableTicket(ticket: SchedulableTicket, lastRunEndedAt: string | un
 }
 
 function isPlainIdea(ticket: SchedulableTicket): boolean {
-  return ticket.status === 'idea' && !ticket.types.includes('ui');
+  return ticket.status === 'idea' && !ticket.types.includes('ui') && !ticket.types.includes('bug');
 }
 
 function isOnboardTicket(ticket: SchedulableTicket): boolean {
