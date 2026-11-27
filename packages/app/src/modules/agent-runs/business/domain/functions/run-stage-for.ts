@@ -6,6 +6,9 @@ export function runStageFor(ticket: {
   readonly status: TicketStatus;
   readonly types: ReadonlyArray<TicketType>;
 }): RunStage {
+  if (ticket.types.includes('bug')) {
+    return isBeforeReady(ticket.status) ? 'create' : 'implement';
+  }
   if (ticket.status === 'idea') {
     if (ticket.types.includes('ui')) {
       return 'design';
@@ -19,4 +22,8 @@ export function runStageFor(ticket: {
     return 'onboard';
   }
   return ticket.types.includes('spike') ? 'spike' : 'implement';
+}
+
+function isBeforeReady(status: TicketStatus): boolean {
+  return status === 'idea' || status === 'plan';
 }

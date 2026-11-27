@@ -3,7 +3,6 @@ import type { Clock } from '../../../../shared/clock/clock.js';
 import type { EventPublisher } from '../../../../shared/event-bus.js';
 import type { Identifiers } from '../../../../shared/identifiers/identifiers.js';
 import type { Logger } from '../../../../shared/logger/create-logger.js';
-import { stageModels } from '../domain/constants/stage-models.js';
 import { uiImplementSkill } from '../domain/constants/ui-skills.js';
 import { stageSkills } from '../domain/constants/stage-skills.js';
 import { authoringWorktreePathFor } from '../domain/functions/authoring-worktree-path-for.js';
@@ -13,6 +12,7 @@ import { buildResumePrompt } from '../domain/functions/build-resume-prompt.js';
 import { buildStartPrompt } from '../domain/functions/build-start-prompt.js';
 import { commandToLabel } from '../domain/functions/command-to-label.js';
 import { describeError } from '../domain/functions/describe-error.js';
+import { modelFor } from '../domain/functions/model-for.js';
 import { skillFor } from '../domain/functions/skill-for.js';
 import { isAuthoringStage } from '../domain/functions/is-authoring-stage.js';
 import { runStageFor } from '../domain/functions/run-stage-for.js';
@@ -256,7 +256,7 @@ export class RunStartService {
       sessionId: run.sessionId,
       worktreePath: run.worktreePath,
       prompt: launch.prompt,
-      model: stageModels[run.stage],
+      model: modelFor(run),
       tools: this.bindTools(run),
       decidePermission: this.bindPermission(run),
     };

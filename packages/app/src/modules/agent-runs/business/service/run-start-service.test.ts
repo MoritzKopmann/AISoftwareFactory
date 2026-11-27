@@ -354,6 +354,23 @@ describe('RunStartService', () => {
       expect(designCopier.copies).toEqual([]);
     });
 
+    it('should start aisf:create-bug-ticket on opus in a detached authoring worktree when a bug idea starts', async () => {
+      const { service, worktrees, agentSessions } = buildStartSubject();
+
+      const run = await service.start({ ...startRequest, status: 'idea', types: ['bug'] });
+
+      expect(run).toMatchObject({
+        stage: 'create',
+        skill: 'aisf:create-bug-ticket',
+        branchName: '',
+      });
+      expect(run.worktreePath).toMatch(/-authoring$/);
+      expect(worktrees.detachedSpecs).toEqual([
+        expect.objectContaining({ worktreePath: run.worktreePath }),
+      ]);
+      expect(agentSessions.startedSpecs[0]?.model).toBe('opus');
+    });
+
     it('should start aisf:design in the authoring worktree without a branch when a ui idea starts', async () => {
       const { service, agentSessions } = buildStartSubject();
 
@@ -1016,6 +1033,19 @@ describe('RunStartService', () => {
         expect(agentSessions.resumedSpecs[0]?.prompt).toContain(
           'Carry on with aisf:ui-ticket for #137 from its human checkpoint.',
         );
+      });
+
+      it('should resume on opus when a create-bug-ticket run resumes after a checkpoint', async () => {
+        const { service, agentSessions, insertEndedRun } = buildResumeSubject();
+        await insertEndedRun({
+          stage: 'create',
+          skill: 'aisf:create-bug-ticket',
+          ending: checkpointEnding,
+        });
+
+        await service.resume('run-1', answer);
+
+        expect(agentSessions.resumedSpecs[0]?.model).toBe('opus');
       });
 
       it('should keep the stored skill on the new run when a run resumes', async () => {
